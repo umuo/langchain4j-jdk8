@@ -2,7 +2,7 @@
 
 基于官方提交 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`（1.23.0 开发基线）的独立兼容分支。保留完整上游历史、Java 包名和主要模型 API，使用独立 Maven 坐标，按阶段提交。
 
-## 当前产物（第四阶段）
+## 当前产物（第五阶段）
 
 以下六个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
 
@@ -93,3 +93,9 @@ Assistant assistant = AiServices.create(Assistant.class, model);
 模型保留 base URL、timeout、API key、组织/项目、自定义 headers/query、参数覆写和 HTTP builder。使用默认传输可沿用原配置；源码中显式引用 `OkHttpClientBuilder` 时，消费项目需额外声明 BOM 管理的 `langchain4j-http-client-okhttp` 编译依赖，见示例 POM。
 
 响应按批次 index 恢复输入顺序，数量不足、重复/混合/越界 index、缺失或空向量会立即失败，避免错误入库；提供方全部省略 index 时仍按响应顺序处理。取消为尽力传递，已验证 OkHttp 调用释放。第四阶段结果为 89 个 Java 8 / 627 个 JDK 17 用例，见 `verification/milestone-4.json`；这不代表真实远程模型、所有 embedding 提供方或语义质量已验证。
+
+## 响应式规范验证
+
+`./jdk8/build.sh` 还会在真实 Java 8 上运行独立 `reactive-tck` 模块中的官方 TCK 1.0.4，验证 ZeroPublisher 的同线程/异步 Publisher 行为；测试依赖不进入生产运行时。两组共 62 项通过，14 项是官方标为不验证的 `untested_*`，未跳过 required/optional 项。精确规则与原因见 `COMPATIBILITY.md` 和 `verification/milestone-5.json`。
+
+第五阶段修复取消/终止后订阅者引用保留，以及原始 AI Services 事件流在 RAG 等待期间忽略非正 demand、立即取消仍启动检索的问题。新增并发信号、终止竞争、回收和真实 SSE 资源释放验收。这里的 TCK 结果限于内部 Publisher 桥接，未声明所有适配器的 Subscriber/Processor/Flow TCK 已通过。

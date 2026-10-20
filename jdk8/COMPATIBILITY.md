@@ -13,7 +13,7 @@
 
 - OpenAI 默认传输改为 OkHttp 4.12.0；保留自定义客户端 builder、base URL、超时和请求配置。JDK HTTP Client 不进入生产依赖。
 - OkHttp 的 SSE 读取在 dispatcher 线程执行，与 JDK 客户端的线程模型不同；Java 8 不承诺无阻塞网络读取。取消、完成、失败或缓冲溢出会释放 HTTP 调用。
-- `mutiny-zero` 1.3.1 的 Java 17 类替换为内部有界 Reactive Streams 桥接，覆盖需求量、取消、溢出、串行分发和单次终止；尚未宣称通过完整 Reactive Streams 官方 TCK。
+- `mutiny-zero` 1.3.1 的 Java 17 类替换为内部有界 Reactive Streams 桥接，覆盖需求量、取消、溢出、串行分发和单次终止；第五阶段已运行该桥接的官方 PublisherVerification，具体范围与跳过项见后文，不代表所有响应式组件均被完整验证。
 - Reactive Streams 使用 1.0.2 的稳定接口；1.0.4 附带引用 Java 9 Flow 的适配类，不引入 Java 8 生产依赖。
 - 保留虚拟线程反射探测和普通线程回退；JDK 8 使用平台线程。
 
@@ -64,3 +64,13 @@
 - 文档入库和 JSON 恢复后，使用 HTTP embedding 检索、元数据过滤、上下文注入，完成同步/Future/TokenStream/Publisher 四条真实 HTTP/SSE 模拟对话路径；Future/Publisher 在 query embedding 阶段取消会释放 HTTP，避免启动 chat。embedding 查询失败同样不会继续调用 chat；损坏入库响应不会写入部分向量。
 - 独立 BOM `HttpRagExample` 在 Java 8 下验证 embedding 和 chat 两个真实适配器；模拟服务刻意乱序返回向量以验证 index 对齐。显式自定义 OkHttp 的源码示例新增 BOM 管理的 OkHttp 模块编译依赖，默认 OpenAI 传输依赖配置未改变。
 - 89 个真实 Java 8 / 627 个 JDK 17 选定回归全部通过；新增原始 embedding model/request/response/维度/listener、OpenAI 参数/Base64/async/retry 测试。真实远程服务、真实模型质量、其他 embedding 适配器及外部向量库仍未验收。
+
+## 第五阶段：Publisher TCK 与并发稳定性（jdk8-m5）
+
+- 新增 `jdk8/reactive-tck` 独立测试模块，由兼容构建默认运行；使用官方 `reactive-streams-tck:1.0.4`、TestNG 7.3.0，在实际 Java 8 下执行。生产 API 仍为 `reactive-streams:1.0.2`；TCK、TestNG 和其依赖不进入生产 BOM 或运行时消费项目，测试不使用 Flow TCK。
+- 选择新版 TCK 以包含其测试修复；未覆盖/修改官方测试方法，没有缩减 maxElements，没有跳过 required/optional 用例。使用同线程和异步两个实际 ZeroPublisher fixture：有限流允许缓冲；超大需求测试使用惰性源、最多一个元素超前于已交付信号，真实 State Subscription 原样交给 TCK，不添加 request/cancel 代理。
+- 两组 PublisherVerification 共 76 项，62 通过、14 项官方 `untested_*` 跳过。必测、可选与随机串行信号测试均通过。每组跳过的是 spec106、107、108、109、110、304、305，原因均为官方 `Not verified by this TCK.`；这些不计为通过，也不声称其已被完整证明。来源：[官方规范与 TCK](https://github.com/reactive-streams/reactive-streams-jvm)、[发布说明](https://github.com/reactive-streams/reactive-streams-jvm/blob/master/RELEASE-NOTES.md)。
+- TCK 复现了外部源保留 emitter 时 subscriber 无法回收的问题；State 现在取消/终止时清除 subscriber 引用，保留已开始的 onNext 最多一次交付和串行终止语义。补充完成/错误后的 GC 验收。非法需求量错误现在包含规则 3.9 信息。
+- 原始 `Publisher<AiServiceStreamingEvent>` 在 RAG/prologue 尚未交接真实 subscription 时立即拒绝非正 demand 并取消等待任务；onSubscribe 中立即 cancel 不启动检索。DeferredSubscription 对终止信号去重，并在取消/终止时释放 delegate/callback 引用；正常交接后的 demand 仍由实际 subscription 处理。
+- Java 8 并发验收覆盖 100 轮双生产者/双请求者的 1000 元素流、300 轮 complete/fail 竞争、onNext 中 fail/cancel、100 轮非法 demand 与 RAG 失败竞争、完成/错误后的回收。真实 loopback SSE 覆盖无 demand 缓冲溢出和 30 轮 request/cancel 竞争后的 HTTP 释放。
+- 本阶段 TCK 验证对象是内部 ZeroPublisher 的 Publisher/Subscription，未对所有适配器执行 SubscriberWhitebox/Blackbox、Processor 或 Flow TCK；不声明所有生产 Publisher/Subscriber 均获得完整规范认证。有限并发压力测试也不是所有线程调度或无限运行的证明。
