@@ -44,6 +44,8 @@ public class WebSocketMcpTransport implements McpTransport {
     private Consumer<String> reinitialized = ignored -> {};
     private Runnable invalidated = () -> {};
     private boolean closed;
+    private boolean modernProtocol;
+    private String protocolVersion = "2025-11-25";
 
     private static final class Generation {
         final CompletableFuture<WebSocket> connected = new CompletableFuture<>();
@@ -52,6 +54,8 @@ public class WebSocketMcpTransport implements McpTransport {
         WebSocket socket;
         ScheduledFuture<?> deadline;
         boolean initializeStarted;
+        boolean refreshCapabilities;
+        boolean modern;
         final boolean recovery;
         Generation(boolean recovery) { this.recovery = recovery; }
     }
@@ -59,12 +63,13 @@ public class WebSocketMcpTransport implements McpTransport {
         final Generation generation;
         final Long id;
         final String json;
+        final boolean subscription;
         final CompletableFuture<String> result = new CompletableFuture<>();
         ScheduledFuture<?> deadline;
         boolean sent;
         boolean cancelledByServer;
-        Pending(Generation generation, Long id, String json) {
-            this.generation = generation; this.id = id; this.json = json;
+        Pending(Generation generation, Long id, String json, boolean subscription) {
+            this.generation = generation; this.id = id; this.json = json; this.subscription = subscription;
         }
     }
 
@@ -126,7 +131,7 @@ public class WebSocketMcpTransport implements McpTransport {
         }
     }
     private Generation open(boolean recovery) {
-        Generation g = new Generation(recovery);
+        Generation g = new Generation(recovery); g.modern = modernProtocol;
         current = g;
         try {
             Request.Builder request = new Request.Builder().url(url);
@@ -147,18 +152,43 @@ public class WebSocketMcpTransport implements McpTransport {
             if (g.recovery) initialize(g);
         }
     }
-    @SuppressWarnings("unchecked")
+    @Override public void setModernProtocol(boolean modern) {
+        synchronized (lock) {
+            if (closed) throw new IllegalStateException("Transport is closed");
+            if (modern == modernProtocol) return;
+            for (Pending p : pending) if (!p.result.isDone()) throw new IllegalStateException("Cannot switch protocol with active requests");
+            modernProtocol = modern; initializationTemplate = null;
+            if (current != null && current.initializeStarted) retire(current, new IOException("Protocol changed"));
+            if (current != null) current.modern = modern;
+        }
+    }
+    @Override public void setProtocolVersion(String version) {
+        if (!"2026-07-28".equals(version) && !"2025-11-25".equals(version) && !"2024-11-05".equals(version))
+            throw new IllegalArgumentException("Unported protocol: " + version);
+        synchronized (lock) {
+            if (closed) throw new IllegalStateException("Transport is closed");
+            if (!version.equals(protocolVersion)) for (Pending p : pending)
+                if (!p.result.isDone()) throw new IllegalStateException("Cannot change version with active requests");
+            protocolVersion = version;
+        }
+    }
+    private CompletableFuture<String> handshake(McpClientMessage operation) {
+        if (closed || handler == null) return Jdk8.failedFuture(new IllegalStateException("Transport is not started"));
+        boolean refreshCapabilities = current == null && initializationTemplate != null;
+        initializationTemplate = new LinkedHashMap<>(McpJson.toMap(McpJson.serialize(operation)));
+        Generation g = current == null ? open(false) : current;
+        g.refreshCapabilities = refreshCapabilities;
+        g.connected.whenComplete((socket, error) -> { if (error == null) initialize(g); });
+        CompletableFuture<String> result = mirror(g.ready);
+        result.whenComplete((value, error) -> {
+            if (result.isCancelled() && !g.recovery) retire(g, new CancellationException("Initialization cancelled"));
+        });
+        return result;
+    }
     @Override public CompletableFuture<String> sendInitializeRequest(McpInitializeRequest operation) {
         synchronized (lock) {
-            if (closed || handler == null) return Jdk8.failedFuture(new IllegalStateException("Transport is not started"));
-            initializationTemplate = new LinkedHashMap<>((Map<String,Object>) McpJson.toValue(McpJson.serialize(operation)));
-            Generation g = current == null ? open(false) : current;
-            g.connected.whenComplete((socket, error) -> { if (error == null) initialize(g); });
-            CompletableFuture<String> result = mirror(g.ready);
-            result.whenComplete((value, error) -> {
-                if (result.isCancelled() && !g.recovery) retire(g, new CancellationException("Initialization cancelled"));
-            });
-            return result;
+            if (modernProtocol) return Jdk8.failedFuture(new IllegalStateException("Modern protocol uses server/discover"));
+            return handshake(operation);
         }
     }
     private void initialize(Generation g) {
@@ -168,7 +198,7 @@ public class WebSocketMcpTransport implements McpTransport {
             Map<String,Object> request = new LinkedHashMap<>(initializationTemplate);
             long id = g.recovery ? recoveryIds.getAndDecrement() : ((Number) request.get("id")).longValue();
             request.put("id", id);
-            Pending p = register(g, id, McpJson.serialize(request), false);
+            Pending p = register(g, id, McpJson.serialize(request), false, false);
             p.result.whenComplete((response, error) -> {
                 if (error != null) { retire(g, error); return; }
                 synchronized (lock) {
@@ -176,11 +206,17 @@ public class WebSocketMcpTransport implements McpTransport {
                     try {
                         Map<?,?> parsed = (Map<?,?>) McpJson.toValue(response);
                         Object result = parsed.get("result");
+                        if (g.modern && parsed.containsKey("error") && !g.recovery && !g.refreshCapabilities) {
+                            if (g.deadline != null) g.deadline.cancel(false);
+                            g.ready.complete(response); return; // Client owns version negotiation and legacy fallback.
+                        }
                         if (!(result instanceof Map) || parsed.containsKey("error")) throw new IOException("Invalid initialization response");
-                        String protocol = String.valueOf(((Map<?,?>)result).get("protocolVersion"));
-                        if (!"2025-11-25".equals(protocol)) throw new IOException("Unverified WebSocket protocol: " + protocol);
-                        enqueue(g, McpJson.serialize(new McpInitializationNotification()));
-                        if (g.recovery) reinitialized.accept(response);
+                        if (!g.modern) {
+                            String protocol = String.valueOf(((Map<?,?>)result).get("protocolVersion"));
+                            if (!"2025-11-25".equals(protocol) && !"2024-11-05".equals(protocol)) throw new IOException("Unverified WebSocket protocol: " + protocol);
+                            enqueue(g, McpJson.serialize(new McpInitializationNotification()));
+                        }
+                        if (g.recovery || g.refreshCapabilities) reinitialized.accept(response);
                         if (g.deadline != null) g.deadline.cancel(false);
                         g.ready.complete(response);
                     } catch (Exception failure) { retire(g, failure); }
@@ -192,13 +228,15 @@ public class WebSocketMcpTransport implements McpTransport {
     @Override public CompletableFuture<String> sendRequest(McpClientMessage request) { return sendRequest(new McpCallContext(null, request)); }
     @Override public CompletableFuture<String> sendRequest(McpCallContext context) {
         synchronized (lock) {
+            if (modernProtocol && context.message() instanceof McpServerDiscoverRequest && (current == null || !current.initializeStarted))
+                return handshake(context.message());
             if (closed || initializationTemplate == null) return Jdk8.failedFuture(new IllegalStateException("Transport is not initialized"));
             if (pending.size() >= maxPendingRequests) return Jdk8.failedFuture(new RejectedExecutionException("MCP pending request limit reached"));
             String json;
             try { json = McpJson.serialize(context.message()); }
             catch (RuntimeException failure) { return Jdk8.failedFuture(failure); }
             Generation g = current == null ? open(true) : current;
-            Pending p = register(g, context.message().getId(), json, true);
+            Pending p = register(g, context.message().getId(), json, true, context.message() instanceof McpSubscriptionsListenRequest);
             g.ready.whenComplete((response, error) -> {
                 if (error != null) p.result.completeExceptionally(error);
                 else transmit(p);
@@ -206,8 +244,8 @@ public class WebSocketMcpTransport implements McpTransport {
             return p.result;
         }
     }
-    private Pending register(Generation g, Long id, String json, boolean timed) {
-        Pending p = new Pending(g, id, json);
+    private Pending register(Generation g, Long id, String json, boolean timed, boolean subscription) {
+        Pending p = new Pending(g, id, json, subscription);
         for (Pending existing : pending) {
             if (existing.generation == g && id != null && id.equals(existing.id)) {
                 p.result.completeExceptionally(new IllegalArgumentException("Duplicate in-flight MCP request id: " + id));
@@ -221,13 +259,23 @@ public class WebSocketMcpTransport implements McpTransport {
                 pending.remove(p);
                 if (p.deadline != null) p.deadline.cancel(false);
                 if (p.sent && !p.cancelledByServer && current == g && (p.result.isCancelled() || error instanceof TimeoutException)) {
-                    try { enqueue(g, McpJson.serialize(new McpCancellationNotification(id, "Cancelled or timed out"))); }
+                    try { enqueue(g, cancellation(g, id)); }
                     catch (RuntimeException failure) { retire(g, failure); }
                 }
             }
         });
         if (timed) p.deadline = timer.schedule(() -> p.result.completeExceptionally(new TimeoutException("WebSocket request timed out")), requestTimeoutMillis, TimeUnit.MILLISECONDS);
         return p;
+    }
+    @SuppressWarnings("unchecked")
+    private String cancellation(Generation g, Long id) {
+        McpCancellationNotification notification = new McpCancellationNotification(id, "Cancelled or timed out");
+        if (g.modern && initializationTemplate != null) {
+            Object params = initializationTemplate.get("params");
+            Object meta = params instanceof Map ? ((Map<?,?>)params).get("_meta") : null;
+            if (meta instanceof Map) notification.getParams().setMeta(new LinkedHashMap<>((Map<String,Object>)meta));
+        }
+        return McpJson.serialize(notification);
     }
     private void transmit(Pending p) {
         synchronized (lock) {
@@ -267,6 +315,13 @@ public class WebSocketMcpTransport implements McpTransport {
                     if ("notifications/cancelled".equals(message.get("method")) && message.get("params") instanceof Map) {
                         Object id = ((Map<?,?>)message.get("params")).get("requestId");
                         for (Pending p : pending) if (p.generation == g && p.id != null && p.id.toString().equals(String.valueOf(id))) p.cancelledByServer = true;
+                    }
+                    if (g.modern && "notifications/subscriptions/acknowledged".equals(message.get("method")) && message.get("params") instanceof Map) {
+                        Object meta = ((Map<?,?>)message.get("params")).get("_meta");
+                        Object id = meta instanceof Map ? ((Map<?,?>)meta).get("io.modelcontextprotocol/subscriptionId") : null;
+                        for (Pending p : pending) if (p.generation == g && p.subscription && p.sent && p.id != null && p.id.toString().equals(String.valueOf(id))) {
+                            if (p.deadline != null) p.deadline.cancel(false);
+                        }
                     }
                     if (message.containsKey("result") || message.containsKey("error")) {
                         String id = String.valueOf(message.get("id"));

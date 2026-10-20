@@ -155,3 +155,12 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 异步工具支持服务器返回 requestState 后的有界续传，取消/超时终止当前轮次；inputRequests 交互仍按基线明确拒绝。只因服务器状态继续操作，不能将网络错误当作重发工具的理由。独立 BOM 示例 McpModernExample 覆盖 Future AI Services、异步续传和订阅释放，最终证据见 milestone-13。
 
 这不是对所有现代协议功能或远端服务器的完成声明；现代 stdio/WebSocket 和旧双端点 HTTP+SSE 等剩余范围继续跟踪。
+
+
+## 现代共享通道
+
+stdio 和 WebSocket 均可在 DefaultMcpClient.builder() 显式设置 protocolVersion("2026-07-28")。传输 builder 保持各自配置；默认仍为旧版本。现代 WebSocket 使用 server/discover，取消通过同连接通知，不使用 HTTP 会话头。旧协议在相同类中继续可用。
+
+资源订阅使用 subscribeToResources(uris)/unsubscribeFromResources(id)，确认后保持长期运行；取消恰好由负责该传输的一层发送。网络丢失后的资源订阅需应用新建，自动列表订阅则在重新发现后恢复。WebSocket 的请求/队列预算及关闭约定继续适用。stdio 开启高层 autoHealthCheck 后可恢复退出的子进程，旧工具调用明确失败，列表缓存按进程失效。
+
+可通过 `McpModernExample stdio` / `McpModernExample websocket` 运行独立 BOM 示例（build.sh 自动执行）；都使用本地合成服务，实际 Java 8 父子 JVM/帧网络，不需要外部凭据。范围、差异和最终结果见 milestone-14。

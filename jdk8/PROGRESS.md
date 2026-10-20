@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十三阶段 MCP 现代 HTTP 发现/订阅已完成（2026-10-21）
+## 当前状态：第十四阶段现代 stdio/WebSocket 已完成（2026-10-21）
 
-- 仓库 `/Volumes/Nas/codex-work/langchain4j-jdk8`，分支 `jdk8/main`；当前完整验收标记 `jdk8-m13`，上期 `jdk8-m12`。固定基线 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79` 不变。
-- 八个生产模块、坐标/版本不变，无新增生产依赖；本阶段不是整个现代协议或整体目标的完成声明。[路线](ROADMAP.md) 和 [模块清单](MODULE-INVENTORY.md) 继续跟踪未完成范围。
-- 固定基线 120 个 POM 已枚举，初分 39 模型/25 向量库/4 Agentic 候选；原始依赖声明与候选分类不代替有效依赖审计或实现。
+- 仓库 `/Volumes/Nas/codex-work/langchain4j-jdk8`，分支 `jdk8/main`；当前完整验收 `jdk8-m14`，上期 `jdk8-m13`；固定基线 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。
+- 八个生产模块和兼容坐标不变，无新增生产依赖；整个 MCP、Agentic、模型/向量库及最终交付仍未全部完成。
+- 固定基线全部 120 个 POM 的候选清单继续维护，不将声明审计计为功能实现或排除较难模块。
 
 ## 已完成能力
 
@@ -30,20 +30,20 @@
 
 ## 最终验证
 
-`./jdk8/build.sh -o` 完整 clean install、独立 BOM、字节码/API 和链接审计 exit 0。快照：[milestone-13.json](verification/milestone-13.json)。
+`./jdk8/build.sh -o` 完整 clean、独立 BOM 消费及产物审计 exit 0。快照：[milestone-14.json](verification/milestone-14.json)。
 
-| 验证 | 第十三阶段结果 |
+| 验证 | 第十四阶段结果 |
 |---|---|
 | 八模块生产源码 | JDK 17 `--release 8` 通过 |
-| 真实 Java 8 | 307 用例，0 失败/错误/跳过；1.8.0_462 |
-| JDK 17 选定上游回归 | 864 用例，0 失败/错误/跳过；17.0.13 |
-| 官方 Publisher TCK / Java 8 | 62 通过、14 官方 untested；0 失败/错误，无 required/optional 跳过 |
+| 真实 Java 8 | 346 项，0 失败/错误/跳过；1.8.0_462 |
+| JDK 17 选定上游 | 864 项，0 失败/错误/跳过；17.0.13 |
+| 官方 Publisher TCK / Java 8 | 62 通过、14 官方 untested；无失败/错误或 required/optional 跳过 |
 | 字节码/API 审计 | 33 JAR / 6366 基础类 |
-| Java 8 类及成员链接 | 4946 类；3 个既有可选平台排除 |
-| 全部旧独立消费 | AI Services、RAG、HTTP embedding、SQLite 向量/会话跨进程、MCP HTTP/恢复/stdio/Registry/WebSocket 全部通过 |
-| 新增现代 HTTP BOM | 发现 1、续传帧 2、实际工具 1、订阅释放、取消 POST 0，经 Future AI Services 返回 7 yuan |
+| Java 8 类及成员链接 | 4946 类，保留 3 个可选平台排除 |
+| 所有旧 BOM 示例 | AI Services、RAG、HTTP embedding、SQLite 跨进程、MCP 各此前传输/协议均通过 |
+| 新增现代 stdio/WebSocket BOM | 每种发现 1、状态续传 1、实际执行 1、取消 1、订阅及进程/通道释放 |
 
-新增 31 项现代 HTTP Java 8 验收，保留全部旧回归；共 1233 项通过，另列 14 官方 untested。不声称完整上游测试集或全部 MCP 协议均完成。
+新增 39 项 Java 8（34 个双通道参数化用例、5 个现代 WebSocket 恢复用例）；共 1272 项通过，另列 14 官方 untested。单方法筛选参数化测试曾选中 0 项，不计任何验证；最终完整套件有明确非零类/用例证据。
 
 ## 已知边界
 
@@ -52,7 +52,7 @@
 - 基础 RAG 已通过本地模型和真实 OpenAI HTTP embedding 适配器两种流程验证（服务均为 loopback fixture）；真实远程模型/语义质量、其他 embedding 适配器/外部向量库、easy-rag 自动下载、复杂重排/多模态 RAG 尚未验收。Guardrails、Decision Services、复杂补偿事务、其余第三方适配器与 OpenAI Responses/音视频/图像仍保留未覆盖声明。
 - SQLite 为精确全表扫描、Java 端过滤及阻塞 JDBC，异步 RAG 必须显式 offload；取消不能保证打断已开始的数据库扫描。未验证其他 JNI 平台、网络文件系统锁、同时多进程写和断电恢复。
 - SQLite 会话更新只保证完整快照原子性，同会话并发 AI Services turn 需应用串行化；取消不回滚已提交历史。记忆 ID 支持 String/Integer/Long/UUID，异步需显式配置调用方 Executor，不承诺任意 Object ID 或原生异步 JDBC。
-- MCP 已覆盖 2025-11-25 HTTP 工具、会话与 SSE 恢复；现代 HTTP 2026-07-28 子集已验收；现代 stdio/WebSocket、原始 2024 双端点、跨进程持久化游标及完整多模态业务仍待推进；WebSocket 2025-11-25、服务器 ping/roots、WSS 与恢复已新增网络验收；Registry 已按固定基线查询接口验收；stdio 与资源/提示词范围已新增专项验收。直接 MCP Future 取消会关闭 HTTP；AI Services 则保留已启动工具 drain 到结束/超时的上游约定。
+- MCP 已覆盖 2025-11-25 HTTP 工具、会话与 SSE 恢复；现代 HTTP 2026-07-28 子集已验收；现代 stdio/WebSocket 已专项验收；原始 2024 双端点、跨进程持久化游标及完整多模态业务等仍待推进；WebSocket 2025-11-25、服务器 ping/roots、WSS 与恢复已新增网络验收；Registry 已按固定基线查询接口验收；stdio 与资源/提示词范围已新增专项验收。直接 MCP Future 取消会关闭 HTTP；AI Services 则保留已启动工具 drain 到结束/超时的上游约定。
 - 已运行内部 ZeroPublisher 的官方 Publisher TCK（62 通过、14 项官方 untested），未运行所有适配器的 Subscriber/Processor/Flow TCK，不声明全组件规范认证。有限并发测试不是所有线程调度的证明；类链接仍排除三个可选宿主平台入口。
 
 ## 后续范围：跳过 Guardrails
@@ -62,7 +62,7 @@
 3. 第六、七阶段已完成 SQLite 向量和会话记忆持久化；后续可推进 MCP/Agentic/其他集成，不再默认推进 Guardrails。
 4. 继续保留真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，以及按检查点提交的约定；不自动跟随上游、推送或建立后台任务。
 
-## 下一阶段：MCP 现代 stdio/WebSocket 与剩余能力
+## 下一阶段：Agentic 移植前审计与 MCP 剩余能力
 
 按 ROADMAP 继续实现并验收，之后推进全部 Agentic 相关能力及逐模块模型/向量库。保持取消、超时、资源释放和不自动重放工具请求；外部真实服务联调需单独授权，Guardrails 继续排除。单个里程碑结束不代表整体目标完成。
 
@@ -259,3 +259,12 @@
 - 已复现并修复订阅中断泄漏、默认五个单主机长流槽位饥饿、完成回调中错误 busy；同步请求状态续传和工具中断也释放当前请求。确认前 deadline 有界，匹配确认后取消 unary deadline，流并发默认 64 可配。
 - 完整 clean exit 0：307 Java 8、864 上游、62 TCK 通过；14 官方 untested；33 JAR/6366 类审计、4946 类链接及全部旧/新消费通过，无新增生产依赖。
 - 现代 EOF 新订阅由应用显式发起；交互 inputRequests 沿用基线明确拒绝。旧 2024 这里只验证单端点版本字段，不代替双端点协议支持。其他 MCP、全部 Agentic、模型/向量库与最终交付仍未完成，整体目标保持 active。
+
+
+## 第十四阶段最终验收
+
+- 现代 WebSocket 与 stdio 共用高层协议：发现、确认型长期订阅、UTF-8、状态续传、取消/超时/中断、旧版本回退和关闭通过实际 Java 8 验收。
+- 复现并修复 stdio 服务器取消回显及真实进程重启缓存未失效；现代 WebSocket 恢复、健康探测首先恢复时均刷新能力和自动列表订阅。自动探测后的消息使用协商版本，不再复用空配置版本。
+- 39 项新增用例含 20 个等待者共享恢复、观察/单等待者取消隔离、失败恢复后新调用、旧订阅不在新连接取消、资源所有权和进程释放。
+- 最终 clean：346 Java 8、864 上游、62 TCK 通过，14 官方 untested；33 JAR/6366 类审计、4946 类链接及所有旧/新独立消费通过，无新增生产依赖。
+- 不自动重放失效工具；原始旧 HTTP+SSE 与更多未验收能力、全部 Agentic、模型/向量库仍未完成，整体目标保持 active。

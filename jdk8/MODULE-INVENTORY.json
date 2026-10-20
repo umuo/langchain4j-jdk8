@@ -4538,7 +4538,7 @@
       "categories": [
         "mcp"
       ],
-      "status": "partial-verified-m13",
+      "status": "partial-verified-m14",
       "production_dependency_audit": "pending; raw declarations only; inherit/resolve versions before migration",
       "dependencies": [
         {
@@ -4597,9 +4597,10 @@
         "verification/milestone-10.json",
         "verification/milestone-11.json",
         "verification/milestone-12.json",
-        "verification/milestone-13.json"
+        "verification/milestone-13.json",
+        "verification/milestone-14.json"
       ],
-      "remaining": "Modern stdio/WebSocket, original two-endpoint HTTP+SSE and remaining MCP capabilities; agentic integration modules pending"
+      "remaining": "Original two-endpoint HTTP+SSE and remaining MCP capabilities; Agentic integration modules pending"
     },
     {
       "path": "langchain4j-micrometer-metrics",

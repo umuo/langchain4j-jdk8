@@ -100,6 +100,7 @@ public class DefaultMcpClient implements McpClient {
     private final String clientVersion;
     private final String protocolVersion;
     private volatile boolean modernProtocol;
+    private volatile String negotiatedModernVersion = PROTOCOL_VERSION_MODERN;
     private final Duration initializationTimeout;
     private final Duration protocolDetectionTimeout;
     private final Duration toolExecutionTimeout;
@@ -257,7 +258,13 @@ public class DefaultMcpClient implements McpClient {
                         }
                     });
             transport.onSessionInvalidated(this::invalidateSessionCaches);
-            transport.onSessionReinitialized(response -> initializeResult = toInitializeResult(response));
+            transport.onSessionReinitialized(response -> {
+                if (modernProtocol) {
+                    initializeResult = toInitializeResultFromDiscover(response,
+                            McpJson.deserialize(response, McpServerDiscoverResponse.class).getResult());
+                    if (subscribeToToolListChanges || subscribeToPromptListChanges || subscribeToResourceListChanges) startListChangeSubscriptions();
+                } else initializeResult = toInitializeResult(response);
+            });
             transport.onFailure(() -> {
                 if (!closed) {
                     try {
@@ -483,6 +490,7 @@ public class DefaultMcpClient implements McpClient {
             McpServerDiscoverResponse.Result discovered = McpJson.deserialize(response, McpServerDiscoverResponse.class)
                     .getResult();
             initializeResult = toInitializeResultFromDiscover(response, discovered);
+            negotiatedModernVersion = versionToAdvertise;
             modernProtocol = true;
             McpDiscoverResult discoverResult = toDiscoverResult(discovered);
             notifyListeners(l -> l.afterServerDiscover(context, discoverResult));
@@ -881,8 +889,9 @@ public class DefaultMcpClient implements McpClient {
         AtomicReference<CompletableFuture<String>> active = new AtomicReference<>();
         java.util.concurrent.atomic.AtomicLong activeId = new java.util.concurrent.atomic.AtomicLong(original.message().getId());
         AtomicBoolean completionHandled = new AtomicBoolean();
+        AtomicBoolean callerCancelled = new AtomicBoolean();
         response.whenComplete((value, error) -> {
-            if (response.isCancelled()) synchronized (lock) {
+            if (callerCancelled.get()) synchronized (lock) {
                 CompletableFuture<String> leaf = active.get();
                 if (leaf != null && leaf.cancel(true)) sendCancellationNotification(activeId.get(), "Cancelled");
             }
@@ -901,6 +910,7 @@ public class DefaultMcpClient implements McpClient {
         result.whenComplete((value, error) -> {
             if (result.isCancelled()) {
                 if (completionHandled.compareAndSet(false, true)) notifyListeners(listener -> listener.onExecuteToolError(original, new CancellationException()));
+                callerCancelled.set(true);
                 response.cancel(true);
             }
         });
@@ -1418,7 +1428,7 @@ public class DefaultMcpClient implements McpClient {
     private void abandonSubscription(long subscriptionId, CompletableFuture<String> streamFuture, String reason) {
         activeSubscriptions.remove(subscriptionId);
         streamFuture.cancel(true);
-        if (transport.requiresCancellationNotification()) {
+        if (shouldSendCancellationNotification()) {
             McpCancellationNotification cancellation = new McpCancellationNotification(subscriptionId, reason);
             McpCallContext cancellationContext = new McpCallContext(null, cancellation);
             applyMeta(cancellationContext.message(), cancellationContext);
@@ -1448,7 +1458,7 @@ public class DefaultMcpClient implements McpClient {
             // Flow.Subscription.cancel() and closes the SSE stream
             streamFuture.cancel(true);
             // Send notifications/cancelled for transports that need it (e.g. stdio)
-            if (context != null) {
+            if (context != null && shouldSendCancellationNotification()) {
                 applyMeta(context.message(), context);
                 transport.sendMessage(context.message());
             }
@@ -1757,7 +1767,7 @@ public class DefaultMcpClient implements McpClient {
     private void applyMeta(McpClientMessage message, McpCallContext context) {
         // For modern protocol, inject required _meta fields on every request and notification
         if (modernProtocol) {
-            String versionToAdvertise = protocolVersion != null ? protocolVersion : PROTOCOL_VERSION_MODERN;
+            String versionToAdvertise = negotiatedModernVersion;
             if (message instanceof McpClientRequest) {
             McpClientRequest request = (McpClientRequest) message;
                 if (request.getParams() == null) {

@@ -43,7 +43,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <testRelease>8</testRelease>
-                    <testIncludes><testInclude>**/*Jdk8Test.java</testInclude><testInclude>LocalMcpWebSocketServer.java</testInclude></testIncludes>
+                    <testIncludes><testInclude>**/*Jdk8Test.java</testInclude><testInclude>LocalMcpWebSocketServer.java</testInclude><testInclude>ModernMcpChannelFixture.java</testInclude></testIncludes>
                 </configuration>
             </plugin>
             <plugin>

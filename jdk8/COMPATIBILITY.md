@@ -185,3 +185,15 @@
 - 现代 stdio/WebSocket 的专项、更多剩余 MCP 能力和后续全部 Agentic/模型/向量库仍待推进；本阶段不是完整 MCP 完成声明。最终 clean exit 0：307 Java 8、864 上游、62 TCK 通过；14 官方 untested，33 JAR/6366 类审计、4946 类链接和全部独立消费通过，见 verification/milestone-13.json。
 
 旧 HTTP/SSE 恢复和每请求响应的依据仍见 [MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)；现代字段以本地固定基线 `git show 7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79:langchain4j-mcp/src/main/java/dev/langchain4j/mcp/client/DefaultMcpClient.java` 及同基线 HTTP transport 为审计来源。
+
+
+## 第十四阶段：现代 stdio/WebSocket（jdk8-m14）
+
+- WebSocket 以同一连接代际引擎支持固定基线 2026-07-28 的 server/discover；现代模式不发送旧 initialize/initialized，恢复只重新发现能力并为新调用开放通道，不重放丢失工具。旧 2025-11-25 和 2024-11-05 的 initialize 路径继续验证。
+- 初次发现的 RPC 错误交回高层协商/旧版本回退；恢复握手失败会失败等待者，后续应用新请求可再次建立连接。现代发现结果按发现模型转换更新 instructions/能力，自动列表订阅在恢复后重新建立。首先由健康探测恢复连接时同样刷新，不让它绕过能力更新。
+- WebSocket subscriptions/listen 在同 ID acknowledged 前受 requestTimeout 约束，确认后取消该 unary deadline，直到结束、取消、失联或关闭。它仍计入 maxPendingRequests。共享通道取消由 transport 发送一次，保留现代 _meta；高层订阅放弃/取消不再重复发送。stdio 由高层发送一次取消通知，关闭时终止子进程。
+- 现代异步工具区分调用方取消与服务器 CancellationException，避免服务器取消导致 stdio 回显取消。自动探测成功后保存协商的现代版本，后续请求/通知/健康探测不再将配置中的空字符串写入 _meta。
+- stdio 在进程丢失、替换和重新启动时失效客户端列表缓存，修复实际子进程重启后沿用旧工具列表；高层健康检查负责重新启动/发现并刷新能力。调用方需明确启用/配置自动健康检查；不将原工具请求交给新进程重放。
+- 新增同一组 stdio 实际 Java 8 子进程 / 实际 WebSocket 双通道验收：发现、UTF-8 工具、资源/提示词、确认/拒绝/超时/中断、长期列表订阅、取消去重、状态续传/取消/时限、旧版本和能力/缓存恢复；另有 WebSocket 20 等待者共享恢复、旧订阅隔离、失败恢复/关闭/健康探测恢复。
+- 独立 BOM McpModernExample 增加 stdio/websocket 两模式，验证实际 Java 8 Future AI Services、明确 requestState 续传、工具仅执行一次、订阅取消一次、无坏元数据且通道/进程释放。HTTP 模式与所有旧示例保持不变。
+- 本轮单方法过滤参数化测试曾选中 0 个用例，不计验证；最终必须以完整类的 34 个参数化用例和 5 个 WebSocket 恢复用例及全部旧回归为准。原始双端点 HTTP+SSE、其余未验收 MCP 行为和所有后续模块仍不计完成。最终 clean exit 0：346 Java 8、864 上游、62 TCK 通过，14 官方 untested；33 JAR/6366 类审计、4946 类链接及全部独立消费通过，见 verification/milestone-14.json。

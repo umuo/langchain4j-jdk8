@@ -42,6 +42,7 @@ public class StdioMcpTransport implements McpTransport {
     private volatile ProcessStderrHandler stderrHandler;
     private final Executor executor;
     private boolean closed;
+    private volatile Runnable invalidationListener = () -> {};
 
     public StdioMcpTransport(Builder builder) {
         this.command = Jdk8.copyList(builder.command);
@@ -56,6 +57,7 @@ public class StdioMcpTransport implements McpTransport {
     public synchronized void start(McpOperationHandler messageHandler) {
         if (closed) throw new IllegalStateException("Transport is closed");
         stopCurrentProcess();
+        invalidationListener.run();
         this.messageHandler = java.util.Objects.requireNonNull(messageHandler, "messageHandler");
         ProcessBuilder builder = new ProcessBuilder(command);
         builder.environment().putAll(environment);
@@ -164,6 +166,11 @@ public class StdioMcpTransport implements McpTransport {
     }
 
     @Override
+    public void onSessionInvalidated(Runnable listener) {
+        invalidationListener = java.util.Objects.requireNonNull(listener, "listener");
+    }
+
+    @Override
     public void onFailure(Runnable actionOnFailure) {
         // ignore, for stdio transport, we currently don't do reconnection attempts
     }
@@ -181,6 +188,7 @@ public class StdioMcpTransport implements McpTransport {
         ProcessStderrHandler stderr = stderrHandler;
         stderrHandler = null;
         if (previous == null) return;
+        try { invalidationListener.run(); } catch (RuntimeException error) { log.warn("MCP cache invalidation failed", error); }
         if (messageHandler != null) messageHandler.cancelAllPendingOperations("Process has stopped");
         try { if (stderr != null) stderr.close(); } catch (IOException ignored) { }
         // Destroy before closing readers: a blocked read must be released before close takes its lock.
