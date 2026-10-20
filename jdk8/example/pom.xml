@@ -17,11 +17,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            <dependency>
-            <groupId>dev.langchain4j.jdk8</groupId>
-            <artifactId>langchain4j-sqlite</artifactId>
-        </dependency>
-    </dependencies>
+        </dependencies>
     </dependencyManagement>
     <dependencies>
         <dependency>

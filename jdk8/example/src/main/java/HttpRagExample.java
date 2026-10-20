@@ -14,6 +14,8 @@ import dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetriever;
 import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.Result;
 import dev.langchain4j.store.embedding.EmbeddingStoreIngestor;
+import dev.langchain4j.store.embedding.EmbeddingStore;
+import dev.langchain4j.store.embedding.sqlite.SqliteEmbeddingStore;
 import dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStore;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -38,6 +40,11 @@ public final class HttpRagExample {
     public static void main(String[] args) throws Exception {
         if (!"1.8".equals(System.getProperty("java.specification.version")))
             throw new IllegalStateException("Run this example on Java 8");
+        boolean sqlite = args.length == 2 && (args[0].equals("write") || args[0].equals("read"));
+        if (args.length != 0 && !sqlite) throw new IllegalArgumentException("Expected no arguments, or write/read <database-file>");
+        if (sqlite && args[0].equals("write") && java.nio.file.Files.exists(java.nio.file.Paths.get(args[1])))
+            throw new IllegalArgumentException("Refusing to overwrite an existing example database");
+        SqliteEmbeddingStore persistent = null;
         HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         server.createContext("/v1/embeddings", exchange -> {
             EMBEDDINGS.incrementAndGet();
@@ -69,21 +76,34 @@ public final class HttpRagExample {
             OpenAiEmbeddingModel embeddings = OpenAiEmbeddingModel.builder().baseUrl(base).apiKey("synthetic")
                     .modelName("fixture-embedding").dimensions(2).maxRetries(0)
                     .httpClientBuilder(new OkHttpClientBuilder().okHttpClientBuilder(transport)).build();
-            InMemoryEmbeddingStore<TextSegment> store = new InMemoryEmbeddingStore<TextSegment>();
-            EmbeddingStoreIngestor.builder().documentSplitter(new DocumentByParagraphSplitter(30, 0))
-                    .embeddingModel(embeddings).embeddingStore(store).build().ingest(
-                            Document.from("apple price is 7 yuan.\n\npear price is 9 yuan.", Metadata.from("catalog", "public")));
+            EmbeddingStore<TextSegment> store;
+            if (sqlite) {
+                persistent = SqliteEmbeddingStore.builder().databasePath(args[1]).build();
+                store = persistent;
+            } else store = new InMemoryEmbeddingStore<TextSegment>();
+            if (!sqlite || args[0].equals("write")) {
+                EmbeddingStoreIngestor.builder().documentSplitter(new DocumentByParagraphSplitter(30, 0))
+                        .embeddingModel(embeddings).embeddingStore(store).build().ingest(
+                                Document.from("apple price is 7 yuan.\n\npear price is 9 yuan.", Metadata.from("catalog", "public")));
+            }
+            if (sqlite && args[0].equals("write")) {
+                if (persistent.size()!=2 || EMBEDDINGS.get()!=1) throw new AssertionError("SQLite ingestion failed");
+                System.out.println("Java 8 SQLite writer OK; persisted segments: " + persistent.size());
+                return;
+            }
+            if (!sqlite) store = InMemoryEmbeddingStore.fromJson(((InMemoryEmbeddingStore<TextSegment>) store).serializeToJson());
             OpenAiChatModel chat = OpenAiChatModel.builder().baseUrl(base).apiKey("synthetic").modelName("fixture-chat")
                     .maxRetries(0).httpClientBuilder(new OkHttpClientBuilder().okHttpClientBuilder(transport)).build();
             Assistant assistant = AiServices.builder(Assistant.class).chatModel(chat).contentRetriever(
                     EmbeddingStoreContentRetriever.builder().embeddingModel(embeddings)
-                            .embeddingStore(InMemoryEmbeddingStore.fromJson(store.serializeToJson()))
+                            .embeddingStore(store).offloadBlocking(sqlite)
                             .maxResults(1).minScore(0.9).filter(metadataKey("catalog").isEqualTo("public")).build()).build();
             Result<String> result = assistant.chat("What is the apple price?").get(5, TimeUnit.SECONDS);
-            if (!"7 yuan".equals(result.content()) || result.sources().size()!=1 || EMBEDDINGS.get()!=2)
+            if (!"7 yuan".equals(result.content()) || result.sources().size()!=1 || EMBEDDINGS.get()!=(sqlite ? 1 : 2))
                 throw new AssertionError("HTTP RAG failed: " + result.content());
-            System.out.println("Java 8 HTTP RAG OK; answer: " + result.content() + "; embedding requests: " + EMBEDDINGS.get());
+            System.out.println((sqlite ? "Java 8 SQLite reader RAG OK; answer: " : "Java 8 HTTP RAG OK; answer: ") + result.content() + "; embedding requests: " + EMBEDDINGS.get());
         } finally {
+            if (persistent != null) persistent.close();
             server.stop(0); dispatcher.cancelAll(); dispatcher.executorService().shutdownNow(); pool.evictAll();
         }
     }

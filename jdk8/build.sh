@@ -23,3 +23,6 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" Example
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" RagExample
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample
+# Two actual Java 8 processes prove restart persistence; the first only ingests, the second only queries.
+"$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample write "$TASK_ROOT/jdk8/example/target/restart-vectors.db"
+"$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample read "$TASK_ROOT/jdk8/example/target/restart-vectors.db"

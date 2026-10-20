@@ -132,3 +132,11 @@
 - 首版方案：文件数据库、事务批量 upsert、类型保真元数据、Java 精确余弦全表扫描/topK/过滤和删除；不使用 sqlite-vec 扩展或 ANN 索引。
 - 候选 Xerial JDBC 3.53.4.0 的官方 POM 使用 release 8，仍需实际产物/Java 8/JNI 验收。依赖与 native 临时文件均留在外置盘。
 - JDBC 为阻塞接口，原生 async 不作虚假实现，异步 RAG 显式 offloadBlocking(true)。
+
+### 第六阶段实现检查点
+
+- `SqliteEmbeddingStore` / `SqliteCodec` 已实现文件路径 builder、维度固定、事务 upsert/删除、只读快照、类型保真编码和精确 topK/过滤；连接按操作关闭，close 等待在途操作且不删除文件。
+- 20 个 Java 8 SQLite 用例验证 JNI/重开/所有 metadata 类型/大 Unicode/upsert/空批次/过滤/排序/维度/回滚/损坏/schema/锁/并发及内存参考结果对照；3 个 SQLite RAG 用例覆盖四条 loopback HTTP/SSE 路径和 embedding 阶段取消。
+- 首次独立消费验证发现误加的 dependencyManagement 项覆盖了 BOM，已修正；最终 clean 构建通过。驱动有 126 个 Java 8 基础类；GraalVM/Java 9 类仅在多版本目录，不需要新增基础类链接排除。
+- `HttpRagExample write/read` 在两个实际 Java 8 进程完成 OpenAI HTTP embedding 入库和重开后的异步 RAG；writer 2 个段落，reader 仅发 1 次查询 embedding，无重新入库。
+- 当前最终结果：122 Java 8 / 627 上游 / 62 Publisher TCK 通过；14 项官方 untested 单独列出。31 JAR/5978 基础类审计、4752 类链接通过，保持 3 个既有可选平台排除。待保存最终快照与阶段标记。
