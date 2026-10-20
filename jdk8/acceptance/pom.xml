@@ -27,6 +27,10 @@
             <groupId>dev.langchain4j.jdk8</groupId>
             <artifactId>langchain4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-sqlite</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
@@ -41,6 +45,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <systemPropertyVariables>
+                        <org.sqlite.tmpdir>${project.basedir}/../native-tmp</org.sqlite.tmpdir>
+                    </systemPropertyVariables>
                     <jvm>${java8.home}/bin/java</jvm>
                 </configuration>
             </plugin>

@@ -58,3 +58,6 @@ CLAUDE.md
 
 # Machine-local migration classpath
 /jdk8/tools/classpath.txt
+
+# SQLite native extraction stays on the external workspace disk
+/jdk8/native-tmp/

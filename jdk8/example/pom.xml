@@ -17,7 +17,11 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-        </dependencies>
+            <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-sqlite</artifactId>
+        </dependency>
+    </dependencies>
     </dependencyManagement>
     <dependencies>
         <dependency>
@@ -31,6 +35,10 @@
         <dependency>
             <groupId>dev.langchain4j.jdk8</groupId>
             <artifactId>langchain4j-http-client-okhttp</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-sqlite</artifactId>
         </dependency>
     </dependencies>
     <build>

@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第五阶段响应式规范与并发稳定性已完成（2026-10-20）
+## 当前状态：第六阶段 SQLite 持久化向量存储进行中（WIP，2026-10-20）
 
 - 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m5`；历史标记 `jdk8-m1` 至 `jdk8-m4`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
@@ -124,3 +124,11 @@
 - Java 8 新增 10 个并发/生命周期验收：100 轮多生产者/多请求者、300 轮终止竞争、onNext 与 fail/cancel 的确定性竞争、终止后 GC、原始事件流 demand/RAG 失败竞争，以及真实 SSE 溢出与 30 轮 request/cancel 释放。
 - 修复原始事件 Publisher 在 prologue 尚未交接真实 Subscription 时忽略非正 demand 的问题，以及 onSubscribe 立即取消后仍启动 RAG；终止统一去重，清理 DeferredSubscription 的 delegate/callback 引用。
 - 聚焦 Java 8 并发验收通过后，已完成最终 clean 构建与快照。生产依赖/BOM 支持模块数量不变，TCK/TestNG 仅用于独立测试模块。
+
+## 第六阶段检查点（WIP）
+
+- 用户批准 SQLite 持久化阶段；Guardrails 继续跳过。仓库从干净状态恢复，外置盘挂载、约 69 GiB 可用。
+- 新增独立 `langchain4j-sqlite`，兼容 reactor/BOM/验收/消费审计纳入该模块；尚未标记已支持。
+- 首版方案：文件数据库、事务批量 upsert、类型保真元数据、Java 精确余弦全表扫描/topK/过滤和删除；不使用 sqlite-vec 扩展或 ANN 索引。
+- 候选 Xerial JDBC 3.53.4.0 的官方 POM 使用 release 8，仍需实际产物/Java 8/JNI 验收。依赖与 native 临时文件均留在外置盘。
+- JDBC 为阻塞接口，原生 async 不作虚假实现，异步 RAG 显式 offloadBlocking(true)。

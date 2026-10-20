@@ -41,6 +41,11 @@
                 <artifactId>langchain4j</artifactId>
                 <version>1.23.0-jdk8-SNAPSHOT</version>
             </dependency>
+            <dependency>
+                <groupId>dev.langchain4j.jdk8</groupId>
+                <artifactId>langchain4j-sqlite</artifactId>
+                <version>1.23.0-jdk8-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 </project>
