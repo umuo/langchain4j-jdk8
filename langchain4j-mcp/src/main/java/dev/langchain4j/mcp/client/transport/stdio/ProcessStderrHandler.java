@@ -24,29 +24,12 @@ class ProcessStderrHandler implements Runnable, Closeable {
 
     @Override
     public void run() {
-        try (InputStreamReader inputStreamReader =
-                new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8)) {
-            try (BufferedReader reader = new BufferedReader(inputStreamReader)) {
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    log.debug("[STDERR] {}", line);
-                }
-            } catch (IOException e) {
-                // If this handler was closed, it means the MCP server process is shutting down,
-                // so an IOException is expected, let's not spook the user.
-                if (!closed) {
-                    throw new RuntimeException(e);
-                }
-            }
-            log.debug("ProcessErrorPrinter has finished reading error output from process with PID = " + process.pid());
+        try (BufferedReader reader = new BufferedReader(
+                new InputStreamReader(process.getErrorStream(), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) log.debug("[STDERR] {}", line);
         } catch (IOException e) {
-            throw new RuntimeException(e);
-        } finally {
-            try {
-                process.getErrorStream().close();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+            if (!closed) log.debug("MCP subprocess stderr closed", e);
         }
     }
 

@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
+import dev.langchain4j.internal.Jdk8;
 import java.util.concurrent.ExecutorService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,10 +41,11 @@ public class StdioMcpTransport implements McpTransport {
     private volatile McpOperationHandler messageHandler;
     private volatile ProcessStderrHandler stderrHandler;
     private final Executor executor;
+    private boolean closed;
 
     public StdioMcpTransport(Builder builder) {
-        this.command = builder.command;
-        this.environment = builder.environment;
+        this.command = Jdk8.copyList(builder.command);
+        this.environment = Jdk8.copyMap(builder.environment);
         this.workingDirectory = builder.workingDirectory;
         this.logEvents = builder.logEvents;
         this.logger = builder.logger;
@@ -50,47 +53,53 @@ public class StdioMcpTransport implements McpTransport {
     }
 
     @Override
-    public void start(McpOperationHandler messageHandler) {
-        // start() may be called again during reconnection (e.g. from the health-check thread).
-        // Tear down any previous process and I/O handlers first, otherwise the old subprocess and
-        // its handler tasks are leaked on every reconnect.
+    public synchronized void start(McpOperationHandler messageHandler) {
+        if (closed) throw new IllegalStateException("Transport is closed");
         stopCurrentProcess();
-        this.messageHandler = messageHandler;
-        log.debug("Starting process: {}", command);
-        ProcessBuilder processBuilder = new ProcessBuilder(command);
-        processBuilder.environment().putAll(environment);
-        if (workingDirectory != null) {
-            processBuilder.directory(workingDirectory.toFile());
-        }
-        Process startedProcess;
+        this.messageHandler = java.util.Objects.requireNonNull(messageHandler, "messageHandler");
+        ProcessBuilder builder = new ProcessBuilder(command);
+        builder.environment().putAll(environment);
+        if (workingDirectory != null) builder.directory(workingDirectory.toFile());
         try {
-            startedProcess = processBuilder.start();
-            synchronized (this) {
-                process = startedProcess;
-            }
-            log.debug("PID of the started process: {}", startedProcess.pid());
-            startedProcess.onExit().thenRun(() -> {
-                McpOperationHandler handlerToCancel;
-                synchronized (this) {
-                    handlerToCancel = process == startedProcess ? messageHandler : null;
+            final Process started = builder.start();
+            process = started;
+            final JsonRpcIoHandler io = new JsonRpcIoHandler(started.getInputStream(),
+                    started.getOutputStream(), messageHandler::onMessage, logEvents, logger);
+            jsonRpcIoHandler = io;
+            stderrHandler = new ProcessStderrHandler(started);
+            // A dedicated waiter must not consume a slot in a caller's bounded I/O executor.
+            Thread waiter = new Thread(() -> {
+                try {
+                    int exit = started.waitFor();
+                    log.debug("MCP subprocess exited with code {}", exit);
+                    failGeneration(started);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    failGeneration(started);
                 }
-                if (handlerToCancel != null) {
-                    handlerToCancel.cancelAllPendingOperations("Process has exited");
-                }
-                log.debug("Subprocess has exited with code: {}", startedProcess.exitValue());
+            }, "langchain4j-mcp-stdio-waiter");
+            waiter.setDaemon(true);
+            waiter.start();
+            executor.execute(() -> {
+                try { io.run(); }
+                catch (RuntimeException failure) {
+                    synchronized (StdioMcpTransport.this) {
+                        if (process == started && !closed) log.warn("MCP subprocess reader failed", failure);
+                    }
+                } finally { failGeneration(started); }
             });
+            executor.execute(stderrHandler);
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            stopCurrentProcess();
+            throw new IllegalStateException("Cannot start MCP subprocess", e);
         }
-        jsonRpcIoHandler = new JsonRpcIoHandler(
-                startedProcess.getInputStream(),
-                startedProcess.getOutputStream(),
-                messageHandler::onMessage,
-                logEvents,
-                logger);
-        stderrHandler = new ProcessStderrHandler(startedProcess);
-        executor.execute(jsonRpcIoHandler);
-        executor.execute(stderrHandler);
+    }
+
+    private synchronized void failGeneration(Process expected) {
+        if (process == expected) {
+            // Do not let an old process exit cancel requests belonging to its replacement.
+            stopCurrentProcess();
+        }
     }
 
     @Override
@@ -98,11 +107,21 @@ public class StdioMcpTransport implements McpTransport {
         try {
             String requestString = McpJson.serialize(operation);
             String initializationNotification = McpJson.serialize(new McpInitializationNotification());
-            return execute(requestString, operation.getId())
-                    .thenCompose(originalResponse -> execute(initializationNotification, null)
-                            .thenCompose(nullNode -> CompletableFuture.completedFuture(originalResponse)));
+            CompletableFuture<String> response = execute(requestString, operation.getId());
+            CompletableFuture<String> result = new CompletableFuture<>();
+            result.whenComplete((value, error) -> { if (result.isCancelled()) response.cancel(true); });
+            response.whenComplete((value, error) -> {
+                if (error != null) result.completeExceptionally(error);
+                else if (!result.isDone()) {
+                    execute(initializationNotification, null).whenComplete((ignored, failure) -> {
+                        if (failure != null) result.completeExceptionally(failure);
+                        else result.complete(value);
+                    });
+                }
+            });
+            return result;
         } catch (JsonException | IllegalArgumentException e) {
-            return CompletableFuture.failedFuture(e);
+            return Jdk8.failedFuture(e);
         }
     }
 
@@ -117,7 +136,7 @@ public class StdioMcpTransport implements McpTransport {
             String requestString = McpJson.serialize(context.message());
             return execute(requestString, context.message().getId());
         } catch (JsonException | IllegalArgumentException e) {
-            return CompletableFuture.failedFuture(e);
+            return Jdk8.failedFuture(e);
         }
     }
 
@@ -133,8 +152,8 @@ public class StdioMcpTransport implements McpTransport {
     }
 
     @Override
-    public void checkHealth() {
-        if (!process.isAlive()) {
+    public synchronized void checkHealth() {
+        if (closed || process == null || !process.isAlive()) {
             throw new IllegalStateException("Process is not alive");
         }
     }
@@ -154,40 +173,38 @@ public class StdioMcpTransport implements McpTransport {
      * Does not shut down the (potentially shared) executor service, so it is safe to call
      * before starting a replacement process during reconnection.
      */
-    private void stopCurrentProcess() {
-        Process processToStop;
-        McpOperationHandler handlerToCancel;
-        synchronized (this) {
-            processToStop = process;
-            process = null;
-            handlerToCancel = processToStop != null ? messageHandler : null;
-        }
-        if (handlerToCancel != null) {
-            handlerToCancel.cancelAllPendingOperations("Process has exited");
-        }
-        if (stderrHandler != null) {
-            try {
-                stderrHandler.close();
-            } catch (Exception ignored) {
+    private synchronized void stopCurrentProcess() {
+        Process previous = process;
+        process = null;
+        JsonRpcIoHandler io = jsonRpcIoHandler;
+        jsonRpcIoHandler = null;
+        ProcessStderrHandler stderr = stderrHandler;
+        stderrHandler = null;
+        if (previous == null) return;
+        if (messageHandler != null) messageHandler.cancelAllPendingOperations("Process has stopped");
+        try { if (stderr != null) stderr.close(); } catch (IOException ignored) { }
+        // Destroy before closing readers: a blocked read must be released before close takes its lock.
+        previous.destroy();
+        boolean interrupted = false;
+        try {
+            if (!previous.waitFor(500, TimeUnit.MILLISECONDS)) {
+                previous.destroyForcibly();
+                previous.waitFor(500, TimeUnit.MILLISECONDS);
             }
-            stderrHandler = null;
+        } catch (InterruptedException e) {
+            interrupted = true;
+            previous.destroyForcibly();
         }
-        if (jsonRpcIoHandler != null) {
-            try {
-                jsonRpcIoHandler.close();
-            } catch (Exception ignored) {
-            }
-            jsonRpcIoHandler = null;
-        }
-        if (processToStop != null) {
-            processToStop.destroy();
-        }
+        try { if (io != null) io.close(); } catch (IOException ignored) { }
+        try { previous.getErrorStream().close(); } catch (IOException ignored) { }
+        if (interrupted) Thread.currentThread().interrupt();
     }
 
     @Override
-    public void close() throws IOException {
+    public synchronized void close() throws IOException {
+        closed = true;
         stopCurrentProcess();
-        // the executor is shared (DefaultExecutorProvider) and host-owned, so it is intentionally not shut down here
+        // Both supplied and DefaultExecutorProvider executors are host-owned.
     }
 
     public static Builder builder() {
@@ -196,16 +213,18 @@ public class StdioMcpTransport implements McpTransport {
 
     private CompletableFuture<String> execute(String request, Long id) {
         CompletableFuture<String> future = new CompletableFuture<>();
-        if (id != null) {
-            messageHandler.expectResponse(id, future);
+        JsonRpcIoHandler io;
+        synchronized (this) {
+            if (closed || process == null || !process.isAlive() || jsonRpcIoHandler == null) {
+                return Jdk8.failedFuture(new IllegalStateException("MCP subprocess is not running"));
+            }
+            io = jsonRpcIoHandler;
+            if (id != null) messageHandler.expectResponse(id, future);
         }
         try {
-            jsonRpcIoHandler.submit(request);
-            // For messages with null ID, we don't wait for a corresponding response
-            if (id == null) {
-                future.complete(null);
-            }
-        } catch (IOException e) {
+            io.submit(request);
+            if (id == null) future.complete(null);
+        } catch (IOException | RuntimeException e) {
             future.completeExceptionally(e);
         }
         return future;
@@ -279,7 +298,7 @@ public class StdioMcpTransport implements McpTransport {
         public StdioMcpTransport build() {
             ensureNotEmpty(command, "command");
             if (environment == null) {
-                environment = Map.of();
+                environment = java.util.Collections.emptyMap();
             }
             return new StdioMcpTransport(this);
         }
@@ -289,7 +308,7 @@ public class StdioMcpTransport implements McpTransport {
      * @deprecated use {@link #sendInitializeRequest(McpInitializeRequest)} instead, which does not
      * expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     @Override
     public CompletableFuture<JsonNode> initialize(McpInitializeRequest request) {
         return McpJson.map(sendInitializeRequest(request), McpJson::parse);
@@ -299,7 +318,7 @@ public class StdioMcpTransport implements McpTransport {
      * @deprecated use {@link #sendRequest(McpClientMessage)} instead, which does not expose Jackson
      * types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     @Override
     public CompletableFuture<JsonNode> executeOperationWithResponse(McpClientMessage request) {
         return McpJson.map(sendRequest(request), McpJson::parse);
@@ -309,7 +328,7 @@ public class StdioMcpTransport implements McpTransport {
      * @deprecated use {@link #sendRequest(McpCallContext)} instead, which does not expose Jackson
      * types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     @Override
     public CompletableFuture<JsonNode> executeOperationWithResponse(McpCallContext context) {
         return McpJson.map(sendRequest(context), McpJson::parse);
@@ -319,7 +338,7 @@ public class StdioMcpTransport implements McpTransport {
      * @deprecated use {@link #sendMessage(McpClientMessage)} instead, which does not expose Jackson
      * types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     @Override
     public void executeOperationWithoutResponse(McpClientMessage request) {
         sendMessage(request);
@@ -329,7 +348,7 @@ public class StdioMcpTransport implements McpTransport {
      * @deprecated use {@link #sendMessage(McpCallContext)} instead, which does not expose Jackson
      * types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     @Override
     public void executeOperationWithoutResponse(McpCallContext context) {
         sendMessage(context);

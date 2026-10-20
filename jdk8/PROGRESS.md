@@ -1,17 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十阶段 MCP stdio 与资源/提示词推进中（WIP，2026-10-21）
+## 当前状态：第十阶段 MCP stdio 与资源/提示词已完成（2026-10-21）
 
-- 上一完整验收仍为 `jdk8-m9`；整体长期目标尚未完成。[剩余路线](ROADMAP.md) 和 [固定基线全部模块清单](MODULE-INVENTORY.md) 已建立。
-- 基线枚举 120 个 POM，按源码证据初分 39 模型/25 向量库/4 Agentic 候选；其他模块仍须人工核对，直接依赖声明不等于有效生产依赖或兼容性审计。
-- stdio 已纳入 release 8 编译，27 项新增真实 Java 8 验收通过（16 stdio、11 HTTP 功能）。新增强制退出等用例、独立 BOM 与完整 clean 尚待验证，当前不声明第十阶段完成。
-- HTTP 资源读取/提示词的调用线程中断遗留请求已由测试复现并修复。历史第九阶段验证结果保留如下。
-
-## 第九阶段已完成（2026-10-20）
-
-- 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m9`；历史标记 `jdk8-m1` 至 `jdk8-m8`。
-- 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
-- Maven 坐标：`dev.langchain4j.jdk8:*:1.23.0-jdk8-SNAPSHOT`，兼容 BOM 现覆盖八个生产模块。已安装到外置盘 Maven 缓存；未远程推送或公共发布。
+- 仓库 `/Volumes/Nas/codex-work/langchain4j-jdk8`，分支 `jdk8/main`；当前完成标记 `jdk8-m10`，上期 `jdk8-m9`。固定基线 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79` 不变。
+- 八个生产模块、统一兼容坐标和版本不变，无新增生产依赖；整体长期目标仍未完成。[剩余路线](ROADMAP.md) 和 [全部模块清单](MODULE-INVENTORY.md) 持续维护。
+- 枚举基线全部 120 个 POM，源码证据初分 39 模型/25 向量库/4 Agentic 候选；其他模块待人工核对，原始依赖声明不等于有效生产依赖审计或完成实现。
 
 ## 已完成能力
 
@@ -37,30 +30,20 @@
 
 ## 最终验证
 
-执行 `./jdk8/build.sh -o`（reactor 离线使用外置盘已缓存依赖），完整 clean install、独立 BOM 消费项目、字节码审计、真实 Java 8 类链接、AI Services 模拟对话、独立 RAG、HTTP embedding RAG、SQLite 跨进程和 MCP 工具示例全部通过。
+`./jdk8/build.sh -o` 完整 clean install、独立 BOM 消费和产物审计 exit 0；离线参数现在同时传至 reactor 和消费项目。结果快照：[milestone-10.json](verification/milestone-10.json)。
 
-| 验证 | 第九阶段结果 |
+| 验证 | 第十阶段结果 |
 |---|---|
-| 八个模块生产源码 | JDK 17 `--release 8` 构建通过 |
-| 真实 Java 8 验收 | 205 个用例，0 失败/错误/跳过；JDK 1.8.0_462 |
-| 选定上游及现代反射回归 | 850 个用例，0 失败/错误/跳过；JDK 17.0.13 |
-| 官方 Publisher TCK / Java 8 | 76 项：62 通过、14 官方 untested 跳过；0 失败/错误，无 required/optional 跳过 |
-| 字节码和禁止引用审计 | 33 个 JAR 文件、6294 个基础类通过；含项目构建/安装副本 |
-| Java 8 类及成员类型加载 | 4910 个类通过；3 个可选 Android/Conscrypt/OSGi 入口排除 |
-| 独立 BOM 消费示例 | Java 8 通过 AI Services 返回 `Java 8 OK` |
-| 独立 BOM RAG 示例 | Java 8 返回 `7 yuan` 和对应 apple 文档来源 |
-| 独立 BOM HTTP RAG 示例 | Java 8 返回 `7 yuan`；入库和查询共 2 次 embedding HTTP 请求 |
-| SQLite 跨进程消费 | writer 2 段落持久化；独立 Java 8 reader 查询并返回 `7 yuan`，仅 1 次查询 embedding |
-| SQLite 记忆跨进程消费 | writer 持久化 4 条含工具消息，reader 恢复到模型请求 5 条并保存 6 条 |
-| 独立 BOM MCP 工具消费 | Java 8 OpenAI HTTP -> AI Services -> MCP HTTP 工具 -> 模型返回 `7 yuan`，工具调用 1 次 |
-| 独立 BOM MCP 恢复消费 | 2 次初始化、1 个失效 POST、1 次实际工具执行、1 次恢复 GET、1 次 DELETE；无自动重放 |
-| SQLite native 引擎 | Xerial 3.53.4.0 / SQLite 3.53.4，Java 8/macOS/aarch64 通过 |
-| 模型资源检查 | 兼容 JAR 只包含配套 1.9.3 模型，未打入 2.5.0 模型 |
-| diff/shell 检查 | `git diff --check`、`sh -n jdk8/build.sh` 通过 |
+| 八模块生产源码 | JDK 17 `--release 8` 通过 |
+| 真实 Java 8 | 238 用例，0 失败/错误/跳过；1.8.0_462 |
+| JDK 17 选定上游回归 | 858 用例，0 失败/错误/跳过；17.0.13 |
+| 官方 Publisher TCK / Java 8 | 62 通过、14 官方 untested；0 失败/错误，无 required/optional 跳过 |
+| 字节码/API 审计 | 33 JAR / 6302 基础类 |
+| Java 8 类及成员链接 | 4914 类；保留 3 个可选平台排除 |
+| 既有独立消费 | AI Services、RAG、HTTP embedding、SQLite 向量/会话各自跨进程、MCP HTTP/恢复全部通过 |
+| 新增独立 BOM stdio | Java 8 父子 JVM，资源/提示词、OpenAI -> AI Services -> stdio 工具循环返回 7 yuan，2 次模型请求，子进程释放 |
 
-结果快照：`verification/milestone-9.json`；历史快照保留为 `verification/milestone-8.json`（173 / 850 / 62 TCK）、 `verification/milestone-7.json`（149 / 692 / 62 TCK）、 `verification/milestone-6.json`（122 / 627 / 62 TCK）、 `verification/milestone-5.json`（99 / 627 / 62 TCK）、 `verification/milestone-4.json`（89 / 627）、 `verification/milestone-3.json`（70 / 554）、 `verification/milestone-2.json`（51 个 Java 8 / 435 个上游用例）和 `verification/milestone-1.json`（25 / 228）。当前报告位于 `acceptance`、`upstream-tests`、`reactive-tck` 三个模块的 `target/surefire-reports`。这些是选定回归，不代表上游全量/Kotlin 测试已运行。
-
-本阶段新增 32 个真实 Java 8 MCP 恢复用例，保留第八阶段 24 个工具用例和全部此前验收；上游选定回归保持 850 项。总计 1117 项通过，另列 14 项官方 untested；没有失败/错误或其他跳过。Guardrails 继续跳过，未连接外部 MCP 服务器。GET 503 Retry-After:0 的隐式跟进已用服务端次数复现并修复（6 -> 3），没有通过自动重发 POST 掩盖断线。
+本阶段新增 33 项真实 Java 8（19 stdio、14 HTTP 功能），新增上游 IO/stderr 两类 8 项，保留此前全部回归；共 1158 项通过，另列 14 官方 untested。生命周期和未选原始测试的具体边界见兼容差异表，不声明完整上游测试通过。
 
 ## 已知边界
 
@@ -69,7 +52,7 @@
 - 基础 RAG 已通过本地模型和真实 OpenAI HTTP embedding 适配器两种流程验证（服务均为 loopback fixture）；真实远程模型/语义质量、其他 embedding 适配器/外部向量库、easy-rag 自动下载、复杂重排/多模态 RAG 尚未验收。Guardrails、Decision Services、复杂补偿事务、其余第三方适配器与 OpenAI Responses/音视频/图像仍保留未覆盖声明。
 - SQLite 为精确全表扫描、Java 端过滤及阻塞 JDBC，异步 RAG 必须显式 offload；取消不能保证打断已开始的数据库扫描。未验证其他 JNI 平台、网络文件系统锁、同时多进程写和断电恢复。
 - SQLite 会话更新只保证完整快照原子性，同会话并发 AI Services turn 需应用串行化；取消不回滚已提交历史。记忆 ID 支持 String/Integer/Long/UUID，异步需显式配置调用方 Executor，不承诺任意 Object ID 或原生异步 JDBC。
-- MCP 已覆盖 2025-11-25 HTTP 工具、会话与 SSE 恢复；modern/stdio/WebSocket/Registry、跨进程持久化游标和完整资源提示词业务未覆盖。直接 MCP Future 取消会关闭 HTTP；AI Services 则保留已启动工具 drain 到结束/超时的上游约定。
+- MCP 已覆盖 2025-11-25 HTTP 工具、会话与 SSE 恢复；modern/WebSocket/Registry、跨进程持久化游标及完整 roots/多模态业务未覆盖；stdio 与资源/提示词范围已新增专项验收。直接 MCP Future 取消会关闭 HTTP；AI Services 则保留已启动工具 drain 到结束/超时的上游约定。
 - 已运行内部 ZeroPublisher 的官方 Publisher TCK（62 通过、14 项官方 untested），未运行所有适配器的 Subscriber/Processor/Flow TCK，不声明全组件规范认证。有限并发测试不是所有线程调度的证明；类链接仍排除三个可选宿主平台入口。
 
 ## 后续范围：跳过 Guardrails
@@ -79,9 +62,9 @@
 3. 第六、七阶段已完成 SQLite 向量和会话记忆持久化；后续可推进 MCP/Agentic/其他集成，不再默认推进 Guardrails。
 4. 继续保留真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，以及按检查点提交的约定；不自动跟随上游、推送或建立后台任务。
 
-## 下一阶段建议：MCP 资源、提示词及 stdio
+## 下一阶段：MCP Registry、WebSocket 与其他基线协议
 
-在已完成的 HTTP 工具/会话恢复基础上，逐步验收资源读取、提示词、进度通知和工具列表变更，再推进 stdio 传输与真实服务器互操作。继续保留并发、取消、超时、资源释放和避免工具自动重放的约定；Guardrails 继续跳过，不自动开始新阶段或连接外部服务。
+按 ROADMAP 继续实现并验收，之后推进全部 Agentic 相关能力及逐模块模型/向量库。保持取消、超时、资源释放和不自动重放工具请求；外部真实服务联调需单独授权，Guardrails 继续排除。单个里程碑结束不代表整体目标完成。
 
 ## Git 检查点
 
@@ -243,3 +226,11 @@
 - 33 JAR/6294 基础类审计、4910 类 Java 8 成员链接通过，保持三个既有可选平台排除；无新增生产依赖。
 - 独立 BOM recovery 示例确认 sessions=2、expired POST=1、executed tools=1、resume GET=1、DELETE=1；所有旧 AI Services/RAG/SQLite 跨进程消费仍通过。
 - `verification/milestone-9.json` 逐项列出目标与当前测试证据；进度、兼容差异和模块使用说明已更新。未修改 Guardrails、相邻原始仓库、宿主服务；未推送或发布。
+
+
+## 第十阶段最终验收
+
+- stdio 生命周期改造和 19 项真实 Java 8 子进程验收完成，HTTP 资源/提示词等 14 项完成；新增独立 BOM 子进程示例。
+- 复现并修复资源/提示词中断不取消 HTTP（2 项）和查询途中通知被旧响应覆盖（3 项）；保留确定性回归，关闭期流异常不再逃逸到调用方 executor。
+- 最终 clean exit 0：238 Java 8、858 JDK 17、62 TCK 通过；14 官方 untested 单列；33 JAR/6302 基础类审计、4914 类链接和所有消费示例通过。
+- 全量模块候选清单只是范围记录，Agentic 与其余模型/向量库尚未实现，不计完成。未修改相邻源码仓库/Guardrails/宿主服务，未推送或发布。

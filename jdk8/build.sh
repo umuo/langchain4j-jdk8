@@ -17,7 +17,7 @@ done
 export JAVA_HOME="$JAVA17_HOME"
 # Maven runs on 17; the acceptance module forks the actual Java 8 executable.
 "$JDK8_MAVEN" -B -s "$JDK8_SETTINGS" -Dmaven.repo.local="$JDK8_REPOSITORY" -f "$TASK_ROOT/jdk8/pom.xml" -Pupstream-tests -Djava8.home="$JAVA8_HOME" clean install "$@"
-"$JDK8_MAVEN" -B -s "$JDK8_SETTINGS" -Dmaven.repo.local="$JDK8_REPOSITORY" -f "$TASK_ROOT/jdk8/example/pom.xml" clean package org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=target/classpath.txt
+"$JDK8_MAVEN" -B -s "$JDK8_SETTINGS" -Dmaven.repo.local="$JDK8_REPOSITORY" -f "$TASK_ROOT/jdk8/example/pom.xml" clean package org.apache.maven.plugins:maven-dependency-plugin:3.8.1:build-classpath -Dmdep.outputFile=target/classpath.txt "$@"
 python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" RuntimeLinkage
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" Example
@@ -33,3 +33,5 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpExample
 # Session recovery and SSE resume: original tool POST is never automatically replayed.
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpExample recovery
+# Actual Java 8 subprocess transport plus resources/prompts and automatic tool loop.
+"$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpStdioExample

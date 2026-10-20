@@ -91,6 +91,9 @@ public class DefaultMcpClient implements McpClient {
     static final String PROTOCOL_VERSION_LEGACY_OLD = "2024-11-05";
 
     private final AtomicLong idGenerator = new AtomicLong(0);
+    private final AtomicLong toolsGeneration = new AtomicLong();
+    private final AtomicLong resourcesGeneration = new AtomicLong();
+    private final AtomicLong promptsGeneration = new AtomicLong();
     private final McpTransport transport;
     private final String key;
     private final String clientName;
@@ -206,16 +209,29 @@ public class DefaultMcpClient implements McpClient {
                         notifyListeners(l -> l.onNotificationMessage(message));
                     },
                     () -> {
-                        toolListRefs.set(null);
+                        synchronized (sessionCacheLock) {
+                            toolsGeneration.incrementAndGet();
+                            toolListRefs.set(null);
+                            toolListUpdateInProgress.set(null);
+                        }
                         notifyListeners(l -> l.onNotificationToolsListChanged());
                     },
                     () -> {
-                        resourceRefs.set(null);
-                        resourceTemplateRefs.set(null);
+                        synchronized (sessionCacheLock) {
+                            resourcesGeneration.incrementAndGet();
+                            resourceRefs.set(null);
+                            resourceTemplateRefs.set(null);
+                            resourceListUpdateInProgress.set(null);
+                            resourceTemplateListUpdateInProgress.set(null);
+                        }
                         notifyListeners(l -> l.onNotificationResourcesListChanged());
                     },
                     () -> {
-                        promptRefs.set(null);
+                        synchronized (sessionCacheLock) {
+                            promptsGeneration.incrementAndGet();
+                            promptRefs.set(null);
+                            promptListUpdateInProgress.set(null);
+                        }
                         notifyListeners(l -> l.onNotificationPromptsListChanged());
                     },
                     uri -> {
@@ -957,6 +973,9 @@ public class DefaultMcpClient implements McpClient {
             notifyListeners(l -> l.onResourceGetError(context, e));
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
+            if (resultFuture != null && resultFuture.cancel(true)) {
+                sendCancellationNotification(operationId, "Interrupted");
+            }
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } catch (McpException e) {
@@ -1013,6 +1032,9 @@ public class DefaultMcpClient implements McpClient {
             notifyListeners(l -> l.onPromptGetError(context, e));
             throw new RuntimeException(e);
         } catch (InterruptedException e) {
+            if (resultFuture != null && resultFuture.cancel(true)) {
+                sendCancellationNotification(operationId, "Interrupted");
+            }
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } catch (McpException e) {
@@ -1428,6 +1450,7 @@ public class DefaultMcpClient implements McpClient {
 
     private List<ToolSpecification> obtainToolList(InvocationContext invocationContext) {
         long cacheGeneration = sessionCacheGeneration.get();
+        long listGeneration = toolsGeneration.get();
         McpCallContext listenerContext =
                 new McpCallContext(invocationContext, new McpListToolsRequest(idGenerator.getAndIncrement(), null));
         notifyListeners(l -> l.beforeToolsList(listenerContext));
@@ -1452,7 +1475,7 @@ public class DefaultMcpClient implements McpClient {
                                 parsed.getNextCursor());
                     });
             synchronized (sessionCacheLock) {
-                if (sessionCacheGeneration.get() == cacheGeneration) toolListRefs.set(list);
+                if (sessionCacheGeneration.get() == cacheGeneration && toolsGeneration.get() == listGeneration) toolListRefs.set(list);
             }
             notifyListeners(l -> l.afterToolsList(listenerContext, list));
             return list;
@@ -1464,6 +1487,7 @@ public class DefaultMcpClient implements McpClient {
 
     private List<McpResource> obtainResourceList(InvocationContext invocationContext) {
         long cacheGeneration = sessionCacheGeneration.get();
+        long listGeneration = resourcesGeneration.get();
         McpCallContext listenerContext =
                 new McpCallContext(invocationContext, new McpListResourcesRequest(idGenerator.getAndIncrement(), null));
         notifyListeners(l -> l.beforeResourcesList(listenerContext));
@@ -1474,7 +1498,7 @@ public class DefaultMcpClient implements McpClient {
                     invocationContext,
                     ResourcesHelper::parseResourceRefs);
             synchronized (sessionCacheLock) {
-                if (sessionCacheGeneration.get() == cacheGeneration) resourceRefs.set(list);
+                if (sessionCacheGeneration.get() == cacheGeneration && resourcesGeneration.get() == listGeneration) resourceRefs.set(list);
             }
             notifyListeners(l -> l.afterResourcesList(listenerContext, list));
             return list;
@@ -1486,6 +1510,7 @@ public class DefaultMcpClient implements McpClient {
 
     private List<McpResourceTemplate> obtainResourceTemplateList(InvocationContext invocationContext) {
         long cacheGeneration = sessionCacheGeneration.get();
+        long listGeneration = resourcesGeneration.get();
         McpCallContext listenerContext = new McpCallContext(
                 invocationContext, new McpListResourceTemplatesRequest(idGenerator.getAndIncrement(), null));
         notifyListeners(l -> l.beforeResourceTemplatesList(listenerContext));
@@ -1496,7 +1521,7 @@ public class DefaultMcpClient implements McpClient {
                     invocationContext,
                     ResourcesHelper::parseResourceTemplateRefs);
             synchronized (sessionCacheLock) {
-                if (sessionCacheGeneration.get() == cacheGeneration) resourceTemplateRefs.set(list);
+                if (sessionCacheGeneration.get() == cacheGeneration && resourcesGeneration.get() == listGeneration) resourceTemplateRefs.set(list);
             }
             notifyListeners(l -> l.afterResourceTemplatesList(listenerContext, list));
             return list;
@@ -1508,6 +1533,7 @@ public class DefaultMcpClient implements McpClient {
 
     private List<McpPrompt> obtainPromptList(InvocationContext invocationContext) {
         long cacheGeneration = sessionCacheGeneration.get();
+        long listGeneration = promptsGeneration.get();
         McpCallContext listenerContext =
                 new McpCallContext(invocationContext, new McpListPromptsRequest(idGenerator.getAndIncrement(), null));
         notifyListeners(l -> l.beforePromptsList(listenerContext));
@@ -1518,7 +1544,7 @@ public class DefaultMcpClient implements McpClient {
                     invocationContext,
                     PromptsHelper::parsePromptRefs);
             synchronized (sessionCacheLock) {
-                if (sessionCacheGeneration.get() == cacheGeneration) promptRefs.set(list);
+                if (sessionCacheGeneration.get() == cacheGeneration && promptsGeneration.get() == listGeneration) promptRefs.set(list);
             }
             notifyListeners(l -> l.afterPromptsList(listenerContext, list));
             return list;

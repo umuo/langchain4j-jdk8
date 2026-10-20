@@ -10,7 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.PrintStream;
+import java.io.Writer;
+import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
@@ -22,7 +23,7 @@ public class JsonRpcIoHandler implements Runnable, Closeable {
     private static final Logger log = LoggerFactory.getLogger(JsonRpcIoHandler.class);
 
     private final InputStream input;
-    private final PrintStream out;
+    private final Writer out;
     private final boolean logEvents;
     private final Logger trafficLog;
     private final Consumer<String> messageHandler;
@@ -38,7 +39,7 @@ public class JsonRpcIoHandler implements Runnable, Closeable {
         this.input = input;
         this.logEvents = logEvents;
         this.messageHandler = messageHandler;
-        this.out = new PrintStream(output, true, StandardCharsets.UTF_8);
+        this.out = new OutputStreamWriter(output, StandardCharsets.UTF_8);
         this.trafficLog = getOrDefault(logger, McpLoggers.traffic());
     }
 
@@ -67,17 +68,22 @@ public class JsonRpcIoHandler implements Runnable, Closeable {
         log.debug("JsonRpcIoHandler has finished reading input stream");
     }
 
-    public void submit(String message) throws IOException {
+    public synchronized void submit(String message) throws IOException {
+        if (closed) throw new IOException("MCP stdio is closed");
+        if (message.indexOf('\n') >= 0 || message.indexOf('\r') >= 0) {
+            throw new IOException("MCP stdio messages must fit a single line");
+        }
         if (logEvents) {
             trafficLog.debug("> {}", message);
         }
-        out.println(message);
+        out.write(message);
+        out.write(System.lineSeparator());
+        out.flush();
     }
 
     @Override
     public void close() throws IOException {
         closed = true;
-        out.close();
-        input.close();
+        try { input.close(); } finally { synchronized (this) { out.close(); } }
     }
 }

@@ -2,7 +2,7 @@
 
 兼容坐标 `dev.langchain4j.jdk8:langchain4j-mcp:1.23.0-jdk8-SNAPSHOT`，由兼容 BOM 管理。
 固定源码基线与其他模块一致；生产代码 release 8，复用 Jackson 2、OkHttp 4.12.0，无新增依赖版本。
-范围为 MCP **2025-11-25 HTTP 工具及会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
+范围为 MCP **2025-11-25 HTTP/stdio 工具、资源/提示词及 HTTP 会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
 
 ```java
 StreamableHttpMcpTransport transport = StreamableHttpMcpTransport.builder()
@@ -56,7 +56,33 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 ## 验证及剩余范围
 
 - 32 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
-- stdio/WebSocket/Registry 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 resources/prompts/roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
+- WebSocket/Registry 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
 - 完整 clean、独立 BOM 和产物审计结果以 `jdk8/PROGRESS.md` 及阶段快照为准。
 
 协议依据：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。隐式 HTTP 跟进核对：[OkHttp 4.12.0 源码](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)。
+
+
+## stdio 和资源/提示词
+
+```java
+StdioMcpTransport transport = StdioMcpTransport.builder()
+        .command(Arrays.asList("/absolute/path/to/java8", "-jar", "/path/to/mcp-server.jar"))
+        .environment(Collections.singletonMap("SERVER_MODE", "local"))
+        .workingDirectory(Paths.get("/path/to/server"))
+        .build();
+try (DefaultMcpClient client = DefaultMcpClient.builder()
+        .transport(transport).autoHealthCheck(false)
+        .resourcesTimeout(Duration.ofSeconds(10))
+        .promptsTimeout(Duration.ofSeconds(10))
+        .build()) {
+    List<McpResource> resources = client.listResources();
+    McpReadResourceResult data = client.readResource("test://data");
+    McpGetPromptResult prompt = client.getPrompt("greet", Collections.singletonMap("name", "world"));
+}
+```
+
+命令以参数列表直接启动，不经过隐式 shell；附加 environment 沿用上游的父进程环境继承行为。服务的 stdout 只能输出单行 JSON-RPC，stderr 独立读取。自定义 executor 由调用方管理，并需至少两个可用读取槽位。close 是最终关闭；显式重启时旧请求失败且不会重放。直接启动的进程在正常终止等待后被有界强制结束；启动器派生进程树不在当前验证范围内。
+
+资源/模板/提示词列表支持分页与缓存；list_changed 会失效对应缓存，查询中的旧响应不会重新污染新缓存。资源订阅通过 onResourceUpdated 回调接收 URI；日志和进度分别通过 logHandler/progressHandler 接收。旧版本协议、完整多模态及远端互操作依照兼容差异表继续列为待办。
+
+独立 BOM 的 `McpStdioExample` 由 `./jdk8/build.sh -o` 自动运行，无外部服务或凭据。本阶段最终结果以进度和 milestone-10 快照为准。

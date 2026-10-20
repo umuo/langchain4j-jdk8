@@ -129,3 +129,16 @@
 - 恢复与 DELETE 都不能保证服务器撤销已经执行的副作用，也不能清理尚未返回 ID 的远端分配。真实远程服务器/TLS/OAuth/代理、跨进程持久化游标、modern 和 stdio/WebSocket/Registry 范围不变，未声称完整 MCP 或 exactly-once 执行。
 
 第九阶段最终 `./jdk8/build.sh -o` 通过：205 项真实 Java 8、850 项 JDK 17、62 项 Publisher TCK，14 项官方 untested 单列；33 JAR/6294 基础类审计、4910 类链接和独立 BOM 恢复消费通过。GET 503 Retry-After:0 计数回归复现 6 次请求并修正为配置允许的 3 次。详见 `verification/milestone-9.json`。
+
+
+## 第十阶段：MCP stdio、资源与提示词（jdk8-m10）
+
+- stdio 纳入兼容产物，保留上游包名和 builder。`Process.onExit/pid` 改为 Java 8 `waitFor` daemon 观察线程；UTF-8 Writer 替换吞掉管道错误的 PrintStream，拒绝跨行消息，串行写入并传播 IOException。命令和附加环境使用不可变快照。
+- 显式 start 替换旧进程会先取消其请求并回收进程；旧进程退出回调按身份隔离，不影响新进程。stdout EOF、异常退出或 I/O executor 拒绝会失败待处理请求并清理。初始化取消能传至原请求。
+- close 幂等且终止 transport，关闭后不能重新 start；正常终止等待 500ms 后 destroyForcibly，再等待 500ms。与上游仅 destroy、允许旧进程暂留及 close 后再 start 的行为有意不同。这里管理直接启动的 Process，不声称遍历清理任意启动器创建的整棵进程树。
+- 调用方或 DefaultExecutorProvider 的 executor 都不由 transport 关闭；自定义 executor 应提供至少两个可用 I/O 槽位用于 stdout/stderr。独立进程等待线程不占用这两个槽位。Java 8 环境变量的非 ASCII 编码受 JVM/系统 locale 约束；UTF-8 JSON 通道另行验收。
+- HTTP 与 stdio 验收资源分页/模板、text/blob 读取、提示词参数和消息角色转换、资源订阅更新、日志/进度。HTTP 另覆盖三类列表通知以及模板缓存失效、RPC 错误、超时与中断后的取消/释放。同步资源/提示词中断现在取消未完成请求并保留线程中断状态。
+- 三个新回归复现查询期间 list_changed 被随后旧结果覆盖。新增各类列表独立代际，在同一锁内失效缓存和共享更新引用；通知前发出的请求结果仍可交付原调用者，但不再污染通知后的缓存，不承诺服务端分页的一致快照。
+- 保留原有 850 项选定上游回归，增加完整 JsonRpcIoHandlerTest/ProcessStderrHandlerTest 两类 8 项。上游 StdioMcpTransportTest 尚未纳入：其中断言重启后旧进程仍存活，与本分支有界强制回收的新生命周期约定不一致；没有改写原始测试，也不把它计为通过。新生命周期由实际 Java 8 子进程验收。
+- 独立 BOM McpStdioExample 在 Java 8 父子 JVM 中读取资源/提示词，再通过真实 loopback OpenAI 与 AI Services 完成 stdio 工具循环，退出后验证子进程释放。现有 HTTP 会话/SSE 恢复示例保持运行。
+- WebSocket/Registry、其他协议、完整 roots/多模态和真实远端互操作仍待推进；没有新增生产依赖。最终 clean exit 0：238 Java 8、858 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6302 类审计、4914 类链接和独立 BOM 全部通过。快照见 verification/milestone-10.json。
