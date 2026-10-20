@@ -31,7 +31,7 @@ public final class ZeroPublisher {
 
     private static final class State<T> extends AtomicInteger implements Subscription, Tube<T> {
 
-        private final Subscriber<? super T> downstream;
+        private Subscriber<? super T> downstream;
 
         private final int capacity;
 
@@ -57,7 +57,7 @@ public final class ZeroPublisher {
                 synchronized (this) {
                     if (cancelled || terminated)
                         return;
-                    error = new IllegalArgumentException("Reactive Streams demand must be positive");
+                    error = new IllegalArgumentException("Reactive Streams rule 3.9: non-positive subscription request");
                     done = true;
                     queue.clear();
                 }
@@ -80,6 +80,7 @@ public final class ZeroPublisher {
                 if (cancelled || terminated)
                     return;
                 cancelled = true;
+                downstream = null;
                 queue.clear();
                 actions = new ArrayList<Runnable>(cancellationActions);
                 cancellationActions.clear();
@@ -189,17 +190,20 @@ public final class ZeroPublisher {
                     T next;
                     Throwable failure;
                     boolean finish;
+                    Subscriber<? super T> target;
                     synchronized (this) {
                         if (cancelled) {
                             queue.clear();
                             return;
                         }
+                        target = downstream;
                         finish = done && (error != null || queue.isEmpty());
                         failure = error;
                         if (finish) {
                             if (terminated)
                                 return;
                             terminated = true;
+                            downstream = null;
                             cancellationActions.clear();
                             next = null;
                         } else if (demand > 0 && !queue.isEmpty()) {
@@ -212,16 +216,16 @@ public final class ZeroPublisher {
                     if (finish) {
                         try {
                             if (failure != null)
-                                downstream.onError(failure);
+                                target.onError(failure);
                             else
-                                downstream.onComplete();
+                                target.onComplete();
                         } finally {
                             release();
                         }
                         return;
                     }
                     try {
-                        downstream.onNext(next);
+                        target.onNext(next);
                     } catch (Throwable subscriberError) {
                         cancel();
                         return;

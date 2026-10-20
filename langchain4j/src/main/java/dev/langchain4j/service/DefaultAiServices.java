@@ -381,8 +381,9 @@ class DefaultAiServices<T> extends AiServices<T> {
                             subscriber.onError(new IllegalStateException("This AI Service reactive stream cannot be subscribed to more than once " + "because a ChatMemory is configured: re-subscribing would re-run " + "the interaction and duplicate messages in the chat memory. To " + "retry, re-invoke the AI Service method (e.g. Uni.retry() / " + "Mono.retry() around the call), not re-subscribe the publisher."));
                             return;
                         }
-                        DeferredSubscription subscription = new DeferredSubscription();
+                        DeferredSubscription subscription = new DeferredSubscription(subscriber::onError);
                         subscriber.onSubscribe(subscription);
+                        if (subscription.isCancelled()) return;
                         context.eventListenerRegistrar.fireEvent(AiServiceStartedEvent.builder().invocationContext(baseInvocationContext).systemMessage(reactiveSystemMessage).userMessage(originalUserMessage).build());
                         CompletableFuture<AugmentationResult> augmentation = augmentAsyncIfNeeded(reactiveChatMemory, reactiveSystemMessage, originalUserMessage, baseInvocationContext);
                         subscription.setCancelAction(() -> augmentation.cancel(true));
@@ -391,7 +392,7 @@ class DefaultAiServices<T> extends AiServices<T> {
                                 return;
                             }
                             if (augmentationError != null) {
-                                subscriber.onError(unwrapCompletionException(augmentationError));
+                                if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(augmentationError));
                                 return;
                             }
                             final UserMessage reactiveInputUserMessage;
@@ -400,7 +401,7 @@ class DefaultAiServices<T> extends AiServices<T> {
                                 reactiveInputUserMessage = addContentsToUserMessage(method, args, augmentationResult != null ? (UserMessage) augmentationResult.chatMessage() : originalUserMessage);
                                 commonGuardrailParam = GuardrailRequestParams.builder().chatMemory(reactiveChatMemory).augmentationResult(augmentationResult).userMessageTemplate(userMessageTemplate).invocationContext(baseInvocationContext).aiServiceListenerRegistrar(context.eventListenerRegistrar).variables(variables).build();
                             } catch (Throwable t) {
-                                subscriber.onError(unwrapCompletionException(t));
+                                if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(t));
                                 return;
                             }
                             CompletableFuture<UserMessage> inputGuardrails = invokeInputGuardrailsAsync(context.guardrailService(), method, reactiveInputUserMessage, commonGuardrailParam);
@@ -410,7 +411,7 @@ class DefaultAiServices<T> extends AiServices<T> {
                                     return;
                                 }
                                 if (guardrailError != null) {
-                                    subscriber.onError(unwrapCompletionException(guardrailError));
+                                    if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(guardrailError));
                                     return;
                                 }
                                 assembleMessagesAsync(reactiveChatMemory, reactiveSystemMessage, guardedInput.userMessage(), originalUserMessage).whenComplete((assembledMessages, assemblyError) -> {
@@ -418,7 +419,7 @@ class DefaultAiServices<T> extends AiServices<T> {
                                         return;
                                     }
                                     if (assemblyError != null) {
-                                        subscriber.onError(unwrapCompletionException(assemblyError));
+                                        if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(assemblyError));
                                         return;
                                     }
                                     AiServiceStreamingEventPublisher publisher;
@@ -427,7 +428,7 @@ class DefaultAiServices<T> extends AiServices<T> {
                                         dev.langchain4j.service.AiServiceTokenStreamParameters streamingEventStreamParameters = AiServiceTokenStreamParameters.builder().messages(assembledMessages).toolServiceContext(reactiveToolServiceContext).toolArgumentsErrorHandler(context.toolService.argumentsErrorHandler()).toolExecutionErrorHandler(context.toolService.executionErrorHandler()).toolExecutor(context.toolService.executor()).retrievedContents(augmentationResult != null ? augmentationResult.contents() : null).context(context).invocationContext(guardedInput.invocationContext()).commonGuardrailParams(commonGuardrailParam).methodKey(method).build();
                                         publisher = new AiServiceStreamingEventPublisher(streamingEventStreamParameters, context.streamingBufferSize);
                                     } catch (Throwable t) {
-                                        subscriber.onError(unwrapCompletionException(t));
+                                        if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(t));
                                         return;
                                     }
                                     if (subscription.isCancelled()) {
@@ -447,12 +448,12 @@ class DefaultAiServices<T> extends AiServices<T> {
 
                                         @Override
                                         public void onError(Throwable error) {
-                                            subscriber.onError(error);
+                                            if (subscription.tryTerminate()) subscriber.onError(error);
                                         }
 
                                         @Override
                                         public void onComplete() {
-                                            subscriber.onComplete();
+                                            if (subscription.tryTerminate()) subscriber.onComplete();
                                         }
                                     });
                                 });

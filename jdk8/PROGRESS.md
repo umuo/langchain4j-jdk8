@@ -110,3 +110,11 @@
 - 新增独立 `reactive-tck` 测试模块，在真实 Java 8 执行官方 TCK 1.0.4 的 PublisherVerification；生产 Reactive Streams API 仍为 1.0.2，不新增生产依赖。
 - 使用新 TCK 修复旧版测试问题，不覆盖官方规则、不限制 maxElements、不排除 required 测试。官方标为 untested 的跳过项将单独记录，不计为通过。
 - 同步/异步生产、并发 request/cancel/terminal、缓冲及 SSE 资源释放需要完成后续验收；本阶段尚未完成。
+
+### 第五阶段实现检查点（WIP）
+
+- 官方 TCK 1.0.4 同线程/异步两组 PublisherVerification：76 项中 62 通过、14 项官方 untested 跳过；无 required/optional 规则跳过、无失败。使用惰性有界源处理超大需求用例，未修改官方规则或限制 maxElements。
+- TCK 已复现并修复取消时保留 subscriber 的问题；ZeroPublisher 在取消/终止时清除引用，非法 demand 错误包含规则 3.9 信息。
+- Java 8 新增 10 个并发/生命周期验收：100 轮多生产者/多请求者、300 轮终止竞争、onNext 与 fail/cancel 的确定性竞争、终止后 GC、原始事件流 demand/RAG 失败竞争，以及真实 SSE 溢出与 30 轮 request/cancel 释放。
+- 修复原始事件 Publisher 在 prologue 尚未交接真实 Subscription 时忽略非正 demand 的问题，以及 onSubscribe 立即取消后仍启动 RAG；终止统一去重，清理 DeferredSubscription 的 delegate/callback 引用。
+- 聚焦 Java 8 并发验收已通过；最终 clean 构建与快照待本检查点后完成。生产依赖/BOM 支持模块数量不变，TCK/TestNG 仅用于独立测试模块。

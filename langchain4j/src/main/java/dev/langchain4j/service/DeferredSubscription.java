@@ -34,6 +34,26 @@ final class DeferredSubscription implements Subscription {
 
     private boolean cancelled;
 
+    private boolean terminated;
+
+    private java.util.function.Consumer<Throwable> earlyError;
+
+    DeferredSubscription() { this(error -> { }); }
+
+    DeferredSubscription(java.util.function.Consumer<Throwable> earlyError) {
+        this.earlyError = java.util.Objects.requireNonNull(earlyError);
+    }
+
+    /** Claims the only terminal signal and releases references retained by this subscription. */
+    synchronized boolean tryTerminate() {
+        if (cancelled || terminated) return false;
+        terminated = true;
+        delegate = null;
+        cancelAction = null;
+        earlyError = null;
+        return true;
+    }
+
     /**
      * Sets the action that {@link #cancel()} runs while the real subscription is not yet available — typically
      * cancelling the in-flight prologue future. Updated as the prologue advances from one stage to the next. If the
@@ -42,7 +62,7 @@ final class DeferredSubscription implements Subscription {
     void setCancelAction(Runnable action) {
         boolean runNow;
         synchronized (this) {
-            runNow = cancelled;
+            runNow = cancelled || terminated;
             if (!runNow) {
                 this.cancelAction = action;
             }
@@ -60,7 +80,7 @@ final class DeferredSubscription implements Subscription {
         boolean cancelNow;
         long demand;
         synchronized (this) {
-            cancelNow = cancelled;
+            cancelNow = cancelled || terminated;
             if (!cancelNow) {
                 this.delegate = subscription;
                 this.cancelAction = null;
@@ -79,28 +99,37 @@ final class DeferredSubscription implements Subscription {
 
     boolean isCancelled() {
         synchronized (this) {
-            return cancelled;
+            return cancelled || terminated;
         }
     }
 
     @Override
     public void request(long n) {
         Subscription d;
+        Runnable action = null;
+        java.util.function.Consumer<Throwable> errorHandler = null;
         synchronized (this) {
-            if (cancelled) {
-                return;
-            }
-            if (delegate == null) {
+            if (cancelled || terminated) return;
+            d = delegate;
+            if (d == null) {
                 if (n > 0) {
                     long sum = pendingDemand + n;
-                    // saturate
                     pendingDemand = sum < 0 ? Long.MAX_VALUE : sum;
+                } else {
+                    // There may never be a delegate (e.g. RAG is pending). Signal rule 3.9 now.
+                    cancelled = true;
+                    pendingDemand = 0;
+                    action = cancelAction;
+                    cancelAction = null;
+                    errorHandler = earlyError;
+                    earlyError = null;
                 }
-                return;
             }
-            d = delegate;
         }
-        d.request(n);
+        if (d != null) d.request(n);
+        if (action != null) action.run();
+        if (errorHandler != null) errorHandler.accept(
+                new IllegalArgumentException("Reactive Streams rule 3.9: non-positive subscription request"));
     }
 
     @Override
@@ -108,12 +137,15 @@ final class DeferredSubscription implements Subscription {
         Subscription d = null;
         Runnable action = null;
         synchronized (this) {
-            if (cancelled) {
+            if (cancelled || terminated) {
                 return;
             }
             cancelled = true;
+            pendingDemand = 0;
+            earlyError = null;
             if (delegate != null) {
                 d = delegate;
+                delegate = null;
             } else if (cancelAction != null) {
                 action = cancelAction;
                 cancelAction = null;
