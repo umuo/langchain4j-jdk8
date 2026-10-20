@@ -322,4 +322,12 @@ public class McpRecoveryJdk8Test {
         assertEquals(0,transportHttp("client").connectionPool().connectionCount());streamsReleased();
     }
 
+    @Test public void get503RetryAfterZeroStillUsesTransportRetryBudget()throws Exception{
+        onGet=(exchange,request)->{exchange.getResponseHeaders().set("Retry-After","0");status(exchange,503);};
+        connect(true);assertFailure(transport.subsidiaryChannelCompletion());
+        assertEquals(3,gets.get());
+        for(int i=1;i<getTimes.size();i++)assertTrue(TimeUnit.NANOSECONDS.toMillis(getTimes.get(i)-getTimes.get(i-1))>=20);
+        streamsReleased();
+    }
+
 }

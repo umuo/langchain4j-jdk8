@@ -215,3 +215,8 @@
 - 新增 terminateSession/有界 DELETE、幂等 close、调用方客户端所有权与自建资源关闭。请求总 deadline 跨恢复生效，取消通知绑定原会话；通过 one-shot body 禁止 OkHttp 503/421 等隐式 POST 重发。
 - 聚焦真实 Java 8：新增 31 项恢复验收和原有 24 项 MCP 均已通过；随后继续补强 close 截止与握手并发收尾，并将独立 BOM 的 MCP 示例增加 recovery 模式，待最终 clean 验收。
 - 记录诊断：成功响应后的 Call.cancel 清理已修正；原生 OkHttp 对照定位另一个 EOF 为 Java 8 HttpServer 空 GET/DELETE 请求体未初始化造成夹具连接关闭，夹具已修复，未以重试 POST 掩盖错误。
+
+### 第九阶段重试边界修复（WIP）
+
+- 最终代码核对新增 503 Retry-After:0 的 GET 计数验收：修复前配置 2 次恢复却收到 6 个 GET（预期 3），复现了 OkHttp 自身的隐式跟进。
+- GET 网络拦截将该响应交回 transport 的重试调度，单次请求次数与间隔现在受同一策略控制；新增用例通过，MCP 恢复验收增加到 32 项。最终 clean 构建正在完成剩余消费/审计检查。

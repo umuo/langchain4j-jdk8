@@ -125,5 +125,5 @@
 - 新增 timeout 总 deadline（包括握手等待/全部恢复）、reconnectInterval、maxReconnectAttempts、closeTimeout、sessionInitialization/子通道观察 Future、terminateSession 异步释放；close 同步有界等待。请求取消和超时停止 GET/重试并发原会话取消通知。AI Services 保留已启动工具 drain 语义。
 - terminateSession/close 幂等，停止本地任务并 DELETE 已知会话；成功/404/405 正常完成，其他错误可从 Future 观察。调用方提供的 HTTP 客户端 executor/pool 不关闭，GET dispatcher 和恢复 scheduler 始终由 transport 关闭，自建客户端还关闭 POST executor/pool。
 - 为避免隐式重放，派生 OkHttp 客户端禁用连接重试、重定向和自动认证跟进，POST body 使用 one-shot；followRedirects(true) 现在明确拒绝。显式 headers 提供鉴权，GET/DELETE 的 headers supplier 上下文可为 null。原 HTTP 客户端的自定义 interceptor 仍由调用方负责，不应自行重发工具请求。
-- 新增 31 个 Java 8 故障验收；独立 BOM 示例增加 recovery 模式（404 -> 新握手 -> 应用新调用 -> POST SSE 断线/GET 恢复 -> DELETE），验证工具执行仅一次，未重放失效 POST。完整最终结果待最终快照记录；Guardrails 继续跳过。
+- 新增 32 个 Java 8 故障验收；独立 BOM 示例增加 recovery 模式（404 -> 新握手 -> 应用新调用 -> POST SSE 断线/GET 恢复 -> DELETE），验证工具执行仅一次，未重放失效 POST。完整最终结果待最终快照记录；Guardrails 继续跳过。
 - 恢复与 DELETE 都不能保证服务器撤销已经执行的副作用，也不能清理尚未返回 ID 的远端分配。真实远程服务器/TLS/OAuth/代理、跨进程持久化游标、modern 和 stdio/WebSocket/Registry 范围不变，未声称完整 MCP 或 exactly-once 执行。

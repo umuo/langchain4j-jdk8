@@ -41,7 +41,7 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 - POST 同时接受 JSON 与 SSE。SSE 支持 UTF-8 分片、BOM、多行 data、CR/LF/CRLF、通知和空 data 的游标预告。只有完整事件提交游标；未结束事件不提交，空 id 重置游标，含 NUL 的 id 忽略。
 - POST SSE 断开后，只有具备非空已提交游标才 GET 恢复；所有 GET 都携带当前会话/协议及对应流的 Last-Event-ID。不同工具和后台通道不共享游标。没有游标、损坏 JSON、非法响应类型或重试耗尽时失败，绝不通过 POST 补发请求。
 - 可选 GET 子通道默认关闭；开启后接收服务端通知/请求，支持断线后重连，405 正常禁用。子通道禁止承载其他 POST 的响应；恢复请求自己的 GET 可以接收原结果。`subsidiaryChannelCompletion()` 可观察其完成/错误；取消观察 Future 不会关闭通道，关闭 transport 才停止它。
-- 默认重试间隔 1 秒、每段连续无进展失败最多 5 次恢复，响应中的有效 retry 毫秒值覆盖间隔（包含 0）；超出 Long 范围的值忽略。收到新事件/新非空游标后重置连续失败计数。后台通道可持续工作；单个工具恢复始终受请求总时限约束。GET 429/5xx/网络断线可重试，其他 HTTP 错误终止，带会话 404 则重建会话。
+- 默认重试间隔 1 秒、每段连续无进展失败最多 5 次恢复，响应中的有效 retry 毫秒值覆盖间隔（包含 0）；超出 Long 范围的值忽略。收到新事件/新非空游标后重置连续失败计数。后台通道可持续工作；单个工具恢复始终受请求总时限约束。GET 的 503 Retry-After:0 先交回 transport 调度，避免 OkHttp 绕过次数/间隔；GET 429/5xx/网络断线可重试，其他 HTTP 错误终止，带会话 404 则重建会话。
 - transport timeout 默认 60 秒，对每个请求和握手设置总 deadline，覆盖排队/握手等待/全部 SSE 恢复，不因进度重置；也配置默认 HTTP connect/read/call timeout 和 GET 空闲 read timeout。客户端 toolExecutionTimeout 可更短，沿用上游模型可见超时错误文本；显式 HTTP 客户端原有较短超时也可能提前生效。
 - 直接 MCP/ToolExecutor Future 取消或超时，会取消活跃 POST/GET 与重试任务，发送绑定原会话的取消通知。还未发送的请求不发送取消通知；旧会话失败不会把取消通知发到新会话。通知是尽力而为，不能保证服务器停止或回滚工具。
 - AI Services 保留上游 drain 约定：取消停止后续模型轮次，已启动工具继续到完成/超时以保留补偿结果；不会立即取消其 MCP Future。Guardrails 和通用工具/补偿逻辑未改动。
@@ -55,7 +55,7 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 
 ## 验证及剩余范围
 
-- 31 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
+- 32 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
 - stdio/WebSocket/Registry 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 resources/prompts/roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
 - 完整 clean、独立 BOM 和产物审计结果以 `jdk8/PROGRESS.md` 及阶段快照为准。
 

@@ -81,7 +81,17 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                 .authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE).build();
         // Long-lived GETs must not occupy all of the caller's POST dispatcher slots.
         streamClient = client.newBuilder().dispatcher(new Dispatcher()).callTimeout(0, TimeUnit.MILLISECONDS)
-                .readTimeout(timeoutMillis, TimeUnit.MILLISECONDS).build();
+                .readTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
+                .addNetworkInterceptor(chain -> {
+                    Response response = chain.proceed(chain.request());
+                    // OkHttp follows 503 Retry-After:0 even with retryOnConnectionFailure(false).
+                    // Return this failure to our scheduler before its follow-up interceptor can resend GET.
+                    if (response.code() == 503 && "0".equals(response.header("Retry-After"))) {
+                        response.close();
+                        throw new IOException("MCP GET HTTP 503; retry is controlled by the transport");
+                    }
+                    return response;
+                }).build();
         headers = builder.headers == null ? context -> Collections.emptyMap() : builder.headers;
         logger = builder.logger == null ? LoggerFactory.getLogger(getClass()) : builder.logger;
         logRequests = builder.logRequests; logResponses = builder.logResponses;
@@ -419,7 +429,10 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                 call = streamClient.newCall(builder.build());
                 if (stopped()) { call.cancel(); return; }
                 call.enqueue(new Callback() {
-                    @Override public void onFailure(Call call, IOException failure) { resume(failure); }
+                    @Override public void onFailure(Call call, IOException failure) {
+                        if (Stream.this.call == call) Stream.this.call = null;
+                        resume(failure);
+                    }
                     @Override public void onResponse(Call call, Response response) {
                         try (Response received = response) {
                             if (stopped()) return;
