@@ -91,3 +91,16 @@
 - JDBC 是阻塞 I/O，searchAsync 保留 core 的不支持默认，异步 RAG 通过显式 offloadBlocking(true) 运行在普通线程；Future 取消不能保证中断已开始的 JDBC 扫描，操作结束后释放连接。测试验证 embedding 阶段取消、HTTP 释放，以及错误/超时/完成后的数据库锁释放，不声称具备原生异步数据库 I/O。
 - 新增 20 个 Java 8 SQLite 用例和 3 个 SQLite RAG 用例：重开、类型/Unicode、upsert、维度/排序/过滤、事务失败回滚（含更新与删除）、损坏/schema、120 行四写者双实例并发、一致快照、busy/锁/close，以及与内存存储的确定性随机对照。RAG 覆盖真实 loopback embedding/chat HTTP、同步/Future/回调/Publisher 四条路径。另以两个独立 Java 8 进程完成写入退出与只查询的重启消费。
 - 本阶段 122 个真实 Java 8、627 个 JDK 17 选定回归、62 个 Publisher TCK 通过，14 项官方 untested 保留；31 JAR/5978 基础类审计、4752 类链接通过。只验证本机外置卷 macOS/aarch64；未验证网络文件系统、同时多进程写、异常进程终止/断电恢复及其他 JNI 平台。Guardrails 继续按用户要求跳过。
+
+## 第七阶段：SQLite 会话记忆（jdk8-m7）
+
+- 同一 `langchain4j-sqlite` 模块新增 `dev.langchain4j.store.memory.chat.sqlite.SqliteChatMemoryStore`，实现 core ChatMemoryStore/AutoCloseable。七模块坐标/BOM 和驱动版本保持不变，无新增生产依赖；共享内部 SqliteDatabase 的逐操作连接、事务与 close 生命周期，原向量数据 schema 未改变。
+- 会话 ID 限定非 null String/Integer/Long/UUID，按类型命名空间持久化，不通过任意对象 toString 隐式转换；`"1"`、`1`、`1L` 相互隔离，空字符串有效。不支持其他 Object ID 是新实现的明确限制。
+- 每条会话以 core ChatMessageSerializer/Deserializer（含既有 SPI）JSON 保存，单独 schema version 1/payload format 1。updateMessages 整段原子替换，deleteMessages 仅删除对应 ID，缺失会话返回独立可变空列表；读结果修改不影响已存数据。使用默认命名消息类型 codec，无新增 Java 对象反序列化或多态类加载配置。属性语义沿用 JSON codec，不承诺任意自定义对象/数值类型无损。
+- 已验证 System/User/Ai/ToolExecutionRequest/ToolExecutionResult/Custom、消息属性及图像 URL 内容的 codec 往返；未知版本、无效 JSON/null 消息显式失败，事务失败不清空旧历史。该验证不代表所有多模态模型调用或自定义 codec 均已验收。
+- SQLite 向量和记忆可共用文件，分别使用独立表/配置；清理一个存储不删除另一存储数据。ChatMemory.clear 或 deleteMessages 删除持久化历史，AiServices 的 evictChatMemory 只移除内存实例，后续会从 DB 恢复，二者不能混淆。
+- 默认 async 方法保留 core 不支持失败；显式 builder.asyncExecutor(executor) 才把阻塞 JDBC 操作提交到调用方 Executor，不声明原生异步 I/O，store.close 不关闭 Executor。异步写入在提交前固定 JSON 快照；验证排队任务取消、Executor 拒绝及关闭后异常均经 Future 返回。
+- 修复 MessageWindowChatMemory messagesAsync 的 thenApply 投影及 addAsync 的组合取消断点；AI Services 的记忆组装链现追踪 read/system/user write，Future/Publisher 取消可传递到存储任务。已验证 I/O 前取消后不会继续把排队的问题写入历史或请求模型。取消不回滚已提交历史，也不保证中断运行中的 JDBC；Guardrails 逻辑保持未改动并继续跳过。
+- 事务保护单次完整快照，不覆盖一次模型 turn 或跨方法 read-modify-write；同 memory ID 的并发 AI Service 调用仍需应用串行化以防丢更新。测试验证不同会话隔离和同一 ID 的原子快照替换，没有声称自动合并同会话并发对话。
+- 新增 27 个真实 Java 8 用例（15 存储/异步/并发、3 窗口取消、7 HTTP/SSE/会话/工具、2 RAG 共存），上游新增消息 codec/ToolExecutionResult/System/Custom 回归。总计 149 Java 8 / 692 JDK 17 / 62 Publisher TCK 通过，14 项官方 untested 保留；31 JAR/5986 基础类审计、4756 类链接通过，三个既有可选平台排除不变。
+- 独立 BOM 的两个 Java 8 进程在同文件保存向量与记忆：writer 经自动工具循环保存 4 条消息，reader 复用工具调用/结果历史向模型发送 5 条并保存 6 条，使用真实 HTTP 适配器和 loopback fixture；真实远程服务、跨平台 JNI、崩溃/网络文件系统等边界沿用第六阶段声明。

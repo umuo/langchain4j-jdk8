@@ -1,8 +1,8 @@
 # Java 8 移植进度
 
-## 当前状态：第七阶段 SQLite 会话记忆持久化进行中（WIP，2026-10-20）
+## 当前状态：第七阶段 SQLite 会话记忆持久化已完成（2026-10-20）
 
-- 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m6`；历史标记 `jdk8-m1` 至 `jdk8-m5`。
+- 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m7`；历史标记 `jdk8-m1` 至 `jdk8-m6`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
 - Maven 坐标：`dev.langchain4j.jdk8:*:1.23.0-jdk8-SNAPSHOT`，兼容 BOM 现覆盖七个生产模块。已安装到外置盘 Maven 缓存；未远程推送或公共发布。
 
@@ -21,30 +21,33 @@
 11. 原始 AI Services 事件流在等待 RAG 时立即处理非法需求量；onSubscribe 立即取消不再启动检索，prologue/流式终止去重并释放 subscription 引用。
 12. 新增 SQLite 文件向量存储：事务批量 upsert、类型保真元数据、精确余弦检索/过滤/删除、维度约束、重开恢复、锁/并发/连接生命周期；显式 offload 的四路径 RAG。
 13. 独立 BOM 通过两个真实 Java 8 进程验证 HTTP embedding 入库退出，再重开 SQLite 完成异步 RAG，无重新入库。
+14. SQLite 会话记忆：类型隔离 ID、核心消息/工具结果 JSON、整段事务更新/删除、同步和显式 Executor offload，与向量/RAG/四路径 AI Services 共存。
+15. 修复窗口记忆和 AI Services 记忆组装的取消链；独立 JVM 恢复含工具调用/结果的历史，writer 4 条、reader 发 5 条并保存 6 条。
 
 ## 最终验证
 
 执行 `./jdk8/build.sh -o`（reactor 离线使用外置盘已缓存依赖），完整 clean install、独立 BOM 消费项目、字节码审计、真实 Java 8 类链接、AI Services 模拟对话、独立 RAG、HTTP embedding RAG 和 SQLite 跨进程示例全部通过。
 
-| 验证 | 第六阶段结果 |
+| 验证 | 第七阶段结果 |
 |---|---|
 | 七个模块生产源码 | JDK 17 `--release 8` 构建通过 |
-| 真实 Java 8 验收 | 122 个用例，0 失败/错误/跳过；JDK 1.8.0_462 |
-| 选定上游及现代反射回归 | 627 个用例，0 失败/错误/跳过；JDK 17.0.13 |
+| 真实 Java 8 验收 | 149 个用例，0 失败/错误/跳过；JDK 1.8.0_462 |
+| 选定上游及现代反射回归 | 692 个用例，0 失败/错误/跳过；JDK 17.0.13 |
 | 官方 Publisher TCK / Java 8 | 76 项：62 通过、14 官方 untested 跳过；0 失败/错误，无 required/optional 跳过 |
-| 字节码和禁止引用审计 | 31 个 JAR 文件、5978 个基础类通过；含项目构建/安装副本 |
-| Java 8 类及成员类型加载 | 4752 个类通过；3 个可选 Android/Conscrypt/OSGi 入口排除 |
+| 字节码和禁止引用审计 | 31 个 JAR 文件、5986 个基础类通过；含项目构建/安装副本 |
+| Java 8 类及成员类型加载 | 4756 个类通过；3 个可选 Android/Conscrypt/OSGi 入口排除 |
 | 独立 BOM 消费示例 | Java 8 通过 AI Services 返回 `Java 8 OK` |
 | 独立 BOM RAG 示例 | Java 8 返回 `7 yuan` 和对应 apple 文档来源 |
 | 独立 BOM HTTP RAG 示例 | Java 8 返回 `7 yuan`；入库和查询共 2 次 embedding HTTP 请求 |
 | SQLite 跨进程消费 | writer 2 段落持久化；独立 Java 8 reader 查询并返回 `7 yuan`，仅 1 次查询 embedding |
+| SQLite 记忆跨进程消费 | writer 持久化 4 条含工具消息，reader 恢复到模型请求 5 条并保存 6 条 |
 | SQLite native 引擎 | Xerial 3.53.4.0 / SQLite 3.53.4，Java 8/macOS/aarch64 通过 |
 | 模型资源检查 | 兼容 JAR 只包含配套 1.9.3 模型，未打入 2.5.0 模型 |
 | diff/shell 检查 | `git diff --check`、`sh -n jdk8/build.sh` 通过 |
 
-结果快照：`verification/milestone-6.json`；历史快照保留为 `verification/milestone-5.json`（99 / 627 / 62 TCK）、 `verification/milestone-4.json`（89 / 627）、 `verification/milestone-3.json`（70 / 554）、 `verification/milestone-2.json`（51 个 Java 8 / 435 个上游用例）和 `verification/milestone-1.json`（25 / 228）。当前报告位于 `acceptance`、`upstream-tests`、`reactive-tck` 三个模块的 `target/surefire-reports`。这些是选定回归，不代表上游全量/Kotlin 测试已运行。
+结果快照：`verification/milestone-7.json`；历史快照保留为 `verification/milestone-6.json`（122 / 627 / 62 TCK）、 `verification/milestone-5.json`（99 / 627 / 62 TCK）、 `verification/milestone-4.json`（89 / 627）、 `verification/milestone-3.json`（70 / 554）、 `verification/milestone-2.json`（51 个 Java 8 / 435 个上游用例）和 `verification/milestone-1.json`（25 / 228）。当前报告位于 `acceptance`、`upstream-tests`、`reactive-tck` 三个模块的 `target/surefire-reports`。这些是选定回归，不代表上游全量/Kotlin 测试已运行。
 
-本阶段保留 627 个 JDK 17 上游回归和官方 Publisher TCK 两组；新增 20 个 SQLite / 3 个 SQLite RAG 的真实 Java 8 用例，以及独立 JVM 重启消费验证。工具夹具按原始 arg0/arg1 参数约定编译，生产参数名保留不变。
+本阶段新增 27 个 Java 8 记忆/取消/AI Services/RAG 用例；上游消息 codec/ToolExecutionResult/System/Custom 回归新增 65 项，总数 692。官方 Publisher TCK 两组继续保留，独立 JVM 重启示例增加含工具历史的会话记忆。工具夹具按原始 arg0/arg1 参数约定编译，生产参数名保留不变。
 
 ## 已知边界
 
@@ -52,18 +55,19 @@
 - OpenNLP 2.x 不能运行于 Java 8。使用 1.9.5 和官方 0.35.0 历史中的 1.9.3 句子模型，未修改模型版本绕过校验；Java 8 和 6 个原始分割用例通过。1.9.x 已结束维护，模型结果可能与新版不同，来源和生命周期限制已记录。
 - 基础 RAG 已通过本地模型和真实 OpenAI HTTP embedding 适配器两种流程验证（服务均为 loopback fixture）；真实远程模型/语义质量、其他 embedding 适配器/外部向量库、easy-rag 自动下载、复杂重排/多模态 RAG 尚未验收。Guardrails、Decision Services、复杂补偿事务、其余第三方适配器与 OpenAI Responses/音视频/图像仍保留未覆盖声明。
 - SQLite 为精确全表扫描、Java 端过滤及阻塞 JDBC，异步 RAG 必须显式 offload；取消不能保证打断已开始的数据库扫描。未验证其他 JNI 平台、网络文件系统锁、同时多进程写和断电恢复。
+- SQLite 会话更新只保证完整快照原子性，同会话并发 AI Services turn 需应用串行化；取消不回滚已提交历史。记忆 ID 支持 String/Integer/Long/UUID，异步需显式配置调用方 Executor，不承诺任意 Object ID 或原生异步 JDBC。
 - 已运行内部 ZeroPublisher 的官方 Publisher TCK（62 通过、14 项官方 untested），未运行所有适配器的 Subscriber/Processor/Flow TCK，不声明全组件规范认证。有限并发测试不是所有线程调度的证明；类链接仍排除三个可选宿主平台入口。
 
 ## 后续范围：跳过 Guardrails
 
 1. 用户明确要求跳过 Guardrails 代码；后续不开展其专项移植、修复或验收，不将其标为已支持。
 2. 现有源码及此前已完成的验证结果保留；该范围调整不要求删除源码或拆除已有调用路径。
-3. 第六阶段已完成 SQLite 向量持久化；后续可继续 SQLite 会话记忆持久化，或另行选择 MCP/Agentic/其他集成，不再默认推进 Guardrails。
+3. 第六、七阶段已完成 SQLite 向量和会话记忆持久化；后续可推进 MCP/Agentic/其他集成，不再默认推进 Guardrails。
 4. 继续保留真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，以及按检查点提交的约定；不自动跟随上游、推送或建立后台任务。
 
-## 下一阶段建议：SQLite 会话记忆持久化
+## 下一阶段建议：MCP 基础客户端与工具桥接
 
-在现有 SQLite 依赖审计和事务基础上，逐步验证持久化 ChatMemoryStore、会话隔离、消息/工具结果序列化、清理和重启恢复，再与 AI Services/RAG 联动；Guardrails 继续跳过。该建议尚未开始实现。
+先审计当前固定上游源码中 MCP 依赖及 Java 8 障碍，再确定最小传输/工具发现/调用范围，优先通过本地模拟服务验证与 AI Services 工具循环衔接。继续保留七模块已验证能力、SQLite 持久化、取消/资源释放及独立消费回归；不默认连接外部 MCP 服务或读取其他服务凭据。该阶段尚未开始，Guardrails 继续跳过。
 
 ## Git 检查点
 
@@ -91,7 +95,10 @@
 | `bef62f318` | 按用户要求跳过 Guardrails |
 | `a15eec209` | 第六阶段 SQLite 模块/BOM/验收入口（当时 WIP） |
 | `9cf6e1f58` | SQLite 事务实现、类型/并发/RAG 验收与跨进程消费 |
-| `jdk8-m6` | 第六阶段最终结果：811 项通过，另列 14 项官方 untested；七模块审计与 SQLite 重启消费通过 |
+| `jdk8-m6` / `adb3edcad` | 第六阶段最终结果：811 项通过，另列 14 项官方 untested；七模块审计与 SQLite 重启消费通过 |
+| `e732ea9dd` | 第七阶段会话记忆范围（当时 WIP） |
+| `248c8f71e` | SQLite 会话存储、共享事务、取消修复和跨进程工具历史恢复 |
+| `jdk8-m7` | 第七阶段最终结果：903 项通过，另列 14 项官方 untested；记忆/RAG 重启消费及审计通过 |
 
 下一轮先读此文件、`COMPATIBILITY.md` 和 `git status`。一次性转换工具只用于原始快照，不能对已移植源码重跑作为升级方案。
 
@@ -154,13 +161,13 @@
 - `HttpRagExample write/read` 在两个实际 Java 8 进程完成 OpenAI HTTP embedding 入库和重开后的异步 RAG；writer 2 个段落，reader 仅发 1 次查询 embedding，无重新入库。
 - 当前最终结果：122 Java 8 / 627 上游 / 62 Publisher TCK 通过；14 项官方 untested 单独列出。31 JAR/5978 基础类审计、4752 类链接通过，保持 3 个既有可选平台排除。最终快照已保存为 milestone-6.json，阶段标记 jdk8-m6。
 
-## 第七阶段检查点（WIP）
+## 第七阶段历史检查点（当时 WIP，现已完成）
 
 - 从干净的 `jdk8-m6` 恢复；外置盘挂载、约 69 GiB 可用；Guardrails 继续跳过。
 - 沿用七模块、SQLite JDBC 3.53.4.0，新增同模块 SqliteChatMemoryStore，复用事务/连接生命周期，不新增生产依赖。
 - 计划：类型隔离的稳定会话 ID、核心消息 JSON codec、会话整体事务替换/删除、重启与会话隔离/工具消息/RAG 验收。
 - 默认仅同步；调用方显式配置 asyncExecutor 才启用阻塞 JDBC 的异步 offload，Executor 生命周期归调用方。
-- 现阶段尚未验收，支持范围仍以第六阶段为准。
+- 该检查点当时尚未验收；现已完成上方第七阶段最终验收。
 
 ### 第七阶段实现检查点
 
@@ -168,4 +175,4 @@
 - 新增 27 个真实 Java 8 用例：15 个存储/异步/并发，3 个窗口记忆取消，7 个 AI Services HTTP/SSE/工具/会话，2 个 SQLite RAG+记忆共存；新增 4 个上游消息 codec/类型测试类。
 - 测试复现并修复窗口记忆消息投影与 addAsync 组合的取消断点，以及 AI Services 等待记忆组装时不传递取消而继续写入排队问题的情况。只修改记忆链路，Guardrails 逻辑未改动。
 - 两个独立 Java 8 进程：memory writer 保存 4 条含工具调用/结果的消息，memory reader 恢复历史后向模型发送 5 条并保存为 6 条，向量及会话共用 DB。
-- 完整 clean 构建已通过：149 个 Java 8、692 个 JDK 17、62 个 Publisher TCK；14 项官方 untested 单独列出。31 JAR/5986 基础类审计、4756 类链接通过；待保存最终快照和阶段标记。
+- 完整 clean 构建已通过：149 个 Java 8、692 个 JDK 17、62 个 Publisher TCK；14 项官方 untested 单独列出。31 JAR/5986 基础类审计、4756 类链接通过；最终快照已保存为 milestone-7.json，阶段标记 jdk8-m7。
