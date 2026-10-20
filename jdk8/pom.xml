@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='utf-8'?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>dev.langchain4j.jdk8</groupId>
@@ -15,6 +15,7 @@
         <module>../http-clients/langchain4j-http-client-okhttp</module>
         <module>../langchain4j-reactive-streaming</module>
         <module>../langchain4j-open-ai</module>
+        <module>../langchain4j</module>
         <module>bom</module>
         <module>acceptance</module>
     </modules>
@@ -73,6 +74,11 @@
             <dependency>
                 <groupId>dev.langchain4j.jdk8</groupId>
                 <artifactId>langchain4j-open-ai</artifactId>
+                <version>1.23.0-jdk8-SNAPSHOT</version>
+            </dependency>
+            <dependency>
+                <groupId>dev.langchain4j.jdk8</groupId>
+                <artifactId>langchain4j</artifactId>
                 <version>1.23.0-jdk8-SNAPSHOT</version>
             </dependency>
         </dependencies>
