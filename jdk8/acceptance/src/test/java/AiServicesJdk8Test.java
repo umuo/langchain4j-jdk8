@@ -98,4 +98,41 @@ public class AiServicesJdk8Test {
  @Test public void bundledSentenceModelWorksWithJava8Dependency(){
   List<dev.langchain4j.data.segment.TextSegment> segments=new DocumentBySentenceSplitter(30,0).split(Document.from("This is a first sentence. This is a second sentence."));assertEquals(2,segments.size());assertEquals("This is a first sentence.",segments.get(0).text());
  }
+
+ public interface ParentDefaults {default String inherited(String value){return value+" inherited";}}
+ public interface ChildDefaults extends Basic,ParentDefaults {}
+ public interface AsyncSessions extends ChatMemoryAccess {CompletableFuture<String> chat(@MemoryId String session,@dev.langchain4j.service.UserMessage String input);}
+ @Test public void inheritedDefaultMethodsPreserveArguments(){
+  ChildDefaults service=AiServices.create(ChildDefaults.class,model(r->{throw new AssertionError("No model call expected");}));
+  assertEquals("value inherited",service.inherited("value"));assertEquals(42,service.answer());
+ }
+ @Test public void asynchronousSessionMemoryPreservesIsolation()throws Exception{
+  List<ChatRequest> requests=new ArrayList<ChatRequest>();AsyncSessions service=AiServices.builder(AsyncSessions.class).chatModel(model(r->{requests.add(r);return AiMessage.from("ok");})).chatMemoryProvider(id->MessageWindowChatMemory.builder().id(id).maxMessages(10).build()).build();
+  service.chat("a","first").get(5,TimeUnit.SECONDS);service.chat("a","second").get(5,TimeUnit.SECONDS);service.chat("b","isolated").get(5,TimeUnit.SECONDS);
+  assertEquals(3,requests.get(1).messages().size());assertEquals(1,requests.get(2).messages().size());assertEquals(4,service.getChatMemory("a").messages().size());
+ }
+ @Test public void concurrentToolsReturnAllResults()throws Exception{
+  Tools tools=new Tools();ExecutorService executor=Executors.newFixedThreadPool(2);
+  try {
+   ToolExecutionRequest second=ToolExecutionRequest.builder().id("call-2").name("weather").arguments("{\"city\":\"Beijing\"}").build();
+   Basic service=AiServices.builder(Basic.class).chatModel(model(r->r.messages().get(r.messages().size()-1) instanceof ToolExecutionResultMessage?AiMessage.from("done"):AiMessage.from(weatherCall(),second))).tools(tools).executeToolsConcurrently(executor).build();
+   assertEquals("done",service.chat("both"));assertEquals(2,tools.invocations.get());
+  } finally {executor.shutdownNow();}
+ }
+
+ public static class CustomMetadataFactory implements dev.langchain4j.spi.classloading.ClassMetadataProviderFactory<java.lang.reflect.Method> {
+  private final dev.langchain4j.classloading.ReflectionBasedClassMetadataProviderFactory delegate=new dev.langchain4j.classloading.ReflectionBasedClassMetadataProviderFactory();
+  public <T extends java.lang.annotation.Annotation> Optional<T> getAnnotation(java.lang.reflect.Method method,Class<T> annotation){return delegate.getAnnotation(method,annotation);}
+  public <T extends java.lang.annotation.Annotation> Optional<T> getAnnotation(Class<?> type,Class<T> annotation){return delegate.getAnnotation(type,annotation);}
+  public Iterable<java.lang.reflect.Method> getNonStaticMethodsOnClass(Class<?> type){return delegate.getNonStaticMethodsOnClass(type);}
+ }
+ @Test public void metadataSpiSelectsCustomProvider()throws Exception{
+  ClassLoader original=Thread.currentThread().getContextClassLoader();java.nio.file.Path directory=java.nio.file.Files.createTempDirectory(java.nio.file.Paths.get("target"),"metadata-spi-");
+  java.nio.file.Path resource=directory.resolve("META-INF/services/dev.langchain4j.spi.classloading.ClassMetadataProviderFactory");java.nio.file.Files.createDirectories(resource.getParent());java.nio.file.Files.write(resource,CustomMetadataFactory.class.getName().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+  try(java.net.URLClassLoader loader=new java.net.URLClassLoader(new java.net.URL[]{directory.toUri().toURL()},original)){
+   Thread.currentThread().setContextClassLoader(loader);assertTrue(dev.langchain4j.classloading.ClassMetadataProvider.<java.lang.reflect.Method>getClassMetadataProviderFactory() instanceof CustomMetadataFactory);
+  }finally{
+   Thread.currentThread().setContextClassLoader(original);java.nio.file.Files.deleteIfExists(resource);java.nio.file.Files.deleteIfExists(resource.getParent());java.nio.file.Files.deleteIfExists(resource.getParent().getParent());java.nio.file.Files.deleteIfExists(directory);
+  }
+ }
 }

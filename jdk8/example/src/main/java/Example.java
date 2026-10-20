@@ -8,6 +8,8 @@ import java.nio.charset.StandardCharsets;
  */
 public final class Example {
 
+    public interface Assistant { String chat(String message); }
+
     public static void main(String[] args) throws Exception {
         if (!"1.8".equals(System.getProperty("java.specification.version")))
             throw new IllegalStateException("Run this acceptance example on Java 8");
@@ -25,7 +27,7 @@ public final class Example {
         server.start();
         try {
             OpenAiChatModel model = OpenAiChatModel.builder().baseUrl("http://127.0.0.1:" + server.getAddress().getPort() + "/v1").apiKey("synthetic").modelName("mock-model").maxRetries(0).build();
-            String response = model.chat("hello");
+            String response = dev.langchain4j.service.AiServices.create(Assistant.class, model).chat("hello");
             if (!"Java 8 OK".equals(response))
                 throw new AssertionError(response);
             System.out.println("Runtime: " + System.getProperty("java.version") + "; response: " + response);

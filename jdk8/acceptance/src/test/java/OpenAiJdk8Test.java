@@ -113,6 +113,16 @@ public class OpenAiJdk8Test {
                             return;
                         }
                     }
+                } else if (mode.equals("toolOnce") && requests.get() == 1) {
+                    com.fasterxml.jackson.databind.node.ObjectNode payload = mapper.createObjectNode();
+                    payload.put("id", "id").put("model", "mock-model");
+                    com.fasterxml.jackson.databind.node.ObjectNode choice = payload.putArray("choices").addObject().put("index", 0);
+                    com.fasterxml.jackson.databind.node.ObjectNode call = choice.putObject("delta").putArray("tool_calls").addObject();
+                    call.put("index", 0).put("id", "call1").put("type", "function");
+                    call.putObject("function").put("name", "weather").put("arguments", "{\"city\":\"Shanghai\"}");
+                    String finish = "data: {\"id\":\"id\",\"model\":\"mock-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n";
+                    out.write(("data: " + payload + "\n\n" + finish).getBytes(StandardCharsets.UTF_8));
+                    out.flush();
                 } else {
                     byte[] bytes = (chunk("你") + chunk("好") + "data: {\"id\":\"id\",\"object\":\"chat.completion.chunk\",\"model\":\"mock-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"stop\"}]}\n\ndata: [DONE]\n\n").getBytes(StandardCharsets.UTF_8);
                     for (byte b : bytes) {
@@ -120,7 +130,11 @@ public class OpenAiJdk8Test {
                         out.flush();
                     }
                 }
-            } else if (mode.equals("tool"))
+            } else if (mode.equals("structured")) {
+                com.fasterxml.jackson.databind.node.ObjectNode payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(normal("placeholder"));
+                ((com.fasterxml.jackson.databind.node.ObjectNode) payload.path("choices").get(0).path("message")).put("content", "{\"name\":\"Alice\",\"age\":30}");
+                respond(e, 200, payload.toString());
+            } else if (mode.equals("tool") || (mode.equals("toolOnce") && requests.get() == 1))
                 respond(e, 200, "{\"id\":\"id\",\"model\":\"mock-model\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"call1\",\"type\":\"function\",\"function\":{\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Shanghai\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}");
             else
                 respond(e, 200, normal("你好"));

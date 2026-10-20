@@ -904,25 +904,29 @@ public class ToolService {
 
     public final static class ToolResultsOutcome {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("anyToolErrored")
         private final boolean anyToolErrored;
 
         public boolean anyToolErrored() {
             return anyToolErrored;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("returnBehaviors")
         private final List<ReturnBehavior> returnBehaviors;
 
         public List<ReturnBehavior> returnBehaviors() {
             return returnBehaviors;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("resultMessages")
         private final List<ToolExecutionResultMessage> resultMessages;
 
         public List<ToolExecutionResultMessage> resultMessages() {
             return resultMessages;
         }
 
-        public ToolResultsOutcome(boolean anyToolErrored, List<ReturnBehavior> returnBehaviors, List<ToolExecutionResultMessage> resultMessages) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public ToolResultsOutcome(@com.fasterxml.jackson.annotation.JsonProperty("anyToolErrored") boolean anyToolErrored, @com.fasterxml.jackson.annotation.JsonProperty("returnBehaviors") List<ReturnBehavior> returnBehaviors, @com.fasterxml.jackson.annotation.JsonProperty("resultMessages") List<ToolExecutionResultMessage> resultMessages) {
             this.anyToolErrored = anyToolErrored;
             this.returnBehaviors = returnBehaviors;
             this.resultMessages = resultMessages;
@@ -943,31 +947,36 @@ public class ToolService {
 
     public final static class NextChatRequest {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("chatRequest")
         private final ChatRequest chatRequest;
 
         public ChatRequest chatRequest() {
             return chatRequest;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("messages")
         private final List<ChatMessage> messages;
 
         public List<ChatMessage> messages() {
             return messages;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("toolServiceContext")
         private final ToolServiceContext toolServiceContext;
 
         public ToolServiceContext toolServiceContext() {
             return toolServiceContext;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("parameters")
         private final ChatRequestParameters parameters;
 
         public ChatRequestParameters parameters() {
             return parameters;
         }
 
-        public NextChatRequest(ChatRequest chatRequest, List<ChatMessage> messages, ToolServiceContext toolServiceContext, ChatRequestParameters parameters) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public NextChatRequest(@com.fasterxml.jackson.annotation.JsonProperty("chatRequest") ChatRequest chatRequest, @com.fasterxml.jackson.annotation.JsonProperty("messages") List<ChatMessage> messages, @com.fasterxml.jackson.annotation.JsonProperty("toolServiceContext") ToolServiceContext toolServiceContext, @com.fasterxml.jackson.annotation.JsonProperty("parameters") ChatRequestParameters parameters) {
             this.chatRequest = chatRequest;
             this.messages = messages;
             this.toolServiceContext = toolServiceContext;
@@ -1204,19 +1213,22 @@ public class ToolService {
     @Internal
     public final static class CompensableToolExecution {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("toolExecution")
         private final ToolExecution toolExecution;
 
         public ToolExecution toolExecution() {
             return toolExecution;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("resultMessage")
         private final ToolExecutionResultMessage resultMessage;
 
         public ToolExecutionResultMessage resultMessage() {
             return resultMessage;
         }
 
-        public CompensableToolExecution(ToolExecution toolExecution, ToolExecutionResultMessage resultMessage) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public CompensableToolExecution(@com.fasterxml.jackson.annotation.JsonProperty("toolExecution") ToolExecution toolExecution, @com.fasterxml.jackson.annotation.JsonProperty("resultMessage") ToolExecutionResultMessage resultMessage) {
             this.toolExecution = toolExecution;
             this.resultMessage = resultMessage;
         }
@@ -1387,19 +1399,22 @@ public class ToolService {
      */
     public final static class CombinedToolResults {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("results")
         private final Map<ToolExecutionRequest, ToolExecutionResult> results;
 
         public Map<ToolExecutionRequest, ToolExecutionResult> results() {
             return results;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("firstError")
         private final Throwable firstError;
 
         public Throwable firstError() {
             return firstError;
         }
 
-        public CombinedToolResults(Map<ToolExecutionRequest, ToolExecutionResult> results, Throwable firstError) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public CombinedToolResults(@com.fasterxml.jackson.annotation.JsonProperty("results") Map<ToolExecutionRequest, ToolExecutionResult> results, @com.fasterxml.jackson.annotation.JsonProperty("firstError") Throwable firstError) {
             this.results = results;
             this.firstError = firstError;
         }

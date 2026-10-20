@@ -5,6 +5,6 @@
     <dependencyManagement><dependencies><dependency>
         <groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-bom</artifactId><version>1.23.0-jdk8-SNAPSHOT</version><type>pom</type><scope>import</scope>
     </dependency></dependencies></dependencyManagement>
-    <dependencies><dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-open-ai</artifactId></dependency></dependencies>
+    <dependencies><dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-open-ai</artifactId></dependency><dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j</artifactId></dependency></dependencies>
     <build><plugins><plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.13.0</version><configuration><release>8</release></configuration></plugin></plugins></build>
 </project>

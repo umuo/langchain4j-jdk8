@@ -179,4 +179,24 @@ public class ReactiveJdk8Test {
         assertEquals(1, p.completed.get());
         for (int i = 0; i < 1000; i++) assertEquals(Integer.valueOf(i), p.values.get(i));
     }
+
+    @Test public void cancellationHooksRunOnlyOnCancellation() {
+        AtomicInteger cancelled = new AtomicInteger();
+        Probe<Integer> completed = new Probe<Integer>();
+        ZeroPublisher.<Integer>create(new TubeConfiguration(), tube -> {tube.whenCancelled(cancelled::incrementAndGet); tube.complete();}).subscribe(completed);
+        assertEquals(1, completed.completed.get()); assertEquals(0, cancelled.get());
+        Probe<Integer> failed = new Probe<Integer>();
+        ZeroPublisher.<Integer>create(new TubeConfiguration(), tube -> {tube.whenCancelled(cancelled::incrementAndGet); tube.fail(new RuntimeException("failed"));}).subscribe(failed);
+        assertNotNull(failed.error); assertEquals(0, cancelled.get());
+        AtomicReference<Tube<Integer>> emitter = new AtomicReference<Tube<Integer>>(); Probe<Integer> active = new Probe<Integer>();
+        ZeroPublisher.<Integer>create(new TubeConfiguration(), tube -> {emitter.set(tube);tube.whenCancelled(cancelled::incrementAndGet);}).subscribe(active);
+        active.subscription.cancel(); active.subscription.cancel(); assertEquals(1, cancelled.get());
+        emitter.get().whenCancelled(cancelled::incrementAndGet); assertEquals(2, cancelled.get());
+    }
+    @Test public void immediateCancellationDoesNotStartProducer() {
+        AtomicInteger started = new AtomicInteger();
+        Probe<Integer> probe = new Probe<Integer>() {public void onSubscribe(Subscription subscription) {super.onSubscribe(subscription);subscription.cancel();}};
+        ZeroPublisher.<Integer>create(new TubeConfiguration(), tube -> started.incrementAndGet()).subscribe(probe);
+        assertEquals(0, started.get()); assertTrue(probe.values.isEmpty()); assertNull(probe.error);
+    }
 }
