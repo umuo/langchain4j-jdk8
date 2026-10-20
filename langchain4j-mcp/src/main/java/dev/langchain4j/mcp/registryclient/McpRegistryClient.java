@@ -22,7 +22,7 @@ public interface McpRegistryClient {
      * Obtains the details for a single MCP server denoted by its ID.
      * @deprecated This method is not supported on the official MCP registry anymore.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     McpGetServerResponse getServerDetails(String id);
 
     /**

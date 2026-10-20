@@ -35,3 +35,5 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpExample recovery
 # Actual Java 8 subprocess transport plus resources/prompts and automatic tool loop.
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpStdioExample
+# Read-only Registry discovery through the default Java 8 HTTP SPI.
+"$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpRegistryExample

@@ -81,7 +81,7 @@ public class DefaultMcpRegistryClient implements McpRegistryClient {
         Objects.requireNonNull(serverName, "serverName cannot be null");
         HttpRequest httpRequest = HttpRequest.builder()
                 .method(HttpMethod.GET)
-                .url(baseUrl, "/v0/servers/" + URLEncoder.encode(serverName, StandardCharsets.UTF_8))
+                .url(baseUrl, "/v0/servers/" + encodePathComponent(serverName))
                 .addHeaders(currentHeaders())
                 .build();
         return sendAndProcessResponse(httpRequest, McpGetServerResponse.class);
@@ -131,7 +131,7 @@ public class DefaultMcpRegistryClient implements McpRegistryClient {
     }
 
     private Map<String, String> currentHeaders() {
-        Map<String, String> map = headers.get();
+        Map<String, String> map = new HashMap<>(Objects.requireNonNull(headers.get(), "headers supplier returned null"));
         map.put("Content-Type", "application/json");
         map.put("Accept", "application/json, application/problem+json");
         return map;
@@ -144,25 +144,40 @@ public class DefaultMcpRegistryClient implements McpRegistryClient {
         if (!ALLOWED_URL_CHARACTERS.matcher(parameter).matches()) {
             throw new IllegalArgumentException("Parameter contains unsafe characters");
         }
-        return URLEncoder.encode(parameter, StandardCharsets.UTF_8);
+        return encodePathComponent(parameter);
+    }
+
+    private static String encodePathComponent(String parameter) {
+        if (parameter == null || parameter.isEmpty() || parameter.equals(".") || parameter.equals("..")) {
+            throw new IllegalArgumentException("Path parameter must be a nonempty, non-dot segment");
+        }
+        return encodeComponent(parameter);
+    }
+
+    private static String encodeComponent(String parameter) {
+        try {
+            return URLEncoder.encode(parameter, StandardCharsets.UTF_8.name());
+        } catch (java.io.UnsupportedEncodingException impossible) {
+            throw new AssertionError(impossible);
+        }
     }
 
     private String processServerListRequestPathParams(McpServerListRequest request) {
         List<String> params = new ArrayList<>();
         if (request.getCursor() != null) {
-            params.add("cursor=" + request.getCursor());
+            params.add("cursor=" + encodeComponent(request.getCursor()));
         }
         if (request.getLimit() != null) {
             params.add("limit=" + request.getLimit());
         }
         if (request.getSearch() != null) {
-            params.add("search=" + request.getSearch());
+            params.add("search=" + encodeComponent(request.getSearch()));
         }
         if (request.getUpdatedSince() != null) {
-            params.add("updated_since=" + request.getUpdatedSince().format(DATE_TIME_FORMATTER));
+            params.add("updated_since=" + encodeComponent(request.getUpdatedSince().format(DATE_TIME_FORMATTER)));
         }
         if (request.getVersion() != null) {
-            params.add("version=" + request.getVersion());
+            params.add("version=" + encodeComponent(request.getVersion()));
         }
         return params.stream().collect(Collectors.joining("&"));
     }

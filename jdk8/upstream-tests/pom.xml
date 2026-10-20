@@ -115,6 +115,9 @@
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/SystemMessageTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/CustomMessageTest.java</testInclude>
                         <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/McpToolExecutorTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/registryclient/RegistryClientResponsesParsingTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/registryclient/McpRegistryJsonTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/registryclient/McpRegistryModelTest.java</testInclude>
                         <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/transport/stdio/JsonRpcIoHandlerTest.java</testInclude>
                         <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/transport/stdio/ProcessStderrHandlerTest.java</testInclude>
                         <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/McpToolProviderTest.java</testInclude>
@@ -146,6 +149,13 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <!-- This upstream model scanner expects a directory CodeSource, not a packaged JAR. -->
+                    <classpathDependencyExcludes>
+                        <classpathDependencyExclude>dev.langchain4j.jdk8:langchain4j-mcp</classpathDependencyExclude>
+                    </classpathDependencyExcludes>
+                    <additionalClasspathElements>
+                        <additionalClasspathElement>${project.basedir}/../../langchain4j-mcp/target/classes</additionalClasspathElement>
+                    </additionalClasspathElements>
                     <includes combine.self="override">
                         <include>**/ValidationUtilsTest.java</include>
                         <include>**/UtilsTest.java</include>
@@ -197,6 +207,9 @@
                         <include>**/SystemMessageTest.java</include>
                         <include>**/CustomMessageTest.java</include>
                         <include>**/McpToolExecutorTest.java</include>
+                        <include>**/RegistryClientResponsesParsingTest.java</include>
+                        <include>**/McpRegistryJsonTest.java</include>
+                        <include>**/McpRegistryModelTest.java</include>
                         <include>**/JsonRpcIoHandlerTest.java</include>
                         <include>**/ProcessStderrHandlerTest.java</include>
                         <include>**/McpToolProviderTest.java</include>

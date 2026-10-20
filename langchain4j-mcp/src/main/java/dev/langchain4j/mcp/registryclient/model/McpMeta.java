@@ -30,7 +30,7 @@ public class McpMeta {
     /**
      * @deprecated use {@link #publisherProvided()}, which does not expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public Map<String, JsonNode> getPublisherProvided() {
         if (publisherProvided == null) {
             return null;

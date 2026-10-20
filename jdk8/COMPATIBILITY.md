@@ -142,3 +142,15 @@
 - 保留原有 850 项选定上游回归，增加完整 JsonRpcIoHandlerTest/ProcessStderrHandlerTest 两类 8 项。上游 StdioMcpTransportTest 尚未纳入：其中断言重启后旧进程仍存活，与本分支有界强制回收的新生命周期约定不一致；没有改写原始测试，也不把它计为通过。新生命周期由实际 Java 8 子进程验收。
 - 独立 BOM McpStdioExample 在 Java 8 父子 JVM 中读取资源/提示词，再通过真实 loopback OpenAI 与 AI Services 完成 stdio 工具循环，退出后验证子进程释放。现有 HTTP 会话/SSE 恢复示例保持运行。
 - WebSocket/Registry、其他协议、完整 roots/多模态和真实远端互操作仍待推进；没有新增生产依赖。最终 clean exit 0：238 Java 8、858 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6302 类审计、4914 类链接和独立 BOM 全部通过。快照见 verification/milestone-10.json。
+
+
+## 第十一阶段：MCP Registry（jdk8-m11）
+
+- Registry 客户端与全部模型纳入同一 MCP 兼容 JAR；URLEncoder 的 Charset 重载改为 Java 8 UTF-8 名称重载，LocalDateTime 模式匹配转为普通类型检查，移除高版本 Deprecated 元数据。无新增生产依赖。
+- 保留固定基线全部六个同步入口：listServers、getServerDetails、getSpecificServerVersion、getAllVersionsOfServer、healthCheck、ping。保留其 v0/v0.1 路径，不将本地模拟验收表述为当前公共 Registry 服务互操作；废弃 getServerDetails 依旧保留。
+- 游标、搜索、版本和更新时间分别编码为查询参数，避免 `&/+/=/Unicode` 改变 URL；名称与版本编码为单一路径段，拒绝空或纯点段。请求头从 supplier 获取后复制，不再修改调用方的只读 Map；supplier 每次请求重新调用。
+- API 仍为同步阻塞，不提供或宣称原生 async/请求级取消。超时由配置的 HTTP client 控制，错误和超时后可继续请求；响应/错误体由已验证 OkHttp 适配器关闭，调用方 HTTP executor/pool 所有权不改变。默认 SPI 仍选兼容 OkHttp。
+- 新增 Java 8 覆盖所有入口、嵌套包/远端/发布方与官方元数据、UTC 时间、游标回传、URL 编码、只读/动态请求头、并发 32 请求、HTTP 错误/损坏 JSON/超时恢复。
+- 新纳入三个完整上游 Registry 测试类共 6 项。McpRegistryModelTest 的原始文件扫描要求目录 CodeSource，首轮加载 JAR 报 Not a directory；测试 harness 改为使用同次生产编译的 MCP target/classes，原始测试断言未改且不跳过。JAR 的独立消费、字节码及链接仍单独验收。
+- 独立 BOM McpRegistryExample 使用默认 HTTP SPI 在实际 Java 8 验证编码查询、详情版本、元数据、ping/health。只读取本地夹具的发现数据，不自动安装或启动 Registry 提供的命令。
+- WebSocket/其他协议及全部后续 Agentic、模型/向量库仍待完成，整体目标保持未完成。最终 clean exit 0：250 Java 8、864 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6354 基础类审计、4940 类链接及全部独立消费通过。快照见 verification/milestone-11.json。

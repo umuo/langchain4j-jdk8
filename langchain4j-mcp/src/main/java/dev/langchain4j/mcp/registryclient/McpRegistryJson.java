@@ -38,8 +38,8 @@ public class McpRegistryJson {
         if (value == null) {
             return null;
         }
-        if (value instanceof LocalDateTime localDateTime) {
-            return localDateTime;
+        if (value instanceof LocalDateTime) {
+            return (LocalDateTime) value;
         }
         return LocalDateTime.parse(value.toString(), ISO_DATE_TIME);
     }

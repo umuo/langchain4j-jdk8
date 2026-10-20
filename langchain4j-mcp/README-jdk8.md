@@ -56,7 +56,7 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 ## 验证及剩余范围
 
 - 32 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
-- WebSocket/Registry 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
+- WebSocket 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
 - 完整 clean、独立 BOM 和产物审计结果以 `jdk8/PROGRESS.md` 及阶段快照为准。
 
 协议依据：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。隐式 HTTP 跟进核对：[OkHttp 4.12.0 源码](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)。
@@ -86,3 +86,20 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 资源/模板/提示词列表支持分页与缓存；list_changed 会失效对应缓存，查询中的旧响应不会重新污染新缓存。资源订阅通过 onResourceUpdated 回调接收 URI；日志和进度分别通过 logHandler/progressHandler 接收。旧版本协议、完整多模态及远端互操作依照兼容差异表继续列为待办。
 
 独立 BOM 的 `McpStdioExample` 由 `./jdk8/build.sh -o` 自动运行，无外部服务或凭据。本阶段最终结果以进度和 milestone-10 快照为准。
+
+
+## Registry
+
+```java
+DefaultMcpRegistryClient registry = DefaultMcpRegistryClient.builder()
+        .baseUrl("http://127.0.0.1:8080")
+        .headers(Collections.singletonMap("X-Application", "example"))
+        .build();
+McpServerList page = registry.listServers(McpServerListRequest.builder()
+        .search("example").limit(10L).build());
+McpGetServerResponse version = registry.getSpecificServerVersion("io.example/server", "latest");
+```
+
+Registry 保留固定基线的 v0/v0.1 路径和六个同步 API；生产 HTTP SPI 为 OkHttp，可通过 httpClient 显式配置超时。查询与路径参数分别编码；headersSupplier 每次请求获取新值并复制，允许不可变 Map。接口不提供原生异步或请求级取消，不会自动启动或安装发现的服务。
+
+`McpRegistryExample` 是实际 Java 8 的独立 BOM 消费；完整 clean 和上游 Registry 模型回归结果见进度与 milestone-11 快照。公共 Registry API 的当前可用性、鉴权和远端互操作未据此验收。

@@ -25,7 +25,7 @@ public class McpOfficialMeta {
     /**
      * @deprecated This field was removed in the 2025-09-29 version of the schema.
      */
-    @Deprecated(forRemoval = true)
+    @Deprecated
     public String getServerId() {
         return serverId;
     }

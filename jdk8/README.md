@@ -2,7 +2,7 @@
 
 基于官方提交 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`（1.23.0 开发基线）的独立兼容分支。保留完整上游历史、Java 包名和主要模型 API，使用独立 Maven 坐标，按阶段提交。
 
-## 当前产物（第十阶段）
+## 当前产物（第十一阶段）
 
 以下八个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
 
@@ -13,9 +13,9 @@
 - `langchain4j-open-ai`
 - `langchain4j`（AI Services、会话记忆、工具执行和基础 RAG）
 - `langchain4j-sqlite`（向量与会话记忆持久化、过滤检索和事务）
-- `langchain4j-mcp`（MCP 2025-11-25 HTTP/stdio 工具、资源/提示词与 HTTP 会话/SSE 恢复，详见 [范围与示例](../langchain4j-mcp/README-jdk8.md)）
+- `langchain4j-mcp`（MCP 2025-11-25 HTTP/stdio 工具、资源/提示词与 HTTP 会话/SSE 恢复及 Registry，详见 [范围与示例](../langchain4j-mcp/README-jdk8.md)）
 
-这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。第三阶段新增基础 RAG：文档加载/分段、内存向量存储与恢复、过滤检索、提示词注入与来源、同步/异步/流式调用。第四阶段新增 OpenAI Embeddings HTTP API 的批量、Base64、参数/维度、token usage、错误/重试/超时和取消，并接入四条 RAG 路径。MCP 已验收 HTTP 工具、会话过期恢复、有界 DELETE 和 GET SSE/Last-Event-ID 恢复；资源/提示词、通知和 stdio 已专项验收；modern、WebSocket/Registry 等能力仍未覆盖。Agentic、其他 embedding 适配器、具体向量库、Spring Boot 集成及 Jackson 3 尚未业务验收；真实远程模型和语义质量未验证。
+这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。第三阶段新增基础 RAG：文档加载/分段、内存向量存储与恢复、过滤检索、提示词注入与来源、同步/异步/流式调用。第四阶段新增 OpenAI Embeddings HTTP API 的批量、Base64、参数/维度、token usage、错误/重试/超时和取消，并接入四条 RAG 路径。MCP 已验收 HTTP 工具、会话过期恢复、有界 DELETE 和 GET SSE/Last-Event-ID 恢复；资源/提示词、通知和 stdio 已专项验收；Registry 已按固定基线全部查询接口验收；modern、WebSocket 等能力仍未覆盖。Agentic、其他 embedding 适配器、具体向量库、Spring Boot 集成及 Jackson 3 尚未业务验收；真实远程模型和语义质量未验证。
 
 ## 构建与验收
 
@@ -134,3 +134,5 @@ try (SqliteEmbeddingStore store = SqliteEmbeddingStore.builder()
 
 
 剩余全量范围见 [ROADMAP.md](ROADMAP.md) 和 [MODULE-INVENTORY.md](MODULE-INVENTORY.md)。第十阶段结果见 [milestone-10.json](verification/milestone-10.json)。整体目标仍在推进。
+
+第十一阶段 Registry 完整验证见 [milestone-11.json](verification/milestone-11.json)，仍未完成整个长期目标。
