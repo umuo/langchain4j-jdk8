@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第六阶段 SQLite 持久化向量存储已完成（2026-10-20）
+## 当前状态：第七阶段 SQLite 会话记忆持久化进行中（WIP，2026-10-20）
 
 - 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m6`；历史标记 `jdk8-m1` 至 `jdk8-m5`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
@@ -153,3 +153,11 @@
 - 首次独立消费验证发现误加的 dependencyManagement 项覆盖了 BOM，已修正；最终 clean 构建通过。驱动有 126 个 Java 8 基础类；GraalVM/Java 9 类仅在多版本目录，不需要新增基础类链接排除。
 - `HttpRagExample write/read` 在两个实际 Java 8 进程完成 OpenAI HTTP embedding 入库和重开后的异步 RAG；writer 2 个段落，reader 仅发 1 次查询 embedding，无重新入库。
 - 当前最终结果：122 Java 8 / 627 上游 / 62 Publisher TCK 通过；14 项官方 untested 单独列出。31 JAR/5978 基础类审计、4752 类链接通过，保持 3 个既有可选平台排除。最终快照已保存为 milestone-6.json，阶段标记 jdk8-m6。
+
+## 第七阶段检查点（WIP）
+
+- 从干净的 `jdk8-m6` 恢复；外置盘挂载、约 69 GiB 可用；Guardrails 继续跳过。
+- 沿用七模块、SQLite JDBC 3.53.4.0，新增同模块 SqliteChatMemoryStore，复用事务/连接生命周期，不新增生产依赖。
+- 计划：类型隔离的稳定会话 ID、核心消息 JSON codec、会话整体事务替换/删除、重启与会话隔离/工具消息/RAG 验收。
+- 默认仅同步；调用方显式配置 asyncExecutor 才启用阻塞 JDBC 的异步 offload，Executor 生命周期归调用方。
+- 现阶段尚未验收，支持范围仍以第六阶段为准。
