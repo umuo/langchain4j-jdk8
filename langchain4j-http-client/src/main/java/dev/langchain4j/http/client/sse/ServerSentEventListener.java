@@ -5,7 +5,8 @@ import dev.langchain4j.http.client.SuccessfulHttpResponse;
 
 public interface ServerSentEventListener {
 
-    default void onOpen(SuccessfulHttpResponse response) {}
+    default void onOpen(SuccessfulHttpResponse response) {
+    }
 
     /**
      * Handles server-sent event.
@@ -25,9 +26,11 @@ public interface ServerSentEventListener {
      *
      * @see #onEvent(ServerSentEvent, ServerSentEventContext)
      */
-    default void onEvent(ServerSentEvent event) {}
+    default void onEvent(ServerSentEvent event) {
+    }
 
     void onError(Throwable throwable);
 
-    default void onClose() {}
+    default void onClose() {
+    }
 }

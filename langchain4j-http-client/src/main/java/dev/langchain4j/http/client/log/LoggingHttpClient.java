@@ -13,10 +13,10 @@ import dev.langchain4j.http.client.sse.ServerSentEventListener;
 import dev.langchain4j.http.client.sse.ServerSentEventParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -41,8 +41,11 @@ public class LoggingHttpClient implements HttpClient {
     private static final Logger DEFAULT_LOG = LoggerFactory.getLogger(LoggingHttpClient.class);
 
     private final HttpClient delegateHttpClient;
+
     private final boolean logRequests;
+
     private final boolean logResponses;
+
     private final Logger log;
 
     public LoggingHttpClient(HttpClient delegateHttpClient, Boolean logRequests, Boolean logResponses) {
@@ -61,34 +64,25 @@ public class LoggingHttpClient implements HttpClient {
 
     @Override
     public SuccessfulHttpResponse execute(HttpRequest request) throws HttpException {
-
         if (logRequests) {
             HttpRequestLogger.log(log, request);
         }
-
         SuccessfulHttpResponse response = delegateHttpClient.execute(request);
-
         if (logResponses) {
             HttpResponseLogger.log(log, response);
         }
-
         return response;
     }
 
     @Override
     public CompletableFuture<SuccessfulHttpResponse> executeAsync(HttpRequest request) {
-
         if (logRequests) {
             HttpRequestLogger.log(log, request);
         }
-
-        CompletableFuture<SuccessfulHttpResponse> future =
-                delegateHttpClient.executeAsync(request);
-
+        CompletableFuture<SuccessfulHttpResponse> future = delegateHttpClient.executeAsync(request);
         if (!logResponses) {
             return future;
         }
-
         return future.whenComplete((response, throwable) -> {
             if (response != null) {
                 HttpResponseLogger.log(log, response);
@@ -98,16 +92,13 @@ public class LoggingHttpClient implements HttpClient {
 
     @Override
     public void execute(HttpRequest request, ServerSentEventListener delegateListener) {
-
         if (logRequests) {
             HttpRequestLogger.log(log, request);
         }
-
         if (!logResponses) {
             this.delegateHttpClient.execute(request, delegateListener);
             return;
         }
-
         this.delegateHttpClient.execute(request, new ServerSentEventListener() {
 
             @Override
@@ -148,16 +139,13 @@ public class LoggingHttpClient implements HttpClient {
 
     @Override
     public void execute(HttpRequest request, ServerSentEventParser parser, ServerSentEventListener delegateListener) {
-
         if (logRequests) {
             HttpRequestLogger.log(log, request);
         }
-
         if (!logResponses) {
             this.delegateHttpClient.execute(request, parser, delegateListener);
             return;
         }
-
         this.delegateHttpClient.execute(request, parser, new ServerSentEventListener() {
 
             @Override
@@ -204,37 +192,32 @@ public class LoggingHttpClient implements HttpClient {
      * this logging does not perform blocking IO on that non-blocking thread.
      */
     @Override
-    public Flow.Publisher<HttpStreamingEvent> stream(HttpRequest request, ServerSentEventParser parser) {
-
-        Flow.Publisher<HttpStreamingEvent> upstream = delegateHttpClient.stream(request, parser);
-
-        return new Flow.Publisher<HttpStreamingEvent>() {
+    public Publisher<HttpStreamingEvent> stream(HttpRequest request, ServerSentEventParser parser) {
+        Publisher<HttpStreamingEvent> upstream = delegateHttpClient.stream(request, parser);
+        return new Publisher<HttpStreamingEvent>() {
 
             @Override
-            public void subscribe(Flow.Subscriber<? super HttpStreamingEvent> downstream) {
-
+            public void subscribe(Subscriber<? super HttpStreamingEvent> downstream) {
                 if (logRequests) {
                     HttpRequestLogger.log(log, request);
                 }
-
                 if (!logResponses) {
                     upstream.subscribe(downstream);
                     return;
                 }
-
-                upstream.subscribe(new Flow.Subscriber<>() {
+                upstream.subscribe(new Subscriber<dev.langchain4j.http.client.sse.HttpStreamingEvent>() {
 
                     @Override
-                    public void onSubscribe(Flow.Subscription subscription) {
+                    public void onSubscribe(Subscription subscription) {
                         downstream.onSubscribe(subscription);
                     }
 
                     @Override
                     public void onNext(HttpStreamingEvent event) {
-                        if (event instanceof HttpResponseReceived responseReceived) {
-                            HttpResponseLogger.log(log, responseReceived.response());
-                        } else if (event instanceof ServerSentEvent sse) {
-                            log.debug("{}", sse);
+                        if (event instanceof HttpResponseReceived) {
+                            HttpResponseLogger.log(log, ((HttpResponseReceived) event).response());
+                        } else if (event instanceof ServerSentEvent) {
+                            log.debug("{}", ((ServerSentEvent) event));
                         }
                         downstream.onNext(event);
                     }

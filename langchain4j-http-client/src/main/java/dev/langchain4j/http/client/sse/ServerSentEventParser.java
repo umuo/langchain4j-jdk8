@@ -45,9 +45,7 @@ public interface ServerSentEventParser {
      */
     @Experimental
     default Incremental incremental() {
-        throw new AsyncNotSupportedException(
-                "Incremental parsing not supported by " + getClass().getName()
-                        + ". Override ServerSentEventParser.incremental() to enable the publisher-based HTTP API.");
+        throw new AsyncNotSupportedException("Incremental parsing not supported by " + getClass().getName() + ". Override ServerSentEventParser.incremental() to enable the publisher-based HTTP API.");
     }
 
     /**

@@ -13,3 +13,9 @@
 - 添加不可变集合、失败 Future、延迟执行及新 JDK 反射兼容工具。
 - javac 17 `--release 8` 编译 core 通过；独立 Maven core compile 通过。
 - 新增真实 Java 8 验收用例，尚待整体验证运行。状态：WIP。
+
+## HTTP 与响应式检查点
+- HTTP、OkHttp、reactive-streaming、OpenAI 五模块生产源码整体 `--release 8` 编译通过。
+- SPI 默认使用 OkHttp 4.12；移除 mutiny-zero 1.3.1（其基础类为 Java 17 字节码）。
+- 内部有界发布器支持需求量、取消、溢出失败、串行信号和终止清理。
+- 新增 UTF-8 分片/SSE、需求量/取消/并发、loopback OpenAI 验收；待执行结果。

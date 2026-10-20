@@ -7,8 +7,11 @@ import java.time.Duration;
 public class OkHttpClientBuilder implements HttpClientBuilder {
 
     private okhttp3.OkHttpClient.Builder okHttpClientBuilder;
+
     private Duration connectTimeout;
+
     private Duration readTimeout;
+
     private Integer streamingBufferSize;
 
     public okhttp3.OkHttpClient.Builder okHttpClientBuilder() {

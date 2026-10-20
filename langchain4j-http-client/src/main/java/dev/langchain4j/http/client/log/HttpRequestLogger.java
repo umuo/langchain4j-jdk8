@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.http.client.HttpRequest;
 import java.util.List;
@@ -20,44 +19,24 @@ class HttpRequestLogger {
      * Matching deliberately errs towards masking too much: a masked value that turns out to be
      * harmless costs one debugging round trip, an unmasked credential costs a key rotation.
      */
-    private static final List<String> SECRET_HEADER_NAME_KEYWORDS = asList(
-            "auth",
-            "api-key",
-            "api_key",
-            "apikey",
-            "subscription-key",
-            "token",
-            "secret",
-            "password",
-            "credential",
-            "cookie");
+    private static final List<String> SECRET_HEADER_NAME_KEYWORDS = asList("auth", "api-key", "api_key", "apikey", "subscription-key", "token", "secret", "password", "credential", "cookie");
 
     static void log(Logger log, HttpRequest httpRequest) {
         try {
-            log.info("""
-                            HTTP request:
-                            - method: {}
-                            - url: {}
-                            - headers: {}
-                            - body: {}
-                            """, httpRequest.method(), httpRequest.url(), format(httpRequest.headers()), httpRequest.body());
+            log.info("HTTP request:\n- method: {}\n- url: {}\n- headers: {}\n- body: {}\n", httpRequest.method(), httpRequest.url(), format(httpRequest.headers()), httpRequest.body());
         } catch (Exception e) {
             log.warn("Exception occurred while logging HTTP request: {}", e.getMessage());
         }
     }
 
     static String format(Map<String, List<String>> headers) {
-        return headers.entrySet().stream()
-                .map(header -> format(header.getKey(), header.getValue()))
-                .collect(joining(", "));
+        return headers.entrySet().stream().map(header -> format(header.getKey(), header.getValue())).collect(joining(", "));
     }
 
     static String format(String headerKey, List<String> headerValues) {
         if (isSecretHeader(headerKey)) {
-            headerValues =
-                    headerValues.stream().map(HttpRequestLogger::maskSecretKey).collect(toList());
+            headerValues = headerValues.stream().map(HttpRequestLogger::maskSecretKey).collect(java.util.stream.Collectors.toList());
         }
-
         if (headerValues.size() == 1) {
             return String.format("[%s: %s]", headerKey, headerValues.get(0));
         } else {
@@ -74,11 +53,11 @@ class HttpRequestLogger {
         if (isNullOrBlank(key)) {
             return key;
         }
-
         if (key.length() >= 7) {
             return key.substring(0, 5) + "..." + key.substring(key.length() - 2);
         } else {
-            return "..."; // too short to be masked
+            // too short to be masked
+            return "...";
         }
     }
 }

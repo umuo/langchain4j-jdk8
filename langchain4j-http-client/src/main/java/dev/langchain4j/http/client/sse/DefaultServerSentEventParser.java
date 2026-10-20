@@ -2,7 +2,6 @@ package dev.langchain4j.http.client.sse;
 
 import static dev.langchain4j.http.client.sse.ServerSentEventListenerUtils.ignoringExceptions;
 import static java.nio.charset.StandardCharsets.UTF_8;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -18,16 +17,13 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
     public void parse(InputStream httpResponseBody, ServerSentEventListener listener) {
         ServerSentEventParsingHandle parsingHandle = new DefaultServerSentEventParsingHandle(httpResponseBody);
         ServerSentEventContext context = new ServerSentEventContext(parsingHandle);
-
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(httpResponseBody, UTF_8))) {
-
             String event = null;
             StringBuilder data = new StringBuilder();
-
             String line;
             while (!parsingHandle.isCancelled() && (line = reader.readLine()) != null) {
                 if (line.isEmpty()) {
-                    if (!data.isEmpty() && !parsingHandle.isCancelled()) {
+                    if (data.length() != 0 && !parsingHandle.isCancelled()) {
                         ServerSentEvent sse = new ServerSentEvent(event, data.toString());
                         ignoringExceptions(() -> listener.onEvent(sse, context));
                         event = null;
@@ -35,18 +31,16 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
                     }
                     continue;
                 }
-
                 if (line.startsWith("event:")) {
                     event = line.substring("event:".length()).trim();
                 } else if (line.startsWith("data:")) {
-                    if (!data.isEmpty()) {
+                    if (data.length() != 0) {
                         data.append("\n");
                     }
                     data.append(dataFieldValue(line));
                 }
             }
-
-            if (!parsingHandle.isCancelled() && !data.isEmpty()) {
+            if (!parsingHandle.isCancelled() && data.length() != 0) {
                 ServerSentEvent sse = new ServerSentEvent(event, data.toString());
                 ignoringExceptions(() -> listener.onEvent(sse, context));
             }
@@ -80,7 +74,9 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
     private static final class DefaultIncremental implements Incremental {
 
         private final ByteArrayOutputStream pending = new ByteArrayOutputStream();
+
         private String currentEvent;
+
         private final StringBuilder currentData = new StringBuilder();
 
         @Override
@@ -89,7 +85,6 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
             byte[] arr = new byte[len];
             bytes.get(arr);
             pending.write(arr, 0, len);
-
             byte[] all = pending.toByteArray();
             List<ServerSentEvent> events = new ArrayList<>();
             int start = 0;
@@ -115,11 +110,11 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
         public List<ServerSentEvent> flush() {
             List<ServerSentEvent> events = new ArrayList<>();
             if (pending.size() > 0) {
-                processLine(pending.toString(UTF_8), events);
+                processLine(new String(pending.toByteArray(), UTF_8), events);
                 pending.reset();
             }
             // Trailing event with no terminating blank line — match parse(InputStream)'s final emit.
-            if (!currentData.isEmpty()) {
+            if (currentData.length() != 0) {
                 events.add(new ServerSentEvent(currentEvent, currentData.toString()));
                 currentEvent = null;
                 currentData.setLength(0);
@@ -129,7 +124,7 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
 
         private void processLine(String line, List<ServerSentEvent> events) {
             if (line.isEmpty()) {
-                if (!currentData.isEmpty()) {
+                if (currentData.length() != 0) {
                     events.add(new ServerSentEvent(currentEvent, currentData.toString()));
                     currentEvent = null;
                     currentData.setLength(0);
@@ -139,7 +134,7 @@ public class DefaultServerSentEventParser implements ServerSentEventParser {
             if (line.startsWith("event:")) {
                 currentEvent = line.substring("event:".length()).trim();
             } else if (line.startsWith("data:")) {
-                if (!currentData.isEmpty()) {
+                if (currentData.length() != 0) {
                     currentData.append("\n");
                 }
                 currentData.append(dataFieldValue(line));

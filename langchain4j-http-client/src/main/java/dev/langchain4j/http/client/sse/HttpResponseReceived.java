@@ -1,7 +1,6 @@
 package dev.langchain4j.http.client.sse;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.http.client.SuccessfulHttpResponse;
 import java.util.Objects;
@@ -26,9 +25,11 @@ public class HttpResponseReceived implements HttpStreamingEvent {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (HttpResponseReceived) obj;
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
+        dev.langchain4j.http.client.sse.HttpResponseReceived that = (HttpResponseReceived) obj;
         return Objects.equals(this.response, that.response);
     }
 

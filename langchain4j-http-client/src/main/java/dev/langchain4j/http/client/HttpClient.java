@@ -7,9 +7,8 @@ import dev.langchain4j.http.client.sse.DefaultServerSentEventParser;
 import dev.langchain4j.http.client.sse.HttpStreamingEvent;
 import dev.langchain4j.http.client.sse.ServerSentEventListener;
 import dev.langchain4j.http.client.sse.ServerSentEventParser;
-
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow.Publisher;
+import org.reactivestreams.Publisher;
 
 /**
  * A client for executing HTTP requests both synchronously and asynchronously.

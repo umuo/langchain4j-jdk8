@@ -1,7 +1,6 @@
 package dev.langchain4j.http.client;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureBetween;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -10,7 +9,9 @@ import java.util.Map;
 public class SuccessfulHttpResponse {
 
     private final int statusCode;
+
     private final Map<String, List<String>> headers;
+
     private final byte[] body;
 
     public SuccessfulHttpResponse(Builder builder) {
@@ -34,13 +35,7 @@ public class SuccessfulHttpResponse {
         if (headers == null) {
             return null;
         }
-        return headers.entrySet().stream()
-                .filter(entry -> "content-type".equalsIgnoreCase(entry.getKey()))
-                .map(Map.Entry::getValue)
-                .filter(values -> values != null && !values.isEmpty())
-                .map(values -> values.get(0))
-                .findFirst()
-                .orElse(null);
+        return headers.entrySet().stream().filter(entry -> "content-type".equalsIgnoreCase(entry.getKey())).map(Map.Entry::getValue).filter(values -> values != null && !values.isEmpty()).map(values -> values.get(0)).findFirst().orElse(null);
     }
 
     public String body() {
@@ -66,8 +61,7 @@ public class SuccessfulHttpResponse {
         for (String part : contentType.split(";")) {
             String trimmed = part.trim();
             if (trimmed.regionMatches(true, 0, "charset=", 0, "charset=".length())) {
-                String charsetName =
-                        trimmed.substring("charset=".length()).trim().replaceAll("^\"|\"$", "");
+                String charsetName = trimmed.substring("charset=".length()).trim().replaceAll("^\"|\"$", "");
                 try {
                     return Charset.forName(charsetName);
                 } catch (Exception e) {
@@ -85,10 +79,13 @@ public class SuccessfulHttpResponse {
     public static class Builder {
 
         private int statusCode;
+
         private Map<String, List<String>> headers;
+
         private byte[] body;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder statusCode(int statusCode) {
             this.statusCode = statusCode;

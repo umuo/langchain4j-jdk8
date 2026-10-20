@@ -1,12 +1,12 @@
 package dev.langchain4j.http.client.sse;
 
 import static dev.langchain4j.internal.Utils.quoted;
-
 import java.util.Objects;
 
 public class ServerSentEvent implements HttpStreamingEvent {
 
     private final String event;
+
     private final String data;
 
     public ServerSentEvent(String event, String data) {
@@ -24,9 +24,11 @@ public class ServerSentEvent implements HttpStreamingEvent {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ServerSentEvent) obj;
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
+        dev.langchain4j.http.client.sse.ServerSentEvent that = (ServerSentEvent) obj;
         return Objects.equals(this.event, that.event) && Objects.equals(this.data, that.data);
     }
 

@@ -1,7 +1,6 @@
 package dev.langchain4j.http.client;
 
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -12,7 +11,8 @@ import java.util.TreeMap;
  */
 final class HttpHeaders {
 
-    private HttpHeaders() {}
+    private HttpHeaders() {
+    }
 
     /**
      * Returns an unmodifiable copy of the provided headers whose lookups
@@ -28,9 +28,8 @@ final class HttpHeaders {
      */
     static Map<String, List<String>> copyCaseInsensitive(Map<String, List<String>> headers) {
         if (headers == null || headers.isEmpty()) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
-
         Map<String, List<String>> copy = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         headers.forEach((name, values) -> {
             if (name == null) {

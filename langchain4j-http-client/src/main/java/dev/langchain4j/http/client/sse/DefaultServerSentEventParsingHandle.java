@@ -1,7 +1,6 @@
 package dev.langchain4j.http.client.sse;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.io.InputStream;
 
 /**
@@ -10,6 +9,7 @@ import java.io.InputStream;
 public class DefaultServerSentEventParsingHandle implements ServerSentEventParsingHandle {
 
     private final InputStream inputStream;
+
     private volatile boolean isCancelled;
 
     public DefaultServerSentEventParsingHandle(InputStream inputStream) {

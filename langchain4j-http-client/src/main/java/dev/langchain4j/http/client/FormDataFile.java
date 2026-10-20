@@ -11,7 +11,9 @@ import java.util.Objects;
 public class FormDataFile {
 
     private final String fileName;
+
     private final String contentType;
+
     private final byte[] content;
 
     public FormDataFile(String fileName, String contentType, byte[] content) {
@@ -34,11 +36,10 @@ public class FormDataFile {
 
     @Override
     public boolean equals(final Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         FormDataFile that = (FormDataFile) o;
-        return Objects.equals(fileName, that.fileName)
-                && Objects.equals(contentType, that.contentType)
-                && Objects.deepEquals(content, that.content);
+        return Objects.equals(fileName, that.fileName) && Objects.equals(contentType, that.contentType) && Objects.deepEquals(content, that.content);
     }
 
     @Override

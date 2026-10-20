@@ -2,7 +2,6 @@ package dev.langchain4j.http.client.okhttp;
 
 import static dev.langchain4j.http.client.sse.ServerSentEventListenerUtils.ignoringExceptions;
 import static dev.langchain4j.internal.Utils.getOrDefault;
-
 import dev.langchain4j.exception.HttpException;
 import dev.langchain4j.exception.TimeoutException;
 import dev.langchain4j.http.client.FormDataFile;
@@ -15,9 +14,9 @@ import dev.langchain4j.http.client.sse.ServerSentEvent;
 import dev.langchain4j.http.client.sse.ServerSentEventContext;
 import dev.langchain4j.http.client.sse.ServerSentEventListener;
 import dev.langchain4j.http.client.sse.ServerSentEventParser;
-import mutiny.zero.BackpressureStrategy;
-import mutiny.zero.TubeConfiguration;
-import mutiny.zero.ZeroPublisher;
+import dev.langchain4j.internal.reactive.BackpressureStrategy;
+import dev.langchain4j.internal.reactive.TubeConfiguration;
+import dev.langchain4j.internal.reactive.ZeroPublisher;
 import okhttp3.Call;
 import okhttp3.Callback;
 import okhttp3.MediaType;
@@ -25,7 +24,6 @@ import okhttp3.MultipartBody;
 import okhttp3.Request;
 import okhttp3.RequestBody;
 import okhttp3.Response;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.SocketTimeoutException;
@@ -33,9 +31,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
+import org.reactivestreams.Publisher;
 import java.util.concurrent.TimeUnit;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 
 public class OkHttpClient implements HttpClient {
@@ -43,22 +40,19 @@ public class OkHttpClient implements HttpClient {
     static final int DEFAULT_STREAMING_BUFFER_SIZE = 16384;
 
     private final okhttp3.OkHttpClient client;
+
     private final int streamingBufferSize;
 
     public OkHttpClient(OkHttpClientBuilder builder) {
-        okhttp3.OkHttpClient.Builder okBuilder =
-                getOrDefault(builder.okHttpClientBuilder(), okhttp3.OkHttpClient.Builder::new);
-
+        okhttp3.OkHttpClient.Builder okBuilder = getOrDefault(builder.okHttpClientBuilder(), okhttp3.OkHttpClient.Builder::new);
         if (builder.connectTimeout() != null) {
             okBuilder.connectTimeout(builder.connectTimeout().toMillis(), TimeUnit.MILLISECONDS);
         }
         if (builder.readTimeout() != null) {
             okBuilder.readTimeout(builder.readTimeout().toMillis(), TimeUnit.MILLISECONDS);
         }
-
         this.client = okBuilder.build();
-        this.streamingBufferSize = ensureGreaterThanZero(
-                getOrDefault(builder.streamingBufferSize(), DEFAULT_STREAMING_BUFFER_SIZE), "streamingBufferSize");
+        this.streamingBufferSize = ensureGreaterThanZero(getOrDefault(builder.streamingBufferSize(), DEFAULT_STREAMING_BUFFER_SIZE), "streamingBufferSize");
     }
 
     public static OkHttpClientBuilder builder() {
@@ -86,9 +80,10 @@ public class OkHttpClient implements HttpClient {
         CompletableFuture<SuccessfulHttpResponse> future = new CompletableFuture<>();
         Call call = client.newCall(okRequest);
         call.enqueue(new Callback() {
+
             @Override
             public void onResponse(Call call, Response response) {
-                try (response) {
+                try (Response closeableResponse = response) {
                     if (!response.isSuccessful()) {
                         future.completeExceptionally(new HttpException(response.code(), readBody(response)));
                     } else {
@@ -104,7 +99,6 @@ public class OkHttpClient implements HttpClient {
                 future.completeExceptionally(e instanceof SocketTimeoutException ? new TimeoutException(e) : e);
             }
         });
-
         future.whenComplete((response, error) -> {
             if (future.isCancelled()) {
                 call.cancel();
@@ -123,12 +117,11 @@ public class OkHttpClient implements HttpClient {
      * the stream, aborts the connection, and frees that thread.
      */
     @Override
-    public Flow.Publisher<HttpStreamingEvent> stream(HttpRequest request, ServerSentEventParser parser) {
-        TubeConfiguration config = new TubeConfiguration()
-                .withBackpressureStrategy(BackpressureStrategy.BUFFER)
-                .withBufferSize(streamingBufferSize);
+    public Publisher<HttpStreamingEvent> stream(HttpRequest request, ServerSentEventParser parser) {
+        TubeConfiguration config = new TubeConfiguration().withBackpressureStrategy(BackpressureStrategy.BUFFER).withBufferSize(streamingBufferSize);
         return ZeroPublisher.create(config, tube -> {
             Call call = enqueueServerSentEvents(request, parser, new ServerSentEventListener() {
+
                 @Override
                 public void onOpen(SuccessfulHttpResponse response) {
                     if (!tube.cancelled()) {
@@ -176,23 +169,21 @@ public class OkHttpClient implements HttpClient {
         enqueueServerSentEvents(request, parser, listener);
     }
 
-    private Call enqueueServerSentEvents(
-            HttpRequest request, ServerSentEventParser parser, ServerSentEventListener listener) {
+    private Call enqueueServerSentEvents(HttpRequest request, ServerSentEventParser parser, ServerSentEventListener listener) {
         Request okRequest = toOkHttpRequest(request);
         Call call = client.newCall(okRequest);
         call.enqueue(new Callback() {
+
             @Override
             public void onResponse(Call call, Response response) {
-                try (response) {
+                try (Response closeableResponse = response) {
                     if (!response.isSuccessful()) {
                         HttpException exception = new HttpException(response.code(), readBody(response));
                         ignoringExceptions(() -> listener.onError(exception));
                         return;
                     }
-
                     SuccessfulHttpResponse successResponse = fromOkHttpResponse(response, null);
                     ignoringExceptions(() -> listener.onOpen(successResponse));
-
                     try (InputStream inputStream = getInputStream(response)) {
                         parser.parse(inputStream, listener);
                         ignoringExceptions(listener::onClose);
@@ -228,7 +219,6 @@ public class OkHttpClient implements HttpClient {
         } else {
             body = response.body().bytes();
         }
-
         return fromOkHttpResponse(response, body);
     }
 
@@ -241,12 +231,7 @@ public class OkHttpClient implements HttpClient {
         for (String name : response.headers().names()) {
             headers.put(name, response.headers().values(name));
         }
-
-        return SuccessfulHttpResponse.builder()
-                .statusCode(response.code())
-                .headers(headers)
-                .body(body)
-                .build();
+        return SuccessfulHttpResponse.builder().statusCode(response.code()).headers(headers).body(body).build();
     }
 
     private String readBody(Response response) {
@@ -259,7 +244,6 @@ public class OkHttpClient implements HttpClient {
 
     private Request toOkHttpRequest(HttpRequest request) {
         Request.Builder builder = new Request.Builder().url(request.url());
-
         request.headers().forEach((name, values) -> {
             if (values != null) {
                 for (String value : values) {
@@ -267,45 +251,43 @@ public class OkHttpClient implements HttpClient {
                 }
             }
         });
-
         RequestBody body = buildRequestBody(request);
-
-        switch (request.method()) {
-            case GET -> builder.get();
-            case POST -> builder.post(body != null ? body : RequestBody.create(new byte[0]));
-            case DELETE -> {
-                if (body != null) {
-                    builder.delete(body);
-                } else {
-                    builder.delete();
+        switch(request.method()) {
+            case GET:
+                builder.get();
+                break;
+            case POST:
+                builder.post(body != null ? body : RequestBody.create(new byte[0]));
+                break;
+            case DELETE:
+                {
+                    if (body != null) {
+                        builder.delete(body);
+                    } else {
+                        builder.delete();
+                    }
                 }
-            }
+                break;
         }
-
         return builder.build();
     }
 
     private RequestBody buildRequestBody(HttpRequest request) {
         if (!request.formDataFields().isEmpty() || !request.formDataFiles().isEmpty()) {
             MultipartBody.Builder multipartBuilder = new MultipartBody.Builder().setType(MultipartBody.FORM);
-
             for (Map.Entry<String, String> entry : request.formDataFields().entrySet()) {
                 multipartBuilder.addFormDataPart(entry.getKey(), entry.getValue());
             }
-
             for (Map.Entry<String, FormDataFile> entry : request.formDataFiles().entrySet()) {
                 FormDataFile file = entry.getValue();
                 RequestBody fileBody = RequestBody.create(file.content(), MediaType.parse(file.contentType()));
                 multipartBuilder.addFormDataPart(entry.getKey(), file.fileName(), fileBody);
             }
-
             return multipartBuilder.build();
         }
-
         if (request.body() != null) {
             return RequestBody.create(request.body(), MediaType.parse("application/json"));
         }
-
         return null;
     }
 }

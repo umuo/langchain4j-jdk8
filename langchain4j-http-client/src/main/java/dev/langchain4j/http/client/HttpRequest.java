@@ -8,7 +8,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
-
 import dev.langchain4j.Experimental;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -20,10 +19,15 @@ import java.util.Map;
 public class HttpRequest {
 
     private final HttpMethod method;
+
     private final String url;
+
     private final Map<String, List<String>> headers;
+
     private final Map<String, String> formDataFields;
+
     private final Map<String, FormDataFile> formDataFiles;
+
     private final String body;
 
     public HttpRequest(Builder builder) {
@@ -53,20 +57,17 @@ public class HttpRequest {
         if (isNullOrEmpty(builder.queryParams)) {
             return url;
         }
-
         String queryString = buildQueryString(builder.queryParams);
         String separator = url.contains("?") ? "&" : "?";
         return url + separator + queryString;
     }
 
     private static String buildQueryString(Map<String, String> queryParams) {
-        return queryParams.entrySet().stream()
-                .map(entry -> encodeQueryParam(entry.getKey()) + "=" + encodeQueryParam(entry.getValue()))
-                .collect(joining("&"));
+        return queryParams.entrySet().stream().map(entry -> encodeQueryParam(entry.getKey()) + "=" + encodeQueryParam(entry.getValue())).collect(joining("&"));
     }
 
     private static String encodeQueryParam(String value) {
-        return URLEncoder.encode(value, StandardCharsets.UTF_8);
+        return dev.langchain4j.internal.Jdk8.urlEncode(value);
     }
 
     public HttpMethod method() {
@@ -108,14 +109,21 @@ public class HttpRequest {
     public static class Builder {
 
         private HttpMethod method;
+
         private String url;
+
         private Map<String, List<String>> headers;
+
         private Map<String, String> queryParams;
+
         private Map<String, String> formDataFields;
+
         private Map<String, FormDataFile> formDataFiles;
+
         private String body;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder method(HttpMethod method) {
             this.method = method;
@@ -130,7 +138,6 @@ public class HttpRequest {
         public Builder url(String baseUrl, String path) {
             ensureNotBlank(baseUrl, "baseUrl");
             ensureNotBlank(path, "path");
-
             if (baseUrl.endsWith("/")) {
                 baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
             }
@@ -144,7 +151,6 @@ public class HttpRequest {
         public Builder addHeader(String name, String... values) {
             ensureNotBlank(name, "name");
             ensureNotEmpty(values, "values");
-
             if (this.headers == null) {
                 this.headers = new HashMap<>();
             }
@@ -159,7 +165,7 @@ public class HttpRequest {
             if (this.headers == null) {
                 this.headers = new HashMap<>();
             }
-            headers.forEach((name, value) -> this.headers.put(name, List.of(value)));
+            headers.forEach((name, value) -> this.headers.put(name, dev.langchain4j.internal.Jdk8.list(value)));
             return this;
         }
 
@@ -171,7 +177,6 @@ public class HttpRequest {
         public Builder addQueryParam(String name, String value) {
             ensureNotBlank(name, "name");
             ensureNotBlank(value, "value");
-
             if (this.queryParams == null) {
                 this.queryParams = new LinkedHashMap<>();
             }
@@ -206,7 +211,6 @@ public class HttpRequest {
         public Builder addFormDataField(String name, String value) {
             ensureNotBlank(name, "name");
             ensureNotNull(value, "value");
-
             if (this.formDataFields == null) {
                 this.formDataFields = new LinkedHashMap<>();
             }
