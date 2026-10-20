@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第三阶段基础 RAG 已完成（2026-10-20）
+## 当前状态：第四阶段 Embeddings API 与 RAG 传输验收进行中（WIP，2026-10-20）
 
 - 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m3`；历史标记 `jdk8-m1`、`jdk8-m2`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
@@ -83,3 +83,10 @@
 - 已复现并修复两个取消断点：检索器 `thenApply` 到 embedding 的回传、AI Services 的异步 memory/augmentation 组合链。补充 Future/Publisher/等待 memory 期间的取消测试，防止继续调用模型或检索器。
 - 聚焦验收：15 个 `RagJdk8Test` 在真实 Java 8 下通过；此前完整构建及新增 HTTP/SSE 4 个用例通过。随后已完成含全部新增边界用例的最终 clean 构建，结果见上方和 milestone-3 快照。
 - 独立 BOM 的 `RagExample` 已在 Java 8 输出 `Java 8 RAG OK; answer: 7 yuan; source: apple price is 7 yuan.`；关键词向量仅用于验证流程，不代表真实语义质量。
+
+## 第四阶段检查点（WIP）
+
+- 从干净的 `jdk8-m3` 恢复，外置盘挂载、可用约 69 GiB。
+- 沿用六模块生产依赖；新增 embedding 请求/响应、listener、异步/重试等选定上游回归。
+- 本阶段目标：loopback Embeddings API 的批量/维度/token usage/错误/超时/取消，HTTP embedding 到检索及 AI Services 的完整闭环，独立 BOM 消费示例。
+- 当前支持范围仍以第三阶段验收为准，未使用真实网络模型或服务凭据。

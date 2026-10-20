@@ -93,6 +93,19 @@
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/router/DefaultQueryRouterTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/transformer/DefaultQueryTransformerTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/retriever/EmbeddingStoreContentRetrieverAsyncTest.java</testInclude>
+                        <testInclude>langchain4j-open-ai/src/test/java/dev/langchain4j/model/openai/OpenAiEmbeddingModelTest.java</testInclude>
+                        <testInclude>langchain4j-open-ai/src/test/java/dev/langchain4j/model/openai/OpenAiEmbeddingModelAsyncTest.java</testInclude>
+                        <testInclude>langchain4j-open-ai/src/test/java/dev/langchain4j/model/openai/OpenAiEmbeddingModelAsyncRetryTest.java</testInclude>
+                        <testInclude>langchain4j-open-ai/src/test/java/dev/langchain4j/model/openai/OpenAiEmbeddingRequestParametersTest.java</testInclude>
+                        <testInclude>langchain4j-open-ai/src/test/java/dev/langchain4j/model/openai/internal/embedding/EmbeddingDeserializationTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/embedding/EmbeddingModelTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/embedding/EmbeddingModelRequestResponseTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/embedding/EmbeddingModelListenerTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/embedding/DimensionAwareEmbeddingModelTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/embedding/EmbeddingRequestResponseTypesTest.java</testInclude>
+                        <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/MockHttpClient.java</testInclude>
+                        <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/MockHttpClientBuilder.java</testInclude>
+                        <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/SpyingHttpClient.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -136,6 +149,16 @@
                         <include>**/DefaultQueryRouterTest.java</include>
                         <include>**/DefaultQueryTransformerTest.java</include>
                         <include>**/EmbeddingStoreContentRetrieverAsyncTest.java</include>
+                        <include>**/OpenAiEmbeddingModelTest.java</include>
+                        <include>**/OpenAiEmbeddingModelAsyncTest.java</include>
+                        <include>**/OpenAiEmbeddingModelAsyncRetryTest.java</include>
+                        <include>**/OpenAiEmbeddingRequestParametersTest.java</include>
+                        <include>**/EmbeddingDeserializationTest.java</include>
+                        <include>**/EmbeddingModelTest.java</include>
+                        <include>**/EmbeddingModelRequestResponseTest.java</include>
+                        <include>**/EmbeddingModelListenerTest.java</include>
+                        <include>**/DimensionAwareEmbeddingModelTest.java</include>
+                        <include>**/EmbeddingRequestResponseTypesTest.java</include>
                     </includes>
                 </configuration>
             </plugin>
