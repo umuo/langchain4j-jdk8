@@ -12,6 +12,7 @@ import java.util.Arrays;
  * The maximum number of retries is configurable, defaulting to {@link dev.langchain4j.guardrail.config.OutputGuardrailsConfig#MAX_RETRIES_DEFAULT}.
  */
 public interface OutputGuardrail extends Guardrail<OutputGuardrailRequest, OutputGuardrailResult> {
+
     /**
      * Validates the response from the LLM.
      *
@@ -200,8 +201,7 @@ public interface OutputGuardrail extends Guardrail<OutputGuardrailRequest, Outpu
      *         subsequent validation and triggering a retry with a new user prompt.
      */
     default OutputGuardrailResult reprompt(String message, String reprompt) {
-        return new OutputGuardrailResult(
-                Arrays.asList(new OutputGuardrailResult.Failure(message, null, true, reprompt)), true);
+        return new OutputGuardrailResult(Arrays.asList(new OutputGuardrailResult.Failure(message, null, true, reprompt)), true);
     }
 
     /**
@@ -216,8 +216,7 @@ public interface OutputGuardrail extends Guardrail<OutputGuardrailRequest, Outpu
      *         subsequent validation and triggering a retry with a new user prompt.
      */
     default OutputGuardrailResult reprompt(String message, Throwable cause, String reprompt) {
-        return new OutputGuardrailResult(
-                Arrays.asList(new OutputGuardrailResult.Failure(message, cause, true, reprompt)), true);
+        return new OutputGuardrailResult(Arrays.asList(new OutputGuardrailResult.Failure(message, cause, true, reprompt)), true);
     }
 
     /**

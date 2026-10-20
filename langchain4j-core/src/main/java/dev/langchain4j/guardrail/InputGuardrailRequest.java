@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.ContentType;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.UserMessage;
@@ -11,7 +10,9 @@ import java.util.Objects;
  * Represents the parameter passed to {@link InputGuardrail#validate(InputGuardrailRequest)}.
  */
 public final class InputGuardrailRequest implements GuardrailRequest<InputGuardrailRequest> {
+
     private final UserMessage userMessage;
+
     private final GuardrailRequestParams commonParams;
 
     private InputGuardrailRequest(Builder builder) {
@@ -40,24 +41,15 @@ public final class InputGuardrailRequest implements GuardrailRequest<InputGuardr
 
     @Override
     public InputGuardrailRequest withText(String text) {
-        return new Builder()
-                .userMessage(rewriteUserMessage(text))
-                .commonParams(this.commonParams)
-                .build();
+        return new Builder().userMessage(rewriteUserMessage(text)).commonParams(this.commonParams).build();
     }
 
     public UserMessage rewriteUserMessage(String text) {
         if (Objects.isNull(this.userMessage) || Objects.isNull(text)) {
             return this.userMessage;
         }
-
-        var rewrittenContent = this.userMessage.contents().stream()
-                .map(c -> (c.type() == ContentType.TEXT) ? new TextContent(text) : c)
-                .toList();
-
-        return this.userMessage.toBuilder()
-                .contents(rewrittenContent)
-                .build();
+        java.util.List<dev.langchain4j.data.message.Content> rewrittenContent = this.userMessage.contents().stream().map(c -> (c.type() == ContentType.TEXT) ? new TextContent(text) : c).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+        return this.userMessage.toBuilder().contents(rewrittenContent).build();
     }
 
     /**
@@ -73,7 +65,9 @@ public final class InputGuardrailRequest implements GuardrailRequest<InputGuardr
      * Builder for {@link InputGuardrailRequest}.
      */
     public static class Builder {
+
         private UserMessage userMessage;
+
         private GuardrailRequestParams commonParams;
 
         /**

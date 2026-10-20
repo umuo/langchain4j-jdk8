@@ -3,12 +3,10 @@ package dev.langchain4j.rag.content.retriever;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import dev.langchain4j.internal.AsyncNotSupported;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverListener;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -48,7 +46,7 @@ public interface ContentRetriever {
     /**
      * Non-blocking counterpart of {@link #retrieve(Query)}, invoked by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link java.util.concurrent.CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service modes when RAG is configured.
+     * ({@link org.reactivestreams.Publisher}) AI Service modes when RAG is configured.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}: a retriever backed by blocking I/O
      * (embedding-model call, vector-store query, web search, etc.) must opt in by overriding this method so it can
@@ -77,7 +75,7 @@ public interface ContentRetriever {
      */
     @Experimental
     default ContentRetriever addListener(ContentRetrieverListener listener) {
-        return addListeners(listener == null ? null : List.of(listener));
+        return addListeners(listener == null ? null : dev.langchain4j.internal.Jdk8.list(listener));
     }
 
     /**
@@ -94,11 +92,11 @@ public interface ContentRetriever {
         if (isNullOrEmpty(listeners)) {
             return this;
         }
-        if (this instanceof ListeningContentRetriever listeningContentRetriever) {
-            return listeningContentRetriever.withAdditionalListeners(listeners);
+        if (this instanceof ListeningContentRetriever) {
+            return ((ListeningContentRetriever) this).withAdditionalListeners(listeners);
         }
-        if (listeners instanceof List<ContentRetrieverListener> listenersList) {
-            return new ListeningContentRetriever(this, listenersList);
+        if (listeners instanceof List) {
+            return new ListeningContentRetriever(this, ((List<ContentRetrieverListener>) listeners));
         } else {
             return new ListeningContentRetriever(this, new ArrayList<>(listeners));
         }

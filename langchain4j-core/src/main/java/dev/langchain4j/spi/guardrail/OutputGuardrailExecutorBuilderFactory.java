@@ -12,11 +12,5 @@ import dev.langchain4j.observability.api.event.OutputGuardrailExecutedEvent;
  * This interface extends {@link GuardrailExecutorBuilderFactory} and is specifically tailored for output guardrails,
  * utilizing configurations, results, requests, and guardrails that are specific to the output context.
  */
-public non-sealed interface OutputGuardrailExecutorBuilderFactory
-        extends GuardrailExecutorBuilderFactory<
-                OutputGuardrailsConfig,
-                OutputGuardrailResult,
-                OutputGuardrailRequest,
-                OutputGuardrail,
-                OutputGuardrailExecutedEvent,
-                OutputGuardrailExecutor.OutputGuardrailExecutorBuilder> {}
+public interface OutputGuardrailExecutorBuilderFactory extends GuardrailExecutorBuilderFactory<OutputGuardrailsConfig, OutputGuardrailResult, OutputGuardrailRequest, OutputGuardrail, OutputGuardrailExecutedEvent, OutputGuardrailExecutor.OutputGuardrailExecutorBuilder> {
+}

@@ -7,6 +7,7 @@ import dev.langchain4j.observability.api.event.AiServiceEvent;
  * @param <T> The type of {@link AiServiceEvent} this listener listens for
  */
 public interface AiServiceListener<T extends AiServiceEvent> {
+
     /**
      * Retrieves the class object representing the type of {@link AiServiceEvent}
      * that this listener listens for.

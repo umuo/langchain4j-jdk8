@@ -2,12 +2,10 @@ package dev.langchain4j.model.chat;
 
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
-
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 
 /**
@@ -41,9 +39,11 @@ public class ChatRequestOptions {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChatRequestOptions that)) return false;
-        return Objects.equals(listenerAttributes, that.listenerAttributes);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChatRequestOptions))
+            return false;
+        return Objects.equals(listenerAttributes, ((ChatRequestOptions) o).listenerAttributes);
     }
 
     @Override

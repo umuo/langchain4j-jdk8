@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.Content;
 import java.util.ArrayList;
@@ -63,10 +62,8 @@ public final class FieldsInput implements DecisionInput {
         if (value instanceof Content) {
             return value;
         }
-        if (value instanceof Collection<?> collection
-                && !collection.isEmpty()
-                && collection.stream().allMatch(Content.class::isInstance)) {
-            return List.copyOf(collection);
+        if (value instanceof Collection<?> && !((Collection<?>) value).isEmpty() && ((Collection<?>) value).stream().allMatch(Content.class::isInstance)) {
+            return dev.langchain4j.internal.Jdk8.copyList(((Collection<?>) value));
         }
         return copy(value);
     }
@@ -75,23 +72,22 @@ public final class FieldsInput implements DecisionInput {
         if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
             return value;
         }
-        if (value instanceof Map<?, ?> map) {
+        if (value instanceof Map<?, ?>) {
             Map<String, Object> result = new LinkedHashMap<>();
-            map.forEach((key, item) -> result.put(String.valueOf(key), copy(item)));
+            ((Map<?, ?>) value).forEach((key, item) -> result.put(String.valueOf(key), copy(item)));
             return Collections.unmodifiableMap(result);
         }
-        if (value instanceof Collection<?> collection) {
+        if (value instanceof Collection<?>) {
             List<Object> result = new ArrayList<>();
-            collection.forEach(item -> result.add(copy(item)));
+            ((Collection<?>) value).forEach(item -> result.add(copy(item)));
             return Collections.unmodifiableList(result);
         }
-        throw new IllegalArgumentException("fields can only contain strings, numbers, booleans, nulls, maps and lists, "
-                + "and, as values of a field, Contents or lists of Contents, but contains " + value.getClass().getName());
+        throw new IllegalArgumentException("fields can only contain strings, numbers, booleans, nulls, maps and lists, " + "and, as values of a field, Contents or lists of Contents, but contains " + value.getClass().getName());
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof FieldsInput that && fields.equals(that.fields);
+        return o instanceof FieldsInput && fields.equals(((FieldsInput) o).fields);
     }
 
     @Override

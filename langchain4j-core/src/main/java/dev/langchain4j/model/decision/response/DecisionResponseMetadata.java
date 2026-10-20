@@ -15,6 +15,7 @@ import java.util.Objects;
 public class DecisionResponseMetadata {
 
     private final String modelName;
+
     private final TokenUsage tokenUsage;
 
     protected DecisionResponseMetadata(Builder<?> builder) {
@@ -36,8 +37,10 @@ public class DecisionResponseMetadata {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DecisionResponseMetadata that = (DecisionResponseMetadata) o;
         return Objects.equals(modelName, that.modelName) && Objects.equals(tokenUsage, that.tokenUsage);
     }
@@ -59,6 +62,7 @@ public class DecisionResponseMetadata {
     public static class Builder<T extends Builder<T>> {
 
         private String modelName;
+
         private TokenUsage tokenUsage;
 
         public T modelName(String modelName) {

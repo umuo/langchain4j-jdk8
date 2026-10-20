@@ -1,7 +1,6 @@
 package dev.langchain4j.rag.content.retriever.listener;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
@@ -19,7 +18,9 @@ import java.util.Map;
 public class ContentRetrieverRequestContext {
 
     private final Query query;
+
     private final ContentRetriever contentRetriever;
+
     private final Map<Object, Object> attributes;
 
     public ContentRetrieverRequestContext(Builder builder) {
@@ -41,10 +42,13 @@ public class ContentRetrieverRequestContext {
     public static class Builder {
 
         private Query query;
+
         private ContentRetriever contentRetriever;
+
         private Map<Object, Object> attributes;
 
-        Builder() {}
+        Builder() {
+        }
 
         public Builder query(Query query) {
             this.query = query;

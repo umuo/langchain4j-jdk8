@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.spi.json.ProviderJsonCodecFactory;
 import java.util.Map;
@@ -23,7 +22,8 @@ public final class ProviderJson {
      */
     private static final Map<ProviderJsonSpec, Json.JsonCodec> CODECS = new ConcurrentHashMap<>();
 
-    private ProviderJson() {}
+    private ProviderJson() {
+    }
 
     public static Json.JsonCodec codec(ProviderJsonSpec spec) {
         return CODECS.computeIfAbsent(spec, ProviderJson::create);

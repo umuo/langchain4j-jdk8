@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.chat.ChatRequestOptions;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -21,7 +20,9 @@ import java.util.Objects;
 public final class ChatModelRoutingRequest {
 
     private final ChatRequest chatRequest;
+
     private final List<ChatModelRoute> routes;
+
     private final ChatRequestOptions options;
 
     private ChatModelRoutingRequest(Builder builder) {
@@ -55,11 +56,11 @@ public final class ChatModelRoutingRequest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChatModelRoutingRequest that)) return false;
-        return Objects.equals(chatRequest, that.chatRequest)
-                && Objects.equals(routes, that.routes)
-                && Objects.equals(options, that.options);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChatModelRoutingRequest))
+            return false;
+        return Objects.equals(chatRequest, ((ChatModelRoutingRequest) o).chatRequest) && Objects.equals(routes, ((ChatModelRoutingRequest) o).routes) && Objects.equals(options, ((ChatModelRoutingRequest) o).options);
     }
 
     @Override
@@ -79,7 +80,9 @@ public final class ChatModelRoutingRequest {
     public static final class Builder {
 
         private ChatRequest chatRequest;
+
         private List<ChatModelRoute> routes;
+
         private ChatRequestOptions options;
 
         public Builder chatRequest(ChatRequest chatRequest) {

@@ -2,7 +2,6 @@ package dev.langchain4j.model.decision.response;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,8 +21,11 @@ import java.util.Objects;
 public final class ChoiceAnswer implements DecisionAnswer {
 
     private final String value;
+
     private final Map<String, Double> probabilities;
+
     private final Double confidence;
+
     private final List<String> options;
 
     private ChoiceAnswer(Builder builder) {
@@ -32,7 +34,7 @@ public final class ChoiceAnswer implements DecisionAnswer {
         this.confidence = Probabilities.ensureNullableProbability(builder.confidence, "confidence");
         this.options = copy(builder.options);
         if (!options.isEmpty() && !options.contains(value)) {
-            throw new IllegalArgumentException("'%s' is not one of the options %s".formatted(value, options));
+            throw new IllegalArgumentException(String.format("'%s' is not one of the options %s", value, options));
         }
     }
 
@@ -74,7 +76,7 @@ public final class ChoiceAnswer implements DecisionAnswer {
      */
     public double probabilityOf(String option) {
         if (!options.isEmpty() && !options.contains(option)) {
-            throw new IllegalArgumentException("'%s' is not one of the options %s".formatted(option, options));
+            throw new IllegalArgumentException(String.format("'%s' is not one of the options %s", option, options));
         }
         ensureProbabilities();
         return probabilities.getOrDefault(option, 0.0);
@@ -91,9 +93,7 @@ public final class ChoiceAnswer implements DecisionAnswer {
      */
     public double margin() {
         ensureProbabilities();
-        List<Double> sorted = probabilities.values().stream()
-                .sorted(Comparator.reverseOrder())
-                .toList();
+        List<Double> sorted = probabilities.values().stream().sorted(Comparator.reverseOrder()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         double unreported = 1 - sorted.stream().mapToDouble(Double::doubleValue).sum();
         double second = Math.max(sorted.size() < 2 ? 0 : sorted.get(1), unreported);
         return Math.max(0, sorted.get(0) - second);
@@ -122,12 +122,11 @@ public final class ChoiceAnswer implements DecisionAnswer {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChoiceAnswer that)) return false;
-        return Objects.equals(value, that.value)
-                && Objects.equals(probabilities, that.probabilities)
-                && Objects.equals(confidence, that.confidence)
-                && Objects.equals(options, that.options);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChoiceAnswer))
+            return false;
+        return Objects.equals(value, ((ChoiceAnswer) o).value) && Objects.equals(probabilities, ((ChoiceAnswer) o).probabilities) && Objects.equals(confidence, ((ChoiceAnswer) o).confidence) && Objects.equals(options, ((ChoiceAnswer) o).options);
     }
 
     @Override
@@ -137,15 +136,17 @@ public final class ChoiceAnswer implements DecisionAnswer {
 
     @Override
     public String toString() {
-        return "ChoiceAnswer{value=" + value + ", probabilities=" + probabilities + ", confidence=" + confidence
-                + ", options=" + options + '}';
+        return "ChoiceAnswer{value=" + value + ", probabilities=" + probabilities + ", confidence=" + confidence + ", options=" + options + '}';
     }
 
     public static final class Builder {
 
         private String value;
+
         private final Map<String, Double> probabilities = new LinkedHashMap<>();
+
         private Double confidence;
+
         private List<String> options;
 
         public Builder value(String value) {
@@ -162,8 +163,7 @@ public final class ChoiceAnswer implements DecisionAnswer {
         }
 
         public Builder probability(String option, Double probability) {
-            probabilities.put(
-                    ensureNotBlank(option, "option"), Probabilities.ensureProbability(probability, "probability"));
+            probabilities.put(ensureNotBlank(option, "option"), Probabilities.ensureProbability(probability, "probability"));
             return this;
         }
 

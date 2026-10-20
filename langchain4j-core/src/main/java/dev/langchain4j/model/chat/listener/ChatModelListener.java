@@ -27,7 +27,6 @@ public interface ChatModelListener {
      *                       or between multiple listeners.
      */
     default void onRequest(ChatModelRequestContext requestContext) {
-
     }
 
     /**
@@ -39,7 +38,6 @@ public interface ChatModelListener {
      *                        or between multiple listeners.
      */
     default void onResponse(ChatModelResponseContext responseContext) {
-
     }
 
     /**
@@ -52,6 +50,5 @@ public interface ChatModelListener {
      *                     or between multiple listeners.
      */
     default void onError(ChatModelErrorContext errorContext) {
-
     }
 }

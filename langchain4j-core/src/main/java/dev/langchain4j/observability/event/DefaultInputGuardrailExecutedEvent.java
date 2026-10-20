@@ -9,10 +9,7 @@ import dev.langchain4j.observability.api.event.InputGuardrailExecutedEvent;
 /**
  * Default implementation of {@link InputGuardrailExecutedEvent}.
  */
-public class DefaultInputGuardrailExecutedEvent
-        extends DefaultGuardrailExecutedEvent<
-                InputGuardrailRequest, InputGuardrailResult, InputGuardrail, InputGuardrailExecutedEvent>
-        implements InputGuardrailExecutedEvent {
+public class DefaultInputGuardrailExecutedEvent extends DefaultGuardrailExecutedEvent<InputGuardrailRequest, InputGuardrailResult, InputGuardrail, InputGuardrailExecutedEvent> implements InputGuardrailExecutedEvent {
 
     public DefaultInputGuardrailExecutedEvent(InputGuardrailExecutedEventBuilder builder) {
         super(builder);

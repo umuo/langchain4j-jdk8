@@ -3,7 +3,6 @@ package dev.langchain4j.model.chat.router;
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.chat.Capability;
 import dev.langchain4j.model.chat.ChatModel;
@@ -75,16 +74,14 @@ public class RoutingChatModel implements ChatModel {
     private final RouteSelector<ChatModel> selector;
 
     protected RoutingChatModel(Builder builder) {
-        this.selector = new RouteSelector<>(
-                builder.routes, builder.router, builder.defaultRoute, ChatModel::supportedCapabilities);
+        this.selector = new RouteSelector<>(builder.routes, builder.router, builder.defaultRoute, ChatModel::supportedCapabilities);
     }
 
     @Override
     public ChatResponse chat(ChatRequest chatRequest, ChatRequestOptions options) {
         ensureNotNull(chatRequest, "chatRequest");
         String routeName = selector.select(chatRequest, options);
-        ChatResponse response =
-                selector.model(routeName).chat(chatRequest, RouteSelector.withRoute(options, routeName));
+        ChatResponse response = selector.model(routeName).chat(chatRequest, RouteSelector.withRoute(options, routeName));
         return RouteSelector.withRoute(response, routeName);
     }
 
@@ -154,7 +151,9 @@ public class RoutingChatModel implements ChatModel {
     public static class Builder {
 
         private final List<RouteSelector.Route<ChatModel>> routes = new ArrayList<>();
+
         private ChatModelRouter router;
+
         private String defaultRoute;
 
         /**
@@ -164,7 +163,7 @@ public class RoutingChatModel implements ChatModel {
          * @param model the chat model that handles the requests sent to this route.
          */
         public Builder route(String name, ChatModel model) {
-            return route(name, List.of(), model);
+            return route(name, dev.langchain4j.internal.Jdk8.list(), model);
         }
 
         /**
@@ -178,7 +177,7 @@ public class RoutingChatModel implements ChatModel {
          * @param model       the chat model that handles the requests sent to this route.
          */
         public Builder route(String name, String description, ChatModel model) {
-            return route(name, description == null ? List.of() : List.of(description), model);
+            return route(name, description == null ? dev.langchain4j.internal.Jdk8.list() : dev.langchain4j.internal.Jdk8.list(description), model);
         }
 
         /**

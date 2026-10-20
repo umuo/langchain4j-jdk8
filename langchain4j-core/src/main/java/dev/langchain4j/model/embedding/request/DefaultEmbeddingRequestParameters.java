@@ -65,8 +65,10 @@ public class DefaultEmbeddingRequestParameters implements EmbeddingRequestParame
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DefaultEmbeddingRequestParameters that = (DefaultEmbeddingRequestParameters) o;
         return Objects.equals(values, that.values);
     }

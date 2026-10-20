@@ -14,6 +14,7 @@ import dev.langchain4j.observability.api.event.AiServiceResponseReceivedEvent;
  */
 @FunctionalInterface
 public interface AiServiceResponseReceivedListener extends AiServiceListener<AiServiceResponseReceivedEvent> {
+
     @Override
     default Class<AiServiceResponseReceivedEvent> getEventClass() {
         return AiServiceResponseReceivedEvent.class;

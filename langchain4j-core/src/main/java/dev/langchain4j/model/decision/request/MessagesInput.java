@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.ChatMessage;
 import java.util.ArrayList;
@@ -54,7 +53,7 @@ public final class MessagesInput implements DecisionInput {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof MessagesInput that && messages.equals(that.messages);
+        return o instanceof MessagesInput && messages.equals(((MessagesInput) o).messages);
     }
 
     @Override
@@ -64,6 +63,6 @@ public final class MessagesInput implements DecisionInput {
 
     @Override
     public String toString() {
-        return "MessagesInput{types=" + messages.stream().map(ChatMessage::type).toList() + '}';
+        return "MessagesInput{types=" + messages.stream().map(ChatMessage::type).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)) + '}';
     }
 }

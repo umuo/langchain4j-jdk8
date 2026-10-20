@@ -1,10 +1,8 @@
 package dev.langchain4j.rag.query.transformer;
 
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-
 import static java.util.Collections.singletonList;
 
 /**

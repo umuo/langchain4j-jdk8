@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.model.chat.request.ResponseFormatType.JSON;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
@@ -13,19 +12,28 @@ import java.util.Objects;
 
 public class DefaultChatRequestParameters implements ChatRequestParameters {
 
-    public static final ChatRequestParameters EMPTY =
-            DefaultChatRequestParameters.builder().build();
+    public static final ChatRequestParameters EMPTY = DefaultChatRequestParameters.builder().build();
 
     private final String modelName;
+
     private final Double temperature;
+
     private final Double topP;
+
     private final Integer topK;
+
     private final Double frequencyPenalty;
+
     private final Double presencePenalty;
+
     private final Integer maxOutputTokens;
+
     private final List<String> stopSequences;
+
     private final List<ToolSpecification> toolSpecifications;
+
     private final ToolChoice toolChoice;
+
     private final ResponseFormat responseFormat;
 
     protected DefaultChatRequestParameters(Builder<?> builder) {
@@ -102,10 +110,7 @@ public class DefaultChatRequestParameters implements ChatRequestParameters {
         if (isSubtypeOfThis(that)) {
             return that.defaultedBy(this);
         }
-        return DefaultChatRequestParameters.builder()
-                .overrideWith(this)
-                .overrideWith(that)
-                .build();
+        return DefaultChatRequestParameters.builder().overrideWith(this).overrideWith(that).build();
     }
 
     @Override
@@ -113,10 +118,7 @@ public class DefaultChatRequestParameters implements ChatRequestParameters {
         if (isSubtypeOfThis(that)) {
             return that.overrideWith(this);
         }
-        return DefaultChatRequestParameters.builder()
-                .overrideWith(that)
-                .overrideWith(this)
-                .build();
+        return DefaultChatRequestParameters.builder().overrideWith(that).overrideWith(this).build();
     }
 
     /**
@@ -126,62 +128,30 @@ public class DefaultChatRequestParameters implements ChatRequestParameters {
      * otherwise all provider-specific parameters would be silently lost.
      */
     private boolean isSubtypeOfThis(ChatRequestParameters that) {
-        return that != null
-                && that.getClass() != this.getClass()
-                && this.getClass().isAssignableFrom(that.getClass());
+        return that != null && that.getClass() != this.getClass() && this.getClass().isAssignableFrom(that.getClass());
     }
 
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DefaultChatRequestParameters that = (DefaultChatRequestParameters) o;
-        return Objects.equals(modelName, that.modelName)
-                && Objects.equals(temperature, that.temperature)
-                && Objects.equals(topP, that.topP)
-                && Objects.equals(topK, that.topK)
-                && Objects.equals(frequencyPenalty, that.frequencyPenalty)
-                && Objects.equals(presencePenalty, that.presencePenalty)
-                && Objects.equals(maxOutputTokens, that.maxOutputTokens)
-                && Objects.equals(stopSequences, that.stopSequences)
-                && Objects.equals(toolSpecifications, that.toolSpecifications)
-                && Objects.equals(toolChoice, that.toolChoice)
-                && Objects.equals(responseFormat, that.responseFormat);
+        return Objects.equals(modelName, that.modelName) && Objects.equals(temperature, that.temperature) && Objects.equals(topP, that.topP) && Objects.equals(topK, that.topK) && Objects.equals(frequencyPenalty, that.frequencyPenalty) && Objects.equals(presencePenalty, that.presencePenalty) && Objects.equals(maxOutputTokens, that.maxOutputTokens) && Objects.equals(stopSequences, that.stopSequences) && Objects.equals(toolSpecifications, that.toolSpecifications) && Objects.equals(toolChoice, that.toolChoice) && Objects.equals(responseFormat, that.responseFormat);
     }
 
     @Override
     @JacocoIgnoreCoverageGenerated
     public int hashCode() {
-        return Objects.hash(
-                modelName,
-                temperature,
-                topP,
-                topK,
-                frequencyPenalty,
-                presencePenalty,
-                maxOutputTokens,
-                stopSequences,
-                toolSpecifications,
-                toolChoice,
-                responseFormat);
+        return Objects.hash(modelName, temperature, topP, topK, frequencyPenalty, presencePenalty, maxOutputTokens, stopSequences, toolSpecifications, toolChoice, responseFormat);
     }
 
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "DefaultChatRequestParameters{" + "modelName='"
-                + modelName + '\'' + ", temperature="
-                + temperature + ", topP="
-                + topP + ", topK="
-                + topK + ", frequencyPenalty="
-                + frequencyPenalty + ", presencePenalty="
-                + presencePenalty + ", maxOutputTokens="
-                + maxOutputTokens + ", stopSequences="
-                + stopSequences + ", toolSpecifications="
-                + toolSpecifications + ", toolChoice="
-                + toolChoice + ", responseFormat="
-                + responseFormat + '}';
+        return "DefaultChatRequestParameters{" + "modelName='" + modelName + '\'' + ", temperature=" + temperature + ", topP=" + topP + ", topK=" + topK + ", frequencyPenalty=" + frequencyPenalty + ", presencePenalty=" + presencePenalty + ", maxOutputTokens=" + maxOutputTokens + ", stopSequences=" + stopSequences + ", toolSpecifications=" + toolSpecifications + ", toolChoice=" + toolChoice + ", responseFormat=" + responseFormat + '}';
     }
 
     public static Builder<?> builder() {
@@ -191,15 +161,25 @@ public class DefaultChatRequestParameters implements ChatRequestParameters {
     public static class Builder<T extends Builder<T>> {
 
         private String modelName;
+
         private Double temperature;
+
         private Double topP;
+
         private Integer topK;
+
         private Double frequencyPenalty;
+
         private Double presencePenalty;
+
         private Integer maxOutputTokens;
+
         private List<String> stopSequences;
+
         private List<ToolSpecification> toolSpecifications;
+
         private ToolChoice toolChoice;
+
         private ResponseFormat responseFormat;
 
         public T overrideWith(ChatRequestParameters parameters) {
@@ -300,10 +280,7 @@ public class DefaultChatRequestParameters implements ChatRequestParameters {
          */
         public T responseFormat(JsonSchema jsonSchema) {
             if (jsonSchema != null) {
-                ResponseFormat responseFormat = ResponseFormat.builder()
-                        .type(JSON)
-                        .jsonSchema(jsonSchema)
-                        .build();
+                ResponseFormat responseFormat = ResponseFormat.builder().type(JSON).jsonSchema(jsonSchema).build();
                 return responseFormat(responseFormat);
             }
             return (T) this;

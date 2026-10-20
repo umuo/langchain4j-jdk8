@@ -1,7 +1,6 @@
 package dev.langchain4j.store.memory.chat;
 
 import dev.langchain4j.data.message.ChatMessage;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,8 @@ public class InMemoryChatMemoryStore implements ChatMemoryStore {
     /**
      * Constructs a new {@link InMemoryChatMemoryStore}.
      */
-    public InMemoryChatMemoryStore() {}
+    public InMemoryChatMemoryStore() {
+    }
 
     @Override
     public List<ChatMessage> getMessages(Object memoryId) {

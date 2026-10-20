@@ -2,7 +2,6 @@ package dev.langchain4j.rag.content.retriever.listener;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
@@ -22,8 +21,11 @@ import java.util.Map;
 public class ContentRetrieverResponseContext {
 
     private final List<Content> contents;
+
     private final Query query;
+
     private final ContentRetriever contentRetriever;
+
     private final Map<Object, Object> attributes;
 
     public ContentRetrieverResponseContext(Builder builder) {
@@ -46,11 +48,15 @@ public class ContentRetrieverResponseContext {
     public static class Builder {
 
         private List<Content> contents;
+
         private Query query;
+
         private ContentRetriever contentRetriever;
+
         private Map<Object, Object> attributes;
 
-        Builder() {}
+        Builder() {
+        }
 
         public Builder contents(List<Content> contents) {
             this.contents = contents;

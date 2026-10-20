@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.response;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import java.util.Objects;
 import dev.langchain4j.Experimental;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
@@ -25,8 +24,10 @@ public class PartialResponse implements ChatModelStreamingEvent {
 
     @Override
     public boolean equals(final Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         PartialResponse that = (PartialResponse) object;
         return Objects.equals(text, that.text);
     }

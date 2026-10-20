@@ -3,7 +3,6 @@ package dev.langchain4j.guardrail;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.Experimental;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import java.util.List;
@@ -13,9 +12,13 @@ import java.util.Optional;
  * Represents the parameter passed to {@link OutputGuardrail#validate(OutputGuardrailRequest)}.
  */
 public final class OutputGuardrailRequest implements GuardrailRequest<OutputGuardrailRequest> {
+
     private final ChatResponse responseFromLLM;
+
     private final ChatExecutor chatExecutor;
+
     private final GuardrailRequestParams requestParams;
+
     private final ChatRequest chatRequest;
 
     private OutputGuardrailRequest(Builder builder) {
@@ -71,23 +74,9 @@ public final class OutputGuardrailRequest implements GuardrailRequest<OutputGuar
     @Override
     public OutputGuardrailRequest withText(String text) {
         ensureNotNull(text, "text");
-
-        var aiMessage = Optional.ofNullable(this.responseFromLLM.aiMessage().toolExecutionRequests())
-                .filter(t -> !t.isEmpty())
-                .map(t -> new AiMessage(text, t))
-                .orElseGet(() -> new AiMessage(text));
-
-        var chatResponse = ChatResponse.builder()
-                .aiMessage(aiMessage)
-                .metadata(this.responseFromLLM.metadata())
-                .build();
-
-        return builder()
-                .responseFromLLM(chatResponse)
-                .chatExecutor(this.chatExecutor)
-                .requestParams(this.requestParams)
-                .chatRequest(this.chatRequest)
-                .build();
+        dev.langchain4j.data.message.AiMessage aiMessage = Optional.ofNullable(this.responseFromLLM.aiMessage().toolExecutionRequests()).filter(t -> !t.isEmpty()).map(t -> new AiMessage(text, t)).orElseGet(() -> new AiMessage(text));
+        dev.langchain4j.model.chat.response.ChatResponse chatResponse = ChatResponse.builder().aiMessage(aiMessage).metadata(this.responseFromLLM.metadata()).build();
+        return builder().responseFromLLM(chatResponse).chatExecutor(this.chatExecutor).requestParams(this.requestParams).chatRequest(this.chatRequest).build();
     }
 
     /**
@@ -103,12 +92,17 @@ public final class OutputGuardrailRequest implements GuardrailRequest<OutputGuar
      * Builder for {@link OutputGuardrailRequest}.
      */
     public static class Builder {
+
         private ChatResponse responseFromLLM;
+
         private ChatExecutor chatExecutor;
+
         private GuardrailRequestParams requestParams;
+
         private ChatRequest chatRequest;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         /**
          * Sets the response from the LLM.

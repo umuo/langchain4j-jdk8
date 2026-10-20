@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.stream;
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.store.embedding.filter.comparison.ContainsString;
@@ -38,13 +37,11 @@ public class MetadataFilterBuilder {
     }
 
     // containsString
-
     public Filter containsString(String value) {
         return new ContainsString(key, value);
     }
 
     // isEqualTo
-
     public Filter isEqualTo(String value) {
         return new IsEqualTo(key, value);
     }
@@ -70,7 +67,6 @@ public class MetadataFilterBuilder {
     }
 
     // isNotEqualTo
-
     public Filter isNotEqualTo(String value) {
         return new IsNotEqualTo(key, value);
     }
@@ -96,7 +92,6 @@ public class MetadataFilterBuilder {
     }
 
     // isGreaterThan
-
     public Filter isGreaterThan(String value) {
         return new IsGreaterThan(key, value);
     }
@@ -118,7 +113,6 @@ public class MetadataFilterBuilder {
     }
 
     // isGreaterThanOrEqualTo
-
     public Filter isGreaterThanOrEqualTo(String value) {
         return new IsGreaterThanOrEqualTo(key, value);
     }
@@ -140,7 +134,6 @@ public class MetadataFilterBuilder {
     }
 
     // isLessThan
-
     public Filter isLessThan(String value) {
         return new IsLessThan(key, value);
     }
@@ -162,7 +155,6 @@ public class MetadataFilterBuilder {
     }
 
     // isLessThanOrEqualTo
-
     public Filter isLessThanOrEqualTo(String value) {
         return new IsLessThanOrEqualTo(key, value);
     }
@@ -184,7 +176,6 @@ public class MetadataFilterBuilder {
     }
 
     // isBetween
-
     public Filter isBetween(String fromValue, String toValue) {
         return isGreaterThanOrEqualTo(fromValue).and(isLessThanOrEqualTo(toValue));
     }
@@ -206,7 +197,6 @@ public class MetadataFilterBuilder {
     }
 
     // isIn
-
     public Filter isIn(String... values) {
         return new IsIn(key, asList(values));
     }
@@ -216,11 +206,11 @@ public class MetadataFilterBuilder {
     }
 
     public Filter isIn(int... values) {
-        return new IsIn(key, stream(values).boxed().collect(toList()));
+        return new IsIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isIn(long... values) {
-        return new IsIn(key, stream(values).boxed().collect(toList()));
+        return new IsIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isIn(float... values) {
@@ -232,7 +222,7 @@ public class MetadataFilterBuilder {
     }
 
     public Filter isIn(double... values) {
-        return new IsIn(key, stream(values).boxed().collect(toList()));
+        return new IsIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isIn(Collection<?> values) {
@@ -240,7 +230,6 @@ public class MetadataFilterBuilder {
     }
 
     // isNotIn
-
     public Filter isNotIn(String... values) {
         return new IsNotIn(key, asList(values));
     }
@@ -250,11 +239,11 @@ public class MetadataFilterBuilder {
     }
 
     public Filter isNotIn(int... values) {
-        return new IsNotIn(key, stream(values).boxed().collect(toList()));
+        return new IsNotIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isNotIn(long... values) {
-        return new IsNotIn(key, stream(values).boxed().collect(toList()));
+        return new IsNotIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isNotIn(float... values) {
@@ -266,7 +255,7 @@ public class MetadataFilterBuilder {
     }
 
     public Filter isNotIn(double... values) {
-        return new IsNotIn(key, stream(values).boxed().collect(toList()));
+        return new IsNotIn(key, stream(values).boxed().collect(java.util.stream.Collectors.toList()));
     }
 
     public Filter isNotIn(Collection<?> values) {

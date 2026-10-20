@@ -5,7 +5,6 @@ import static dev.langchain4j.model.ModelProvider.OTHER;
 import static dev.langchain4j.model.moderation.ModerationModelListenerUtils.onError;
 import static dev.langchain4j.model.moderation.ModerationModelListenerUtils.onRequest;
 import static dev.langchain4j.model.moderation.ModerationModelListenerUtils.onResponse;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
@@ -32,14 +31,10 @@ public interface ModerationModel {
      * @return a {@link ModerationResponse}, containing all the outputs from the moderation model
      */
     default ModerationResponse moderate(ModerationRequest moderationRequest) {
-        ModerationRequest finalRequest = moderationRequest.toBuilder()
-                .modelName(getOrDefault(moderationRequest.modelName(), modelName()))
-                .build();
-
+        ModerationRequest finalRequest = moderationRequest.toBuilder().modelName(getOrDefault(moderationRequest.modelName(), modelName())).build();
         ModelProvider modelProvider = provider();
         List<ModerationModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>();
-
         onRequest(finalRequest, modelProvider, attributes, listeners);
         try {
             ModerationResponse moderationResponse = doModerate(finalRequest);
@@ -68,8 +63,7 @@ public interface ModerationModel {
      * @return the moderation {@code Response}.
      */
     default Response<Moderation> moderate(String text) {
-        ModerationRequest request =
-                ModerationRequest.builder().texts(List.of(text)).build();
+        ModerationRequest request = ModerationRequest.builder().texts(dev.langchain4j.internal.Jdk8.list(text)).build();
         ModerationResponse response = moderate(request);
         return Response.from(response.moderation(), null, null, response.metadata());
     }
@@ -91,7 +85,7 @@ public interface ModerationModel {
      * @return the moderation {@code Response}.
      */
     default Response<Moderation> moderate(ChatMessage message) {
-        return moderate(List.of(message));
+        return moderate(dev.langchain4j.internal.Jdk8.list(message));
     }
 
     /**
@@ -101,7 +95,7 @@ public interface ModerationModel {
      * @return the moderation {@code Response}.
      */
     default Response<Moderation> moderate(List<ChatMessage> messages) {
-        List<String> texts = messages.stream().map(ModerationModel::toText).toList();
+        List<String> texts = messages.stream().map(ModerationModel::toText).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         ModerationRequest request = ModerationRequest.builder().texts(texts).build();
         ModerationResponse response = moderate(request);
         return Response.from(response.moderation(), null, null, response.metadata());
@@ -126,14 +120,14 @@ public interface ModerationModel {
      * @throws IllegalArgumentException if the message type is unsupported
      */
     static String toText(ChatMessage chatMessage) {
-        if (chatMessage instanceof SystemMessage systemMessage) {
-            return systemMessage.text();
-        } else if (chatMessage instanceof UserMessage userMessage) {
-            return userMessage.singleText();
-        } else if (chatMessage instanceof AiMessage aiMessage) {
-            return aiMessage.text();
-        } else if (chatMessage instanceof ToolExecutionResultMessage toolExecutionResultMessage) {
-            return toolExecutionResultMessage.text();
+        if (chatMessage instanceof SystemMessage) {
+            return ((SystemMessage) chatMessage).text();
+        } else if (chatMessage instanceof UserMessage) {
+            return ((UserMessage) chatMessage).singleText();
+        } else if (chatMessage instanceof AiMessage) {
+            return ((AiMessage) chatMessage).text();
+        } else if (chatMessage instanceof ToolExecutionResultMessage) {
+            return ((ToolExecutionResultMessage) chatMessage).text();
         } else {
             throw new IllegalArgumentException("Unsupported message type: " + chatMessage.type());
         }
@@ -145,7 +139,7 @@ public interface ModerationModel {
      * @return the list of listeners, or an empty list if none are registered.
      */
     default List<ModerationModelListener> listeners() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     /**

@@ -101,7 +101,7 @@ public interface InvocationContext {
      * @since 1.8.0
      */
     default Map<Class<? extends LangChain4jManaged>, LangChain4jManaged> managedParameters() {
-        return Map.of();
+        return dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -131,20 +131,33 @@ public interface InvocationContext {
     class Builder {
 
         private UUID invocationId;
+
         private String interfaceName;
+
         private String methodName;
+
         private List<@NonNull Object> methodArguments = new ArrayList<>();
+
         private UserMessage userMessage;
+
         private UserMessage originalUserMessage;
+
         private Object chatMemoryId;
+
         private ChatRequestParameters defaultRequestParameters;
+
         private ModelProvider modelProvider;
+
         private InvocationParameters invocationParameters;
+
         private Map<Class<? extends LangChain4jManaged>, LangChain4jManaged> managedParameters;
+
         private Instant timestamp;
+
         dev.langchain4j.spi.CapturedContext capturedContext;
 
-        protected Builder() {}
+        protected Builder() {
+        }
 
         protected Builder(InvocationContext invocationContext) {
             invocationId(invocationContext.invocationId());
@@ -159,8 +172,8 @@ public interface InvocationContext {
             invocationParameters(invocationContext.invocationParameters());
             managedParameters(invocationContext.managedParameters());
             timestamp(invocationContext.timestamp());
-            if (invocationContext instanceof DefaultInvocationContext defaultInvocationContext) {
-                this.capturedContext = defaultInvocationContext.capturedContext();
+            if (invocationContext instanceof DefaultInvocationContext) {
+                this.capturedContext = ((DefaultInvocationContext) invocationContext).capturedContext();
             }
         }
 
@@ -196,7 +209,6 @@ public interface InvocationContext {
             if (methodArguments != null) {
                 this.methodArguments.addAll(methodArguments);
             }
-
             return this;
         }
 
@@ -208,7 +220,6 @@ public interface InvocationContext {
             if (methodArgument != null) {
                 this.methodArguments.add(methodArgument);
             }
-
             return this;
         }
 

@@ -16,17 +16,14 @@ public enum DecisionInputType {
      * Plain text, see {@link TextInput}.
      */
     TEXT,
-
     /**
      * Named fields, see {@link FieldsInput}.
      */
     FIELDS,
-
     /**
      * A list of contents, such as text and images, see {@link ContentsInput}.
      */
     CONTENTS,
-
     /**
      * A conversation, see {@link MessagesInput}.
      */

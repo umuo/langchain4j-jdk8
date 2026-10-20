@@ -6,7 +6,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.model.chat.Capability.RESPONSE_FORMAT_JSON_SCHEMA;
 import static dev.langchain4j.model.chat.router.RoutingChatModel.ROUTE_ATTRIBUTE;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
@@ -39,36 +38,72 @@ import java.util.function.Function;
  */
 final class RouteSelector<M> {
 
-    record Route<M>(String name, M model, List<String> descriptions) {}
+    final static class Route<M> {
+
+        private final String name;
+
+        public String name() {
+            return name;
+        }
+
+        private final M model;
+
+        public M model() {
+            return model;
+        }
+
+        private final List<String> descriptions;
+
+        public List<String> descriptions() {
+            return descriptions;
+        }
+
+        public Route(String name, M model, List<String> descriptions) {
+            this.name = name;
+            this.model = model;
+            this.descriptions = descriptions;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(name, ((Route<?>) obj).name) && java.util.Objects.equals(model, ((Route<?>) obj).model) && java.util.Objects.equals(descriptions, ((Route<?>) obj).descriptions));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(name)) + java.util.Objects.hashCode(model)) + java.util.Objects.hashCode(descriptions));
+        }
+
+        public String toString() {
+            return "Route[" + "name=" + name + ", model=" + model + ", descriptions=" + descriptions + "]";
+        }
+    }
 
     private final Map<String, M> models;
+
     private final List<ChatModelRoute> routes;
+
     private final ChatModelRouter router;
+
     private final String defaultRoute;
+
     private final Function<M, Set<Capability>> capabilities;
 
-    RouteSelector(
-            List<Route<M>> routes,
-            ChatModelRouter router,
-            String defaultRoute,
-            Function<M, Set<Capability>> capabilities) {
+    RouteSelector(List<Route<M>> routes, ChatModelRouter router, String defaultRoute, Function<M, Set<Capability>> capabilities) {
         Map<String, M> models = new LinkedHashMap<>();
         List<ChatModelRoute> chatModelRoutes = new ArrayList<>();
         for (Route<M> route : ensureNotEmpty(routes, "routes")) {
             ensureNotBlank(route.name(), "route name");
             if (models.containsKey(route.name())) {
-                throw new IllegalArgumentException("There is more than one route named '%s'".formatted(route.name()));
+                throw new IllegalArgumentException(String.format("There is more than one route named '%s'", route.name()));
             }
-            models.put(route.name(), ensureNotNull(route.model(), "model of route '%s'".formatted(route.name())));
+            models.put(route.name(), ensureNotNull(route.model(), String.format("model of route '%s'", route.name())));
             chatModelRoutes.add(new ChatModelRoute(route.name(), route.descriptions()));
         }
         ensureNotBlank(defaultRoute, "defaultRoute");
         if (!models.containsKey(defaultRoute)) {
-            throw new IllegalArgumentException("The default route '%s' is not one of the routes %s"
-                    .formatted(defaultRoute, models.keySet()));
+            throw new IllegalArgumentException(String.format("The default route '%s' is not one of the routes %s", defaultRoute, models.keySet()));
         }
         this.models = Collections.unmodifiableMap(models);
-        this.routes = List.copyOf(chatModelRoutes);
+        this.routes = dev.langchain4j.internal.Jdk8.copyList(chatModelRoutes);
         this.router = ensureNotNull(router, "router");
         this.defaultRoute = defaultRoute;
         this.capabilities = capabilities;
@@ -97,7 +132,7 @@ final class RouteSelector<M> {
             propagateCancellation(result, routed);
             return result;
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
+            return dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
     }
 
@@ -117,8 +152,7 @@ final class RouteSelector<M> {
      * Adds the selected route to the listener attributes, so that listeners of the selected model can report it.
      */
     static ChatRequestOptions withRoute(ChatRequestOptions options, String routeName) {
-        Map<Object, Object> attributes =
-                new LinkedHashMap<>(options == null ? Map.of() : options.listenerAttributes());
+        Map<Object, Object> attributes = new LinkedHashMap<>(options == null ? dev.langchain4j.internal.Jdk8.map() : options.listenerAttributes());
         attributes.put(ROUTE_ATTRIBUTE, routeName);
         return ChatRequestOptions.builder().listenerAttributes(attributes).build();
     }
@@ -133,9 +167,7 @@ final class RouteSelector<M> {
         AiMessage aiMessage = response.aiMessage();
         Map<String, Object> attributes = new LinkedHashMap<>(aiMessage.attributes());
         attributes.put(ROUTE_ATTRIBUTE, routeName);
-        return response.toBuilder()
-                .aiMessage(aiMessage.toBuilder().attributes(attributes).build())
-                .build();
+        return response.toBuilder().aiMessage(aiMessage.toBuilder().attributes(attributes).build()).build();
     }
 
     /**
@@ -148,13 +180,8 @@ final class RouteSelector<M> {
         return Collections.unmodifiableSet(supported);
     }
 
-    private static ChatModelRoutingRequest routingRequest(
-            ChatRequest chatRequest, List<ChatModelRoute> candidates, ChatRequestOptions options) {
-        return ChatModelRoutingRequest.builder()
-                .chatRequest(chatRequest)
-                .routes(candidates)
-                .options(options)
-                .build();
+    private static ChatModelRoutingRequest routingRequest(ChatRequest chatRequest, List<ChatModelRoute> candidates, ChatRequestOptions options) {
+        return ChatModelRoutingRequest.builder().chatRequest(chatRequest).routes(candidates).options(options).build();
     }
 
     private List<ChatModelRoute> candidates(ChatRequest chatRequest) {
@@ -162,41 +189,31 @@ final class RouteSelector<M> {
         if (required.isEmpty()) {
             return routes;
         }
-        List<ChatModelRoute> candidates = routes.stream()
-                .filter(route -> capabilities.apply(models.get(route.name())).containsAll(required))
-                .toList();
+        List<ChatModelRoute> candidates = routes.stream().filter(route -> capabilities.apply(models.get(route.name())).containsAll(required)).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         return candidates.isEmpty() ? routes : candidates;
     }
 
     private static Set<Capability> requiredCapabilities(ChatRequest chatRequest) {
         ResponseFormat responseFormat = chatRequest.responseFormat();
-        if (responseFormat != null
-                && responseFormat.type() == ResponseFormatType.JSON
-                && responseFormat.jsonSchema() != null) {
+        if (responseFormat != null && responseFormat.type() == ResponseFormatType.JSON && responseFormat.jsonSchema() != null) {
             return EnumSet.of(RESPONSE_FORMAT_JSON_SCHEMA);
         }
-        return Set.of();
+        return dev.langchain4j.internal.Jdk8.set();
     }
 
     private String validate(ChatModelRoutingResult routingResult, List<ChatModelRoute> candidates) {
         if (routingResult == null) {
-            throw new IllegalStateException("The router returned null. Use ChatModelRoutingResult.defaultRoute() to "
-                    + "use the default route");
+            throw new IllegalStateException("The router returned null. Use ChatModelRoutingResult.defaultRoute() to " + "use the default route");
         }
         String routeName = routingResult.routeName();
         if (routingResult.isDefaultRoute()) {
-            return isCandidate(defaultRoute, candidates)
-                    ? defaultRoute
-                    : candidates.get(0).name();
+            return isCandidate(defaultRoute, candidates) ? defaultRoute : candidates.get(0).name();
         }
         if (!models.containsKey(routeName)) {
-            throw new IllegalStateException("The router selected the unknown route '%s'. Available routes: %s"
-                    .formatted(routeName, models.keySet()));
+            throw new IllegalStateException(String.format("The router selected the unknown route '%s'. Available routes: %s", routeName, models.keySet()));
         }
         if (!isCandidate(routeName, candidates)) {
-            throw new IllegalStateException(
-                    "Route '%s' does not support the capabilities the request needs. Routes that support them: %s"
-                            .formatted(routeName, candidates.stream().map(ChatModelRoute::name).toList()));
+            throw new IllegalStateException(String.format("Route '%s' does not support the capabilities the request needs. Routes that support them: %s", routeName, candidates.stream().map(ChatModelRoute::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList))));
         }
         return routeName;
     }
@@ -210,10 +227,8 @@ final class RouteSelector<M> {
             return null;
         }
         for (int i = messages.size() - 1; i >= 0; i--) {
-            if (messages.get(i) instanceof AiMessage aiMessage) {
-                return aiMessage.attributes().get(ROUTE_ATTRIBUTE) instanceof String routeName && models.containsKey(routeName)
-                        ? routeName
-                        : null;
+            if (messages.get(i) instanceof AiMessage) {
+                return ((AiMessage) messages.get(i)).attributes().get(ROUTE_ATTRIBUTE) instanceof String && models.containsKey(((String) ((AiMessage) messages.get(i)).attributes().get(ROUTE_ATTRIBUTE))) ? ((String) ((AiMessage) messages.get(i)).attributes().get(ROUTE_ATTRIBUTE)) : null;
             }
         }
         return null;

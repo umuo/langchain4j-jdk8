@@ -17,7 +17,8 @@ public final class RefusalAnswer implements DecisionAnswer {
 
     private static final RefusalAnswer INSTANCE = new RefusalAnswer();
 
-    private RefusalAnswer() {}
+    private RefusalAnswer() {
+    }
 
     /**
      * Returns the answer to a refused question.

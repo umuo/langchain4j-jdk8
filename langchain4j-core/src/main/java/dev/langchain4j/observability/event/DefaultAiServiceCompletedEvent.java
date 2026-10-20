@@ -9,7 +9,8 @@ import org.jspecify.annotations.Nullable;
  */
 public class DefaultAiServiceCompletedEvent extends AbstractAiServiceEvent implements AiServiceCompletedEvent {
 
-    private final @Nullable Object result;
+    @Nullable
+    private final Object result;
 
     public DefaultAiServiceCompletedEvent(AiServiceCompletedEventBuilder builder) {
         super(builder);

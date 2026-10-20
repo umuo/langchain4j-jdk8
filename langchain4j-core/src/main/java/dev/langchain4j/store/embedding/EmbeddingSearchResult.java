@@ -1,7 +1,6 @@
 package dev.langchain4j.store.embedding;
 
 import java.util.List;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**

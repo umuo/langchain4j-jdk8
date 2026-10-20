@@ -2,11 +2,9 @@ package dev.langchain4j.model.batch;
 
 import dev.langchain4j.Experimental;
 import org.jspecify.annotations.Nullable;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 
 /**
@@ -16,8 +14,11 @@ import static dev.langchain4j.internal.Utils.copy;
 public final class BatchError {
 
     private final int code;
+
     private final String message;
-    private final @Nullable List<Map<String, Object>> details;
+
+    @Nullable
+    private final List<Map<String, Object>> details;
 
     public BatchError(int code, String message, @Nullable List<Map<String, Object>> details) {
         this.code = code;
@@ -33,13 +34,15 @@ public final class BatchError {
         return message;
     }
 
-    public @Nullable List<Map<String, Object>> details() {
+    @Nullable
+    public List<Map<String, Object>> details() {
         return details;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         BatchError that = (BatchError) o;
         return code == that.code && Objects.equals(message, that.message) && Objects.equals(details, that.details);
     }
@@ -51,10 +54,6 @@ public final class BatchError {
 
     @Override
     public String toString() {
-        return "BatchError{" +
-                "code=" + code +
-                ", message='" + message + '\'' +
-                ", details=" + details +
-                '}';
+        return "BatchError{" + "code=" + code + ", message='" + message + '\'' + ", details=" + details + '}';
     }
 }

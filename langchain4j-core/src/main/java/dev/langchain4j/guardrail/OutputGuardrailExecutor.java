@@ -3,7 +3,6 @@ package dev.langchain4j.guardrail;
 import static dev.langchain4j.guardrail.OutputGuardrailResult.successWith;
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.observability.api.event.OutputGuardrailExecutedEvent.OutputGuardrailExecutedEventBuilder;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -28,21 +27,9 @@ import java.util.stream.Collectors;
  *     passes all the output guardrails.
  * </p>
  */
-public non-sealed class OutputGuardrailExecutor
-        extends AbstractGuardrailExecutor<
-                OutputGuardrailsConfig,
-                OutputGuardrailRequest,
-                OutputGuardrailResult,
-                OutputGuardrail,
-                OutputGuardrailExecutedEvent,
-                Failure> {
+public class OutputGuardrailExecutor extends AbstractGuardrailExecutor<OutputGuardrailsConfig, OutputGuardrailRequest, OutputGuardrailResult, OutputGuardrail, OutputGuardrailExecutedEvent, Failure> {
 
-    public static final String MAX_RETRIES_MESSAGE_TEMPLATE = """
-            Output validation failed. The guardrails have reached the maximum number of retries.
-            Guardrail messages:
-
-            %s
-            """;
+    public static final String MAX_RETRIES_MESSAGE_TEMPLATE = "Output validation failed. The guardrails have reached the maximum number of retries.\nGuardrail messages:\n\n%s\n";
 
     protected OutputGuardrailExecutor(OutputGuardrailsConfig config, List<OutputGuardrail> guardrails) {
         super(config, guardrails);
@@ -57,54 +44,35 @@ public non-sealed class OutputGuardrailExecutor
     @Override
     public OutputGuardrailResult execute(OutputGuardrailRequest request) {
         OutputGuardrailResult result = null;
-        var accumulatedRequest = request;
-        var attempt = 0;
-        var maxAttempts = config().maxRetries();
-
+        dev.langchain4j.guardrail.OutputGuardrailRequest accumulatedRequest = request;
+        int attempt = 0;
+        int maxAttempts = config().maxRetries();
         if (maxAttempts == 0) {
             maxAttempts = 1;
         } else if (maxAttempts < 0) {
             maxAttempts = OutputGuardrailsConfig.MAX_RETRIES_DEFAULT;
         }
-
         while (attempt < maxAttempts) {
             result = rewriteResult(request, accumulatedRequest, executeGuardrails(accumulatedRequest));
-
             if (result.isSuccess()) {
                 return result;
             }
-
             if (!result.isRetry()) {
                 removeViolatingMessageIfRequested(result, request);
                 throw new OutputGuardrailException(result.toString(), result.getFirstFailureException(), result);
             }
-
             if (++attempt < maxAttempts) {
-                var chatMessages = Optional.ofNullable(
-                                accumulatedRequest.requestParams().chatMemory())
-                        .map(ChatMemory::messages)
-                        .orElseGet(ArrayList::new);
+                java.util.List<dev.langchain4j.data.message.ChatMessage> chatMessages = Optional.ofNullable(accumulatedRequest.requestParams().chatMemory()).map(ChatMemory::messages).orElseGet(ArrayList::new);
                 result.getReprompt().map(UserMessage::from).ifPresent(chatMessages::add);
-
-                var exchange = accumulatedRequest.chatExecutor().exchange(chatMessages);
-                accumulatedRequest = OutputGuardrailRequest.builder()
-                        .responseFromLLM(exchange.response())
-                        .chatExecutor(accumulatedRequest.chatExecutor())
-                        .requestParams(accumulatedRequest.requestParams())
-                        .chatRequest(exchange.request())
-                        .build();
+                dev.langchain4j.guardrail.ChatExchange exchange = accumulatedRequest.chatExecutor().exchange(chatMessages);
+                accumulatedRequest = OutputGuardrailRequest.builder().responseFromLLM(exchange.response()).chatExecutor(accumulatedRequest.chatExecutor()).requestParams(accumulatedRequest.requestParams()).chatRequest(exchange.request()).build();
             }
         }
-
         if (attempt == maxAttempts) {
-            var failureMessages = result.failures().stream()
-                    .map(GuardrailResult.Failure::message)
-                    .collect(Collectors.joining(System.lineSeparator()));
-
+            java.lang.String failureMessages = result.failures().stream().map(GuardrailResult.Failure::message).collect(Collectors.joining(System.lineSeparator()));
             removeViolatingMessageIfRequested(result, request);
-            throw new OutputGuardrailException(MAX_RETRIES_MESSAGE_TEMPLATE.formatted(failureMessages), null, result);
+            throw new OutputGuardrailException(String.format(MAX_RETRIES_MESSAGE_TEMPLATE, failureMessages), null, result);
         }
-
         return result;
     }
 
@@ -115,14 +83,12 @@ public non-sealed class OutputGuardrailExecutor
      */
     @Override
     public CompletableFuture<OutputGuardrailResult> executeAsync(OutputGuardrailRequest request) {
-        var maxAttempts = config().maxRetries();
-
+        int maxAttempts = config().maxRetries();
         if (maxAttempts == 0) {
             maxAttempts = 1;
         } else if (maxAttempts < 0) {
             maxAttempts = OutputGuardrailsConfig.MAX_RETRIES_DEFAULT;
         }
-
         CompletableFuture<OutputGuardrailResult> result = new CompletableFuture<>();
         CancellationChain chain = new CancellationChain(result);
         attemptAsync(request, request, 0, maxAttempts, chain).whenComplete((attemptResult, error) -> {
@@ -135,58 +101,30 @@ public non-sealed class OutputGuardrailExecutor
         return result;
     }
 
-    private CompletableFuture<OutputGuardrailResult> attemptAsync(
-            OutputGuardrailRequest request,
-            OutputGuardrailRequest accumulatedRequest,
-            int attempt,
-            int maxAttempts,
-            CancellationChain chain) {
-
+    private CompletableFuture<OutputGuardrailResult> attemptAsync(OutputGuardrailRequest request, OutputGuardrailRequest accumulatedRequest, int attempt, int maxAttempts, CancellationChain chain) {
         return executeGuardrailsAsync(accumulatedRequest, chain).thenCompose(rawResult -> {
-            var result = rewriteResult(request, accumulatedRequest, rawResult);
-
+            dev.langchain4j.guardrail.OutputGuardrailResult result = rewriteResult(request, accumulatedRequest, rawResult);
             if (result.isSuccess()) {
                 return CompletableFuture.completedFuture(result);
             }
-
             if (!result.isRetry()) {
-                return removeViolatingMessageIfRequestedAsync(result, request)
-                        .thenCompose(ignored -> CompletableFuture.<OutputGuardrailResult>failedFuture(
-                                new OutputGuardrailException(
-                                        result.toString(), result.getFirstFailureException(), result)));
+                return removeViolatingMessageIfRequestedAsync(result, request).thenCompose(ignored -> dev.langchain4j.internal.Jdk8.<OutputGuardrailResult>failedFuture(new OutputGuardrailException(result.toString(), result.getFirstFailureException(), result)));
             }
-
-            var nextAttempt = attempt + 1;
+            int nextAttempt = attempt + 1;
             if (nextAttempt < maxAttempts) {
                 ChatMemory memory = accumulatedRequest.requestParams().chatMemory();
-                CompletableFuture<List<ChatMessage>> memoryMessages = memory != null
-                        ? chain.track(memory.messagesAsync())
-                        : CompletableFuture.completedFuture(new ArrayList<>());
+                CompletableFuture<List<ChatMessage>> memoryMessages = memory != null ? chain.track(memory.messagesAsync()) : CompletableFuture.completedFuture(new ArrayList<>());
                 return memoryMessages.thenCompose(currentMessages -> {
-                    var chatMessages = new ArrayList<>(currentMessages);
+                    java.util.ArrayList<dev.langchain4j.data.message.ChatMessage> chatMessages = new ArrayList<>(currentMessages);
                     result.getReprompt().map(UserMessage::from).ifPresent(chatMessages::add);
-
-                    return chain.track(accumulatedRequest.chatExecutor().exchangeAsync(chatMessages))
-                            .thenCompose(exchange -> {
-                                var nextRequest = OutputGuardrailRequest.builder()
-                                        .responseFromLLM(exchange.response())
-                                        .chatExecutor(accumulatedRequest.chatExecutor())
-                                        .requestParams(accumulatedRequest.requestParams())
-                                        .chatRequest(exchange.request())
-                                        .build();
-                                return attemptAsync(request, nextRequest, nextAttempt, maxAttempts, chain);
-                            });
+                    return chain.track(accumulatedRequest.chatExecutor().exchangeAsync(chatMessages)).thenCompose(exchange -> {
+                        dev.langchain4j.guardrail.OutputGuardrailRequest nextRequest = OutputGuardrailRequest.builder().responseFromLLM(exchange.response()).chatExecutor(accumulatedRequest.chatExecutor()).requestParams(accumulatedRequest.requestParams()).chatRequest(exchange.request()).build();
+                        return attemptAsync(request, nextRequest, nextAttempt, maxAttempts, chain);
+                    });
                 });
             }
-
-            var failureMessages = result.failures().stream()
-                    .map(GuardrailResult.Failure::message)
-                    .collect(Collectors.joining(System.lineSeparator()));
-
-            return removeViolatingMessageIfRequestedAsync(result, request)
-                    .thenCompose(ignored -> CompletableFuture.<OutputGuardrailResult>failedFuture(
-                            new OutputGuardrailException(
-                                    MAX_RETRIES_MESSAGE_TEMPLATE.formatted(failureMessages), null, result)));
+            java.lang.String failureMessages = result.failures().stream().map(GuardrailResult.Failure::message).collect(Collectors.joining(System.lineSeparator()));
+            return removeViolatingMessageIfRequestedAsync(result, request).thenCompose(ignored -> dev.langchain4j.internal.Jdk8.<OutputGuardrailResult>failedFuture(new OutputGuardrailException(String.format(MAX_RETRIES_MESSAGE_TEMPLATE, failureMessages), null, result)));
         });
     }
 
@@ -195,8 +133,7 @@ public non-sealed class OutputGuardrailExecutor
      * reads and replaces the chat memory via {@code messagesAsync}/{@code setAsync} instead of the blocking
      * {@code messages()}/{@code clear()}, so it never blocks the delivery thread on the async/reactive paths.
      */
-    private CompletableFuture<Void> removeViolatingMessageIfRequestedAsync(
-            OutputGuardrailResult result, OutputGuardrailRequest request) {
+    private CompletableFuture<Void> removeViolatingMessageIfRequestedAsync(OutputGuardrailResult result, OutputGuardrailRequest request) {
         if (!result.shouldRemoveViolatingMessage()) {
             return CompletableFuture.completedFuture(null);
         }
@@ -205,8 +142,8 @@ public non-sealed class OutputGuardrailExecutor
             return CompletableFuture.completedFuture(null);
         }
         return memory.messagesAsync().thenCompose(current -> {
-            var messages = new ArrayList<>(current);
-            var it = messages.listIterator(messages.size());
+            java.util.ArrayList<dev.langchain4j.data.message.ChatMessage> messages = new ArrayList<>(current);
+            java.util.ListIterator<dev.langchain4j.data.message.ChatMessage> it = messages.listIterator(messages.size());
             while (it.hasPrevious()) {
                 ChatMessage msg = it.previous();
                 if (msg instanceof AiMessage) {
@@ -227,8 +164,8 @@ public non-sealed class OutputGuardrailExecutor
             return;
         }
         // Remove the last AiMessage — the one that failed the guardrail
-        var messages = new java.util.ArrayList<>(memory.messages());
-        var it = messages.listIterator(messages.size());
+        java.util.ArrayList<dev.langchain4j.data.message.ChatMessage> messages = new java.util.ArrayList<>(memory.messages());
+        java.util.ListIterator<dev.langchain4j.data.message.ChatMessage> it = messages.listIterator(messages.size());
         while (it.hasPrevious()) {
             ChatMessage msg = it.previous();
             if (msg instanceof AiMessage) {
@@ -240,20 +177,14 @@ public non-sealed class OutputGuardrailExecutor
         messages.forEach(memory::add);
     }
 
-    private OutputGuardrailResult rewriteResult(
-            OutputGuardrailRequest originalRequest,
-            OutputGuardrailRequest validatedRequest,
-            OutputGuardrailResult result) {
+    private OutputGuardrailResult rewriteResult(OutputGuardrailRequest originalRequest, OutputGuardrailRequest validatedRequest, OutputGuardrailResult result) {
         if (result.isSuccess() && !result.hasRewrittenResult()) {
             String originalText = originalRequest.responseFromLLM().aiMessage().text();
-            String validatedText =
-                    validatedRequest.responseFromLLM().aiMessage().text();
+            String validatedText = validatedRequest.responseFromLLM().aiMessage().text();
             if (!originalText.equals(validatedText)) {
                 // The text validated by the output guardrail is different form the original one because of a
                 // successful reprompt, so we need to create a new success result with the new text
-                return successWith(
-                        originalRequest.responseFromLLM().aiMessage().withText(validatedText),
-                        result.successfulResult());
+                return successWith(originalRequest.responseFromLLM().aiMessage().withText(validatedText), result.successfulResult());
             }
         }
         return result;
@@ -290,20 +221,16 @@ public non-sealed class OutputGuardrailExecutor
      */
     @Override
     protected OutputGuardrailResult composeResult(OutputGuardrailResult oldResult, OutputGuardrailResult newResult) {
-        var composedResult = super.composeResult(oldResult, newResult);
-
+        dev.langchain4j.guardrail.OutputGuardrailResult composedResult = super.composeResult(oldResult, newResult);
         if (oldResult.isSuccess() && newResult.isSuccess() && !newResult.hasRewrittenResult()) {
-            var successfulResult =
-                    Optional.ofNullable(newResult.successfulResult()).orElseGet(oldResult::successfulResult);
+            java.lang.Object successfulResult = Optional.ofNullable(newResult.successfulResult()).orElseGet(oldResult::successfulResult);
             return composedResult.withSuccessfulResult(successfulResult);
         }
-
         return composedResult;
     }
 
     @Override
-    protected OutputGuardrailResult handleFatalResult(
-            OutputGuardrailResult accumulatedResult, OutputGuardrailResult result) {
+    protected OutputGuardrailResult handleFatalResult(OutputGuardrailResult accumulatedResult, OutputGuardrailResult result) {
         return accumulatedResult.hasRewrittenResult() ? result.blockRetry() : result;
     }
 
@@ -318,10 +245,7 @@ public non-sealed class OutputGuardrailExecutor
      * @return A new {@link OutputGuardrailExecutorBuilder} instance.
      */
     public static OutputGuardrailExecutorBuilder builder() {
-        return ServiceLoader.load(OutputGuardrailExecutorBuilderFactory.class)
-                .findFirst()
-                .map(OutputGuardrailExecutorBuilderFactory::getBuilder)
-                .orElseGet(OutputGuardrailExecutorBuilder::new);
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(OutputGuardrailExecutorBuilderFactory.class)).map(OutputGuardrailExecutorBuilderFactory::getBuilder).orElseGet(OutputGuardrailExecutorBuilder::new);
     }
 
     /**
@@ -338,14 +262,7 @@ public non-sealed class OutputGuardrailExecutor
      *
      * Provides the {@code build()} method to create an {@link OutputGuardrailExecutor} instance.
      */
-    public static non-sealed class OutputGuardrailExecutorBuilder
-            extends GuardrailExecutorBuilder<
-                    OutputGuardrailsConfig,
-                    OutputGuardrailResult,
-                    OutputGuardrailRequest,
-                    OutputGuardrail,
-                    OutputGuardrailExecutedEvent,
-                    OutputGuardrailExecutorBuilder> {
+    public static class OutputGuardrailExecutorBuilder extends GuardrailExecutorBuilder<OutputGuardrailsConfig, OutputGuardrailResult, OutputGuardrailRequest, OutputGuardrail, OutputGuardrailExecutedEvent, OutputGuardrailExecutorBuilder> {
 
         protected OutputGuardrailExecutorBuilder() {
             super(OutputGuardrailsConfig.builder().build());

@@ -1,9 +1,7 @@
 package dev.langchain4j.data.segment;
 
 import dev.langchain4j.data.document.Metadata;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -16,6 +14,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class TextSegment {
 
     private final String text;
+
     private final Metadata metadata;
 
     /**
@@ -49,11 +48,12 @@ public class TextSegment {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         TextSegment that = (TextSegment) o;
-        return Objects.equals(this.text, that.text)
-                && Objects.equals(this.metadata, that.metadata);
+        return Objects.equals(this.text, that.text) && Objects.equals(this.metadata, that.metadata);
     }
 
     @Override
@@ -63,10 +63,7 @@ public class TextSegment {
 
     @Override
     public String toString() {
-        return "TextSegment {" +
-                " text = " + quoted(text) +
-                " metadata = " + metadata.toMap() +
-                " }";
+        return "TextSegment {" + " text = " + quoted(text) + " metadata = " + metadata.toMap() + " }";
     }
 
     /**

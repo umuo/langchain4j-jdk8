@@ -14,6 +14,7 @@ package dev.langchain4j.exception;
  * @see TimeoutException
  */
 public class RetriableException extends LangChain4jException {
+
     public RetriableException(String message) {
         super(message);
     }

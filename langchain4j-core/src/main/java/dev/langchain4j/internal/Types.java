@@ -15,7 +15,8 @@ import java.util.List;
 @Internal
 public final class Types {
 
-    private Types() {}
+    private Types() {
+    }
 
     /**
      * The type of a {@code List<T>}.

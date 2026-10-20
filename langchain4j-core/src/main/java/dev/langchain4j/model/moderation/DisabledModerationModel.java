@@ -14,6 +14,7 @@ import java.util.List;
  * </p>
  */
 public class DisabledModerationModel implements ModerationModel {
+
     @Override
     public Response<Moderation> moderate(String text) {
         throw new ModelDisabledException("ModerationModel is disabled");

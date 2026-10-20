@@ -2,7 +2,6 @@ package dev.langchain4j.model.moderation;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.Map;
 import java.util.Objects;
 
@@ -12,6 +11,7 @@ import java.util.Objects;
 public class ModerationResponse {
 
     private final Moderation moderation;
+
     private final Map<String, Object> metadata;
 
     private ModerationResponse(Builder builder) {
@@ -39,8 +39,10 @@ public class ModerationResponse {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ModerationResponse that = (ModerationResponse) o;
         return Objects.equals(moderation, that.moderation) && Objects.equals(metadata, that.metadata);
     }
@@ -80,9 +82,11 @@ public class ModerationResponse {
     public static class Builder {
 
         private Moderation moderation;
+
         private Map<String, Object> metadata;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         private Builder(ModerationResponse response) {
             this.moderation = response.moderation;

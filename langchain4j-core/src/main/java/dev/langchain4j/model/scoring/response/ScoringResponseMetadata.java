@@ -15,6 +15,7 @@ import java.util.Objects;
 public class ScoringResponseMetadata {
 
     private final String modelName;
+
     private final TokenUsage tokenUsage;
 
     protected ScoringResponseMetadata(Builder<?> builder) {
@@ -32,8 +33,10 @@ public class ScoringResponseMetadata {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ScoringResponseMetadata that = (ScoringResponseMetadata) o;
         return Objects.equals(modelName, that.modelName) && Objects.equals(tokenUsage, that.tokenUsage);
     }
@@ -55,6 +58,7 @@ public class ScoringResponseMetadata {
     public static class Builder<T extends Builder<T>> {
 
         private String modelName;
+
         private TokenUsage tokenUsage;
 
         public T modelName(String modelName) {

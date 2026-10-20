@@ -3,7 +3,6 @@ package dev.langchain4j.model.embedding.request;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.segment.TextSegment;
@@ -30,6 +29,7 @@ import java.util.Objects;
 public class EmbeddingRequest {
 
     private final List<EmbeddingInput> inputs;
+
     private final EmbeddingRequestParameters parameters;
 
     protected EmbeddingRequest(Builder builder) {
@@ -65,8 +65,10 @@ public class EmbeddingRequest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingRequest that = (EmbeddingRequest) o;
         return Objects.equals(inputs, that.inputs) && Objects.equals(parameters, that.parameters);
     }
@@ -88,12 +90,14 @@ public class EmbeddingRequest {
     public static class Builder {
 
         private final List<EmbeddingInput> inputs = new ArrayList<>();
+
         private EmbeddingRequestParameters parameters;
+
         private final DefaultEmbeddingRequestParameters.Builder<?> overrides = EmbeddingRequestParameters.builder();
+
         private boolean overridesUsed = false;
 
         // ---------- text convenience (each becomes a single-text EmbeddingInput) ----------
-
         public Builder input(String text) {
             this.inputs.add(EmbeddingInput.from(text));
             return this;
@@ -123,7 +127,6 @@ public class EmbeddingRequest {
         }
 
         // ---------- multimodal: content-based inputs ----------
-
         /**
          * Adds one input made of the given (possibly interleaved) content parts, fused into a single embedding.
          */
@@ -154,7 +157,6 @@ public class EmbeddingRequest {
         }
 
         // ---------- parameters ----------
-
         public Builder parameters(EmbeddingRequestParameters parameters) {
             this.parameters = parameters;
             return this;

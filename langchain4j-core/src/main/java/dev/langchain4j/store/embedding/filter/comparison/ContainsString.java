@@ -3,7 +3,6 @@ package dev.langchain4j.store.embedding.filter.comparison;
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.store.embedding.filter.Filter;
 import java.util.Objects;
@@ -15,6 +14,7 @@ import java.util.Objects;
 public class ContainsString implements Filter {
 
     private final String key;
+
     private final String comparisonValue;
 
     public ContainsString(String key, String comparisonValue) {
@@ -32,32 +32,26 @@ public class ContainsString implements Filter {
 
     @Override
     public boolean test(Object object) {
-        if (!(object instanceof Metadata metadata)) {
+        if (!(object instanceof Metadata)) {
             return false;
         }
-
-        if (!metadata.containsKey(key)) {
+        if (!((Metadata) object).containsKey(key)) {
             return false;
         }
-
-        Object actualValue = metadata.toMap().get(key);
-
-        if (actualValue instanceof String str) {
-            return str.contains(comparisonValue);
+        Object actualValue = ((Metadata) object).toMap().get(key);
+        if (actualValue instanceof String) {
+            return ((String) actualValue).contains(comparisonValue);
         }
-
-        throw illegalArgument(
-                "Type mismatch: actual value of metadata key \"%s\" (%s) has type %s, "
-                        + "while it is expected to be a string",
-                key, actualValue, actualValue.getClass().getName());
+        throw illegalArgument("Type mismatch: actual value of metadata key \"%s\" (%s) has type %s, " + "while it is expected to be a string", key, actualValue, actualValue.getClass().getName());
     }
 
     @Override
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof ContainsString other)) return false;
-
-        return Objects.equals(this.key, other.key) && Objects.equals(this.comparisonValue, other.comparisonValue);
+        if (o == this)
+            return true;
+        if (!(o instanceof ContainsString))
+            return false;
+        return Objects.equals(this.key, ((ContainsString) o).key) && Objects.equals(this.comparisonValue, ((ContainsString) o).comparisonValue);
     }
 
     @Override

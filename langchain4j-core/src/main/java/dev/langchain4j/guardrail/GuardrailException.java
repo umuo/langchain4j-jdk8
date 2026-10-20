@@ -10,8 +10,8 @@ import dev.langchain4j.exception.LangChain4jException;
  * @see InputGuardrailException
  * @see OutputGuardrailException
  */
-public sealed class GuardrailException extends LangChain4jException
-        permits InputGuardrailException, OutputGuardrailException {
+public class GuardrailException extends LangChain4jException {
+
     protected GuardrailException(String message) {
         super(message);
     }

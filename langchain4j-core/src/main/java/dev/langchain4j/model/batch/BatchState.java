@@ -1,7 +1,6 @@
 package dev.langchain4j.model.batch;
 
 import dev.langchain4j.Experimental;
-
 import java.util.List;
 
 /**
@@ -18,7 +17,7 @@ public enum BatchState {
     EXPIRED,
     UNSPECIFIED;
 
-    private static final List<BatchState> TERMINAL_BATCH_STATES = List.of(SUCCEEDED, FAILED, CANCELLED, EXPIRED);
+    private static final List<BatchState> TERMINAL_BATCH_STATES = dev.langchain4j.internal.Jdk8.list(SUCCEEDED, FAILED, CANCELLED, EXPIRED);
 
     public boolean isTerminal() {
         return TERMINAL_BATCH_STATES.contains(this);

@@ -1,14 +1,15 @@
 package dev.langchain4j.data.message;
 
 import java.util.List;
-
 import static dev.langchain4j.data.message.ChatMessageSerializer.CODEC;
 
 /**
  * A deserializer for {@link ChatMessage} objects.
  */
 public class ChatMessageDeserializer {
-    private ChatMessageDeserializer() {}
+
+    private ChatMessageDeserializer() {
+    }
 
     /**
      * Deserializes a JSON string into a {@link ChatMessage}.

@@ -1,7 +1,6 @@
 package dev.langchain4j.invocation;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.rag.query.Metadata;
 import dev.langchain4j.rag.query.Query;
@@ -82,8 +81,10 @@ public class InvocationParameters {
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         InvocationParameters that = (InvocationParameters) object;
         return Objects.equals(map, that.map);
     }
@@ -99,7 +100,7 @@ public class InvocationParameters {
     }
 
     public static InvocationParameters from(String key, Object value) {
-        return new InvocationParameters(Map.of(key, value));
+        return new InvocationParameters(dev.langchain4j.internal.Jdk8.map(key, value));
     }
 
     public static InvocationParameters from(Map<String, Object> map) {

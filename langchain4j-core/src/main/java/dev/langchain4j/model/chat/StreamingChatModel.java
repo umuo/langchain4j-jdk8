@@ -11,15 +11,13 @@ import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.request.DefaultChatRequestParameters;
 import dev.langchain4j.model.chat.response.*;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Flow.Publisher;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
-
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import static dev.langchain4j.internal.InternalFlowUtils.EMPTY_SUBSCRIPTION;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.model.ModelProvider.OTHER;
@@ -59,17 +57,10 @@ public interface StreamingChatModel {
      * @since 1.13.0
      */
     default void chat(ChatRequest request, ChatRequestOptions options, StreamingChatResponseHandler handler) {
-
-        ChatRequest finalChatRequest = ChatRequest.builder()
-                .messages(request.messages())
-                .parameters(defaultRequestParameters().overrideWith(request.parameters()))
-                .build();
-
+        ChatRequest finalChatRequest = ChatRequest.builder().messages(request.messages()).parameters(defaultRequestParameters().overrideWith(request.parameters())).build();
         ChatRequestOptions effectiveOptions = getOrDefault(options, ChatRequestOptions.EMPTY);
-
         List<ChatModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>(effectiveOptions.listenerAttributes());
-
         StreamingChatResponseHandler observingHandler = new StreamingChatResponseHandler() {
 
             @Override
@@ -124,7 +115,6 @@ public interface StreamingChatModel {
                 handler.onError(error);
             }
         };
-
         onRequest(finalChatRequest, provider(), attributes, listeners);
         doChat(finalChatRequest, observingHandler);
     }
@@ -186,23 +176,14 @@ public interface StreamingChatModel {
      */
     @Experimental
     default Publisher<ChatModelStreamingEvent> chat(ChatRequest request) {
-
-        ChatRequest finalChatRequest = ChatRequest.builder()
-                .messages(request.messages())
-                .parameters(defaultRequestParameters().overrideWith(request.parameters()))
-                .build();
-
+        ChatRequest finalChatRequest = ChatRequest.builder().messages(request.messages()).parameters(defaultRequestParameters().overrideWith(request.parameters())).build();
         List<ChatModelListener> listeners = listeners();
-
         ModelProvider provider = provider();
-
         return new Publisher<ChatModelStreamingEvent>() {
 
             @Override
             public void subscribe(Subscriber<? super ChatModelStreamingEvent> downstream) {
-
                 Map<Object, Object> attributes = new ConcurrentHashMap<>();
-
                 Publisher<ChatModelStreamingEvent> innerPublisher;
                 try {
                     onRequest(finalChatRequest, provider, attributes, listeners);
@@ -213,8 +194,7 @@ public interface StreamingChatModel {
                     downstream.onError(error);
                     return;
                 }
-
-                innerPublisher.subscribe(new Subscriber<>() {
+                innerPublisher.subscribe(new Subscriber<dev.langchain4j.model.chat.response.ChatModelStreamingEvent>() {
 
                     private ChatResponse completeResponse;
 
@@ -225,8 +205,8 @@ public interface StreamingChatModel {
 
                     @Override
                     public void onNext(ChatModelStreamingEvent event) {
-                        if (event instanceof CompleteResponse completeResponseEvent) {
-                            completeResponse = completeResponseEvent.chatResponse();
+                        if (event instanceof CompleteResponse) {
+                            completeResponse = ((CompleteResponse) event).chatResponse();
                         }
                         downstream.onNext(event);
                     }
@@ -272,7 +252,7 @@ public interface StreamingChatModel {
     }
 
     default List<ChatModelListener> listeners() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     default ModelProvider provider() {
@@ -280,17 +260,12 @@ public interface StreamingChatModel {
     }
 
     default void chat(String userMessage, StreamingChatResponseHandler handler) {
-
-        ChatRequest chatRequest =
-                ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
-
+        ChatRequest chatRequest = ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
         chat(chatRequest, handler);
     }
 
     default void chat(List<ChatMessage> messages, StreamingChatResponseHandler handler) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         chat(chatRequest, handler);
     }
 
@@ -309,11 +284,8 @@ public interface StreamingChatModel {
      */
     @Experimental
     default Publisher<String> chat(String userMessage) {
-
-        ChatRequest chatRequest =
-                ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
-
-        return downstream -> chat(chatRequest).subscribe(new Subscriber<>() {
+        ChatRequest chatRequest = ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
+        return downstream -> chat(chatRequest).subscribe(new Subscriber<dev.langchain4j.model.chat.response.ChatModelStreamingEvent>() {
 
             private Subscription subscription;
 
@@ -325,8 +297,8 @@ public interface StreamingChatModel {
 
             @Override
             public void onNext(ChatModelStreamingEvent event) {
-                if (event instanceof PartialResponse partialResponse) {
-                    downstream.onNext(partialResponse.text());
+                if (event instanceof PartialResponse) {
+                    downstream.onNext(((PartialResponse) event).text());
                 } else {
                     subscription.request(1);
                 }
@@ -354,9 +326,7 @@ public interface StreamingChatModel {
      */
     @Experimental
     default Publisher<ChatModelStreamingEvent> chat(ChatMessage... messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chat(chatRequest);
     }
 
@@ -370,13 +340,11 @@ public interface StreamingChatModel {
      */
     @Experimental
     default Publisher<ChatModelStreamingEvent> chat(List<ChatMessage> messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chat(chatRequest);
     }
 
     default Set<Capability> supportedCapabilities() {
-        return Set.of();
+        return dev.langchain4j.internal.Jdk8.set();
     }
 }

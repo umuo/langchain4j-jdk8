@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import dev.langchain4j.Internal;
-
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
@@ -12,7 +11,8 @@ import java.util.concurrent.ExecutionException;
 @Internal
 public class Exceptions {
 
-    private Exceptions() {}
+    private Exceptions() {
+    }
 
     /**
      * Constructs an {@link IllegalArgumentException} with the given formatted result.
@@ -24,7 +24,7 @@ public class Exceptions {
      * @return the constructed exception.
      */
     public static IllegalArgumentException illegalArgument(String format, Object... args) {
-        return new IllegalArgumentException(format.formatted(args));
+        return new IllegalArgumentException(String.format(format, args));
     }
 
     /**
@@ -37,7 +37,7 @@ public class Exceptions {
      * @return the constructed exception.
      */
     public static RuntimeException runtime(String format, Object... args) {
-        return new RuntimeException(format.formatted(args));
+        return new RuntimeException(String.format(format, args));
     }
 
     /**
@@ -57,9 +57,7 @@ public class Exceptions {
      */
     public static Throwable unwrapCompletionException(Throwable throwable) {
         Throwable current = throwable;
-        while ((current instanceof CompletionException || current instanceof ExecutionException)
-                && current.getCause() != null
-                && current.getCause() != current) {
+        while ((current instanceof CompletionException || current instanceof ExecutionException) && current.getCause() != null && current.getCause() != current) {
             current = current.getCause();
         }
         return current;
@@ -81,8 +79,8 @@ public class Exceptions {
         try {
             return callable.call();
         } catch (Exception e) {
-            if (e instanceof RuntimeException re) {
-                throw re;
+            if (e instanceof RuntimeException) {
+                throw ((RuntimeException) e);
             } else {
                 throw new RuntimeException(e);
             }

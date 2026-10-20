@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import java.util.Objects;
 
@@ -37,7 +36,7 @@ public final class TextInput implements DecisionInput {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof TextInput that && text.equals(that.text);
+        return o instanceof TextInput && text.equals(((TextInput) o).text);
     }
 
     @Override

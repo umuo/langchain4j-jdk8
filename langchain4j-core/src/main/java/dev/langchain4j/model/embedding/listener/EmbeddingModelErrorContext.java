@@ -2,7 +2,6 @@ package dev.langchain4j.model.embedding.listener;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.ModelProvider;
@@ -23,8 +22,11 @@ import java.util.Map;
 public class EmbeddingModelErrorContext {
 
     private final Throwable error;
+
     private final EmbeddingRequest embeddingRequest;
+
     private final EmbeddingModel embeddingModel;
+
     private final Map<Object, Object> attributes;
 
     private final List<TextSegment> textSegments;
@@ -94,12 +96,17 @@ public class EmbeddingModelErrorContext {
     public static class Builder {
 
         private Throwable error;
+
         private EmbeddingRequest embeddingRequest;
+
         private EmbeddingModel embeddingModel;
+
         private Map<Object, Object> attributes;
+
         private List<TextSegment> textSegments;
 
-        Builder() {}
+        Builder() {
+        }
 
         public Builder error(Throwable error) {
             this.error = error;

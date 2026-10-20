@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static java.util.stream.Collectors.joining;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
@@ -27,18 +26,19 @@ import java.util.function.Predicate;
 @Internal
 public class DecisionModelInputUtils {
 
-    private DecisionModelInputUtils() {}
+    private DecisionModelInputUtils() {
+    }
 
     /**
      * The text of a user or assistant message. Content of a user message other than text is represented by a marker,
      * such as {@code [attached image]}. Other messages, and assistant messages without text, give an empty string.
      */
     public static String text(ChatMessage message) {
-        if (message instanceof UserMessage userMessage) {
-            return markers(userMessage.contents());
+        if (message instanceof UserMessage) {
+            return markers(((UserMessage) message).contents());
         }
-        if (message instanceof AiMessage aiMessage && aiMessage.text() != null) {
-            return aiMessage.text();
+        if (message instanceof AiMessage && ((AiMessage) message).text() != null) {
+            return ((AiMessage) message).text();
         }
         return "";
     }
@@ -47,11 +47,8 @@ public class DecisionModelInputUtils {
      * Whether the user message contains text, not only other content such as images.
      */
     public static boolean hasText(UserMessage userMessage) {
-        return userMessage.contents().stream()
-                .anyMatch(content -> content instanceof TextContent textContent
-                        && !textContent.text().isBlank());
+        return userMessage.contents().stream().anyMatch(content -> content instanceof TextContent && !dev.langchain4j.internal.Jdk8.isBlank(((TextContent) content).text()));
     }
-
 
     /**
      * The messages a decision model receives about a conversation: the system messages that pass the filter, and the
@@ -61,8 +58,7 @@ public class DecisionModelInputUtils {
      * {@code maxMessageLength} characters are shortened in the middle (see {@link #truncate(String, int)}). Custom
      * messages, and AI messages with neither text nor tool calls, are left out.
      */
-    public static List<ChatMessage> window(
-            List<ChatMessage> messages, Predicate<? super ChatMessage> filter, int maxMessages, int maxMessageLength) {
+    public static List<ChatMessage> window(List<ChatMessage> messages, Predicate<? super ChatMessage> filter, int maxMessages, int maxMessageLength) {
         List<ChatMessage> systemMessages = new ArrayList<>();
         List<ChatMessage> others = new ArrayList<>();
         for (ChatMessage message : messages) {
@@ -100,33 +96,25 @@ public class DecisionModelInputUtils {
     }
 
     private static ChatMessage truncate(ChatMessage message, int maxLength) {
-        if (message instanceof UserMessage userMessage) {
-            String text = text(userMessage);
+        if (message instanceof UserMessage) {
+            String text = text(((UserMessage) message));
             if (text.length() <= maxLength) {
                 return message;
             }
-            return userMessage.name() == null
-                    ? UserMessage.from(truncate(text, maxLength))
-                    : UserMessage.from(userMessage.name(), truncate(text, maxLength));
+            return ((UserMessage) message).name() == null ? UserMessage.from(truncate(text, maxLength)) : UserMessage.from(((UserMessage) message).name(), truncate(text, maxLength));
         }
-        if (message instanceof AiMessage aiMessage) {
-            List<ToolExecutionRequest> requests = aiMessage.toolExecutionRequests().stream()
-                    .map(request -> request.arguments() == null || request.arguments().length() <= maxLength
-                            ? request
-                            : request.toBuilder()
-                                    .arguments(truncate(request.arguments(), maxLength))
-                                    .build())
-                    .toList();
-            String text = truncate(aiMessage.text(), maxLength);
-            if (text == aiMessage.text() && requests.equals(aiMessage.toolExecutionRequests())) {
+        if (message instanceof AiMessage) {
+            List<ToolExecutionRequest> requests = ((AiMessage) message).toolExecutionRequests().stream().map(request -> request.arguments() == null || request.arguments().length() <= maxLength ? request : request.toBuilder().arguments(truncate(request.arguments(), maxLength)).build()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+            String text = truncate(((AiMessage) message).text(), maxLength);
+            if (text == ((AiMessage) message).text() && requests.equals(((AiMessage) message).toolExecutionRequests())) {
                 return message;
             }
-            return aiMessage.toBuilder().text(text).toolExecutionRequests(requests).build();
+            return ((AiMessage) message).toBuilder().text(text).toolExecutionRequests(requests).build();
         }
-        if (message instanceof ToolExecutionResultMessage result) {
-            String text = markers(result.contents());
+        if (message instanceof ToolExecutionResultMessage) {
+            String text = markers(((ToolExecutionResultMessage) message).contents());
             if (text.length() > maxLength) {
-                return result.toBuilder().contents(List.of(TextContent.from(truncate(text, maxLength)))).build();
+                return ((ToolExecutionResultMessage) message).toBuilder().contents(dev.langchain4j.internal.Jdk8.list(TextContent.from(truncate(text, maxLength)))).build();
             }
         }
         return message;
@@ -164,33 +152,24 @@ public class DecisionModelInputUtils {
      * example, only thinking) have nothing to send.
      */
     private static boolean isSendable(ChatMessage message) {
-        if (message instanceof AiMessage aiMessage) {
-            return (aiMessage.text() != null && !aiMessage.text().isEmpty()) || aiMessage.hasToolExecutionRequests();
+        if (message instanceof AiMessage) {
+            return (((AiMessage) message).text() != null && !((AiMessage) message).text().isEmpty()) || ((AiMessage) message).hasToolExecutionRequests();
         }
-        return message instanceof SystemMessage
-                || message instanceof UserMessage
-                || message instanceof ToolExecutionResultMessage;
+        return message instanceof SystemMessage || message instanceof UserMessage || message instanceof ToolExecutionResultMessage;
     }
 
     private static ChatMessage withTextOnly(ChatMessage message) {
-        if (message instanceof UserMessage userMessage && !hasOnlyText(userMessage)) {
-            return userMessage.name() == null
-                    ? UserMessage.from(text(userMessage))
-                    : UserMessage.from(userMessage.name(), text(userMessage));
+        if (message instanceof UserMessage && !hasOnlyText(((UserMessage) message))) {
+            return ((UserMessage) message).name() == null ? UserMessage.from(text(((UserMessage) message))) : UserMessage.from(((UserMessage) message).name(), text(((UserMessage) message)));
         }
-        if (message instanceof ToolExecutionResultMessage result
-                && !result.contents().stream().allMatch(TextContent.class::isInstance)) {
-            return result.toBuilder().contents(List.of(TextContent.from(markers(result.contents())))).build();
+        if (message instanceof ToolExecutionResultMessage && !((ToolExecutionResultMessage) message).contents().stream().allMatch(TextContent.class::isInstance)) {
+            return ((ToolExecutionResultMessage) message).toBuilder().contents(dev.langchain4j.internal.Jdk8.list(TextContent.from(markers(((ToolExecutionResultMessage) message).contents())))).build();
         }
         return message;
     }
 
     private static String markers(List<Content> contents) {
-        return contents.stream()
-                .map(content -> content instanceof TextContent textContent
-                        ? textContent.text()
-                        : "[attached " + content.type().name().toLowerCase(Locale.ROOT) + "]")
-                .collect(joining("\n"));
+        return contents.stream().map(content -> content instanceof TextContent ? ((TextContent) content).text() : "[attached " + content.type().name().toLowerCase(Locale.ROOT) + "]").collect(joining("\n"));
     }
 
     private static boolean hasOnlyText(UserMessage userMessage) {
@@ -212,26 +191,26 @@ public class DecisionModelInputUtils {
         List<ImageContent> images = new ArrayList<>();
         for (ChatMessage message : messages) {
             Map<String, Object> entry = new LinkedHashMap<>();
-            if (message instanceof SystemMessage systemMessage) {
+            if (message instanceof SystemMessage) {
                 entry.put("role", "system");
-                entry.put("text", systemMessage.text());
-            } else if (message instanceof UserMessage userMessage) {
+                entry.put("text", ((SystemMessage) message).text());
+            } else if (message instanceof UserMessage) {
                 entry.put("role", "user");
-                if (userMessage.name() != null) {
-                    entry.put("name", userMessage.name());
+                if (((UserMessage) message).name() != null) {
+                    entry.put("name", ((UserMessage) message).name());
                 }
-                entry.put("text", transcriptText(userMessage.contents(), images, provider));
-            } else if (message instanceof AiMessage aiMessage) {
-                if ((aiMessage.text() == null || aiMessage.text().isEmpty()) && !aiMessage.hasToolExecutionRequests()) {
+                entry.put("text", transcriptText(((UserMessage) message).contents(), images, provider));
+            } else if (message instanceof AiMessage) {
+                if ((((AiMessage) message).text() == null || ((AiMessage) message).text().isEmpty()) && !((AiMessage) message).hasToolExecutionRequests()) {
                     continue;
                 }
                 entry.put("role", "assistant");
-                if (aiMessage.text() != null && !aiMessage.text().isEmpty()) {
-                    entry.put("text", aiMessage.text());
+                if (((AiMessage) message).text() != null && !((AiMessage) message).text().isEmpty()) {
+                    entry.put("text", ((AiMessage) message).text());
                 }
-                if (aiMessage.hasToolExecutionRequests()) {
+                if (((AiMessage) message).hasToolExecutionRequests()) {
                     List<Map<String, Object>> toolCalls = new ArrayList<>();
-                    for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+                    for (ToolExecutionRequest request : ((AiMessage) message).toolExecutionRequests()) {
                         Map<String, Object> toolCall = new LinkedHashMap<>();
                         putIfNotNull(toolCall, "id", request.id());
                         toolCall.put("name", request.name());
@@ -240,24 +219,21 @@ public class DecisionModelInputUtils {
                     }
                     entry.put("tool_calls", toolCalls);
                 }
-            } else if (message instanceof ToolExecutionResultMessage result) {
+            } else if (message instanceof ToolExecutionResultMessage) {
                 entry.put("role", "tool");
-                putIfNotNull(entry, "tool_call_id", result.id());
-                entry.put("name", result.toolName());
-                entry.put("text", transcriptText(result.contents(), images, provider));
-                if (Boolean.TRUE.equals(result.isError())) {
+                putIfNotNull(entry, "tool_call_id", ((ToolExecutionResultMessage) message).id());
+                entry.put("name", ((ToolExecutionResultMessage) message).toolName());
+                entry.put("text", transcriptText(((ToolExecutionResultMessage) message).contents(), images, provider));
+                if (Boolean.TRUE.equals(((ToolExecutionResultMessage) message).isError())) {
                     entry.put("is_error", true);
                 }
             } else {
-                throw new UnsupportedFeatureException(provider + " does not support "
-                        + message.getClass().getSimpleName() + " in a conversation. Supported messages: "
-                        + "SystemMessage, UserMessage, AiMessage and ToolExecutionResultMessage");
+                throw new UnsupportedFeatureException(provider + " does not support " + message.getClass().getSimpleName() + " in a conversation. Supported messages: " + "SystemMessage, UserMessage, AiMessage and ToolExecutionResultMessage");
             }
             entries.add(entry);
         }
         if (entries.isEmpty()) {
-            throw new IllegalArgumentException("The conversation has nothing to send: AiMessages without text and tool "
-                    + "execution requests are skipped");
+            throw new IllegalArgumentException("The conversation has nothing to send: AiMessages without text and tool " + "execution requests are skipped");
         }
         return new Transcript(entries, images);
     }
@@ -278,14 +254,13 @@ public class DecisionModelInputUtils {
     private static String transcriptText(List<Content> contents, List<ImageContent> images, String provider) {
         List<String> parts = new ArrayList<>();
         for (Content content : contents) {
-            if (content instanceof TextContent textContent) {
-                parts.add(textContent.text());
-            } else if (content instanceof ImageContent image) {
-                images.add(image);
+            if (content instanceof TextContent) {
+                parts.add(((TextContent) content).text());
+            } else if (content instanceof ImageContent) {
+                images.add(((ImageContent) content));
                 parts.add("[image " + images.size() + "]");
             } else {
-                throw new UnsupportedFeatureException(provider
-                        + " supports only text and images in a conversation, but it contains " + content.type());
+                throw new UnsupportedFeatureException(provider + " supports only text and images in a conversation, but it contains " + content.type());
             }
         }
         return String.join("\n", parts);
@@ -297,11 +272,12 @@ public class DecisionModelInputUtils {
     public static final class Transcript {
 
         private final List<Map<String, Object>> messages;
+
         private final List<ImageContent> images;
 
         Transcript(List<Map<String, Object>> messages, List<ImageContent> images) {
-            this.messages = List.copyOf(messages);
-            this.images = List.copyOf(images);
+            this.messages = dev.langchain4j.internal.Jdk8.copyList(messages);
+            this.images = dev.langchain4j.internal.Jdk8.copyList(images);
         }
 
         public List<Map<String, Object>> messages() {

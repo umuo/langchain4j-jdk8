@@ -1,7 +1,6 @@
 package dev.langchain4j.model.batch;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import org.jspecify.annotations.Nullable;
 
@@ -18,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * @see BatchResponse#results()
  */
 @Experimental
-public sealed interface BatchItemResult<T> permits BatchItemResult.Success, BatchItemResult.Failure {
+public interface BatchItemResult<T> {
 
     /**
      * Returns {@code true} if this request succeeded.
@@ -57,10 +56,7 @@ public sealed interface BatchItemResult<T> permits BatchItemResult.Success, Batc
      * @param <T>      the type of the response payload
      * @param response the successful response, never {@code null}
      */
-    record Success<T>(T response) implements BatchItemResult<T> {
-        public Success {
-            ensureNotNull(response, "response");
-        }
+    final static public class Success<T> implements BatchItemResult<T> {
 
         @Override
         public boolean isSuccess() {
@@ -68,8 +64,32 @@ public sealed interface BatchItemResult<T> permits BatchItemResult.Success, Batc
         }
 
         @Override
-        public @Nullable BatchError error() {
+        @Nullable
+        public BatchError error() {
             return null;
+        }
+
+        private final T response;
+
+        public T response() {
+            return response;
+        }
+
+        public Success(T response) {
+            ensureNotNull(response, "response");
+            this.response = response;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(response, ((Success<?>) obj).response));
+        }
+
+        public int hashCode() {
+            return (31 * 0 + java.util.Objects.hashCode(response));
+        }
+
+        public String toString() {
+            return "Success[" + "response=" + response + "]";
         }
     }
 
@@ -79,10 +99,7 @@ public sealed interface BatchItemResult<T> permits BatchItemResult.Success, Batc
      * @param <T>   the type of the response payload that would have been produced on success
      * @param error the error describing the failure, never {@code null}
      */
-    record Failure<T>(BatchError error) implements BatchItemResult<T> {
-        public Failure {
-            ensureNotNull(error, "error");
-        }
+    final static public class Failure<T> implements BatchItemResult<T> {
 
         @Override
         public boolean isSuccess() {
@@ -90,8 +107,32 @@ public sealed interface BatchItemResult<T> permits BatchItemResult.Success, Batc
         }
 
         @Override
-        public @Nullable T response() {
+        @Nullable
+        public T response() {
             return null;
+        }
+
+        private final BatchError error;
+
+        public BatchError error() {
+            return error;
+        }
+
+        public Failure(BatchError error) {
+            ensureNotNull(error, "error");
+            this.error = error;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(error, ((Failure<?>) obj).error));
+        }
+
+        public int hashCode() {
+            return (31 * 0 + java.util.Objects.hashCode(error));
+        }
+
+        public String toString() {
+            return "Failure[" + "error=" + error + "]";
         }
     }
 }

@@ -5,7 +5,8 @@ import static dev.langchain4j.internal.ValidationUtils.ensureTrue;
 
 final class Probabilities {
 
-    private Probabilities() {}
+    private Probabilities() {
+    }
 
     static double ensureProbability(Double value, String name) {
         ensureNotNull(value, name);

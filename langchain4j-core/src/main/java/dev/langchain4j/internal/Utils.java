@@ -7,7 +7,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
-
 import dev.langchain4j.Internal;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,7 +29,7 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.HexFormat;
+
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -54,9 +53,11 @@ import org.slf4j.LoggerFactory;
  */
 @Internal
 public class Utils {
+
     private static final Logger log = LoggerFactory.getLogger(Utils.class);
 
-    private Utils() {}
+    private Utils() {
+    }
 
     /**
      * Returns the first non-null value from the provided array of values.
@@ -176,13 +177,11 @@ public class Utils {
         if (strings == null || strings.length == 0) {
             return false;
         }
-
         for (String string : strings) {
             if (isNullOrBlank(string)) {
                 return false;
             }
         }
-
         return true;
     }
 
@@ -282,7 +281,7 @@ public class Utils {
      */
     public static String generateUUIDFrom(String input) {
         byte[] hashBytes = getSha256Instance().digest(input.getBytes(UTF_8));
-        String hexFormat = HexFormat.of().formatHex(hashBytes);
+        String hexFormat = dev.langchain4j.internal.Jdk8.hex(hashBytes);
         return UUID.nameUUIDFromBytes(hexFormat.getBytes(UTF_8)).toString();
     }
 
@@ -341,27 +340,20 @@ public class Utils {
                 HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
                 connection.setRequestMethod("GET");
                 // Add headers to appear as a legitimate browser request
-                connection.setRequestProperty(
-                        "User-Agent",
-                        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-                connection.setRequestProperty(
-                        "Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
+                connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
+                connection.setRequestProperty("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8");
                 connection.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
                 connection.setRequestProperty("Accept-Encoding", "gzip, deflate");
                 connection.setRequestProperty("Connection", "keep-alive");
-
                 int responseCode = connection.getResponseCode();
-
                 if (responseCode == HTTP_OK) {
-                    try (InputStream inputStream =
-                                    decompress(connection.getInputStream(), connection.getContentEncoding());
-                            ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+                    try (InputStream inputStream = decompress(connection.getInputStream(), connection.getContentEncoding());
+                        ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
                         byte[] buffer = new byte[1024];
                         int bytesRead;
                         while ((bytesRead = inputStream.read(buffer)) != -1) {
                             outputStream.write(buffer, 0, bytesRead);
                         }
-
                         return outputStream.toByteArray();
                     } finally {
                         connection.disconnect();
@@ -382,22 +374,26 @@ public class Utils {
         try {
             URI uri = new URI(url);
             if (uri.isAbsolute()) {
-                return Path.of(uri);
+                return java.nio.file.Paths.get(uri);
             }
         } catch (URISyntaxException ignored) {
         }
-        return Path.of(url);
+        return java.nio.file.Paths.get(url);
     }
 
     private static InputStream decompress(InputStream inputStream, String contentEncoding) throws IOException {
         if (contentEncoding == null) {
             return inputStream;
         }
-        return switch (contentEncoding.trim().toLowerCase(Locale.ROOT)) {
-            case "gzip", "x-gzip" -> new GZIPInputStream(inputStream);
-            case "deflate" -> new InflaterInputStream(inputStream);
-            default -> inputStream;
-        };
+        switch(contentEncoding.trim().toLowerCase(Locale.ROOT)) {
+            case "gzip":
+            case "x-gzip":
+                return new GZIPInputStream(inputStream);
+            case "deflate":
+                return new InflaterInputStream(inputStream);
+            default:
+                return inputStream;
+        }
     }
 
     /**
@@ -412,7 +408,6 @@ public class Utils {
         if (set == null) {
             return null;
         }
-
         return unmodifiableSet(new LinkedHashSet<>(set));
     }
 
@@ -426,9 +421,8 @@ public class Utils {
      */
     public static <T> Set<T> copy(Set<T> set) {
         if (set == null) {
-            return Set.of();
+            return dev.langchain4j.internal.Jdk8.set();
         }
-
         return unmodifiableSet(new LinkedHashSet<>(set));
     }
 
@@ -444,7 +438,6 @@ public class Utils {
         if (list == null) {
             return null;
         }
-
         return unmodifiableList(new ArrayList<>(list));
     }
 
@@ -458,9 +451,8 @@ public class Utils {
      */
     public static <T> List<T> copy(List<? extends T> list) {
         if (list == null) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
-
         return unmodifiableList(new ArrayList<>(list));
     }
 
@@ -476,7 +468,6 @@ public class Utils {
         if (list == null) {
             return new ArrayList<>();
         }
-
         return new ArrayList<>(list);
     }
 
@@ -490,10 +481,9 @@ public class Utils {
      */
     public static <T> List<T> copy(Collection<? extends T> collection) {
         if (collection == null) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
-
-        return List.copyOf(collection);
+        return dev.langchain4j.internal.Jdk8.copyList(collection);
     }
 
     /**
@@ -507,7 +497,6 @@ public class Utils {
         if (map == null) {
             return null;
         }
-
         return unmodifiableMap(new LinkedHashMap<>(map));
     }
 
@@ -520,9 +509,8 @@ public class Utils {
      */
     public static <K, V> Map<K, V> copy(Map<K, V> map) {
         if (map == null) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
-
         return unmodifiableMap(new LinkedHashMap<>(map));
     }
 
@@ -537,7 +525,6 @@ public class Utils {
         if (map == null) {
             return new HashMap<>();
         }
-
         return new HashMap<>(map);
     }
 
@@ -545,7 +532,6 @@ public class Utils {
         if (map == null) {
             return null;
         }
-
         Map<String, String> stringValueMap = new HashMap<>();
         for (String key : map.keySet()) {
             Object value = map.get(key);
@@ -573,7 +559,6 @@ public class Utils {
         if (method.isAnnotationPresent(annotation)) {
             return Optional.of(method);
         }
-
         Set<Class<?>> visited = new HashSet<>();
         Deque<Class<?>> supertypes = new ArrayDeque<>();
         addSupertypes(method.getDeclaringClass(), supertypes, visited);
@@ -604,7 +589,37 @@ public class Utils {
         }
     }
 
-    private record MethodSignature(String name, List<Class<?>> params) {}
+    private final static class MethodSignature {
+
+        private final String name;
+
+        public String name() {
+            return name;
+        }
+
+        private final List<Class<?>> params;
+
+        public List<Class<?>> params() {
+            return params;
+        }
+
+        public MethodSignature(String name, List<Class<?>> params) {
+            this.name = name;
+            this.params = params;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(name, ((MethodSignature) obj).name) && java.util.Objects.equals(params, ((MethodSignature) obj).params));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(name)) + java.util.Objects.hashCode(params));
+        }
+
+        public String toString() {
+            return "MethodSignature[" + "name=" + name + ", params=" + params + "]";
+        }
+    }
 
     /**
      * Returns all concrete methods from the given class, its superclasses (excluding {@link Object}),
@@ -635,7 +650,7 @@ public class Utils {
             current = current.getSuperclass();
         }
         collectInterfaceMethods(clazz, seen, allMethods, new HashSet<>(), concreteOnly);
-        return List.copyOf(allMethods);
+        return dev.langchain4j.internal.Jdk8.copyList(allMethods);
     }
 
     private static void collectConcreteMethods(Class<?> clazz, Set<MethodSignature> seen, List<Method> result) {
@@ -643,19 +658,14 @@ public class Utils {
             if (method.isBridge() || method.isSynthetic()) {
                 continue;
             }
-            MethodSignature sig = new MethodSignature(method.getName(), List.of(method.getParameterTypes()));
+            MethodSignature sig = new MethodSignature(method.getName(), dev.langchain4j.internal.Jdk8.list(method.getParameterTypes()));
             if (seen.add(sig)) {
                 result.add(method);
             }
         }
     }
 
-    private static void collectInterfaceMethods(
-            Class<?> clazz,
-            Set<MethodSignature> seen,
-            List<Method> result,
-            Set<Class<?>> visited,
-            boolean concreteOnly) {
+    private static void collectInterfaceMethods(Class<?> clazz, Set<MethodSignature> seen, List<Method> result, Set<Class<?>> visited, boolean concreteOnly) {
         if (clazz == null) {
             return;
         }
@@ -664,12 +674,10 @@ public class Utils {
                 continue;
             }
             for (Method method : iface.getDeclaredMethods()) {
-                if (method.isBridge()
-                        || method.isSynthetic()
-                        || (concreteOnly && Modifier.isAbstract(method.getModifiers()))) {
+                if (method.isBridge() || method.isSynthetic() || (concreteOnly && Modifier.isAbstract(method.getModifiers()))) {
                     continue;
                 }
-                MethodSignature sig = new MethodSignature(method.getName(), List.of(method.getParameterTypes()));
+                MethodSignature sig = new MethodSignature(method.getName(), dev.langchain4j.internal.Jdk8.list(method.getParameterTypes()));
                 if (seen.add(sig)) {
                     result.add(method);
                 }
@@ -720,7 +728,6 @@ public class Utils {
         if (lists.length < 2) {
             throw new IllegalArgumentException("lists must have at least 2 elements");
         }
-
         List<T> result = new ArrayList<>();
         for (List<T> list : lists) {
             if (list != null) {
@@ -734,7 +741,6 @@ public class Utils {
         if (maps.length < 2) {
             throw new IllegalArgumentException("maps must have at least 2 elements");
         }
-
         Map<K, V> result = new HashMap<>();
         for (Map<K, V> map : maps) {
             if (map == null) {

@@ -1,7 +1,6 @@
 package dev.langchain4j.observability.event;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.observability.api.event.AiServiceErrorEvent;
 
 /**

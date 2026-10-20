@@ -1,7 +1,6 @@
 package dev.langchain4j.agent.tool;
 
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 /**
@@ -10,7 +9,9 @@ import static dev.langchain4j.internal.Utils.quoted;
 public class ToolExecutionRequest {
 
     private final String id;
+
     private final String name;
+
     private final String arguments;
 
     /**
@@ -49,15 +50,13 @@ public class ToolExecutionRequest {
 
     @Override
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ToolExecutionRequest ter
-                && equalTo(ter);
+        if (this == another)
+            return true;
+        return another instanceof ToolExecutionRequest && equalTo(((ToolExecutionRequest) another));
     }
 
     private boolean equalTo(ToolExecutionRequest another) {
-        return Objects.equals(id, another.id)
-                && Objects.equals(name, another.name)
-                && Objects.equals(arguments, another.arguments);
+        return Objects.equals(id, another.id) && Objects.equals(name, another.name) && Objects.equals(arguments, another.arguments);
     }
 
     @Override
@@ -71,18 +70,11 @@ public class ToolExecutionRequest {
 
     @Override
     public String toString() {
-        return "ToolExecutionRequest {"
-                + " id = " + quoted(id)
-                + ", name = " + quoted(name)
-                + ", arguments = " + quoted(arguments)
-                + " }";
+        return "ToolExecutionRequest {" + " id = " + quoted(id) + ", name = " + quoted(name) + ", arguments = " + quoted(arguments) + " }";
     }
 
     public Builder toBuilder() {
-        return builder()
-                .id(id)
-                .name(name)
-                .arguments(arguments);
+        return builder().id(id).name(name).arguments(arguments);
     }
 
     /**
@@ -97,8 +89,11 @@ public class ToolExecutionRequest {
      * {@code ToolExecutionRequest} builder static inner class.
      */
     public static final class Builder {
+
         private String id;
+
         private String name;
+
         private String arguments;
 
         /**

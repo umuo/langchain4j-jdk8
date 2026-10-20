@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.Content;
 import java.util.ArrayList;
@@ -52,7 +51,7 @@ public final class ContentsInput implements DecisionInput {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof ContentsInput that && contents.equals(that.contents);
+        return o instanceof ContentsInput && contents.equals(((ContentsInput) o).contents);
     }
 
     @Override
@@ -62,6 +61,6 @@ public final class ContentsInput implements DecisionInput {
 
     @Override
     public String toString() {
-        return "ContentsInput{types=" + contents.stream().map(Content::type).toList() + '}';
+        return "ContentsInput{types=" + contents.stream().map(Content::type).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)) + '}';
     }
 }

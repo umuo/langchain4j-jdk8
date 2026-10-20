@@ -7,6 +7,7 @@ package dev.langchain4j.guardrail;
  * </p>
  */
 public final class InputGuardrailException extends GuardrailException {
+
     public InputGuardrailException(String message) {
         super(message);
     }

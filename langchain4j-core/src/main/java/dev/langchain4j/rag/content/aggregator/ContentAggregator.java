@@ -6,7 +6,6 @@ import dev.langchain4j.internal.AsyncNotSupported;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -44,7 +43,7 @@ public interface ContentAggregator {
     /**
      * Non-blocking counterpart of {@link #aggregate(Map)}, invoked by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link java.util.concurrent.CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service modes when RAG is configured.
+     * ({@link org.reactivestreams.Publisher}) AI Service modes when RAG is configured.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}: an aggregator backed by a blocking
      * model call (e.g. {@link ReRankingContentAggregator}'s scoring model) must opt in by overriding this method to

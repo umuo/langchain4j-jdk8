@@ -2,7 +2,6 @@ package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agent.tool.ToolSpecificationJsonCodec;
@@ -27,14 +26,14 @@ public class ToolSpecificationJsonUtils {
         return factory != null ? factory.create() : new JacksonToolSpecificationJsonCodec();
     }
 
-    private ToolSpecificationJsonUtils() {}
+    private ToolSpecificationJsonUtils() {
+    }
 
     /**
      * Serializes a {@link ToolSpecification} to a JSON string.
      */
     public static String toJson(ToolSpecification toolSpecification) {
         ensureNotNull(toolSpecification, "toolSpecification");
-
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("name", toolSpecification.name());
         if (toolSpecification.description() != null) {
@@ -43,8 +42,7 @@ public class ToolSpecificationJsonUtils {
         if (toolSpecification.parameters() != null) {
             map.put("parameters", JsonSchemaElementJsonUtils.toMap(toolSpecification.parameters()));
         }
-        if (toolSpecification.metadata() != null
-                && !toolSpecification.metadata().isEmpty()) {
+        if (toolSpecification.metadata() != null && !toolSpecification.metadata().isEmpty()) {
             map.put("metadata", toolSpecification.metadata());
         }
         if (toolSpecification.strict() != null) {
@@ -59,44 +57,32 @@ public class ToolSpecificationJsonUtils {
     @SuppressWarnings("unchecked")
     public static ToolSpecification fromJson(String json) {
         ensureNotNull(json, "json");
-
         Map<String, Object> map = CODEC.fromJson(json, Map.class);
-
-        ToolSpecification.Builder builder = ToolSpecification.builder()
-                .name(optionalString(map, "name"))
-                .description(optionalString(map, "description"));
-
+        ToolSpecification.Builder builder = ToolSpecification.builder().name(optionalString(map, "name")).description(optionalString(map, "description"));
         Object parametersObj = map.get("parameters");
         if (parametersObj instanceof Map) {
             Map<String, Object> parametersMap = (Map<String, Object>) parametersObj;
             JsonSchemaElement element = JsonSchemaElementJsonUtils.fromMap(parametersMap);
-            if (element instanceof JsonObjectSchema objectSchema) {
-                builder.parameters(objectSchema);
+            if (element instanceof JsonObjectSchema) {
+                builder.parameters(((JsonObjectSchema) element));
             } else {
-                throw new IllegalArgumentException("\"parameters\" must be a JSON object schema, but was: "
-                        + element.getClass().getSimpleName());
+                throw new IllegalArgumentException("\"parameters\" must be a JSON object schema, but was: " + element.getClass().getSimpleName());
             }
         } else if (parametersObj != null) {
-            throw new IllegalArgumentException("\"parameters\" must be a JSON object, but was: "
-                    + parametersObj.getClass().getSimpleName());
+            throw new IllegalArgumentException("\"parameters\" must be a JSON object, but was: " + parametersObj.getClass().getSimpleName());
         }
-
         Object metadataObj = map.get("metadata");
         if (metadataObj instanceof Map) {
             builder.metadata((Map<String, Object>) metadataObj);
         } else if (metadataObj != null) {
-            throw new IllegalArgumentException("\"metadata\" must be a JSON object, but was: "
-                    + metadataObj.getClass().getSimpleName());
+            throw new IllegalArgumentException("\"metadata\" must be a JSON object, but was: " + metadataObj.getClass().getSimpleName());
         }
-
         Object strictObj = map.get("strict");
         if (strictObj instanceof Boolean) {
             builder.strict((Boolean) strictObj);
         } else if (strictObj != null) {
-            throw new IllegalArgumentException("\"strict\" must be a boolean, but was: "
-                    + strictObj.getClass().getSimpleName());
+            throw new IllegalArgumentException("\"strict\" must be a boolean, but was: " + strictObj.getClass().getSimpleName());
         }
-
         return builder.build();
     }
 
@@ -106,8 +92,7 @@ public class ToolSpecificationJsonUtils {
             return null;
         }
         if (!(value instanceof String)) {
-            throw new IllegalArgumentException("\"" + field + "\" must be a string, but was: "
-                    + value.getClass().getSimpleName());
+            throw new IllegalArgumentException("\"" + field + "\" must be a string, but was: " + value.getClass().getSimpleName());
         }
         return (String) value;
     }

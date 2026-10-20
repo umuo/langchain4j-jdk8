@@ -1,7 +1,6 @@
 package dev.langchain4j.data.audio;
 
 import static dev.langchain4j.internal.Utils.quoted;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
@@ -24,8 +23,11 @@ import java.util.Objects;
 public class Audio {
 
     private final URI url;
+
     private final byte[] binaryData;
+
     private final String base64Data;
+
     private final String mimeType;
 
     /**
@@ -91,13 +93,12 @@ public class Audio {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Audio that = (Audio) o;
-        return Objects.equals(this.url, that.url)
-                && Arrays.equals(this.binaryData, that.binaryData)
-                && Objects.equals(this.base64Data, that.base64Data)
-                && Objects.equals(this.mimeType, that.mimeType);
+        return Objects.equals(this.url, that.url) && Arrays.equals(this.binaryData, that.binaryData) && Objects.equals(this.base64Data, that.base64Data) && Objects.equals(this.mimeType, that.mimeType);
     }
 
     @Override
@@ -109,10 +110,7 @@ public class Audio {
 
     @Override
     public String toString() {
-        return "Audio {" + " url = "
-                + quoted(url) + ", base64Data = "
-                + quoted(base64Data) + ", mimeType = "
-                + quoted(mimeType) + " }";
+        return "Audio {" + " url = " + quoted(url) + ", base64Data = " + quoted(base64Data) + ", mimeType = " + quoted(mimeType) + " }";
     }
 
     /**
@@ -121,14 +119,18 @@ public class Audio {
     public static class Builder {
 
         private URI url;
+
         private byte[] binaryData;
+
         private String base64Data;
+
         private String mimeType;
 
         /**
          * Create a new {@link Builder}.
          */
-        public Builder() {}
+        public Builder() {
+        }
 
         /**
          * Set the url of the audio.

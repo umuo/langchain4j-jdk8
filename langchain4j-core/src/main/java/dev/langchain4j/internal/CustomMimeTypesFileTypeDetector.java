@@ -55,7 +55,6 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
         defaultMappings.put("csv", "text/csv");
         defaultMappings.put("tsv", "text/tsv");
         defaultMappings.put("md", "text/x-markdown");
-
         // Mime types from image requirements for Vertex AI Gemini
         // https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/image-understanding#image-requirements
         defaultMappings.put("avif", "image/avif");
@@ -68,7 +67,6 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
         defaultMappings.put("tif", "image/tiff");
         defaultMappings.put("tiff", "image/tiff");
         defaultMappings.put("webp", "image/webp");
-
         // Mime types from audio requirements for Vertex AI Gemini
         // https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/audio-understanding
         defaultMappings.put("mp3", "audio/mp3");
@@ -79,7 +77,6 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
         defaultMappings.put("mpga", "audio/mpga");
         defaultMappings.put("opus", "audio/opus");
         defaultMappings.put("pcm", "audio/pcm");
-
         // Mime types from video requirements for Vertex AI Gemini
         // https://cloud.google.com/vertex-ai/generative-ai/docs/multimodal/video-understanding
         defaultMappings.put("mp4", "video/mp4");
@@ -126,11 +123,9 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
     @Override
     public String probeContentType(Path path) {
         String extension = extension(path).toLowerCase(Locale.ROOT);
-
         if (mappings.containsKey(extension)) {
             return mappings.get(extension);
         }
-
         try {
             return Files.probeContentType(path);
         } catch (IOException e) {
@@ -139,7 +134,7 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
     }
 
     public String probeContentType(String path) {
-        return probeContentType(Path.of(path));
+        return probeContentType(java.nio.file.Paths.get(path));
     }
 
     /**
@@ -157,27 +152,22 @@ public class CustomMimeTypesFileTypeDetector extends FileTypeDetector {
         if (uriPath == null || uriPath.isEmpty()) {
             return null;
         }
-
         // First let's try to guess via the Path
-        Path path = Path.of(uriPath);
-
+        Path path = java.nio.file.Paths.get(uriPath);
         // Paths that denote a root (e.g. "https://example.com/") have no file name either
         Path fileName = path.getFileName();
         if (fileName == null) {
             return null;
         }
-
         String mimeTypeFromPath = probeContentType(path);
         if (mimeTypeFromPath != null) {
             return mimeTypeFromPath;
         }
-
         // Second, let's see if URLConnection can guess from the file name
         String mimeTypeGuessedFromUrlCon = URLConnection.guessContentTypeFromName(fileName.toString());
         if (mimeTypeGuessedFromUrlCon != null) {
             return mimeTypeGuessedFromUrlCon;
         }
-
         // Third, the most costly network-hop approach to check
         // the content-type returned when opening a stream
         // Inspired from langchain4j-dashscope module: in EnhancedFileTypeDetector

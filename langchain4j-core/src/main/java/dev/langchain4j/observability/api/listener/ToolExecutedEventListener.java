@@ -15,6 +15,7 @@ import dev.langchain4j.observability.api.event.ToolExecutedEvent;
  */
 @FunctionalInterface
 public interface ToolExecutedEventListener extends AiServiceListener<ToolExecutedEvent> {
+
     @Override
     default Class<ToolExecutedEvent> getEventClass() {
         return ToolExecutedEvent.class;

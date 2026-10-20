@@ -29,6 +29,7 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 public class MappingTrackingStreamingChatResponseHandler implements StreamingChatResponseHandler {
 
     private final StreamingChatResponseHandler delegate;
+
     private boolean mapped;
 
     public MappingTrackingStreamingChatResponseHandler(StreamingChatResponseHandler delegate) {

@@ -1,18 +1,19 @@
 package dev.langchain4j.internal;
 
 import dev.langchain4j.Internal;
-
-import java.util.concurrent.Flow;
+import org.reactivestreams.Subscription;
 
 @Internal
 public class InternalFlowUtils {
 
-    public static final Flow.Subscription EMPTY_SUBSCRIPTION = new Flow.Subscription() {
-        @Override
-        public void request(long n) {}
+    public static final Subscription EMPTY_SUBSCRIPTION = new Subscription() {
 
         @Override
-        public void cancel() {}
+        public void request(long n) {
+        }
+
+        @Override
+        public void cancel() {
+        }
     };
-
 }

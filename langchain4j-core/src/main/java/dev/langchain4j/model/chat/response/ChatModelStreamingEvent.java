@@ -1,9 +1,10 @@
 package dev.langchain4j.model.chat.response;
 
 import dev.langchain4j.Experimental;
+
 /**
  * Base type for the events emitted by the reactive stream of a {@link dev.langchain4j.model.chat.StreamingChatModel} —
- * the {@code Flow.Publisher<ChatModelStreamingEvent>} returned by
+ * the {@code Publisher<ChatModelStreamingEvent>} returned by
  * {@link dev.langchain4j.model.chat.StreamingChatModel#chat(dev.langchain4j.model.chat.request.ChatRequest)}.
  * <p>
  * This is the low-level, per-model-call vocabulary: the streamed chunks of a single model response
@@ -19,4 +20,5 @@ import dev.langchain4j.Experimental;
  * @since 1.20.0
  */
 @Experimental
-public interface ChatModelStreamingEvent {}
+public interface ChatModelStreamingEvent {
+}

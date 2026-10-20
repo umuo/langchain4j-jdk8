@@ -1,7 +1,6 @@
 package dev.langchain4j.data.embedding;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -51,11 +50,9 @@ public class Embedding {
      */
     public double[] vectorAsDoubleArray() {
         double[] doubles = new double[vector.length];
-
         for (int i = 0; i < vector.length; i++) {
             doubles[i] = vector[i];
         }
-
         return doubles;
     }
 
@@ -86,8 +83,10 @@ public class Embedding {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Embedding that = (Embedding) o;
         return Arrays.equals(this.vector, that.vector);
     }

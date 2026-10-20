@@ -1,10 +1,8 @@
 package dev.langchain4j.model.input.structured;
 
 import dev.langchain4j.internal.ValidationUtils;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -32,7 +30,9 @@ public @interface StructuredPrompt {
      * Utility class for {@link StructuredPrompt}.
      */
     class Util {
-        private Util() {}
+
+        private Util() {
+        }
 
         /**
          * Validates that the given object is annotated with {@link StructuredPrompt}.
@@ -41,13 +41,8 @@ public @interface StructuredPrompt {
          */
         public static StructuredPrompt validateStructuredPrompt(Object structuredPrompt) {
             ValidationUtils.ensureNotNull(structuredPrompt, "structuredPrompt");
-
             Class<?> cls = structuredPrompt.getClass();
-
-            return ValidationUtils.ensureNotNull(
-                    cls.getAnnotation(StructuredPrompt.class),
-                    "%s should be annotated with @StructuredPrompt to be used as a structured prompt",
-                    cls.getName());
+            return ValidationUtils.ensureNotNull(cls.getAnnotation(StructuredPrompt.class), "%s should be annotated with @StructuredPrompt to be used as a structured prompt", cls.getName());
         }
 
         /**

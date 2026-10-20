@@ -58,10 +58,13 @@ public interface ToolExecutedEvent extends AiServiceEvent {
     class ToolExecutedEventBuilder extends Builder<ToolExecutedEvent> {
 
         private ToolExecutionRequest request;
+
         private String resultText;
+
         private List<Content> resultContents;
 
-        protected ToolExecutedEventBuilder() {}
+        protected ToolExecutedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link ToolExecutedEvent}.

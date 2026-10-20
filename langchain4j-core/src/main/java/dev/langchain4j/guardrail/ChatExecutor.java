@@ -4,7 +4,6 @@ import dev.langchain4j.Experimental;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import dev.langchain4j.internal.AsyncNotSupported;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.model.chat.ChatModel;
@@ -103,7 +102,7 @@ public interface ChatExecutor {
         try {
             return ChatExchange.exchangeAsync(null, executeAsync(chatMessages));
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
+            return dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
     }
 
@@ -138,11 +137,15 @@ public interface ChatExecutor {
      * @param <T> the type of the builder subclass for enabling fluent method chaining
      */
     abstract class AbstractBuilder<T extends AbstractBuilder<T>> {
+
         protected ChatRequest chatRequest;
+
         protected InvocationContext invocationContext;
+
         protected AiServiceListenerRegistrar eventListenerRegistrar;
 
-        protected AbstractBuilder() {}
+        protected AbstractBuilder() {
+        }
 
         /**
          * Sets the {@link ChatRequest} instance for the synchronousBuilder.
@@ -201,6 +204,7 @@ public interface ChatExecutor {
      * like {@link ChatRequest}, and for building an instance of the {@link ChatExecutor}.
      */
     class SynchronousBuilder extends AbstractBuilder<SynchronousBuilder> {
+
         protected final ChatModel chatModel;
 
         protected SynchronousBuilder(ChatModel chatModel) {
@@ -227,7 +231,9 @@ public interface ChatExecutor {
      * that simulates streaming.
      */
     class StreamingToSynchronousBuilder extends AbstractBuilder<StreamingToSynchronousBuilder> {
+
         protected final StreamingChatModel streamingChatModel;
+
         protected Consumer<Throwable> errorHandler;
 
         protected StreamingToSynchronousBuilder(StreamingChatModel streamingChatModel) {

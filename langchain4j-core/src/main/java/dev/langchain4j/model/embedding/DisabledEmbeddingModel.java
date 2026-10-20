@@ -4,7 +4,6 @@ import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.ModelDisabledException;
 import dev.langchain4j.model.output.Response;
-
 import java.util.List;
 
 /**

@@ -12,6 +12,7 @@ import dev.langchain4j.observability.event.DefaultAiServiceErrorEvent;
  * associated {@link Throwable}, which can be used for debugging or logging purposes.
  */
 public interface AiServiceErrorEvent extends AiServiceEvent {
+
     /**
      * Retrieves the {@link Throwable} representing the error associated with the AI Service invocation failure.
      */
@@ -35,9 +36,11 @@ public interface AiServiceErrorEvent extends AiServiceEvent {
      * Builder for {@link DefaultAiServiceErrorEvent} instances.
      */
     class AiServiceErrorEventBuilder extends Builder<AiServiceErrorEvent> {
+
         private Throwable error;
 
-        protected AiServiceErrorEventBuilder() {}
+        protected AiServiceErrorEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link AiServiceErrorEvent}.

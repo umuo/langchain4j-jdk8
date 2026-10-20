@@ -20,13 +20,7 @@ import java.util.concurrent.CompletableFuture;
  *            The type of {@link Guardrail}s being executed
  * @param <E> The type of {@link GuardrailExecutedEvent} to be fired
  */
-public sealed interface GuardrailExecutor<
-                C extends GuardrailsConfig,
-                P extends GuardrailRequest<P>,
-                R extends GuardrailResult<R>,
-                G extends Guardrail<P, R>,
-                E extends GuardrailExecutedEvent<P, R, G>>
-        permits AbstractGuardrailExecutor {
+public interface GuardrailExecutor<C extends GuardrailsConfig, P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>, E extends GuardrailExecutedEvent<P, R, G>> {
 
     /**
      * The {@link GuardrailsConfig} to use for configuration of the guardrail execution

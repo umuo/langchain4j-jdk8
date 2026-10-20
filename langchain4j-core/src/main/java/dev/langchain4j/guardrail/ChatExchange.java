@@ -2,7 +2,6 @@ package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -22,6 +21,7 @@ import java.util.concurrent.CompletableFuture;
 public final class ChatExchange {
 
     private final ChatRequest request;
+
     private final ChatResponse response;
 
     /**
@@ -47,17 +47,15 @@ public final class ChatExchange {
         return response;
     }
 
-    static CompletableFuture<ChatExchange> exchangeAsync(
-            ChatRequest request, CompletableFuture<ChatResponse> responseFuture) {
-        CompletableFuture<ChatExchange> exchangeFuture =
-                responseFuture.thenApply(response -> new ChatExchange(request, response));
+    static CompletableFuture<ChatExchange> exchangeAsync(ChatRequest request, CompletableFuture<ChatResponse> responseFuture) {
+        CompletableFuture<ChatExchange> exchangeFuture = responseFuture.thenApply(response -> new ChatExchange(request, response));
         propagateCancellation(exchangeFuture, responseFuture);
         return exchangeFuture;
     }
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof ChatExchange that && Objects.equals(request, that.request) && response.equals(that.response);
+        return o instanceof ChatExchange && Objects.equals(request, ((ChatExchange) o).request) && response.equals(((ChatExchange) o).response);
     }
 
     @Override

@@ -6,7 +6,6 @@ import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellat
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.model.ModelProvider.OTHER;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.message.ContentType;
@@ -54,52 +53,21 @@ public interface EmbeddingModel {
      */
     @Experimental
     default EmbeddingResponse embed(EmbeddingRequest request) {
-
         EmbeddingRequest finalRequest = validatedRequest(request);
-
         List<EmbeddingModelListener> listeners = listeners();
         if (isNullOrEmpty(listeners)) {
             return doEmbed(finalRequest);
         }
-
-        List<TextSegment> textSegments = finalRequest.inputs().stream()
-                .map(input -> TextSegment.from(input.text()))
-                .toList();
+        List<TextSegment> textSegments = finalRequest.inputs().stream().map(input -> TextSegment.from(input.text())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         Map<Object, Object> attributes = new java.util.concurrent.ConcurrentHashMap<>();
-
-        EmbeddingModelListenerUtils.onRequest(
-                EmbeddingModelRequestContext.builder()
-                        .textSegments(textSegments)
-                        .embeddingRequest(finalRequest)
-                        .embeddingModel(this)
-                        .attributes(attributes)
-                        .build(),
-                listeners);
+        EmbeddingModelListenerUtils.onRequest(EmbeddingModelRequestContext.builder().textSegments(textSegments).embeddingRequest(finalRequest).embeddingModel(this).attributes(attributes).build(), listeners);
         try {
             EmbeddingResponse response = doEmbed(finalRequest);
-            Response<List<Embedding>> legacyResponse =
-                    Response.from(response.embeddings(), response.metadata().tokenUsage());
-            EmbeddingModelListenerUtils.onResponse(
-                    EmbeddingModelResponseContext.builder()
-                            .embeddingRequest(finalRequest)
-                            .embeddingResponse(response)
-                            .embeddingModel(this)
-                            .attributes(attributes)
-                            .response(legacyResponse)
-                            .textSegments(textSegments)
-                            .build(),
-                    listeners);
+            Response<List<Embedding>> legacyResponse = Response.from(response.embeddings(), response.metadata().tokenUsage());
+            EmbeddingModelListenerUtils.onResponse(EmbeddingModelResponseContext.builder().embeddingRequest(finalRequest).embeddingResponse(response).embeddingModel(this).attributes(attributes).response(legacyResponse).textSegments(textSegments).build(), listeners);
             return response;
         } catch (Exception error) {
-            EmbeddingModelListenerUtils.onError(
-                    EmbeddingModelErrorContext.builder()
-                            .error(error)
-                            .textSegments(textSegments)
-                            .embeddingRequest(finalRequest)
-                            .embeddingModel(this)
-                            .attributes(attributes)
-                            .build(),
-                    listeners);
+            EmbeddingModelListenerUtils.onError(EmbeddingModelErrorContext.builder().error(error).textSegments(textSegments).embeddingRequest(finalRequest).embeddingModel(this).attributes(attributes).build(), listeners);
             throw error;
         }
     }
@@ -119,33 +87,19 @@ public interface EmbeddingModel {
      */
     @Experimental
     default CompletableFuture<EmbeddingResponse> embedAsync(EmbeddingRequest request) {
-
         EmbeddingRequest finalRequest;
         try {
             finalRequest = validatedRequest(request);
         } catch (Exception validationError) {
-            return CompletableFuture.failedFuture(validationError);
+            return dev.langchain4j.internal.Jdk8.failedFuture(validationError);
         }
-
         List<EmbeddingModelListener> listeners = listeners();
         if (isNullOrEmpty(listeners)) {
             return invokeDoEmbedAsync(finalRequest);
         }
-
-        List<TextSegment> textSegments = finalRequest.inputs().stream()
-                .map(input -> TextSegment.from(input.text()))
-                .toList();
+        List<TextSegment> textSegments = finalRequest.inputs().stream().map(input -> TextSegment.from(input.text())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         Map<Object, Object> attributes = new java.util.concurrent.ConcurrentHashMap<>();
-
-        EmbeddingModelListenerUtils.onRequest(
-                EmbeddingModelRequestContext.builder()
-                        .textSegments(textSegments)
-                        .embeddingRequest(finalRequest)
-                        .embeddingModel(this)
-                        .attributes(attributes)
-                        .build(),
-                listeners);
-
+        EmbeddingModelListenerUtils.onRequest(EmbeddingModelRequestContext.builder().textSegments(textSegments).embeddingRequest(finalRequest).embeddingModel(this).attributes(attributes).build(), listeners);
         CompletableFuture<EmbeddingResponse> inFlight = invokeDoEmbedAsync(finalRequest);
         CompletableFuture<EmbeddingResponse> result = inFlight.whenComplete((response, error) -> {
             if (error != null) {
@@ -153,29 +107,11 @@ public interface EmbeddingModel {
                 // Cancellation is a caller action, not a model failure: do not report it to listeners as an error
                 // (mirrors ChatModel.chatAsync).
                 if (!(cause instanceof CancellationException)) {
-                    EmbeddingModelListenerUtils.onError(
-                            EmbeddingModelErrorContext.builder()
-                                    .error(cause)
-                                    .textSegments(textSegments)
-                                    .embeddingRequest(finalRequest)
-                                    .embeddingModel(this)
-                                    .attributes(attributes)
-                                    .build(),
-                            listeners);
+                    EmbeddingModelListenerUtils.onError(EmbeddingModelErrorContext.builder().error(cause).textSegments(textSegments).embeddingRequest(finalRequest).embeddingModel(this).attributes(attributes).build(), listeners);
                 }
             } else {
-                Response<List<Embedding>> legacyResponse =
-                        Response.from(response.embeddings(), response.metadata().tokenUsage());
-                EmbeddingModelListenerUtils.onResponse(
-                        EmbeddingModelResponseContext.builder()
-                                .embeddingRequest(finalRequest)
-                                .embeddingResponse(response)
-                                .embeddingModel(this)
-                                .attributes(attributes)
-                                .response(legacyResponse)
-                                .textSegments(textSegments)
-                                .build(),
-                        listeners);
+                Response<List<Embedding>> legacyResponse = Response.from(response.embeddings(), response.metadata().tokenUsage());
+                EmbeddingModelListenerUtils.onResponse(EmbeddingModelResponseContext.builder().embeddingRequest(finalRequest).embeddingResponse(response).embeddingModel(this).attributes(attributes).response(legacyResponse).textSegments(textSegments).build(), listeners);
             }
         });
         // cancelling the caller-facing future cancels the in-flight call (whenComplete does not propagate cancellation)
@@ -183,48 +119,33 @@ public interface EmbeddingModel {
         return result;
     }
 
-    private CompletableFuture<EmbeddingResponse> invokeDoEmbedAsync(EmbeddingRequest finalRequest) {
+    default CompletableFuture<EmbeddingResponse> invokeDoEmbedAsync(EmbeddingRequest finalRequest) {
         // A provider's doEmbedAsync should return a failed future on error, but guard a synchronous throw so the
         // async contract holds regardless.
         try {
             return doEmbedAsync(finalRequest);
         } catch (Exception error) {
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         }
     }
 
-    private EmbeddingRequest validatedRequest(EmbeddingRequest request) {
-
-        EmbeddingRequestParameters finalParameters =
-                defaultRequestParameters().overrideWith(request.parameters());
-
+    default EmbeddingRequest validatedRequest(EmbeddingRequest request) {
+        EmbeddingRequestParameters finalParameters = defaultRequestParameters().overrideWith(request.parameters());
         Set<EmbeddingParameter<?>> unsupported = new LinkedHashSet<>(finalParameters.presentParameters());
         unsupported.removeAll(supportedParameters());
         if (!unsupported.isEmpty()) {
             String names = unsupported.stream().map(EmbeddingParameter::name).collect(Collectors.joining(", "));
-            throw new UnsupportedFeatureException("EmbeddingModel '" + getClass().getName()
-                    + "' does not support the following per-call parameter(s): " + names
-                    + ". Only the following are supported: "
-                    + supportedParameters().stream()
-                            .map(EmbeddingParameter::name)
-                            .collect(Collectors.joining(", ")));
+            throw new UnsupportedFeatureException("EmbeddingModel '" + getClass().getName() + "' does not support the following per-call parameter(s): " + names + ". Only the following are supported: " + supportedParameters().stream().map(EmbeddingParameter::name).collect(Collectors.joining(", ")));
         }
-
         Set<ContentType> unsupportedContentTypes = new LinkedHashSet<>();
         for (EmbeddingInput input : request.inputs()) {
             unsupportedContentTypes.addAll(input.contentTypes());
         }
         unsupportedContentTypes.removeAll(supportedContentTypes());
         if (!unsupportedContentTypes.isEmpty()) {
-            throw new UnsupportedFeatureException("EmbeddingModel '" + getClass().getName()
-                    + "' does not support the following content type(s): " + unsupportedContentTypes
-                    + ". Only the following are supported: " + supportedContentTypes());
+            throw new UnsupportedFeatureException("EmbeddingModel '" + getClass().getName() + "' does not support the following content type(s): " + unsupportedContentTypes + ". Only the following are supported: " + supportedContentTypes());
         }
-
-        return EmbeddingRequest.builder()
-                .inputs(request.inputs())
-                .parameters(finalParameters)
-                .build();
+        return EmbeddingRequest.builder().inputs(request.inputs()).parameters(finalParameters).build();
     }
 
     /**
@@ -235,7 +156,7 @@ public interface EmbeddingModel {
      */
     @Experimental
     default List<EmbeddingModelListener> listeners() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     /**
@@ -270,15 +191,8 @@ public interface EmbeddingModel {
      */
     @Experimental
     default EmbeddingResponse doEmbed(EmbeddingRequest request) {
-        Response<List<Embedding>> legacy = embedAll(
-                request.inputs().stream().map(input -> TextSegment.from(input.text())).toList());
-        return EmbeddingResponse.builder()
-                .embeddings(legacy.content())
-                .metadata(EmbeddingResponseMetadata.builder()
-                        .modelName(modelName())
-                        .tokenUsage(legacy.tokenUsage())
-                        .build())
-                .build();
+        Response<List<Embedding>> legacy = embedAll(request.inputs().stream().map(input -> TextSegment.from(input.text())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)));
+        return EmbeddingResponse.builder().embeddings(legacy.content()).metadata(EmbeddingResponseMetadata.builder().modelName(modelName()).tokenUsage(legacy.tokenUsage()).build()).build();
     }
 
     /**
@@ -325,7 +239,7 @@ public interface EmbeddingModel {
      */
     @Experimental
     default Set<EmbeddingParameter<?>> supportedParameters() {
-        return Set.of();
+        return dev.langchain4j.internal.Jdk8.set();
     }
 
     /**
@@ -338,7 +252,7 @@ public interface EmbeddingModel {
      */
     @Experimental
     default Set<ContentType> supportedContentTypes() {
-        return Set.of(ContentType.TEXT);
+        return dev.langchain4j.internal.Jdk8.set(ContentType.TEXT);
     }
 
     /**
@@ -361,14 +275,8 @@ public interface EmbeddingModel {
      * @return the embedding.
      */
     default Response<Embedding> embed(TextSegment textSegment) {
-        EmbeddingResponse response = embed(EmbeddingRequest.builder()
-                .textSegment(textSegment)
-                .build());
-        ValidationUtils.ensureEq(
-                response.embeddings().size(),
-                1,
-                "Expected a single embedding, but got %d",
-                response.embeddings().size());
+        EmbeddingResponse response = embed(EmbeddingRequest.builder().textSegment(textSegment).build());
+        ValidationUtils.ensureEq(response.embeddings().size(), 1, "Expected a single embedding, but got %d", response.embeddings().size());
         return Response.from(response.embeddings().get(0), response.metadata().tokenUsage());
     }
 
@@ -386,10 +294,9 @@ public interface EmbeddingModel {
      */
     default Response<List<Embedding>> embedAll(List<TextSegment> textSegments) {
         if (isNullOrEmpty(textSegments)) {
-            return Response.from(List.of());
+            return Response.from(dev.langchain4j.internal.Jdk8.list());
         }
-        EmbeddingResponse response =
-                embed(EmbeddingRequest.builder().textSegments(textSegments).build());
+        EmbeddingResponse response = embed(EmbeddingRequest.builder().textSegments(textSegments).build());
         return Response.from(response.embeddings(), response.metadata().tokenUsage());
     }
 
@@ -427,7 +334,7 @@ public interface EmbeddingModel {
      */
     @Experimental
     default EmbeddingModel addListener(EmbeddingModelListener listener) {
-        return addListeners(listener == null ? null : List.of(listener));
+        return addListeners(listener == null ? null : dev.langchain4j.internal.Jdk8.list(listener));
     }
 
     /**
@@ -445,8 +352,8 @@ public interface EmbeddingModel {
         if (isNullOrEmpty(listeners)) {
             return this;
         }
-        if (this instanceof ListeningEmbeddingModel listeningEmbeddingModel) {
-            return listeningEmbeddingModel.withAdditionalListeners(listeners);
+        if (this instanceof ListeningEmbeddingModel) {
+            return ((ListeningEmbeddingModel) this).withAdditionalListeners(listeners);
         }
         return new ListeningEmbeddingModel(this, listeners);
     }

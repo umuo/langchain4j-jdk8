@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.response;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.output.FinishReason;
@@ -11,11 +10,11 @@ import java.util.Objects;
 public class ChatResponse {
 
     private final AiMessage aiMessage;
+
     private final ChatResponseMetadata metadata;
 
     protected ChatResponse(Builder builder) {
         this.aiMessage = ensureNotNull(builder.aiMessage, "aiMessage");
-
         ChatResponseMetadata.Builder<?> metadataBuilder = ChatResponseMetadata.builder();
         if (builder.id != null) {
             validate(builder, "id");
@@ -77,8 +76,10 @@ public class ChatResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ChatResponse that = (ChatResponse) o;
         return Objects.equals(this.aiMessage, that.aiMessage) && Objects.equals(this.metadata, that.metadata);
     }
@@ -100,15 +101,21 @@ public class ChatResponse {
     }
 
     public static class Builder {
+
         private AiMessage aiMessage;
+
         private ChatResponseMetadata metadata;
 
         private String id;
+
         private String modelName;
+
         private TokenUsage tokenUsage;
+
         private FinishReason finishReason;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         public Builder(ChatResponse chatResponse) {
             this.aiMessage = chatResponse.aiMessage;
@@ -152,7 +159,7 @@ public class ChatResponse {
 
     private static void validate(Builder builder, String name) {
         if (builder.metadata != null) {
-            throw new IllegalArgumentException("Cannot set both 'metadata' and '%s' on ChatResponse".formatted(name));
+            throw new IllegalArgumentException(String.format("Cannot set both 'metadata' and '%s' on ChatResponse", name));
         }
     }
 }

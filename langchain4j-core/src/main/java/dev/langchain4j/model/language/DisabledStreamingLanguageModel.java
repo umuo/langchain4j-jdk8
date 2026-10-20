@@ -11,6 +11,7 @@ import dev.langchain4j.model.input.Prompt;
  * </p>
  */
 public class DisabledStreamingLanguageModel implements StreamingLanguageModel {
+
     @Override
     public void generate(String prompt, StreamingResponseHandler<String> handler) {
         throw new ModelDisabledException("StreamingLanguageModel is disabled");

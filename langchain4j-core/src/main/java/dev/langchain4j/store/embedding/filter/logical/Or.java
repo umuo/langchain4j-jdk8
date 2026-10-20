@@ -1,14 +1,13 @@
 package dev.langchain4j.store.embedding.filter.logical;
 
 import dev.langchain4j.store.embedding.filter.Filter;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 public class Or implements Filter {
 
     private final Filter left;
+
     private final Filter right;
 
     public Or(Filter left, Filter right) {
@@ -30,9 +29,11 @@ public class Or implements Filter {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Or other)) return false;
-        return Objects.equals(this.left, other.left) && Objects.equals(this.right, other.right);
+        if (o == this)
+            return true;
+        if (!(o instanceof Or))
+            return false;
+        return Objects.equals(this.left, ((Or) o).left) && Objects.equals(this.right, ((Or) o).right);
     }
 
     public int hashCode() {

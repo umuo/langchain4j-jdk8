@@ -3,15 +3,18 @@ package dev.langchain4j.model.chat.request.json;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.quoted;
 import static java.util.Arrays.asList;
-
 import java.util.*;
 
 public class JsonObjectSchema implements JsonSchemaElement {
 
     private final String description;
+
     private final Map<String, JsonSchemaElement> properties;
+
     private final List<String> required;
+
     private final Boolean additionalProperties;
+
     private final Map<String, JsonSchemaElement> definitions;
 
     public JsonObjectSchema(Builder builder) {
@@ -51,20 +54,19 @@ public class JsonObjectSchema implements JsonSchemaElement {
     }
 
     public Builder toBuilder() {
-        return builder()
-                .description(this.description)
-                .addProperties(this.properties)
-                .required(this.required != null ? new ArrayList<>(this.required) : null)
-                .additionalProperties(this.additionalProperties)
-                .definitions(this.definitions != null ? new LinkedHashMap<>(this.definitions) : null);
+        return builder().description(this.description).addProperties(this.properties).required(this.required != null ? new ArrayList<>(this.required) : null).additionalProperties(this.additionalProperties).definitions(this.definitions != null ? new LinkedHashMap<>(this.definitions) : null);
     }
 
     public static class Builder {
 
         private String description;
+
         private final Map<String, JsonSchemaElement> properties = new LinkedHashMap<>();
+
         private List<String> required;
+
         private Boolean additionalProperties;
+
         private Map<String, JsonSchemaElement> definitions;
 
         public Builder description(String description) {
@@ -136,8 +138,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addStringProperty(String name, String description) {
-            this.properties.put(
-                    name, JsonStringSchema.builder().description(description).build());
+            this.properties.put(name, JsonStringSchema.builder().description(description).build());
             return this;
         }
 
@@ -163,8 +164,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addIntegerProperty(String name, String description) {
-            this.properties.put(
-                    name, JsonIntegerSchema.builder().description(description).build());
+            this.properties.put(name, JsonIntegerSchema.builder().description(description).build());
             return this;
         }
 
@@ -190,8 +190,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addNumberProperty(String name, String description) {
-            this.properties.put(
-                    name, JsonNumberSchema.builder().description(description).build());
+            this.properties.put(name, JsonNumberSchema.builder().description(description).build());
             return this;
         }
 
@@ -217,8 +216,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addBooleanProperty(String name, String description) {
-            this.properties.put(
-                    name, JsonBooleanSchema.builder().description(description).build());
+            this.properties.put(name, JsonBooleanSchema.builder().description(description).build());
             return this;
         }
 
@@ -231,8 +229,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addEnumProperty(String name, List<String> enumValues) {
-            this.properties.put(
-                    name, JsonEnumSchema.builder().enumValues(enumValues).build());
+            this.properties.put(name, JsonEnumSchema.builder().enumValues(enumValues).build());
             return this;
         }
 
@@ -245,12 +242,7 @@ public class JsonObjectSchema implements JsonSchemaElement {
          * @see #addProperties(Map)
          */
         public Builder addEnumProperty(String name, List<String> enumValues, String description) {
-            this.properties.put(
-                    name,
-                    JsonEnumSchema.builder()
-                            .enumValues(enumValues)
-                            .description(description)
-                            .build());
+            this.properties.put(name, JsonEnumSchema.builder().enumValues(enumValues).description(description).build());
             return this;
         }
 
@@ -283,14 +275,12 @@ public class JsonObjectSchema implements JsonSchemaElement {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JsonObjectSchema that = (JsonObjectSchema) o;
-        return Objects.equals(this.description, that.description)
-                && Objects.equals(this.properties, that.properties)
-                && Objects.equals(this.required, that.required)
-                && Objects.equals(this.additionalProperties, that.additionalProperties)
-                && Objects.equals(this.definitions, that.definitions);
+        return Objects.equals(this.description, that.description) && Objects.equals(this.properties, that.properties) && Objects.equals(this.required, that.required) && Objects.equals(this.additionalProperties, that.additionalProperties) && Objects.equals(this.definitions, that.definitions);
     }
 
     @Override
@@ -300,11 +290,6 @@ public class JsonObjectSchema implements JsonSchemaElement {
 
     @Override
     public String toString() {
-        return "JsonObjectSchema {" + "description = "
-                + quoted(description) + ", properties = "
-                + properties + ", required = "
-                + required + ", additionalProperties = "
-                + additionalProperties + ", definitions = "
-                + definitions + " }";
+        return "JsonObjectSchema {" + "description = " + quoted(description) + ", properties = " + properties + ", required = " + required + ", additionalProperties = " + additionalProperties + ", definitions = " + definitions + " }";
     }
 }

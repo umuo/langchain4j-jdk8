@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toCollection;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.ContentType;
@@ -59,14 +58,11 @@ public class EmbeddingInput {
      * input this is just its text; when there are multiple text parts, they are joined with a newline.
      */
     public String text() {
-        return contents.stream()
-                .filter(content -> content instanceof TextContent)
-                .map(content -> ((TextContent) content).text())
-                .collect(joining("\n"));
+        return contents.stream().filter(content -> content instanceof TextContent).map(content -> ((TextContent) content).text()).collect(joining("\n"));
     }
 
     public static EmbeddingInput from(String text) {
-        return new EmbeddingInput(List.of(TextContent.from(text)));
+        return new EmbeddingInput(dev.langchain4j.internal.Jdk8.list(TextContent.from(text)));
     }
 
     public static EmbeddingInput from(TextSegment segment) {
@@ -83,8 +79,10 @@ public class EmbeddingInput {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingInput that = (EmbeddingInput) o;
         return Objects.equals(contents, that.contents);
     }

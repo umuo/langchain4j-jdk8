@@ -7,7 +7,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureBetween;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
@@ -76,8 +75,11 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
      * The default question asked to choose between the routes.
      */
     public static final String DEFAULT_QUESTION = "Which model should handle this request?";
+
     private static final int DEFAULT_MAX_MESSAGES = 10;
+
     private static final int DEFAULT_MAX_MESSAGE_LENGTH = 2000;
+
     private static final String QUESTION_NAME = "route";
 
     /**
@@ -89,7 +91,6 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
          * Do not select a route, so the default route of the routing chat model is used, and log a warning.
          */
         DEFAULT_ROUTE,
-
         /**
          * Fail the request with the error of the decision model.
          */
@@ -97,11 +98,17 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
     }
 
     private final DecisionModel decisionModel;
+
     private final String question;
+
     private final Double minProbability;
+
     private final FallbackStrategy fallbackStrategy;
+
     private final int maxMessages;
+
     private final int maxMessageLength;
+
     private final Predicate<? super ChatMessage> messageFilter;
 
     public DecisionModelChatModelRouter(DecisionModel decisionModel) {
@@ -111,13 +118,10 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
     protected DecisionModelChatModelRouter(Builder builder) {
         this.decisionModel = ensureNotNull(builder.decisionModel, "decisionModel");
         this.question = ensureNotBlank(getOrDefault(builder.question, DEFAULT_QUESTION), "question");
-        this.minProbability = builder.minProbability == null
-                ? null
-                : ensureBetween(builder.minProbability, 0, 1, "minProbability");
+        this.minProbability = builder.minProbability == null ? null : ensureBetween(builder.minProbability, 0, 1, "minProbability");
         this.fallbackStrategy = getOrDefault(builder.fallbackStrategy, FallbackStrategy.DEFAULT_ROUTE);
         this.maxMessages = ensureGreaterThanZero(getOrDefault(builder.maxMessages, DEFAULT_MAX_MESSAGES), "maxMessages");
-        this.maxMessageLength = ensureGreaterThanZero(
-                getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
+        this.maxMessageLength = ensureGreaterThanZero(getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
         this.messageFilter = getOrDefault(builder.messageFilter, message -> true);
     }
 
@@ -160,7 +164,7 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
         try {
             decisionRequest = toDecisionRequest(request);
         } catch (RuntimeException e) {
-            return CompletableFuture.failedFuture(e);
+            return dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
         if (decisionRequest == null) {
             return CompletableFuture.completedFuture(ChatModelRoutingResult.defaultRoute());
@@ -169,17 +173,15 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
         try {
             source = decisionModel.decideAsync(decisionRequest);
         } catch (RuntimeException e) {
-            source = CompletableFuture.failedFuture(e);
+            source = dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
         CompletableFuture<ChatModelRoutingResult> result = source.handle((response, error) -> {
             if (error == null) {
                 return selectOrFallBack(response, request);
             }
             Throwable cause = unwrapCompletionException(error);
-            if (cause instanceof CancellationException
-                    || cause instanceof AsyncNotSupportedException
-                    || !(cause instanceof RuntimeException)) {
-                throw cause instanceof RuntimeException re ? re : new CompletionException(cause);
+            if (cause instanceof CancellationException || cause instanceof AsyncNotSupportedException || !(cause instanceof RuntimeException)) {
+                throw cause instanceof RuntimeException ? ((RuntimeException) cause) : new CompletionException(cause);
             }
             return fallback((RuntimeException) cause);
         });
@@ -198,20 +200,47 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
     private DecisionRequest toDecisionRequest(ChatModelRoutingRequest request) {
         List<ChatMessage> messages = request.chatRequest().messages();
         int lastUserMessage = lastUserMessage(messages);
-        if (lastUserMessage < 0 || DecisionModelInputUtils.text(messages.get(lastUserMessage)).isBlank()) {
+        if (lastUserMessage < 0 || dev.langchain4j.internal.Jdk8.isBlank(DecisionModelInputUtils.text(messages.get(lastUserMessage)))) {
             return null;
         }
         List<ChatMessage> conversation = DecisionModelInputUtils.window(messages, messageFilter, maxMessages, maxMessageLength);
         if (conversation.isEmpty()) {
             return null;
         }
-        return DecisionRequest.builder()
-                .question(QUESTION_NAME, toQuestion(request.routes()))
-                .inputMessages(conversation)
-                .build();
+        return DecisionRequest.builder().question(QUESTION_NAME, toQuestion(request.routes())).inputMessages(conversation).build();
     }
 
-    private record RouteOption(ChatModelRoute route, String description) {}
+    private final static class RouteOption {
+
+        private final ChatModelRoute route;
+
+        public ChatModelRoute route() {
+            return route;
+        }
+
+        private final String description;
+
+        public String description() {
+            return description;
+        }
+
+        public RouteOption(ChatModelRoute route, String description) {
+            this.route = route;
+            this.description = description;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(route, ((RouteOption) obj).route) && java.util.Objects.equals(description, ((RouteOption) obj).description));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(route)) + java.util.Objects.hashCode(description));
+        }
+
+        public String toString() {
+            return "RouteOption[" + "route=" + route + ", description=" + description + "]";
+        }
+    }
 
     /**
      * One option per description of each route: a route with one description (or none) is the option named like the
@@ -246,8 +275,7 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
 
     private static void addOption(Map<String, RouteOption> options, String name, RouteOption option) {
         if (options.putIfAbsent(name, option) != null) {
-            throw new IllegalArgumentException("The route names and descriptions give the option '%s' twice. "
-                    .formatted(name) + "Rename the route '%s'".formatted(option.route().name()));
+            throw new IllegalArgumentException(String.format("The route names and descriptions give the option '%s' twice. ", name) + String.format("Rename the route '%s'", option.route().name()));
         }
     }
 
@@ -257,19 +285,14 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
     private ChatModelRoutingResult select(ChoiceAnswer answer, List<ChatModelRoute> routes) {
         Map<String, RouteOption> options = routeOptions(routes);
         if (minProbability != null && answer.probabilities().isEmpty()) {
-            throw new IllegalStateException("minProbability is set, but the decision model reported no probabilities, "
-                    + "so the default route would always be used. Use a decision model that reports probabilities, "
-                    + "or remove minProbability");
+            throw new IllegalStateException("minProbability is set, but the decision model reported no probabilities, " + "so the default route would always be used. Use a decision model that reports probabilities, " + "or remove minProbability");
         }
         if (answer.probabilities().isEmpty()) {
             return ChatModelRoutingResult.route(options.get(answer.value()).route().name());
         }
         Map<String, Double> routeProbabilities = new LinkedHashMap<>();
-        options.forEach((name, option) -> routeProbabilities.merge(
-                option.route().name(), answer.probabilities().getOrDefault(name, 0.0), Double::sum));
-        Map.Entry<String, Double> best = routeProbabilities.entrySet().stream()
-                .max(Map.Entry.comparingByValue())
-                .orElseThrow();
+        options.forEach((name, option) -> routeProbabilities.merge(option.route().name(), answer.probabilities().getOrDefault(name, 0.0), Double::sum));
+        Map.Entry<String, Double> best = routeProbabilities.entrySet().stream().max(Map.Entry.comparingByValue()).orElseThrow(java.util.NoSuchElementException::new);
         if (minProbability != null && best.getValue() < minProbability) {
             return ChatModelRoutingResult.defaultRoute();
         }
@@ -292,11 +315,17 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
     public static class Builder {
 
         private DecisionModel decisionModel;
+
         private String question;
+
         private Double minProbability;
+
         private FallbackStrategy fallbackStrategy;
+
         private Integer maxMessages;
+
         private Integer maxMessageLength;
+
         private Predicate<? super ChatMessage> messageFilter;
 
         /**

@@ -5,10 +5,8 @@ import dev.langchain4j.rag.query.Query;
 import dev.langchain4j.web.search.WebSearchEngine;
 import dev.langchain4j.web.search.WebSearchRequest;
 import dev.langchain4j.web.search.WebSearchResults;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -25,6 +23,7 @@ import static java.util.stream.Collectors.toList;
 public class WebSearchContentRetriever implements ContentRetriever {
 
     private final WebSearchEngine webSearchEngine;
+
     private final int maxResults;
 
     public WebSearchContentRetriever(WebSearchEngine webSearchEngine, Integer maxResults) {
@@ -38,9 +37,7 @@ public class WebSearchContentRetriever implements ContentRetriever {
 
     @Override
     public List<Content> retrieve(Query query) {
-
         WebSearchResults webSearchResults = webSearchEngine.search(toWebSearchRequest(query));
-
         return toContents(webSearchResults);
     }
 
@@ -53,7 +50,7 @@ public class WebSearchContentRetriever implements ContentRetriever {
         try {
             searchFuture = webSearchEngine.searchAsync(toWebSearchRequest(query));
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
         CompletableFuture<List<Content>> result = searchFuture.thenApply(WebSearchContentRetriever::toContents);
         // Link the caller-facing derived stage back to the raw search call so cancellation reaches the in-flight I/O.
@@ -62,20 +59,17 @@ public class WebSearchContentRetriever implements ContentRetriever {
     }
 
     private WebSearchRequest toWebSearchRequest(Query query) {
-        return WebSearchRequest.builder()
-                .searchTerms(query.text())
-                .maxResults(maxResults)
-                .build();
+        return WebSearchRequest.builder().searchTerms(query.text()).maxResults(maxResults).build();
     }
 
     private static List<Content> toContents(WebSearchResults webSearchResults) {
-        return webSearchResults.toTextSegments().stream()
-                .map(Content::from)
-                .collect(toList());
+        return webSearchResults.toTextSegments().stream().map(Content::from).collect(java.util.stream.Collectors.toList());
     }
 
     public static class WebSearchContentRetrieverBuilder {
+
         private WebSearchEngine webSearchEngine;
+
         private Integer maxResults;
 
         WebSearchContentRetrieverBuilder() {

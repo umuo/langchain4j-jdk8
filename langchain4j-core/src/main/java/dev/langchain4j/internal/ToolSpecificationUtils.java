@@ -6,7 +6,8 @@ import dev.langchain4j.agent.tool.ToolSpecification;
 @Internal
 public class ToolSpecificationUtils {
 
-    private ToolSpecificationUtils() {}
+    private ToolSpecificationUtils() {
+    }
 
     /**
      * Resolves whether a tool should use strict schema enforcement,

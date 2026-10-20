@@ -10,7 +10,6 @@ import static dev.langchain4j.rag.query.router.LanguageModelQueryRouter.Fallback
 import static java.util.Arrays.stream;
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -47,46 +46,37 @@ import java.util.concurrent.CompletionException;
  */
 public class LanguageModelQueryRouter implements QueryRouter {
 
-    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from("""
-                    Based on the user query, determine the most suitable data source(s) \
-                    to retrieve relevant information from the following options:
-                    {{options}}
-                    It is very important that your answer consists of either a single number \
-                    or multiple numbers separated by commas and nothing else!
-                    User query: {{query}}""");
+    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from("Based on the user query, determine the most suitable data source(s) to retrieve relevant information from the following options:\n{{options}}\nIt is very important that your answer consists of either a single number or multiple numbers separated by commas and nothing else!\nUser query: {{query}}");
 
     protected final ChatModel chatModel;
+
     protected final PromptTemplate promptTemplate;
+
     protected final String options;
+
     protected final Map<Integer, ContentRetriever> idToRetriever;
+
     protected final FallbackStrategy fallbackStrategy;
 
     public LanguageModelQueryRouter(ChatModel chatModel, Map<ContentRetriever, String> retrieverToDescription) {
         this(chatModel, retrieverToDescription, DEFAULT_PROMPT_TEMPLATE, DO_NOT_ROUTE);
     }
 
-    public LanguageModelQueryRouter(
-            ChatModel chatModel,
-            Map<ContentRetriever, String> retrieverToDescription,
-            PromptTemplate promptTemplate,
-            FallbackStrategy fallbackStrategy) {
+    public LanguageModelQueryRouter(ChatModel chatModel, Map<ContentRetriever, String> retrieverToDescription, PromptTemplate promptTemplate, FallbackStrategy fallbackStrategy) {
         this.chatModel = ensureNotNull(chatModel, "chatModel");
         ensureNotEmpty(retrieverToDescription, "retrieverToDescription");
         this.promptTemplate = getOrDefault(promptTemplate, DEFAULT_PROMPT_TEMPLATE);
-
         Map<Integer, ContentRetriever> idToRetriever = new HashMap<>();
         StringBuilder optionsBuilder = new StringBuilder();
         int id = 1;
         for (Map.Entry<ContentRetriever, String> entry : retrieverToDescription.entrySet()) {
             idToRetriever.put(id, ensureNotNull(entry.getKey(), "ContentRetriever"));
-
             if (id > 1) {
                 optionsBuilder.append("\n");
             }
             optionsBuilder.append(id);
             optionsBuilder.append(": ");
             optionsBuilder.append(ensureNotBlank(entry.getValue(), "ContentRetriever description"));
-
             id++;
         }
         this.idToRetriever = idToRetriever;
@@ -112,35 +102,35 @@ public class LanguageModelQueryRouter implements QueryRouter {
     @Override
     public CompletableFuture<Collection<ContentRetriever>> routeAsync(Query query) {
         Prompt prompt = createPrompt(query);
-        CompletableFuture<ChatResponse> chatFuture =
-                chatModel.chatAsync(ChatRequest.builder().messages(prompt.toUserMessage()).build());
-        CompletableFuture<Collection<ContentRetriever>> result = chatFuture
-                .thenApply(response -> parse(response.aiMessage().text()))
-                // Mirror route()'s `catch (Exception)`: a failed LLM call or an unparseable response applies the
-                // fallback strategy (which may re-throw for FAIL). But a cancellation is not a routing failure -
-                // propagate it - and an Error (like sync's `catch (Exception)`) is not caught either.
-                .exceptionally(error -> {
-                    Throwable cause = unwrapCompletionException(error);
-                    if (cause instanceof Exception e && !(cause instanceof CancellationException)) {
-                        return fallback(query, e);
-                    }
-                    throw cause instanceof RuntimeException re ? re : new CompletionException(cause);
-                });
+        CompletableFuture<ChatResponse> chatFuture = chatModel.chatAsync(ChatRequest.builder().messages(prompt.toUserMessage()).build());
+        CompletableFuture<Collection<ContentRetriever>> result = chatFuture.thenApply(response -> parse(response.aiMessage().text())).// Mirror route()'s `catch (Exception)`: a failed LLM call or an unparseable response applies the
+        // fallback strategy (which may re-throw for FAIL). But a cancellation is not a routing failure -
+        // propagate it - and an Error (like sync's `catch (Exception)`) is not caught either.
+        exceptionally(error -> {
+            Throwable cause = unwrapCompletionException(error);
+            if (cause instanceof Exception && !(cause instanceof CancellationException)) {
+                return fallback(query, ((Exception) cause));
+            }
+            throw cause instanceof RuntimeException ? ((RuntimeException) cause) : new CompletionException(cause);
+        });
         // Link the caller-facing derived stage back to the raw chat call so cancellation reaches the in-flight I/O.
         propagateCancellation(result, chatFuture);
         return result;
     }
 
     protected Collection<ContentRetriever> fallback(Query query, Exception e) {
-        return switch (fallbackStrategy) {
-            case DO_NOT_ROUTE -> {
-                yield emptyList();
-            }
-            case ROUTE_TO_ALL -> {
-                yield new ArrayList<>(idToRetriever.values());
-            }
-            default -> throw new RuntimeException(e);
-        };
+        switch(fallbackStrategy) {
+            case DO_NOT_ROUTE:
+                {
+                    return emptyList();
+                }
+            case ROUTE_TO_ALL:
+                {
+                    return new ArrayList<>(idToRetriever.values());
+                }
+            default:
+                throw new RuntimeException(e);
+        }
     }
 
     protected Prompt createPrompt(Query query) {
@@ -151,11 +141,7 @@ public class LanguageModelQueryRouter implements QueryRouter {
     }
 
     protected Collection<ContentRetriever> parse(String choices) {
-        return stream(choices.split(","))
-                .map(String::trim)
-                .map(Integer::parseInt)
-                .map(this::retrieverById)
-                .collect(toList());
+        return stream(choices.split(",")).map(String::trim).map(Integer::parseInt).map(this::retrieverById).collect(java.util.stream.Collectors.toList());
     }
 
     private ContentRetriever retrieverById(int id) {
@@ -164,8 +150,7 @@ public class LanguageModelQueryRouter implements QueryRouter {
             // The LLM returned an id that does not correspond to any known retriever (e.g. a
             // hallucinated number outside the available range). Throwing here lets route() apply
             // the configured fallbackStrategy instead of propagating a null retriever downstream.
-            throw new IllegalArgumentException("LLM returned an unknown content retriever id: " + id
-                    + ". Available ids: " + idToRetriever.keySet());
+            throw new IllegalArgumentException("LLM returned an unknown content retriever id: " + id + ". Available ids: " + idToRetriever.keySet());
         }
         return retriever;
     }
@@ -181,12 +166,10 @@ public class LanguageModelQueryRouter implements QueryRouter {
          * thus skipping the RAG flow. No content will be appended to the original {@link UserMessage}.
          */
         DO_NOT_ROUTE,
-
         /**
          * In this case, the {@link Query} will be routed to all {@link ContentRetriever}s.
          */
         ROUTE_TO_ALL,
-
         /**
          * In this case, an original exception will be re-thrown, and the RAG flow will fail.
          */
@@ -194,20 +177,24 @@ public class LanguageModelQueryRouter implements QueryRouter {
     }
 
     public static class LanguageModelQueryRouterBuilder {
+
         private ChatModel chatModel;
+
         private Map<ContentRetriever, String> retrieverToDescription;
+
         private PromptTemplate promptTemplate;
+
         private FallbackStrategy fallbackStrategy;
 
-        LanguageModelQueryRouterBuilder() {}
+        LanguageModelQueryRouterBuilder() {
+        }
 
         public LanguageModelQueryRouterBuilder chatModel(ChatModel chatModel) {
             this.chatModel = chatModel;
             return this;
         }
 
-        public LanguageModelQueryRouterBuilder retrieverToDescription(
-                Map<ContentRetriever, String> retrieverToDescription) {
+        public LanguageModelQueryRouterBuilder retrieverToDescription(Map<ContentRetriever, String> retrieverToDescription) {
             this.retrieverToDescription = retrieverToDescription;
             return this;
         }
@@ -223,8 +210,7 @@ public class LanguageModelQueryRouter implements QueryRouter {
         }
 
         public LanguageModelQueryRouter build() {
-            return new LanguageModelQueryRouter(
-                    this.chatModel, this.retrieverToDescription, this.promptTemplate, this.fallbackStrategy);
+            return new LanguageModelQueryRouter(this.chatModel, this.retrieverToDescription, this.promptTemplate, this.fallbackStrategy);
         }
     }
 }

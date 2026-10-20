@@ -1,7 +1,6 @@
 package dev.langchain4j.model.scoring.request;
 
 import static dev.langchain4j.internal.Utils.getOrDefault;
-
 import dev.langchain4j.Experimental;
 import java.util.Objects;
 
@@ -35,8 +34,10 @@ public class DefaultScoringRequestParameters implements ScoringRequestParameters
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DefaultScoringRequestParameters that = (DefaultScoringRequestParameters) o;
         return Objects.equals(modelName, that.modelName);
     }

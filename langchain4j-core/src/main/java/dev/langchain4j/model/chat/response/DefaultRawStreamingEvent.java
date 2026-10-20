@@ -6,5 +6,27 @@ package dev.langchain4j.model.chat.response;
  *
  * @param rawEvent the raw provider streaming event; see {@link RawStreamingEvent#rawEvent()}
  */
-record DefaultRawStreamingEvent(Object rawEvent) implements RawStreamingEvent {
+final class DefaultRawStreamingEvent implements RawStreamingEvent {
+
+    private final Object rawEvent;
+
+    public Object rawEvent() {
+        return rawEvent;
+    }
+
+    public DefaultRawStreamingEvent(Object rawEvent) {
+        this.rawEvent = rawEvent;
+    }
+
+    public boolean equals(Object obj) {
+        return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(rawEvent, ((DefaultRawStreamingEvent) obj).rawEvent));
+    }
+
+    public int hashCode() {
+        return (31 * 0 + java.util.Objects.hashCode(rawEvent));
+    }
+
+    public String toString() {
+        return "DefaultRawStreamingEvent[" + "rawEvent=" + rawEvent + "]";
+    }
 }

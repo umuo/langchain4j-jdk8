@@ -18,7 +18,8 @@ public interface EmbeddingStoreListener {
      *                       The attributes can be used to pass data between methods of this listener
      *                       or between multiple listeners.
      */
-    default void onRequest(EmbeddingStoreRequestContext<?> requestContext) {}
+    default void onRequest(EmbeddingStoreRequestContext<?> requestContext) {
+    }
 
     /**
      * This method is called after a successful operation completes.
@@ -27,7 +28,8 @@ public interface EmbeddingStoreListener {
      *                        The attributes can be used to pass data between methods of this listener
      *                        or between multiple listeners.
      */
-    default void onResponse(EmbeddingStoreResponseContext<?> responseContext) {}
+    default void onResponse(EmbeddingStoreResponseContext<?> responseContext) {
+    }
 
     /**
      * This method is called when an error occurs during interaction with the embedding store.
@@ -36,5 +38,6 @@ public interface EmbeddingStoreListener {
      *                     The attributes can be used to pass data between methods of this listener
      *                     or between multiple listeners.
      */
-    default void onError(EmbeddingStoreErrorContext<?> errorContext) {}
+    default void onError(EmbeddingStoreErrorContext<?> errorContext) {
+    }
 }

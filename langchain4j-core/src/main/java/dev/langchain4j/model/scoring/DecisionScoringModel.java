@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.decision.DecisionModel;
@@ -52,12 +51,14 @@ public class DecisionScoringModel implements ScoringModel {
      * The default template of the question asked for each segment:
      * {@code "Does the document help answer the query?\nDocument: {{document}}"}.
      */
-    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE =
-            PromptTemplate.from("Does the document help answer the query?\nDocument: {{document}}");
+    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = PromptTemplate.from("Does the document help answer the query?\nDocument: {{document}}");
+
     private static final int DEFAULT_MAX_SEGMENTS_PER_REQUEST = 20;
 
     private final DecisionModel decisionModel;
+
     private final PromptTemplate questionTemplate;
+
     private final int maxSegmentsPerRequest;
 
     public DecisionScoringModel(DecisionModel decisionModel) {
@@ -68,16 +69,14 @@ public class DecisionScoringModel implements ScoringModel {
         this.decisionModel = ensureNotNull(builder.decisionModel, "decisionModel");
         this.questionTemplate = getOrDefault(builder.questionTemplate, DEFAULT_QUESTION_TEMPLATE);
         validate(questionTemplate);
-        this.maxSegmentsPerRequest = ensureGreaterThanZero(
-                getOrDefault(builder.maxSegmentsPerRequest, DEFAULT_MAX_SEGMENTS_PER_REQUEST), "maxSegmentsPerRequest");
+        this.maxSegmentsPerRequest = ensureGreaterThanZero(getOrDefault(builder.maxSegmentsPerRequest, DEFAULT_MAX_SEGMENTS_PER_REQUEST), "maxSegmentsPerRequest");
     }
 
     @Override
     public Response<List<Double>> scoreAll(List<TextSegment> segments, String query) {
         ensureNotNull(segments, "segments");
         ensureNotBlank(query, "query");
-
-        List<String> texts = segments.stream().map(TextSegment::text).toList();
+        List<String> texts = segments.stream().map(TextSegment::text).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         List<Double> scores = new ArrayList<>(texts.size());
         TokenUsage tokenUsage = null;
         for (List<String> batch : batches(texts)) {
@@ -92,10 +91,7 @@ public class DecisionScoringModel implements ScoringModel {
     public CompletableFuture<ScoringResponse> doScoreAsync(ScoringRequest request) {
         List<String> documents = ensureNotNull(request.documents(), "documents");
         String query = ensureNotBlank(request.query(), "query");
-
-        DecisionRequestParameters parameters = DecisionRequestParameters.builder()
-                .modelName(request.parameters().modelName())
-                .build();
+        DecisionRequestParameters parameters = DecisionRequestParameters.builder().modelName(request.parameters().modelName()).build();
         List<List<String>> batches = batches(documents);
         List<CompletableFuture<DecisionResponse>> responses = new ArrayList<>(batches.size());
         for (List<String> batch : batches) {
@@ -103,7 +99,7 @@ public class DecisionScoringModel implements ScoringModel {
             try {
                 response = decisionModel.decideAsync(toRequest(batch, query, parameters));
             } catch (RuntimeException e) {
-                response = CompletableFuture.failedFuture(e);
+                response = dev.langchain4j.internal.Jdk8.failedFuture(e);
             }
             responses.add(response);
         }
@@ -113,24 +109,22 @@ public class DecisionScoringModel implements ScoringModel {
                 result.completeExceptionally(unwrapCompletionException(error));
             }
         }));
-        CompletableFuture.allOf(responses.toArray(CompletableFuture[]::new))
-                .thenApply(ignored -> {
-                    List<Double> scores = new ArrayList<>(documents.size());
-                    TokenUsage tokenUsage = null;
-                    for (int i = 0; i < batches.size(); i++) {
-                        DecisionResponse response = responses.get(i).join();
-                        scores.addAll(scores(response, batches.get(i).size()));
-                        tokenUsage = TokenUsage.sum(tokenUsage, response.tokenUsage());
-                    }
-                    return ScoringResponse.builder().scores(scores).tokenUsage(tokenUsage).build();
-                })
-                .whenComplete((response, error) -> {
-                    if (error == null) {
-                        result.complete(response);
-                    } else {
-                        result.completeExceptionally(unwrapCompletionException(error));
-                    }
-                });
+        CompletableFuture.allOf(responses.toArray(new CompletableFuture<?>[0])).thenApply(ignored -> {
+            List<Double> scores = new ArrayList<>(documents.size());
+            TokenUsage tokenUsage = null;
+            for (int i = 0; i < batches.size(); i++) {
+                DecisionResponse response = responses.get(i).join();
+                scores.addAll(scores(response, batches.get(i).size()));
+                tokenUsage = TokenUsage.sum(tokenUsage, response.tokenUsage());
+            }
+            return ScoringResponse.builder().scores(scores).tokenUsage(tokenUsage).build();
+        }).whenComplete((response, error) -> {
+            if (error == null) {
+                result.complete(response);
+            } else {
+                result.completeExceptionally(unwrapCompletionException(error));
+            }
+        });
         result.whenComplete((response, error) -> {
             if (error != null) {
                 responses.forEach(future -> future.cancel(true));
@@ -142,8 +136,7 @@ public class DecisionScoringModel implements ScoringModel {
     private List<List<String>> batches(List<String> documents) {
         List<List<String>> batches = new ArrayList<>();
         for (int start = 0; start < documents.size(); ) {
-            List<String> batch =
-                    documents.subList(start, start + Math.min(maxSegmentsPerRequest, documents.size() - start));
+            List<String> batch = documents.subList(start, start + Math.min(maxSegmentsPerRequest, documents.size() - start));
             batches.add(batch);
             start += batch.size();
         }
@@ -159,27 +152,21 @@ public class DecisionScoringModel implements ScoringModel {
     }
 
     private DecisionRequest toRequest(List<String> batch, String query, DecisionRequestParameters parameters) {
-        DecisionRequest.Builder request =
-                DecisionRequest.builder().inputFields(Map.of("query", query)).parameters(parameters);
+        DecisionRequest.Builder request = DecisionRequest.builder().inputFields(dev.langchain4j.internal.Jdk8.map("query", query)).parameters(parameters);
         for (int i = 1; i <= batch.size(); i++) {
-            request.question(
-                    questionName(i),
-                    YesNoQuestion.of(questionTemplate.apply(Map.of("document", batch.get(i - 1))).text()));
+            request.question(questionName(i), YesNoQuestion.of(questionTemplate.apply(dev.langchain4j.internal.Jdk8.map("document", batch.get(i - 1))).text()));
         }
         return request.build();
     }
 
     private static void validate(PromptTemplate template) {
         if (!template.template().contains("{{document}}")) {
-            throw new IllegalArgumentException(
-                    "The question template must contain {{document}}, but was: " + template.template());
+            throw new IllegalArgumentException("The question template must contain {{document}}, but was: " + template.template());
         }
         try {
-            template.apply(Map.of("document", "document"));
+            template.apply(dev.langchain4j.internal.Jdk8.map("document", "document"));
         } catch (RuntimeException e) {
-            throw new IllegalArgumentException(
-                    "The question template can only use the {{document}} variable, but was: " + template.template(),
-                    e);
+            throw new IllegalArgumentException("The question template can only use the {{document}} variable, but was: " + template.template(), e);
         }
     }
 
@@ -194,7 +181,9 @@ public class DecisionScoringModel implements ScoringModel {
     public static class Builder {
 
         private DecisionModel decisionModel;
+
         private PromptTemplate questionTemplate;
+
         private Integer maxSegmentsPerRequest;
 
         /**

@@ -2,7 +2,6 @@ package dev.langchain4j.store.embedding.listener;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.store.embedding.EmbeddingSearchResult;
 import dev.langchain4j.store.embedding.EmbeddingStore;
@@ -21,10 +20,10 @@ import java.util.Map;
 public abstract class EmbeddingStoreResponseContext<Embedded> {
 
     private final EmbeddingStoreRequestContext<Embedded> requestContext;
+
     private final Map<Object, Object> attributes;
 
-    protected EmbeddingStoreResponseContext(
-            EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes) {
+    protected EmbeddingStoreResponseContext(EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes) {
         this.requestContext = ensureNotNull(requestContext, "requestContext");
         this.attributes = ensureNotNull(attributes, "attributes");
     }
@@ -58,10 +57,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
 
         private final String returnedId;
 
-        public Add(
-                EmbeddingStoreRequestContext<Embedded> requestContext,
-                Map<Object, Object> attributes,
-                String returnedId) {
+        public Add(EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes, String returnedId) {
             super(requestContext, attributes);
             this.returnedId = returnedId;
         }
@@ -84,10 +80,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
 
         private final List<String> returnedIds;
 
-        public AddAll(
-                EmbeddingStoreRequestContext<Embedded> requestContext,
-                Map<Object, Object> attributes,
-                List<String> returnedIds) {
+        public AddAll(EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes, List<String> returnedIds) {
             super(requestContext, attributes);
             this.returnedIds = copy(returnedIds);
         }
@@ -110,10 +103,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
 
         private final EmbeddingSearchResult<Embedded> searchResult;
 
-        public Search(
-                EmbeddingStoreRequestContext<Embedded> requestContext,
-                Map<Object, Object> attributes,
-                EmbeddingSearchResult<Embedded> searchResult) {
+        public Search(EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes, EmbeddingSearchResult<Embedded> searchResult) {
             super(requestContext, attributes);
             this.searchResult = searchResult;
         }
@@ -147,8 +137,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
     @Experimental
     public static final class RemoveAllIds<Embedded> extends EmbeddingStoreResponseContext<Embedded> {
 
-        public RemoveAllIds(
-                EmbeddingStoreRequestContext.RemoveAllIds<Embedded> requestContext, Map<Object, Object> attributes) {
+        public RemoveAllIds(EmbeddingStoreRequestContext.RemoveAllIds<Embedded> requestContext, Map<Object, Object> attributes) {
             super(requestContext, attributes);
         }
     }
@@ -161,8 +150,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
     @Experimental
     public static final class RemoveAllFilter<Embedded> extends EmbeddingStoreResponseContext<Embedded> {
 
-        public RemoveAllFilter(
-                EmbeddingStoreRequestContext.RemoveAllFilter<Embedded> requestContext, Map<Object, Object> attributes) {
+        public RemoveAllFilter(EmbeddingStoreRequestContext.RemoveAllFilter<Embedded> requestContext, Map<Object, Object> attributes) {
             super(requestContext, attributes);
         }
     }
@@ -175,8 +163,7 @@ public abstract class EmbeddingStoreResponseContext<Embedded> {
     @Experimental
     public static final class RemoveAll<Embedded> extends EmbeddingStoreResponseContext<Embedded> {
 
-        public RemoveAll(
-                EmbeddingStoreRequestContext.RemoveAll<Embedded> requestContext, Map<Object, Object> attributes) {
+        public RemoveAll(EmbeddingStoreRequestContext.RemoveAll<Embedded> requestContext, Map<Object, Object> attributes) {
             super(requestContext, attributes);
         }
     }

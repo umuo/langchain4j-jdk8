@@ -4,7 +4,6 @@ import static dev.langchain4j.data.message.ChatMessageType.SYSTEM;
 import static dev.langchain4j.internal.Utils.mutableCopy;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.memory.ChatMemory;
 import java.util.HashMap;
@@ -24,6 +23,7 @@ import java.util.Optional;
 public class SystemMessage implements ChatMessage {
 
     private final String text;
+
     private final Map<String, Object> attributes;
 
     /**
@@ -89,8 +89,10 @@ public class SystemMessage implements ChatMessage {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         SystemMessage that = (SystemMessage) o;
         return Objects.equals(this.text, that.text) && Objects.equals(this.attributes, that.attributes);
     }
@@ -118,6 +120,7 @@ public class SystemMessage implements ChatMessage {
     public static class Builder {
 
         private String text;
+
         private Map<String, Object> attributes;
 
         public Builder text(String text) {
@@ -154,23 +157,14 @@ public class SystemMessage implements ChatMessage {
     }
 
     public static Optional<SystemMessage> findFirst(List<ChatMessage> messages) {
-        return messages.stream()
-                .filter(message -> message instanceof SystemMessage)
-                .map(message -> (SystemMessage) message)
-                .findFirst();
+        return messages.stream().filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message).findFirst();
     }
 
     public static Optional<SystemMessage> findLast(List<ChatMessage> messages) {
-        return messages.stream()
-                .filter(message -> message instanceof SystemMessage)
-                .map(message -> (SystemMessage) message)
-                .reduce((first, second) -> second);
+        return messages.stream().filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message).reduce((first, second) -> second);
     }
 
     public static List<SystemMessage> findAll(List<ChatMessage> messages) {
-        return messages.stream()
-                .filter(message -> message instanceof SystemMessage)
-                .map(message -> (SystemMessage) message)
-                .toList();
+        return messages.stream().filter(message -> message instanceof SystemMessage).map(message -> (SystemMessage) message).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 }

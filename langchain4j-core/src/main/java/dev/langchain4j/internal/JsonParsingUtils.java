@@ -7,10 +7,41 @@ public class JsonParsingUtils {
 
     @FunctionalInterface
     public interface ThrowingFunction<T, R> {
+
         R apply(T t) throws Exception;
     }
 
-    public record ParsedJson<T>(T value, String json) {}
+    public final static class ParsedJson<T> {
+
+        private final T value;
+
+        public T value() {
+            return value;
+        }
+
+        private final String json;
+
+        public String json() {
+            return json;
+        }
+
+        public ParsedJson(T value, String json) {
+            this.value = value;
+            this.json = json;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(value, ((ParsedJson<?>) obj).value) && java.util.Objects.equals(json, ((ParsedJson<?>) obj).json));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(value)) + java.util.Objects.hashCode(json));
+        }
+
+        public String toString() {
+            return "ParsedJson[" + "value=" + value + ", json=" + json + "]";
+        }
+    }
 
     public static <T> ParsedJson<T> extractAndParseJson(String text, Class<T> type) throws Exception {
         return extractAndParseJson(text, s -> Json.fromJson(s, type));
@@ -24,27 +55,24 @@ public class JsonParsingUtils {
             // Temporarily ignore parsing errors and try to find a JSON block in the text
             parseException = ex;
         }
-
         int index = text.length();
         while (true) {
-
             int jsonEnd = findJsonEnd(text, index);
             if (jsonEnd < 0) {
                 throw parseException;
             }
-
             int jsonStart = findJsonStart(text, jsonEnd, text.charAt(jsonEnd));
             if (jsonStart < 0) {
                 throw parseException;
             }
-
             try {
                 String tentativeJson = text.substring(jsonStart, jsonEnd + 1);
                 return new ParsedJson<>(parser.apply(tentativeJson), tentativeJson);
             } catch (Exception ignored) {
                 // If parsing fails, try to extract a JSON block from the text
             }
-            index = jsonStart; // Move to the next character after the found JSON block
+            // Move to the next character after the found JSON block
+            index = jsonStart;
         }
     }
 
@@ -57,7 +85,6 @@ public class JsonParsingUtils {
     private static int findJsonStart(String text, int jsonEnd, char closingBrace) {
         char openingBrace = closingBrace == '}' ? '{' : '[';
         int braceCount = 0;
-
         for (int i = jsonEnd; i >= 0; i--) {
             char c = text.charAt(i);
             if (c == '"' && !isEscaped(text, i)) {

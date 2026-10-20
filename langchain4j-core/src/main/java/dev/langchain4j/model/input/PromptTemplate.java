@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
 import static java.util.Collections.singletonMap;
-
 import dev.langchain4j.spi.prompt.PromptTemplateFactory;
 import java.time.Clock;
 import java.time.LocalDate;
@@ -33,11 +32,15 @@ public class PromptTemplate {
     }
 
     static final String CURRENT_DATE = "current_date";
+
     static final String CURRENT_TIME = "current_time";
+
     static final String CURRENT_DATE_TIME = "current_date_time";
 
     private final String templateString;
+
     private final PromptTemplateFactory.Template template;
+
     private final Clock clock;
 
     /**

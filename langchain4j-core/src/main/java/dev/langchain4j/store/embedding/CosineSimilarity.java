@@ -2,14 +2,15 @@ package dev.langchain4j.store.embedding;
 
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.embedding.Embedding;
 
 /**
  * Utility class for calculating cosine similarity between two vectors.
  */
 public class CosineSimilarity {
-    private CosineSimilarity() {}
+
+    private CosineSimilarity() {
+    }
 
     /**
      * A small value to avoid division by zero.
@@ -40,26 +41,19 @@ public class CosineSimilarity {
     public static double between(Embedding embeddingA, Embedding embeddingB) {
         ensureNotNull(embeddingA, "embeddingA");
         ensureNotNull(embeddingB, "embeddingB");
-
         float[] vectorA = embeddingA.vector();
         float[] vectorB = embeddingB.vector();
-
         if (vectorA.length != vectorB.length) {
-            throw illegalArgument(
-                    "Length of vector a (%s) must be equal to the length of vector b (%s)",
-                    vectorA.length, vectorB.length);
+            throw illegalArgument("Length of vector a (%s) must be equal to the length of vector b (%s)", vectorA.length, vectorB.length);
         }
-
         double dotProduct = 0.0;
         double normA = 0.0;
         double normB = 0.0;
-
         for (int i = 0; i < vectorA.length; i++) {
             dotProduct += (double) vectorA[i] * vectorB[i];
             normA += (double) vectorA[i] * vectorA[i];
             normB += (double) vectorB[i] * vectorB[i];
         }
-
         // Avoid division by zero.
         return dotProduct / Math.max(Math.sqrt(normA) * Math.sqrt(normB), EPSILON);
     }

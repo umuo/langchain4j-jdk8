@@ -2,7 +2,6 @@ package dev.langchain4j.rag.query;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.invocation.InvocationContext;
@@ -19,8 +18,11 @@ import java.util.Objects;
 public class Metadata {
 
     private final ChatMessage chatMessage;
+
     private final SystemMessage systemMessage;
+
     private final List<ChatMessage> chatMemory;
+
     private final InvocationContext invocationContext;
 
     public Metadata(Builder builder) {
@@ -34,17 +36,14 @@ public class Metadata {
         this.chatMessage = ensureNotNull(chatMessage, "chatMessage");
         this.systemMessage = null;
         this.chatMemory = copy(chatMemory);
-        this.invocationContext =
-                InvocationContext.builder().chatMemoryId(chatMemoryId).build();
+        this.invocationContext = InvocationContext.builder().chatMemoryId(chatMemoryId).build();
     }
 
-    public Metadata(
-            ChatMessage chatMessage, SystemMessage systemMessage, Object chatMemoryId, List<ChatMessage> chatMemory) {
+    public Metadata(ChatMessage chatMessage, SystemMessage systemMessage, Object chatMemoryId, List<ChatMessage> chatMemory) {
         this.chatMessage = ensureNotNull(chatMessage, "chatMessage");
         this.systemMessage = ensureNotNull(systemMessage, "systemMessage");
         this.chatMemory = copy(chatMemory);
-        this.invocationContext =
-                InvocationContext.builder().chatMemoryId(chatMemoryId).build();
+        this.invocationContext = InvocationContext.builder().chatMemoryId(chatMemoryId).build();
     }
 
     /**
@@ -93,13 +92,12 @@ public class Metadata {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Metadata that = (Metadata) o;
-        return Objects.equals(this.chatMessage, that.chatMessage)
-                && Objects.equals(this.systemMessage, that.systemMessage)
-                && Objects.equals(this.chatMemory, that.chatMemory)
-                && Objects.equals(this.invocationContext, that.invocationContext);
+        return Objects.equals(this.chatMessage, that.chatMessage) && Objects.equals(this.systemMessage, that.systemMessage) && Objects.equals(this.chatMemory, that.chatMemory) && Objects.equals(this.invocationContext, that.invocationContext);
     }
 
     @Override
@@ -109,19 +107,14 @@ public class Metadata {
 
     @Override
     public String toString() {
-        return "Metadata {" + " chatMessage = "
-                + chatMessage + ", systemMessage = "
-                + systemMessage + ", chatMemory = "
-                + chatMemory + ", invocationContext = "
-                + invocationContext + " }";
+        return "Metadata {" + " chatMessage = " + chatMessage + ", systemMessage = " + systemMessage + ", chatMemory = " + chatMemory + ", invocationContext = " + invocationContext + " }";
     }
 
     public static Metadata from(ChatMessage chatMessage, Object chatMemoryId, List<ChatMessage> chatMemory) {
         return new Metadata(chatMessage, chatMemoryId, chatMemory);
     }
 
-    public static Metadata from(
-            ChatMessage chatMessage, SystemMessage systemMessage, Object chatMemoryId, List<ChatMessage> chatMemory) {
+    public static Metadata from(ChatMessage chatMessage, SystemMessage systemMessage, Object chatMemoryId, List<ChatMessage> chatMemory) {
         return new Metadata(chatMessage, systemMessage, chatMemoryId, chatMemory);
     }
 
@@ -132,8 +125,11 @@ public class Metadata {
     public static class Builder {
 
         private ChatMessage chatMessage;
+
         private SystemMessage systemMessage;
+
         private List<ChatMessage> chatMemory;
+
         private InvocationContext invocationContext;
 
         public Builder chatMessage(ChatMessage chatMessage) {

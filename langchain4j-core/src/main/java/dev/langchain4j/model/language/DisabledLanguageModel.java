@@ -11,6 +11,7 @@ import dev.langchain4j.model.output.Response;
  * </p>
  */
 public class DisabledLanguageModel implements LanguageModel {
+
     @Override
     public Response<String> generate(String prompt) {
         throw new ModelDisabledException("LanguageModel is disabled");

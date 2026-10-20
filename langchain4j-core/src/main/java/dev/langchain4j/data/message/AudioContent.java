@@ -1,11 +1,9 @@
 package dev.langchain4j.data.message;
 
 import dev.langchain4j.data.audio.Audio;
-
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.ContentType.AUDIO;
 import static dev.langchain4j.internal.ContentUtil.extractBase64Content;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
@@ -26,9 +24,7 @@ public class AudioContent implements Content {
      * @param url the url of the Audio.
      */
     public AudioContent(URI url) {
-        this.audio = Audio.builder()
-                .url(ensureNotNull(url, "url"))
-                .build();
+        this.audio = Audio.builder().url(ensureNotNull(url, "url")).build();
     }
 
     /**
@@ -47,9 +43,7 @@ public class AudioContent implements Content {
      * @param mimeType   the mime type of the Audio.
      */
     public AudioContent(String base64Data, String mimeType) {
-        this.audio = Audio.builder()
-                .base64Data(ensureNotBlank(base64Data, "base64data"))
-                .mimeType(ensureNotBlank(mimeType, "mimeType")).build();
+        this.audio = Audio.builder().base64Data(ensureNotBlank(base64Data, "base64data")).mimeType(ensureNotBlank(mimeType, "mimeType")).build();
     }
 
     /**
@@ -72,8 +66,10 @@ public class AudioContent implements Content {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AudioContent that = (AudioContent) o;
         return Objects.equals(this.audio, that.audio);
     }
@@ -85,9 +81,7 @@ public class AudioContent implements Content {
 
     @Override
     public String toString() {
-        return "AudioContent {" +
-                " audio = " + audio +
-                " }";
+        return "AudioContent {" + " audio = " + audio + " }";
     }
 
     /**

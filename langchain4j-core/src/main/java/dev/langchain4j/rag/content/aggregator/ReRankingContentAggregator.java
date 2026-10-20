@@ -6,7 +6,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.rag.content.ContentMetadata.RERANKED_SCORE;
 import static java.util.Collections.emptyList;
-
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.scoring.ScoringModel;
 import dev.langchain4j.model.scoring.request.ScoringRequest;
@@ -50,39 +49,30 @@ import java.util.stream.Collectors;
  */
 public class ReRankingContentAggregator implements ContentAggregator {
 
-    public static final Function<Map<Query, Collection<List<Content>>>, Query> DEFAULT_QUERY_SELECTOR =
-            (queryToContents) -> {
-                if (queryToContents.size() > 1) {
-                    throw illegalArgument(
-                            "The 'queryToContents' contains %s queries, making the re-ranking ambiguous. "
-                                    + "Because there are multiple queries, it is unclear which one should be "
-                                    + "used for re-ranking. Please provide a 'querySelector' in the constructor/builder.",
-                            queryToContents.size());
-                }
-                return queryToContents.keySet().iterator().next();
-            };
+    public static final Function<Map<Query, Collection<List<Content>>>, Query> DEFAULT_QUERY_SELECTOR = (queryToContents) -> {
+        if (queryToContents.size() > 1) {
+            throw illegalArgument("The 'queryToContents' contains %s queries, making the re-ranking ambiguous. " + "Because there are multiple queries, it is unclear which one should be " + "used for re-ranking. Please provide a 'querySelector' in the constructor/builder.", queryToContents.size());
+        }
+        return queryToContents.keySet().iterator().next();
+    };
 
     private final ScoringModel scoringModel;
+
     private final Function<Map<Query, Collection<List<Content>>>, Query> querySelector;
+
     private final Double minScore;
+
     private final Integer maxResults;
 
     public ReRankingContentAggregator(ScoringModel scoringModel) {
         this(scoringModel, DEFAULT_QUERY_SELECTOR, null);
     }
 
-    public ReRankingContentAggregator(
-            ScoringModel scoringModel,
-            Function<Map<Query, Collection<List<Content>>>, Query> querySelector,
-            Double minScore) {
+    public ReRankingContentAggregator(ScoringModel scoringModel, Function<Map<Query, Collection<List<Content>>>, Query> querySelector, Double minScore) {
         this(scoringModel, querySelector, minScore, null);
     }
 
-    public ReRankingContentAggregator(
-            ScoringModel scoringModel,
-            Function<Map<Query, Collection<List<Content>>>, Query> querySelector,
-            Double minScore,
-            Integer maxResults) {
+    public ReRankingContentAggregator(ScoringModel scoringModel, Function<Map<Query, Collection<List<Content>>>, Query> querySelector, Double minScore, Integer maxResults) {
         this.scoringModel = ensureNotNull(scoringModel, "scoringModel");
         this.querySelector = getOrDefault(querySelector, DEFAULT_QUERY_SELECTOR);
         this.minScore = minScore;
@@ -95,61 +85,42 @@ public class ReRankingContentAggregator implements ContentAggregator {
 
     @Override
     public List<Content> aggregate(Map<Query, Collection<List<Content>>> queryToContents) {
-
         if (queryToContents.isEmpty()) {
             return emptyList();
         }
-
         // Select a query against which all contents will be re-ranked
         Query query = querySelector.apply(queryToContents);
-
         // For each query, fuse all contents retrieved from different sources using that query
         Map<Query, List<Content>> queryToFusedContents = fuse(queryToContents);
-
         // Fuse all contents retrieved using all queries
         List<Content> fusedContents = ReciprocalRankFuser.fuse(queryToFusedContents.values());
-
         if (fusedContents.isEmpty()) {
             return fusedContents;
         }
-
         // Re-rank all the fused contents against the query selected by the query selector
         return reRankAndFilter(fusedContents, query);
     }
 
     @Override
     public CompletableFuture<List<Content>> aggregateAsync(Map<Query, Collection<List<Content>>> queryToContents) {
-
         if (queryToContents.isEmpty()) {
             return CompletableFuture.completedFuture(emptyList());
         }
-
         // Select a query against which all contents will be re-ranked
         Query query = querySelector.apply(queryToContents);
-
         // For each query, fuse all contents retrieved from different sources using that query
         Map<Query, List<Content>> queryToFusedContents = fuse(queryToContents);
-
         // Fuse all contents retrieved using all queries
         List<Content> fusedContents = ReciprocalRankFuser.fuse(queryToFusedContents.values());
-
         if (fusedContents.isEmpty()) {
             return CompletableFuture.completedFuture(fusedContents);
         }
-
         // Re-rank all the fused contents against the query selected by the query selector.
         // Only the scoring call is genuine I/O; the fusion above is CPU-bound and stays synchronous.
-        List<TextSegment> segments = fusedContents.stream()
-                .map(Content::textSegment)
-                .collect(Collectors.toList());
-
-        ScoringRequest scoringRequest = ScoringRequest.builder()
-                .documents(segments.stream().map(TextSegment::text).collect(Collectors.toList()))
-                .query(query.text())
-                .build();
+        List<TextSegment> segments = fusedContents.stream().map(Content::textSegment).collect(Collectors.toList());
+        ScoringRequest scoringRequest = ScoringRequest.builder().documents(segments.stream().map(TextSegment::text).collect(Collectors.toList())).query(query.text()).build();
         CompletableFuture<ScoringResponse> scoreFuture = scoringModel.scoreAsync(scoringRequest);
-        CompletableFuture<List<Content>> result =
-                scoreFuture.thenApply(response -> toReRankedContents(fusedContents, response.scores()));
+        CompletableFuture<List<Content>> result = scoreFuture.thenApply(response -> toReRankedContents(fusedContents, response.scores()));
         // Link the caller-facing derived stage back to the raw scoring call so cancellation reaches the in-flight I/O.
         propagateCancellation(result, scoreFuture);
         return result;
@@ -165,27 +136,17 @@ public class ReRankingContentAggregator implements ContentAggregator {
     }
 
     protected List<Content> reRankAndFilter(List<Content> contents, Query query) {
-
         List<TextSegment> segments = contents.stream().map(Content::textSegment).collect(Collectors.toList());
-
         List<Double> scores = scoringModel.scoreAll(segments, query.text()).content();
-
         return toReRankedContents(contents, scores);
     }
 
     private List<Content> toReRankedContents(List<Content> contents, List<Double> scores) {
-
         Map<Content, Double> contentToScore = new LinkedHashMap<>();
         for (int i = 0; i < contents.size(); i++) {
             contentToScore.put(contents.get(i), scores.get(i));
         }
-
-        return contentToScore.entrySet().stream()
-                .filter(entry -> minScore == null || entry.getValue() >= minScore)
-                .sorted(Map.Entry.<Content, Double>comparingByValue().reversed())
-                .map(entry -> withReRankedScore(entry.getKey(), entry.getValue()))
-                .limit(maxResults)
-                .collect(Collectors.toList());
+        return contentToScore.entrySet().stream().filter(entry -> minScore == null || entry.getValue() >= minScore).sorted(Map.Entry.<Content, Double>comparingByValue().reversed()).map(entry -> withReRankedScore(entry.getKey(), entry.getValue())).limit(maxResults).collect(Collectors.toList());
     }
 
     private static Content withReRankedScore(Content content, Double score) {
@@ -195,20 +156,24 @@ public class ReRankingContentAggregator implements ContentAggregator {
     }
 
     public static class ReRankingContentAggregatorBuilder {
+
         private ScoringModel scoringModel;
+
         private Function<Map<Query, Collection<List<Content>>>, Query> querySelector;
+
         private Double minScore;
+
         private Integer maxResults;
 
-        ReRankingContentAggregatorBuilder() {}
+        ReRankingContentAggregatorBuilder() {
+        }
 
         public ReRankingContentAggregatorBuilder scoringModel(ScoringModel scoringModel) {
             this.scoringModel = scoringModel;
             return this;
         }
 
-        public ReRankingContentAggregatorBuilder querySelector(
-                Function<Map<Query, Collection<List<Content>>>, Query> querySelector) {
+        public ReRankingContentAggregatorBuilder querySelector(Function<Map<Query, Collection<List<Content>>>, Query> querySelector) {
             this.querySelector = querySelector;
             return this;
         }
@@ -224,8 +189,7 @@ public class ReRankingContentAggregator implements ContentAggregator {
         }
 
         public ReRankingContentAggregator build() {
-            return new ReRankingContentAggregator(
-                    this.scoringModel, this.querySelector, this.minScore, this.maxResults);
+            return new ReRankingContentAggregator(this.scoringModel, this.querySelector, this.minScore, this.maxResults);
         }
     }
 }

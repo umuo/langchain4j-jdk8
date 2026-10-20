@@ -10,7 +10,6 @@ import static dev.langchain4j.model.ModelProvider.OTHER;
 import static dev.langchain4j.model.chat.ChatModelListenerUtils.onError;
 import static dev.langchain4j.model.chat.ChatModelListenerUtils.onRequest;
 import static dev.langchain4j.model.chat.ChatModelListenerUtils.onResponse;
-
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.ModelProvider;
@@ -52,17 +51,10 @@ public interface ChatModel {
      * @since 1.13.0
      */
     default ChatResponse chat(ChatRequest chatRequest, ChatRequestOptions options) {
-
         ChatRequestOptions effectiveOptions = getOrDefault(options, ChatRequestOptions.EMPTY);
-
-        ChatRequest finalChatRequest = ChatRequest.builder()
-                .messages(chatRequest.messages())
-                .parameters(defaultRequestParameters().overrideWith(chatRequest.parameters()))
-                .build();
-
+        ChatRequest finalChatRequest = ChatRequest.builder().messages(chatRequest.messages()).parameters(defaultRequestParameters().overrideWith(chatRequest.parameters())).build();
         List<ChatModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>(effectiveOptions.listenerAttributes());
-
         onRequest(finalChatRequest, provider(), attributes, listeners);
         try {
             ChatResponse chatResponse = doChat(finalChatRequest);
@@ -118,27 +110,18 @@ public interface ChatModel {
      */
     @Experimental
     default CompletableFuture<ChatResponse> chatAsync(ChatRequest chatRequest, ChatRequestOptions options) {
-
         ChatRequestOptions effectiveOptions = getOrDefault(options, ChatRequestOptions.EMPTY);
-
-        ChatRequest finalChatRequest = ChatRequest.builder()
-                .messages(chatRequest.messages())
-                .parameters(defaultRequestParameters().overrideWith(chatRequest.parameters()))
-                .build();
-
+        ChatRequest finalChatRequest = ChatRequest.builder().messages(chatRequest.messages()).parameters(defaultRequestParameters().overrideWith(chatRequest.parameters())).build();
         List<ChatModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>(effectiveOptions.listenerAttributes());
-
         onRequest(finalChatRequest, provider(), attributes, listeners);
-
         CompletableFuture<ChatResponse> source;
         try {
             source = doChatAsync(finalChatRequest);
         } catch (Exception error) {
             onError(error, finalChatRequest, provider(), attributes, listeners);
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         }
-
         CompletableFuture<ChatResponse> result = source.whenComplete((chatResponse, error) -> {
             if (error != null) {
                 Throwable cause = unwrapCompletionException(error);
@@ -149,7 +132,6 @@ public interface ChatModel {
                 onResponse(chatResponse, finalChatRequest, provider(), attributes, listeners);
             }
         });
-
         propagateCancellation(result, source);
         return result;
     }
@@ -176,7 +158,7 @@ public interface ChatModel {
     }
 
     default List<ChatModelListener> listeners() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     default ModelProvider provider() {
@@ -184,26 +166,18 @@ public interface ChatModel {
     }
 
     default String chat(String userMessage) {
-
-        ChatRequest chatRequest =
-                ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
-
+        ChatRequest chatRequest = ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
         ChatResponse chatResponse = chat(chatRequest);
-
         return chatResponse.aiMessage().text();
     }
 
     default ChatResponse chat(ChatMessage... messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chat(chatRequest);
     }
 
     default ChatResponse chat(List<ChatMessage> messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chat(chatRequest);
     }
 
@@ -214,10 +188,7 @@ public interface ChatModel {
      */
     @Experimental
     default CompletableFuture<String> chatAsync(String userMessage) {
-
-        ChatRequest chatRequest =
-                ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
-
+        ChatRequest chatRequest = ChatRequest.builder().messages(UserMessage.from(userMessage)).build();
         return chatAsync(chatRequest).thenApply(chatResponse -> chatResponse.aiMessage().text());
     }
 
@@ -228,9 +199,7 @@ public interface ChatModel {
      */
     @Experimental
     default CompletableFuture<ChatResponse> chatAsync(ChatMessage... messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chatAsync(chatRequest);
     }
 
@@ -241,13 +210,11 @@ public interface ChatModel {
      */
     @Experimental
     default CompletableFuture<ChatResponse> chatAsync(List<ChatMessage> messages) {
-
         ChatRequest chatRequest = ChatRequest.builder().messages(messages).build();
-
         return chatAsync(chatRequest);
     }
 
     default Set<Capability> supportedCapabilities() {
-        return Set.of();
+        return dev.langchain4j.internal.Jdk8.set();
     }
 }

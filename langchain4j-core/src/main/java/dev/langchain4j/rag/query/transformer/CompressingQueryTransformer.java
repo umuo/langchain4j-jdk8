@@ -10,14 +10,12 @@ import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import dev.langchain4j.rag.query.Metadata;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -40,23 +38,10 @@ import static java.util.stream.Collectors.joining;
  */
 public class CompressingQueryTransformer implements QueryTransformer {
 
-    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from(
-            """
-                    Read and understand the conversation between the User and the AI. \
-                    Then, analyze the new query from the User. \
-                    Identify all relevant details, terms, and context from both the conversation and the new query. \
-                    Reformulate this query into a clear, concise, and self-contained format suitable for information retrieval.
-                    
-                    Conversation:
-                    {{chatMemory}}
-                    
-                    User query: {{query}}
-                    
-                    It is very important that you provide only reformulated query and nothing else! \
-                    Do not prepend a query with anything!"""
-    );
+    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from("Read and understand the conversation between the User and the AI. Then, analyze the new query from the User. Identify all relevant details, terms, and context from both the conversation and the new query. Reformulate this query into a clear, concise, and self-contained format suitable for information retrieval.\n\nConversation:\n{{chatMemory}}\n\nUser query: {{query}}\n\nIt is very important that you provide only reformulated query and nothing else! Do not prepend a query with anything!");
 
     protected final PromptTemplate promptTemplate;
+
     protected final ChatModel chatModel;
 
     public CompressingQueryTransformer(ChatModel chatModel) {
@@ -74,13 +59,11 @@ public class CompressingQueryTransformer implements QueryTransformer {
 
     @Override
     public Collection<Query> transform(Query query) {
-
         Metadata metadata = query.metadata();
         if (metadata == null || metadata.chatMemory().isEmpty()) {
             // no need to compress if there are no previous messages
             return singletonList(query);
         }
-
         List<ChatMessage> chatMemory = metadata.chatMemory();
         Prompt prompt = createPrompt(query, format(chatMemory));
         String compressedQueryText = chatModel.chat(prompt.text());
@@ -96,35 +79,29 @@ public class CompressingQueryTransformer implements QueryTransformer {
         }
         List<ChatMessage> chatMemory = metadata.chatMemory();
         Prompt prompt = createPrompt(query, format(chatMemory));
-        var chatFuture = chatModel.chatAsync(ChatRequest.builder().messages(prompt.toUserMessage()).build());
-        CompletableFuture<Collection<Query>> result =
-                chatFuture.thenApply(response -> singletonList(toQuery(query, response.aiMessage().text())));
+        java.util.concurrent.CompletableFuture<dev.langchain4j.model.chat.response.ChatResponse> chatFuture = chatModel.chatAsync(ChatRequest.builder().messages(prompt.toUserMessage()).build());
+        CompletableFuture<Collection<Query>> result = chatFuture.thenApply(response -> singletonList(toQuery(query, response.aiMessage().text())));
         // Link the caller-facing derived stage back to the raw chat call so cancellation reaches the in-flight I/O.
         propagateCancellation(result, chatFuture);
         return result;
     }
 
     private static Query toQuery(Query originalQuery, String compressedQueryText) {
-        return originalQuery.metadata() == null
-                ? Query.from(compressedQueryText)
-                : Query.from(compressedQueryText, originalQuery.metadata());
+        return originalQuery.metadata() == null ? Query.from(compressedQueryText) : Query.from(compressedQueryText, originalQuery.metadata());
     }
 
     protected String format(List<ChatMessage> chatMemory) {
-        return chatMemory.stream()
-                .map(this::format)
-                .filter(Objects::nonNull)
-                .collect(joining("\n"));
+        return chatMemory.stream().map(this::format).filter(Objects::nonNull).collect(joining("\n"));
     }
 
     protected String format(ChatMessage message) {
-        if (message instanceof UserMessage userMessage) {
-            return "User: " + userMessage.singleText();
-        } else if (message instanceof AiMessage aiMessage) {
-            if (aiMessage.hasToolExecutionRequests()) {
+        if (message instanceof UserMessage) {
+            return "User: " + ((UserMessage) message).singleText();
+        } else if (message instanceof AiMessage) {
+            if (((AiMessage) message).hasToolExecutionRequests()) {
                 return null;
             }
-            return "AI: " + aiMessage.text();
+            return "AI: " + ((AiMessage) message).text();
         } else {
             return null;
         }
@@ -138,7 +115,9 @@ public class CompressingQueryTransformer implements QueryTransformer {
     }
 
     public static class CompressingQueryTransformerBuilder {
+
         private ChatModel chatModel;
+
         private PromptTemplate promptTemplate;
 
         CompressingQueryTransformerBuilder() {

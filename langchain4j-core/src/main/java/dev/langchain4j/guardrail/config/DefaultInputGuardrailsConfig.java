@@ -6,6 +6,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
  * The default implementation of {@link InputGuardrailsConfig} for this library if no other libraries provide their own implementations.
  */
 final class DefaultInputGuardrailsConfig implements InputGuardrailsConfig {
+
     DefaultInputGuardrailsConfig(Builder builder) {
         ensureNotNull(builder, "builder");
     }
@@ -22,6 +23,7 @@ final class DefaultInputGuardrailsConfig implements InputGuardrailsConfig {
      * Builder for {@link DefaultInputGuardrailsConfig} instances.
      */
     static class Builder implements InputGuardrailsConfigBuilder {
+
         @Override
         public InputGuardrailsConfig build() {
             return new DefaultInputGuardrailsConfig(this);

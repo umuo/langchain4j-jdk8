@@ -5,6 +5,7 @@ package dev.langchain4j.guardrail.config;
  * @param <C> The type of configuration being build
  */
 public interface GuardrailsConfigBuilder<C extends GuardrailsConfig> {
+
     /**
      * Builds the configuration.
      * @return The configuration

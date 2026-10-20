@@ -8,7 +8,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -108,7 +107,7 @@ public interface ChatMemory {
     /**
      * Non-blocking counterpart of {@link #add(Iterable)}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs. It takes a list (rather than a single
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs. It takes a list (rather than a single
      * message) so that adding several messages at once is a single operation; to add one message, pass a
      * singleton list.
      * <p>
@@ -137,7 +136,7 @@ public interface ChatMemory {
     /**
      * Non-blocking counterpart of {@link #set(Iterable)}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs (e.g. to rewrite memory for tool
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs (e.g. to rewrite memory for tool
      * compensation without blocking the model-delivery thread).
      * <p>
      * Replaces the entire message history with {@code messages}. Like the other async methods, callers must not
@@ -156,7 +155,7 @@ public interface ChatMemory {
     /**
      * Non-blocking counterpart of {@link #messages()}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs.
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}; see {@link #addAsync(List)}
      * for the rationale.

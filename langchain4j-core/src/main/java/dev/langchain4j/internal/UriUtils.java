@@ -9,9 +9,11 @@ import java.util.BitSet;
  */
 public final class UriUtils {
 
-    private UriUtils() {}
+    private UriUtils() {
+    }
 
     private static final BitSet ALLOWED = new BitSet(128);
+
     private static final char[] HEX = "0123456789ABCDEF".toCharArray();
 
     static {
@@ -19,11 +21,9 @@ public final class UriUtils {
         for (char c = 'a'; c <= 'z'; c++) ALLOWED.set(c);
         for (char c = 'A'; c <= 'Z'; c++) ALLOWED.set(c);
         for (char c = '0'; c <= '9'; c++) ALLOWED.set(c);
-        for (char c : new char[] {'-', '.', '_', '~'}) ALLOWED.set(c);
+        for (char c : new char[] { '-', '.', '_', '~' }) ALLOWED.set(c);
         // gen-delims + sub-delims (keep URL syntax intact)
-        for (char c :
-                new char[] {':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '='})
-            ALLOWED.set(c);
+        for (char c : new char[] { ':', '/', '?', '#', '[', ']', '@', '!', '$', '&', '\'', '(', ')', '*', '+', ',', ';', '=' }) ALLOWED.set(c);
     }
 
     /**
@@ -51,11 +51,9 @@ public final class UriUtils {
         StringBuilder out = new StringBuilder(s.length() + 16);
         int n = s.length();
         int i = 0;
-
         while (i < n) {
             int nextI;
             char ch = s.charAt(i);
-
             // preserve existing %XX sequences
             if (ch == '%' && i + 2 < n && isHex(s.charAt(i + 1)) && isHex(s.charAt(i + 2))) {
                 out.append(s, i, i + 3);
@@ -72,7 +70,6 @@ public final class UriUtils {
                 }
                 nextI = i + Character.charCount(cp);
             }
-
             i = nextI;
         }
         return out.toString();
@@ -92,10 +89,9 @@ public final class UriUtils {
      * @return a URI object, or null if the input is null, blank, or cannot be parsed
      */
     public static URI createUriSafely(String uriString) {
-        if (uriString == null || uriString.isBlank()) {
+        if (uriString == null || dev.langchain4j.internal.Jdk8.isBlank(uriString)) {
             return null;
         }
-
         try {
             return URI.create(uriString);
         } catch (IllegalArgumentException ex) {

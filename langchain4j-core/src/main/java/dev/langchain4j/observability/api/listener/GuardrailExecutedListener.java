@@ -19,9 +19,5 @@ import dev.langchain4j.observability.api.event.GuardrailExecutedEvent;
  * @param <G> the type of {@link Guardrail} used in the validation process. It represents the implementation of
  *            the specific validation logic being applied.
  */
-public sealed interface GuardrailExecutedListener<
-                E extends GuardrailExecutedEvent<P, R, G>,
-                P extends GuardrailRequest<P>,
-                R extends GuardrailResult<R>,
-                G extends Guardrail<P, R>>
-        extends AiServiceListener<E> permits InputGuardrailExecutedListener, OutputGuardrailExecutedListener {}
+public interface GuardrailExecutedListener<E extends GuardrailExecutedEvent<P, R, G>, P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>> extends AiServiceListener<E> {
+}

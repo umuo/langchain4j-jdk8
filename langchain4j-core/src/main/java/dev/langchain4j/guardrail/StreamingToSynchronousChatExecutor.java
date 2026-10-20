@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.StreamingChatModelHelper;
@@ -29,21 +28,21 @@ import org.slf4j.LoggerFactory;
  */
 @Internal
 final class StreamingToSynchronousChatExecutor extends AbstractChatExecutor {
+
     private final StreamingChatModel streamingChatModel;
+
     private final Consumer<Throwable> errorHandler;
 
     protected StreamingToSynchronousChatExecutor(StreamingToSynchronousBuilder builder) {
         super(builder);
-
         this.streamingChatModel = ensureNotNull(builder.streamingChatModel, "streamingChatModel");
         this.errorHandler = builder.errorHandler;
     }
 
     @Override
     protected ChatResponse execute(ChatRequest chatRequest) {
-        var responseHandler = new StreamingToSyncResponseHandler(this.errorHandler);
+        dev.langchain4j.guardrail.StreamingToSynchronousChatExecutor.StreamingToSyncResponseHandler responseHandler = new StreamingToSyncResponseHandler(this.errorHandler);
         this.streamingChatModel.chat(chatRequest, responseHandler);
-
         return Optional.ofNullable(responseHandler.getResponse()).orElseGet(ChatResponse.builder()::build);
     }
 
@@ -53,9 +52,13 @@ final class StreamingToSynchronousChatExecutor extends AbstractChatExecutor {
     }
 
     private static class StreamingToSyncResponseHandler implements StreamingChatResponseHandler {
+
         private static final Logger LOG = LoggerFactory.getLogger(StreamingToSyncResponseHandler.class);
+
         private final Consumer<Throwable> errorHandler;
+
         private final CountDownLatch latch = new CountDownLatch(1);
+
         private AtomicReference<ChatResponse> response = new AtomicReference<>();
 
         StreamingToSyncResponseHandler(Consumer<Throwable> errorHandler) {

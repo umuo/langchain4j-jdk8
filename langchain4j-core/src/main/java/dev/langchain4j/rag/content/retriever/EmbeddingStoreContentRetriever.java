@@ -9,7 +9,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureBetween;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
-
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.exception.UnsupportedFeatureException;
@@ -70,16 +69,21 @@ import java.util.stream.Collectors;
 public class EmbeddingStoreContentRetriever implements ContentRetriever {
 
     public static final Function<Query, Integer> DEFAULT_MAX_RESULTS = (query) -> 3;
+
     public static final Function<Query, Double> DEFAULT_MIN_SCORE = (query) -> 0.0;
+
     public static final Function<Query, Filter> DEFAULT_FILTER = (query) -> null;
 
     public static final String DEFAULT_DISPLAY_NAME = "Default";
 
     private final EmbeddingStore<TextSegment> embeddingStore;
+
     private final EmbeddingModel embeddingModel;
 
     private final Function<Query, Integer> maxResultsProvider;
+
     private final Function<Query, Double> minScoreProvider;
+
     private final Function<Query, Filter> filterProvider;
 
     private final EmbeddingInputType embeddingInputType;
@@ -92,75 +96,25 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     private final boolean offloadBlocking;
 
     public EmbeddingStoreContentRetriever(EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel) {
-        this(
-                DEFAULT_DISPLAY_NAME,
-                embeddingStore,
-                embeddingModel,
-                DEFAULT_MAX_RESULTS,
-                DEFAULT_MIN_SCORE,
-                DEFAULT_FILTER,
-                null);
+        this(DEFAULT_DISPLAY_NAME, embeddingStore, embeddingModel, DEFAULT_MAX_RESULTS, DEFAULT_MIN_SCORE, DEFAULT_FILTER, null);
     }
 
-    public EmbeddingStoreContentRetriever(
-            EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel, int maxResults) {
-        this(
-                DEFAULT_DISPLAY_NAME,
-                embeddingStore,
-                embeddingModel,
-                (query) -> maxResults,
-                DEFAULT_MIN_SCORE,
-                DEFAULT_FILTER,
-                null);
+    public EmbeddingStoreContentRetriever(EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel, int maxResults) {
+        this(DEFAULT_DISPLAY_NAME, embeddingStore, embeddingModel, (query) -> maxResults, DEFAULT_MIN_SCORE, DEFAULT_FILTER, null);
     }
 
-    public EmbeddingStoreContentRetriever(
-            EmbeddingStore<TextSegment> embeddingStore,
-            EmbeddingModel embeddingModel,
-            Integer maxResults,
-            Double minScore) {
-        this(
-                DEFAULT_DISPLAY_NAME,
-                embeddingStore,
-                embeddingModel,
-                (query) -> maxResults,
-                (query) -> minScore,
-                DEFAULT_FILTER,
-                null);
+    public EmbeddingStoreContentRetriever(EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel, Integer maxResults, Double minScore) {
+        this(DEFAULT_DISPLAY_NAME, embeddingStore, embeddingModel, (query) -> maxResults, (query) -> minScore, DEFAULT_FILTER, null);
     }
 
-    private EmbeddingStoreContentRetriever(
-            String displayName,
-            EmbeddingStore<TextSegment> embeddingStore,
-            EmbeddingModel embeddingModel,
-            Function<Query, Integer> dynamicMaxResults,
-            Function<Query, Double> dynamicMinScore,
-            Function<Query, Filter> dynamicFilter,
-            EmbeddingInputType embeddingInputType) {
-        this(
-                displayName,
-                embeddingStore,
-                embeddingModel,
-                dynamicMaxResults,
-                dynamicMinScore,
-                dynamicFilter,
-                embeddingInputType,
-                false);
+    private EmbeddingStoreContentRetriever(String displayName, EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel, Function<Query, Integer> dynamicMaxResults, Function<Query, Double> dynamicMinScore, Function<Query, Filter> dynamicFilter, EmbeddingInputType embeddingInputType) {
+        this(displayName, embeddingStore, embeddingModel, dynamicMaxResults, dynamicMinScore, dynamicFilter, embeddingInputType, false);
     }
 
-    private EmbeddingStoreContentRetriever(
-            String displayName,
-            EmbeddingStore<TextSegment> embeddingStore,
-            EmbeddingModel embeddingModel,
-            Function<Query, Integer> dynamicMaxResults,
-            Function<Query, Double> dynamicMinScore,
-            Function<Query, Filter> dynamicFilter,
-            EmbeddingInputType embeddingInputType,
-            boolean offloadBlocking) {
+    private EmbeddingStoreContentRetriever(String displayName, EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel, Function<Query, Integer> dynamicMaxResults, Function<Query, Double> dynamicMinScore, Function<Query, Filter> dynamicFilter, EmbeddingInputType embeddingInputType, boolean offloadBlocking) {
         this.displayName = getOrDefault(displayName, DEFAULT_DISPLAY_NAME);
         this.embeddingStore = ensureNotNull(embeddingStore, "embeddingStore");
-        this.embeddingModel = ensureNotNull(
-                getOrDefault(embeddingModel, EmbeddingStoreContentRetriever::loadEmbeddingModel), "embeddingModel");
+        this.embeddingModel = ensureNotNull(getOrDefault(embeddingModel, EmbeddingStoreContentRetriever::loadEmbeddingModel), "embeddingModel");
         this.maxResultsProvider = getOrDefault(dynamicMaxResults, DEFAULT_MAX_RESULTS);
         this.minScoreProvider = getOrDefault(dynamicMinScore, DEFAULT_MIN_SCORE);
         this.filterProvider = getOrDefault(dynamicFilter, DEFAULT_FILTER);
@@ -171,14 +125,11 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     private static EmbeddingModel loadEmbeddingModel() {
         Collection<EmbeddingModelFactory> factories = loadFactories(EmbeddingModelFactory.class);
         if (factories.size() > 1) {
-            throw new RuntimeException("Conflict: multiple embedding models have been found in the classpath. "
-                    + "Please explicitly specify the one you wish to use.");
+            throw new RuntimeException("Conflict: multiple embedding models have been found in the classpath. " + "Please explicitly specify the one you wish to use.");
         }
-
         for (EmbeddingModelFactory factory : factories) {
             return factory.create();
         }
-
         return null;
     }
 
@@ -189,15 +140,23 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     public static class EmbeddingStoreContentRetrieverBuilder {
 
         private String displayName;
+
         private EmbeddingStore<TextSegment> embeddingStore;
+
         private EmbeddingModel embeddingModel;
+
         private Function<Query, Integer> dynamicMaxResults;
+
         private Function<Query, Double> dynamicMinScore;
+
         private Function<Query, Filter> dynamicFilter;
+
         private EmbeddingInputType embeddingInputType;
+
         private boolean offloadBlocking;
 
-        EmbeddingStoreContentRetrieverBuilder() {}
+        EmbeddingStoreContentRetrieverBuilder() {
+        }
 
         /**
          * Embeds the query with the given {@link EmbeddingInputType} (typically {@link EmbeddingInputType#QUERY}),
@@ -282,15 +241,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
         }
 
         public EmbeddingStoreContentRetriever build() {
-            return new EmbeddingStoreContentRetriever(
-                    this.displayName,
-                    this.embeddingStore,
-                    this.embeddingModel,
-                    this.dynamicMaxResults,
-                    this.dynamicMinScore,
-                    this.dynamicFilter,
-                    this.embeddingInputType,
-                    this.offloadBlocking);
+            return new EmbeddingStoreContentRetriever(this.displayName, this.embeddingStore, this.embeddingModel, this.dynamicMaxResults, this.dynamicMinScore, this.dynamicFilter, this.embeddingInputType, this.offloadBlocking);
         }
     }
 
@@ -304,19 +255,9 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
 
     @Override
     public List<Content> retrieve(Query query) {
-
         Embedding embeddedQuery = embedQuery(query.text());
-
-        EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
-                .query(query.text())
-                .queryEmbedding(embeddedQuery)
-                .maxResults(maxResultsProvider.apply(query))
-                .minScore(minScoreProvider.apply(query))
-                .filter(filterProvider.apply(query))
-                .build();
-
+        EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder().query(query.text()).queryEmbedding(embeddedQuery).maxResults(maxResultsProvider.apply(query)).minScore(minScoreProvider.apply(query)).filter(filterProvider.apply(query)).build();
         EmbeddingSearchResult<TextSegment> searchResult = embeddingStore.search(searchRequest);
-
         return toContents(searchResult);
     }
 
@@ -337,29 +278,16 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     public CompletableFuture<List<Content>> retrieveAsync(Query query) {
         CompletableFuture<List<Content>> result = new CompletableFuture<>();
         CancellationChain chain = new CancellationChain(result);
-        chain.track(nativeOrOffload(
-                        query, () -> embedQueryAsync(query.text()), () -> embedQuery(query.text())))
-                .thenCompose(embedding -> {
-                    EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder()
-                            .query(query.text())
-                            .queryEmbedding(embedding)
-                            .maxResults(maxResultsProvider.apply(query))
-                            .minScore(minScoreProvider.apply(query))
-                            .filter(filterProvider.apply(query))
-                            .build();
-                    return chain.track(nativeOrOffload(
-                            query,
-                            () -> embeddingStore.searchAsync(searchRequest),
-                            () -> embeddingStore.search(searchRequest)));
-                })
-                .thenApply(this::toContents)
-                .whenComplete((contents, error) -> {
-                    if (error != null) {
-                        result.completeExceptionally(unwrapCompletionException(error));
-                    } else {
-                        result.complete(contents);
-                    }
-                });
+        chain.track(nativeOrOffload(query, () -> embedQueryAsync(query.text()), () -> embedQuery(query.text()))).thenCompose(embedding -> {
+            EmbeddingSearchRequest searchRequest = EmbeddingSearchRequest.builder().query(query.text()).queryEmbedding(embedding).maxResults(maxResultsProvider.apply(query)).minScore(minScoreProvider.apply(query)).filter(filterProvider.apply(query)).build();
+            return chain.track(nativeOrOffload(query, () -> embeddingStore.searchAsync(searchRequest), () -> embeddingStore.search(searchRequest)));
+        }).thenApply(this::toContents).whenComplete((contents, error) -> {
+            if (error != null) {
+                result.completeExceptionally(unwrapCompletionException(error));
+            } else {
+                result.complete(contents);
+            }
+        });
         return result;
     }
 
@@ -369,29 +297,23 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
      * default executor (virtual threads on Java 21+, platform threads on 17-20) (when {@code offloadBlocking}) or fail with an actionable message. Any other error
      * propagates unchanged. No reflection: the (un)availability of async is discovered by calling it.
      */
-    private <T> CompletableFuture<T> nativeOrOffload(
-            Query query, Supplier<CompletableFuture<T>> asyncCall, Supplier<T> blockingCall) {
+    private <T> CompletableFuture<T> nativeOrOffload(Query query, Supplier<CompletableFuture<T>> asyncCall, Supplier<T> blockingCall) {
         CompletableFuture<T> async;
         try {
             async = asyncCall.get();
         } catch (Throwable t) {
-            async = CompletableFuture.failedFuture(t);
+            async = dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
-        CompletableFuture<T> result = async.exceptionallyCompose(error -> {
+        CompletableFuture<T> result = dev.langchain4j.internal.Jdk8.exceptionallyCompose(async, error -> {
             Throwable cause = unwrapCompletionException(error);
             if (cause instanceof AsyncNotSupportedException) {
                 if (offloadBlocking) {
-                    InvocationContext invocationContext =
-                            query.metadata() != null ? query.metadata().invocationContext() : null;
-                    return CompletableFuture.supplyAsync(
-                            blockingCall,
-                            CapturedContextSupport.restoringIn(DefaultExecutorProvider.getDefaultExecutor(), invocationContext));
+                    InvocationContext invocationContext = query.metadata() != null ? query.metadata().invocationContext() : null;
+                    return CompletableFuture.supplyAsync(blockingCall, CapturedContextSupport.restoringIn(DefaultExecutorProvider.getDefaultExecutor(), invocationContext));
                 }
-                return CompletableFuture.failedFuture(new UnsupportedFeatureException(cause.getMessage()
-                        + " Build the retriever with EmbeddingStoreContentRetriever.builder().offloadBlocking(true)"
-                        + " to offload this blocking component to a default executor (virtual threads on Java 21+, platform threads on 17-20) instead."));
+                return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " Build the retriever with EmbeddingStoreContentRetriever.builder().offloadBlocking(true)" + " to offload this blocking component to a default executor (virtual threads on Java 21+, platform threads on 17-20) instead."));
             }
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         });
         // Link the caller-facing derived stage back to the raw call so cancellation reaches the in-flight I/O.
         propagateCancellation(result, async);
@@ -407,26 +329,14 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     }
 
     private List<Content> toContents(EmbeddingSearchResult<TextSegment> searchResult) {
-        return searchResult.matches().stream()
-                .map(embeddingMatch -> Content.from(
-                        embeddingMatch.embedded(),
-                        Map.of(
-                                ContentMetadata.SCORE, embeddingMatch.score(),
-                                ContentMetadata.EMBEDDING_ID, embeddingMatch.embeddingId())))
-                .collect(Collectors.toList());
+        return searchResult.matches().stream().map(embeddingMatch -> Content.from(embeddingMatch.embedded(), dev.langchain4j.internal.Jdk8.map(ContentMetadata.SCORE, embeddingMatch.score(), ContentMetadata.EMBEDDING_ID, embeddingMatch.embeddingId()))).collect(Collectors.toList());
     }
 
     private Embedding embedQuery(String text) {
         if (embeddingInputType == null) {
             return embeddingModel.embed(text).content();
         }
-        return embeddingModel
-                .embed(EmbeddingRequest.builder()
-                        .input(text)
-                        .inputType(embeddingInputType)
-                        .build())
-                .embeddings()
-                .get(0);
+        return embeddingModel.embed(EmbeddingRequest.builder().input(text).inputType(embeddingInputType).build()).embeddings().get(0);
     }
 
     @Override

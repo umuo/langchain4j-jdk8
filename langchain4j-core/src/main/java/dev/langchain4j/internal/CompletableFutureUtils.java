@@ -9,7 +9,8 @@ import java.util.concurrent.CompletableFuture;
 @Internal
 public class CompletableFutureUtils {
 
-    private CompletableFutureUtils() {}
+    private CompletableFutureUtils() {
+    }
 
     /**
      * Forwards cancellation from one future to another.

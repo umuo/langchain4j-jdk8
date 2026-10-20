@@ -3,7 +3,6 @@ package dev.langchain4j.model.scoring.request;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import java.util.List;
 import java.util.Objects;
@@ -21,7 +20,9 @@ import java.util.Objects;
 public class ScoringRequest {
 
     private final List<String> documents;
+
     private final String query;
+
     private final ScoringRequestParameters parameters;
 
     protected ScoringRequest(Builder builder) {
@@ -60,12 +61,12 @@ public class ScoringRequest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ScoringRequest that = (ScoringRequest) o;
-        return Objects.equals(documents, that.documents)
-                && Objects.equals(query, that.query)
-                && Objects.equals(parameters, that.parameters);
+        return Objects.equals(documents, that.documents) && Objects.equals(query, that.query) && Objects.equals(parameters, that.parameters);
     }
 
     @Override
@@ -85,7 +86,9 @@ public class ScoringRequest {
     public static class Builder {
 
         private List<String> documents;
+
         private String query;
+
         private ScoringRequestParameters parameters;
 
         public Builder documents(List<String> documents) {

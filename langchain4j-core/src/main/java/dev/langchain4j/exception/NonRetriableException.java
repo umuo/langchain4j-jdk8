@@ -14,6 +14,7 @@ package dev.langchain4j.exception;
  * @see UnresolvedModelServerException
  */
 public class NonRetriableException extends LangChain4jException {
+
     public NonRetriableException(String message) {
         super(message);
     }

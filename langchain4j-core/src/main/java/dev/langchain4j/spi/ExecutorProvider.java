@@ -69,7 +69,7 @@ public interface ExecutorProvider {
      * restored in tasks that are submitted later, possibly from another thread.
      * <p>
      * LangChain4j calls this method once per AI Service invocation, in every mode, on the thread that calls the AI
-     * Service method (for methods returning a {@code Flow.Publisher}, {@code Mono} or {@code Flux}: when the method
+     * Service method (for methods returning a {@code Publisher}, {@code Mono} or {@code Flux}: when the method
      * is called, not when the result is subscribed). It applies the returned {@link CapturedContext} to the tasks that the
      * invocation offloads to an executor (tools, blocking RAG stages, moderation), whichever thread submits them.
      * Work that runs without being offloaded (guardrails, chat memory, listeners, streaming callbacks) is not

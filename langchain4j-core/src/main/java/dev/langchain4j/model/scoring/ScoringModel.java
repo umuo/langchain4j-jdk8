@@ -8,10 +8,8 @@ import dev.langchain4j.model.output.Response;
 import dev.langchain4j.model.scoring.request.ScoringRequest;
 import dev.langchain4j.model.scoring.request.ScoringRequestParameters;
 import dev.langchain4j.model.scoring.response.ScoringResponse;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureEq;
 import static java.util.Collections.singletonList;
 
@@ -44,8 +42,7 @@ public interface ScoringModel {
      */
     default Response<Double> score(TextSegment segment, String query) {
         Response<List<Double>> response = scoreAll(singletonList(segment), query);
-        ensureEq(response.content().size(), 1,
-                "Expected a single score, but received %d", response.content().size());
+        ensureEq(response.content().size(), 1, "Expected a single score, but received %d", response.content().size());
         return Response.from(response.content().get(0), response.tokenUsage(), response.finishReason());
     }
 
@@ -73,11 +70,7 @@ public interface ScoringModel {
      */
     @Experimental
     default CompletableFuture<ScoringResponse> scoreAsync(ScoringRequest request) {
-        ScoringRequest finalRequest = ScoringRequest.builder()
-                .documents(request.documents())
-                .query(request.query())
-                .parameters(defaultRequestParameters().overrideWith(request.parameters()))
-                .build();
+        ScoringRequest finalRequest = ScoringRequest.builder().documents(request.documents()).query(request.query()).parameters(defaultRequestParameters().overrideWith(request.parameters())).build();
         return doScoreAsync(finalRequest);
     }
 

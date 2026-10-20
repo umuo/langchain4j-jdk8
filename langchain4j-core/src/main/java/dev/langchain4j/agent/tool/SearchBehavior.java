@@ -17,9 +17,8 @@ public enum SearchBehavior {
      * They will not be visible to the LLM until they are found.
      */
     SEARCHABLE,
-
     /**
      * If you want a tool to always be visible to the LLM, use this setting.
      */
-    ALWAYS_VISIBLE;
+    ALWAYS_VISIBLE
 }

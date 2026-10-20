@@ -12,6 +12,7 @@ package dev.langchain4j.exception;
  * @see ContentFilteredException
  */
 public class InvalidRequestException extends NonRetriableException {
+
     public InvalidRequestException(String message) {
         super(message);
     }

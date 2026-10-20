@@ -4,7 +4,6 @@ import dev.langchain4j.Experimental;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import dev.langchain4j.internal.AsyncNotSupported;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,7 +39,7 @@ public interface QueryTransformer {
     /**
      * Non-blocking counterpart of {@link #transform(Query)}, invoked by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link java.util.concurrent.CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service modes when RAG is configured.
+     * ({@link org.reactivestreams.Publisher}) AI Service modes when RAG is configured.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}: a transformer backed by a blocking
      * LLM call (e.g. query compression/expansion) must opt in by overriding this method to stay off the calling
@@ -56,4 +55,3 @@ public interface QueryTransformer {
         return AsyncNotSupported.failedFuture(getClass(), "transformAsync");
     }
 }
-

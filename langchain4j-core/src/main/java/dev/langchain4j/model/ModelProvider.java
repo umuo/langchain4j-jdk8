@@ -1,6 +1,7 @@
 package dev.langchain4j.model;
 
 public enum ModelProvider {
+
     ANTHROPIC,
     AMAZON_BEDROCK,
     GITHUB_MODELS,

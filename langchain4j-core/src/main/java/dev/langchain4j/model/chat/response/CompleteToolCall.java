@@ -2,11 +2,9 @@ package dev.langchain4j.model.chat.response;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNegative;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 /**
@@ -21,6 +19,7 @@ import java.util.Objects;
 public class CompleteToolCall implements ChatModelStreamingEvent {
 
     private final int index;
+
     private final ToolExecutionRequest toolExecutionRequest;
 
     public CompleteToolCall(int index, ToolExecutionRequest toolExecutionRequest) {
@@ -46,8 +45,10 @@ public class CompleteToolCall implements ChatModelStreamingEvent {
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         CompleteToolCall that = (CompleteToolCall) object;
         return index == that.index && Objects.equals(toolExecutionRequest, that.toolExecutionRequest);
     }

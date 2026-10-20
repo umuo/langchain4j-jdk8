@@ -1,11 +1,9 @@
 package dev.langchain4j.data.message;
 
 import dev.langchain4j.data.pdf.PdfFile;
-
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.ContentType.PDF;
 import static dev.langchain4j.internal.ContentUtil.extractBase64Content;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
@@ -26,9 +24,7 @@ public class PdfFileContent implements Content {
      * @param url the url of the PDF.
      */
     public PdfFileContent(URI url) {
-        this.pdfFile = PdfFile.builder()
-                .url(ensureNotNull(url, "url"))
-                .build();
+        this.pdfFile = PdfFile.builder().url(ensureNotNull(url, "url")).build();
     }
 
     /**
@@ -47,10 +43,7 @@ public class PdfFileContent implements Content {
      * @param mimeType   the mime type of the PDF.
      */
     public PdfFileContent(String base64Data, String mimeType) {
-        this.pdfFile = PdfFile.builder()
-                .base64Data(ensureNotBlank(base64Data, "base64data"))
-                .mimeType(mimeType)
-                .build();
+        this.pdfFile = PdfFile.builder().base64Data(ensureNotBlank(base64Data, "base64data")).mimeType(mimeType).build();
     }
 
     /**
@@ -73,8 +66,10 @@ public class PdfFileContent implements Content {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         PdfFileContent that = (PdfFileContent) o;
         return Objects.equals(this.pdfFile, that.pdfFile);
     }
@@ -86,9 +81,7 @@ public class PdfFileContent implements Content {
 
     @Override
     public String toString() {
-        return "PdfFileContent {" +
-                " pdfFile = " + pdfFile +
-                " }";
+        return "PdfFileContent {" + " pdfFile = " + pdfFile + " }";
     }
 
     /**

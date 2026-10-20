@@ -4,10 +4,8 @@ import static dev.langchain4j.data.message.ChatMessageType.TOOL_EXECUTION_RESULT
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -23,9 +21,13 @@ import java.util.Objects;
 public class ToolExecutionResultMessage implements ChatMessage {
 
     private final String id;
+
     private final String toolName;
+
     private final List<Content> contents;
+
     private final Boolean isError;
+
     private final Map<String, Object> attributes;
 
     /**
@@ -36,19 +38,17 @@ public class ToolExecutionResultMessage implements ChatMessage {
     public ToolExecutionResultMessage(Builder builder) {
         this.id = builder.id;
         this.toolName = builder.toolName;
-
         boolean hasText = builder.text != null;
         boolean hasContents = builder.contents != null && !builder.contents.isEmpty();
         if (hasText && hasContents) {
             throw new IllegalArgumentException("Either text or contents must be provided, not both");
         } else if (hasText) {
-            this.contents = List.of(TextContent.from(builder.text));
+            this.contents = dev.langchain4j.internal.Jdk8.list(TextContent.from(builder.text));
         } else if (hasContents) {
             this.contents = copy(builder.contents);
         } else {
             throw new IllegalArgumentException("Either text or contents must be provided");
         }
-
         this.isError = builder.isError;
         this.attributes = copy(builder.attributes);
     }
@@ -62,9 +62,9 @@ public class ToolExecutionResultMessage implements ChatMessage {
     public ToolExecutionResultMessage(String id, String toolName, String text) {
         this.id = id;
         this.toolName = toolName;
-        this.contents = List.of(TextContent.from(ensureNotNull(text, "text")));
+        this.contents = dev.langchain4j.internal.Jdk8.list(TextContent.from(ensureNotNull(text, "text")));
         this.isError = null;
-        this.attributes = Map.of();
+        this.attributes = dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -91,12 +91,10 @@ public class ToolExecutionResultMessage implements ChatMessage {
      *                               Use {@link #contents()} instead.
      */
     public String text() {
-        if (contents.size() == 1 && contents.get(0) instanceof TextContent textContent) {
-            return textContent.text();
+        if (contents.size() == 1 && contents.get(0) instanceof TextContent) {
+            return ((TextContent) contents.get(0)).text();
         }
-        throw new IllegalStateException(
-                "text() cannot be called when contents contains non-text or multiple content elements. "
-                        + "Use contents() instead.");
+        throw new IllegalStateException("text() cannot be called when contents contains non-text or multiple content elements. " + "Use contents() instead.");
     }
 
     /**
@@ -147,14 +145,12 @@ public class ToolExecutionResultMessage implements ChatMessage {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ToolExecutionResultMessage that = (ToolExecutionResultMessage) o;
-        return Objects.equals(this.id, that.id)
-                && Objects.equals(this.toolName, that.toolName)
-                && Objects.equals(this.contents, that.contents)
-                && Objects.equals(this.isError, that.isError)
-                && Objects.equals(this.attributes, that.attributes);
+        return Objects.equals(this.id, that.id) && Objects.equals(this.toolName, that.toolName) && Objects.equals(this.contents, that.contents) && Objects.equals(this.isError, that.isError) && Objects.equals(this.attributes, that.attributes);
     }
 
     @Override
@@ -164,13 +160,7 @@ public class ToolExecutionResultMessage implements ChatMessage {
 
     @Override
     public String toString() {
-        return "ToolExecutionResultMessage{" +
-                "id='" + id + '\'' +
-                ", toolName='" + toolName + '\'' +
-                ", contents=" + contents +
-                ", isError=" + isError +
-                ", attributes=" + attributes +
-                '}';
+        return "ToolExecutionResultMessage{" + "id='" + id + '\'' + ", toolName='" + toolName + '\'' + ", contents=" + contents + ", isError=" + isError + ", attributes=" + attributes + '}';
     }
 
     /**
@@ -189,21 +179,21 @@ public class ToolExecutionResultMessage implements ChatMessage {
      * @since 1.17.0
      */
     public Builder toBuilder() {
-        return builder()
-                .id(id)
-                .toolName(toolName)
-                .contents(contents)
-                .isError(isError)
-                .attributes(attributes);
+        return builder().id(id).toolName(toolName).contents(contents).isError(isError).attributes(attributes);
     }
 
     public static class Builder {
 
         private String id;
+
         private String toolName;
+
         private String text;
+
         private List<Content> contents;
+
         private Boolean isError;
+
         private Map<String, Object> attributes;
 
         /**
@@ -317,8 +307,7 @@ public class ToolExecutionResultMessage implements ChatMessage {
      * @param toolExecutionResult the result of the tool execution.
      * @return the {@link ToolExecutionResultMessage}.
      */
-    public static ToolExecutionResultMessage toolExecutionResultMessage(
-            ToolExecutionRequest request, String toolExecutionResult) {
+    public static ToolExecutionResultMessage toolExecutionResultMessage(ToolExecutionRequest request, String toolExecutionResult) {
         return from(request, toolExecutionResult);
     }
 
@@ -329,8 +318,7 @@ public class ToolExecutionResultMessage implements ChatMessage {
      * @param toolExecutionResult the result of the tool execution.
      * @return the {@link ToolExecutionResultMessage}.
      */
-    public static ToolExecutionResultMessage toolExecutionResultMessage(
-            String id, String toolName, String toolExecutionResult) {
+    public static ToolExecutionResultMessage toolExecutionResultMessage(String id, String toolName, String toolExecutionResult) {
         return from(id, toolName, toolExecutionResult);
     }
 }

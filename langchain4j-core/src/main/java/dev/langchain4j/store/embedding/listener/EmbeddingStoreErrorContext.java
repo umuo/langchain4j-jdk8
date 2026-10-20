@@ -1,7 +1,6 @@
 package dev.langchain4j.store.embedding.listener;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import java.util.Map;
@@ -18,11 +17,12 @@ import java.util.Map;
 public class EmbeddingStoreErrorContext<Embedded> {
 
     private final Throwable error;
+
     private final EmbeddingStoreRequestContext<Embedded> requestContext;
+
     private final Map<Object, Object> attributes;
 
-    public EmbeddingStoreErrorContext(
-            Throwable error, EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes) {
+    public EmbeddingStoreErrorContext(Throwable error, EmbeddingStoreRequestContext<Embedded> requestContext, Map<Object, Object> attributes) {
         this.error = ensureNotNull(error, "error");
         this.requestContext = ensureNotNull(requestContext, "requestContext");
         this.attributes = ensureNotNull(attributes, "attributes");

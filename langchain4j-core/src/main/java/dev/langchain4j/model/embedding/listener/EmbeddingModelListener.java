@@ -27,7 +27,8 @@ public interface EmbeddingModelListener {
      *                       The attributes can be used to pass data between methods of this listener
      *                       or between multiple listeners.
      */
-    default void onRequest(EmbeddingModelRequestContext requestContext) {}
+    default void onRequest(EmbeddingModelRequestContext requestContext) {
+    }
 
     /**
      * This method is called after a successful embedding operation completes.
@@ -36,7 +37,8 @@ public interface EmbeddingModelListener {
      *                        The attributes can be used to pass data between methods of this listener
      *                        or between multiple listeners.
      */
-    default void onResponse(EmbeddingModelResponseContext responseContext) {}
+    default void onResponse(EmbeddingModelResponseContext responseContext) {
+    }
 
     /**
      * This method is called when an error occurs during interaction with the embedding model.
@@ -45,5 +47,6 @@ public interface EmbeddingModelListener {
      *                     The attributes can be used to pass data between methods of this listener
      *                     or between multiple listeners.
      */
-    default void onError(EmbeddingModelErrorContext errorContext) {}
+    default void onError(EmbeddingModelErrorContext errorContext) {
+    }
 }

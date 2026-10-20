@@ -2,7 +2,6 @@ package dev.langchain4j.data.document;
 
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -26,9 +25,6 @@ public interface DocumentTransformer {
      * @return A list of transformed documents. The length of this list may be shorter or longer than the original list. Returns an empty list if all documents were filtered out.
      */
     default List<Document> transformAll(List<Document> documents) {
-        return documents.stream()
-                .map(this::transform)
-                .filter(Objects::nonNull)
-                .collect(toList());
+        return documents.stream().map(this::transform).filter(Objects::nonNull).collect(java.util.stream.Collectors.toList());
     }
 }

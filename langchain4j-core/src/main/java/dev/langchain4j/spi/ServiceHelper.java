@@ -1,7 +1,6 @@
 package dev.langchain4j.spi;
 
 import dev.langchain4j.Internal;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -83,7 +82,8 @@ public class ServiceHelper {
      * @param <T>         the type of service
      * @return the list of services, empty if none
      */
-    public static <T> Collection<T> loadFactories(Class<T> clazz, /* @Nullable */ ClassLoader classLoader) {
+    public static <T> Collection<T> loadFactories(Class<T> clazz, /* @Nullable */
+    ClassLoader classLoader) {
         return loadSortedByPriority(clazz, classLoader);
     }
 
@@ -116,9 +116,7 @@ public class ServiceHelper {
     }
 
     private static int priorityOf(Object factory) {
-        return factory instanceof PrioritizedFactory prioritized
-                ? prioritized.priority()
-                : PrioritizedFactory.DEFAULT_PRIORITY;
+        return factory instanceof PrioritizedFactory ? ((PrioritizedFactory) factory).priority() : PrioritizedFactory.DEFAULT_PRIORITY;
     }
 
     static <T> String ambiguityWarning(Class<T> clazz, List<T> sorted) {
@@ -126,22 +124,11 @@ public class ServiceHelper {
             return null;
         }
         int highest = priorityOf(sorted.get(0));
-        List<String> tied = sorted.subList(1, sorted.size()).stream()
-                .filter(other -> priorityOf(other) == highest)
-                .map(other -> other.getClass().getName())
-                .toList();
+        List<String> tied = sorted.subList(1, sorted.size()).stream().filter(other -> priorityOf(other) == highest).map(other -> other.getClass().getName()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         if (tied.isEmpty()) {
             return null;
         }
-        return String.format(
-                "Found %d implementations of %s with the same priority on the classpath; using %s and ignoring %s. "
-                        + "Which one is used is decided by classpath order and is not stable - "
-                        + "remove the ones you do not want, or implement %s on the one that should win.",
-                tied.size() + 1,
-                clazz.getName(),
-                sorted.get(0).getClass().getName(),
-                tied,
-                PrioritizedFactory.class.getName());
+        return String.format("Found %d implementations of %s with the same priority on the classpath; using %s and ignoring %s. " + "Which one is used is decided by classpath order and is not stable - " + "remove the ones you do not want, or implement %s on the one that should win.", tied.size() + 1, clazz.getName(), sorted.get(0).getClass().getName(), tied, PrioritizedFactory.class.getName());
     }
 
     /**

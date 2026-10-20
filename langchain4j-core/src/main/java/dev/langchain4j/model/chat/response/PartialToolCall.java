@@ -4,10 +4,8 @@ import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNegative;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 /**
@@ -22,8 +20,11 @@ import java.util.Objects;
 public class PartialToolCall implements ChatModelStreamingEvent {
 
     private final int index;
+
     private final String id;
+
     private final String name;
+
     private final String partialArguments;
 
     public PartialToolCall(Builder builder) {
@@ -67,13 +68,12 @@ public class PartialToolCall implements ChatModelStreamingEvent {
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         PartialToolCall that = (PartialToolCall) object;
-        return index == that.index
-                && Objects.equals(id, that.id)
-                && Objects.equals(name, that.name)
-                && Objects.equals(partialArguments, that.partialArguments);
+        return index == that.index && Objects.equals(id, that.id) && Objects.equals(name, that.name) && Objects.equals(partialArguments, that.partialArguments);
     }
 
     @Override
@@ -83,11 +83,7 @@ public class PartialToolCall implements ChatModelStreamingEvent {
 
     @Override
     public String toString() {
-        return "PartialToolCall{" + "index="
-                + index + ", id="
-                + quoted(id) + ", name="
-                + quoted(name) + ", partialArguments="
-                + quoted(partialArguments) + '}';
+        return "PartialToolCall{" + "index=" + index + ", id=" + quoted(id) + ", name=" + quoted(name) + ", partialArguments=" + quoted(partialArguments) + '}';
     }
 
     public static Builder builder() {
@@ -97,8 +93,11 @@ public class PartialToolCall implements ChatModelStreamingEvent {
     public static class Builder {
 
         private int index;
+
         private String id;
+
         private String name;
+
         private String partialArguments;
 
         public Builder index(int index) {

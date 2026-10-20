@@ -6,5 +6,5 @@ import java.util.function.Supplier;
 /**
  * SPI for overriding and/or extending the default {@link InputGuardrailsConfig.InputGuardrailsConfigBuilder} implementation.
  */
-public interface InputGuardrailsConfigBuilderFactory
-        extends Supplier<InputGuardrailsConfig.InputGuardrailsConfigBuilder> {}
+public interface InputGuardrailsConfigBuilderFactory extends Supplier<InputGuardrailsConfig.InputGuardrailsConfigBuilder> {
+}

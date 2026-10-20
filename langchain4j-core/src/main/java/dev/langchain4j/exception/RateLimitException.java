@@ -9,6 +9,7 @@ package dev.langchain4j.exception;
  * retrying.
  */
 public class RateLimitException extends RetriableException {
+
     public RateLimitException(String message) {
         super(message);
     }

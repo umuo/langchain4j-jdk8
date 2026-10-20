@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.stream.Collectors.joining;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.TextContent;
@@ -44,13 +43,10 @@ import java.util.Map;
  */
 public class DefaultContentInjector implements ContentInjector {
 
-    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from("""
-                    {{userMessage}}
-
-                    Answer using the following information:
-                    {{contents}}""");
+    public static final PromptTemplate DEFAULT_PROMPT_TEMPLATE = PromptTemplate.from("{{userMessage}}\n\nAnswer using the following information:\n{{contents}}");
 
     private final PromptTemplate promptTemplate;
+
     private final List<String> metadataKeysToInclude;
 
     public DefaultContentInjector() {
@@ -79,12 +75,9 @@ public class DefaultContentInjector implements ContentInjector {
         if (contents.isEmpty()) {
             return chatMessage;
         }
-
         Prompt prompt = createPrompt(chatMessage, contents);
-        if (chatMessage instanceof UserMessage userMessage) {
-            return userMessage.toBuilder()
-                    .contents(List.of(TextContent.from(prompt.text())))
-                    .build();
+        if (chatMessage instanceof UserMessage) {
+            return ((UserMessage) chatMessage).toBuilder().contents(dev.langchain4j.internal.Jdk8.list(TextContent.from(prompt.text()))).build();
         } else {
             return prompt.toUserMessage();
         }
@@ -102,16 +95,12 @@ public class DefaultContentInjector implements ContentInjector {
     }
 
     protected String format(Content content) {
-
         TextSegment segment = content.textSegment();
-
         if (metadataKeysToInclude.isEmpty()) {
             return segment.text();
         }
-
         String segmentContent = segment.text();
         String segmentMetadata = format(segment.metadata());
-
         return format(segmentContent, segmentMetadata);
     }
 
@@ -121,7 +110,7 @@ public class DefaultContentInjector implements ContentInjector {
         for (String metadataKey : metadataKeysToInclude) {
             Object metadataValue = metadataMap.get(metadataKey);
             if (metadataValue != null) {
-                if (!formattedMetadata.isEmpty()) {
+                if (formattedMetadata.length() != 0) {
                     formattedMetadata.append("\n");
                 }
                 formattedMetadata.append(metadataKey).append(": ").append(metadataValue);
@@ -131,17 +120,17 @@ public class DefaultContentInjector implements ContentInjector {
     }
 
     protected String format(String segmentContent, String segmentMetadata) {
-        return segmentMetadata.isEmpty()
-                ? segmentContent
-                : String.format("content: %s\n%s", segmentContent, segmentMetadata);
+        return segmentMetadata.isEmpty() ? segmentContent : String.format("content: %s\n%s", segmentContent, segmentMetadata);
     }
 
     public static class DefaultContentInjectorBuilder {
 
         private PromptTemplate promptTemplate;
+
         private List<String> metadataKeysToInclude;
 
-        DefaultContentInjectorBuilder() {}
+        DefaultContentInjectorBuilder() {
+        }
 
         public DefaultContentInjectorBuilder promptTemplate(PromptTemplate promptTemplate) {
             this.promptTemplate = promptTemplate;

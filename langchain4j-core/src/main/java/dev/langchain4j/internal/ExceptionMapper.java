@@ -10,7 +10,6 @@ import dev.langchain4j.exception.ModelNotFoundException;
 import dev.langchain4j.exception.RateLimitException;
 import dev.langchain4j.exception.TimeoutException;
 import dev.langchain4j.exception.UnresolvedModelServerException;
-
 import java.nio.channels.UnresolvedAddressException;
 import java.util.concurrent.Callable;
 
@@ -39,16 +38,13 @@ public interface ExceptionMapper {
         @Override
         public RuntimeException mapException(Throwable t) {
             Throwable rootCause = findRoot(t);
-
-            if (rootCause instanceof HttpException httpException) {
-                return mapHttpStatusCode(httpException, httpException.statusCode());
+            if (rootCause instanceof HttpException) {
+                return mapHttpStatusCode(((HttpException) rootCause), ((HttpException) rootCause).statusCode());
             }
-
             if (rootCause instanceof UnresolvedAddressException) {
                 return new UnresolvedModelServerException(rootCause);
             }
-
-            return t instanceof RuntimeException re ? re : new LangChain4jException(t);
+            return t instanceof RuntimeException ? ((RuntimeException) t) : new LangChain4jException(t);
         }
 
         protected RuntimeException mapHttpStatusCode(Throwable cause, int httpStatusCode) {
@@ -70,7 +66,7 @@ public interface ExceptionMapper {
             if (httpStatusCode >= 400 && httpStatusCode < 500) {
                 return new InvalidRequestException(cause);
             }
-            return cause instanceof RuntimeException re ? re : new LangChain4jException(cause);
+            return cause instanceof RuntimeException ? ((RuntimeException) cause) : new LangChain4jException(cause);
         }
 
         private static Throwable findRoot(Throwable e) {

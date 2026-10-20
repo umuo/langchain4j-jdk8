@@ -1,13 +1,13 @@
 package dev.langchain4j.model.audio;
 
 import dev.langchain4j.Experimental;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 
 @Experimental
 public class TextToSpeechRequest {
 
     private final String text;
+
     private final String voice;
 
     private TextToSpeechRequest(Builder builder) {
@@ -32,7 +32,9 @@ public class TextToSpeechRequest {
     }
 
     public static class Builder {
+
         private String text;
+
         private String voice;
 
         public Builder text(String text) {

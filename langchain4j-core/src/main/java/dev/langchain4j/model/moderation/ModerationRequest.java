@@ -2,7 +2,6 @@ package dev.langchain4j.model.moderation;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import java.util.List;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -44,8 +43,10 @@ public class ModerationRequest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ModerationRequest that = (ModerationRequest) o;
         return Objects.equals(texts, that.texts) && Objects.equals(modelName, that.modelName);
     }
@@ -85,9 +86,11 @@ public class ModerationRequest {
     public static class Builder {
 
         private List<String> texts;
+
         private String modelName;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         private Builder(ModerationRequest request) {
             this.texts = request.texts;

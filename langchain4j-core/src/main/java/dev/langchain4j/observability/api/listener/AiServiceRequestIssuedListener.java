@@ -10,6 +10,7 @@ import dev.langchain4j.observability.api.event.AiServiceRequestIssuedEvent;
  */
 @FunctionalInterface
 public interface AiServiceRequestIssuedListener extends AiServiceListener<AiServiceRequestIssuedEvent> {
+
     @Override
     default Class<AiServiceRequestIssuedEvent> getEventClass() {
         return AiServiceRequestIssuedEvent.class;

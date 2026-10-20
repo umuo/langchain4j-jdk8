@@ -11,14 +11,12 @@ public enum ToolChoice {
      * The chat model can choose whether to use tools, which ones to use, and how many.
      */
     AUTO,
-
     /**
      * The chat model is required to use one or more tools.
      */
     REQUIRED,
-
     /**
      * The chat model cannot use tools
      */
-    NONE,
+    NONE
 }

@@ -3,7 +3,6 @@ package dev.langchain4j.model.decision.response;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.internal.ValidationUtils.ensureTrue;
-
 import dev.langchain4j.Experimental;
 import java.util.ArrayList;
 import java.util.List;
@@ -19,7 +18,9 @@ import java.util.Objects;
 public final class ScaleAnswer implements DecisionAnswer {
 
     private final double mean;
+
     private final List<Double> probabilities;
+
     private final Double confidence;
 
     private ScaleAnswer(Builder builder) {
@@ -65,11 +66,11 @@ public final class ScaleAnswer implements DecisionAnswer {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ScaleAnswer that)) return false;
-        return Double.compare(mean, that.mean) == 0
-                && Objects.equals(probabilities, that.probabilities)
-                && Objects.equals(confidence, that.confidence);
+        if (this == o)
+            return true;
+        if (!(o instanceof ScaleAnswer))
+            return false;
+        return Double.compare(mean, ((ScaleAnswer) o).mean) == 0 && Objects.equals(probabilities, ((ScaleAnswer) o).probabilities) && Objects.equals(confidence, ((ScaleAnswer) o).confidence);
     }
 
     @Override
@@ -85,7 +86,9 @@ public final class ScaleAnswer implements DecisionAnswer {
     public static final class Builder {
 
         private Double mean;
+
         private final List<Double> probabilities = new ArrayList<>();
+
         private Double confidence;
 
         public Builder mean(Double mean) {
@@ -99,8 +102,7 @@ public final class ScaleAnswer implements DecisionAnswer {
         public Builder probabilities(List<Double> probabilities) {
             this.probabilities.clear();
             if (probabilities != null) {
-                probabilities.forEach(
-                        probability -> this.probabilities.add(Probabilities.ensureProbability(probability, "probability")));
+                probabilities.forEach(probability -> this.probabilities.add(Probabilities.ensureProbability(probability, "probability")));
             }
             return this;
         }

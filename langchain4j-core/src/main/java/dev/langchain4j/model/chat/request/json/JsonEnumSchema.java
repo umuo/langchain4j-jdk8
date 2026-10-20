@@ -3,13 +3,13 @@ package dev.langchain4j.model.chat.request.json;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
-
 import java.util.List;
 import java.util.Objects;
 
 public class JsonEnumSchema implements JsonSchemaElement {
 
     private final String description;
+
     private final List<String> enumValues;
 
     public JsonEnumSchema(Builder builder) {
@@ -33,6 +33,7 @@ public class JsonEnumSchema implements JsonSchemaElement {
     public static class Builder {
 
         private String description;
+
         private List<String> enumValues;
 
         public Builder description(String description) {
@@ -46,7 +47,7 @@ public class JsonEnumSchema implements JsonSchemaElement {
         }
 
         public Builder enumValues(String... enumValues) {
-            return enumValues(List.of(enumValues));
+            return enumValues(dev.langchain4j.internal.Jdk8.list(enumValues));
         }
 
         public JsonEnumSchema build() {
@@ -56,8 +57,10 @@ public class JsonEnumSchema implements JsonSchemaElement {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JsonEnumSchema that = (JsonEnumSchema) o;
         return Objects.equals(this.description, that.description) && Objects.equals(this.enumValues, that.enumValues);
     }

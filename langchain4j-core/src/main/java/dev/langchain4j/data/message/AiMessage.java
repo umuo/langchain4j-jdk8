@@ -7,7 +7,6 @@ import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.audio.Audio;
@@ -31,15 +30,18 @@ import java.util.Objects;
  */
 public class AiMessage implements ChatMessage {
 
-    public static final String GENERATED_IMAGES_KEY =
-            "generated_images"; // key for storing generated images in AiMessage attributes
+    public static final String GENERATED_IMAGES_KEY = // key for storing generated images in AiMessage attributes
+    "generated_images";
 
-    public static final String GENERATED_AUDIO_KEY =
-            "generated_audio"; // key for storing generated audio in AiMessage attributes
+    public static final String GENERATED_AUDIO_KEY = // key for storing generated audio in AiMessage attributes
+    "generated_audio";
 
     private final String text;
+
     private final String thinking;
+
     private final List<ToolExecutionRequest> toolExecutionRequests;
+
     private final Map<String, Object> attributes;
 
     /**
@@ -50,8 +52,8 @@ public class AiMessage implements ChatMessage {
     public AiMessage(String text) {
         this.text = ensureNotNull(text, "text");
         this.thinking = null;
-        this.toolExecutionRequests = List.of();
-        this.attributes = Map.of();
+        this.toolExecutionRequests = dev.langchain4j.internal.Jdk8.list();
+        this.attributes = dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -63,7 +65,7 @@ public class AiMessage implements ChatMessage {
         this.text = null;
         this.thinking = null;
         this.toolExecutionRequests = ensureNotEmpty(toolExecutionRequests, "toolExecutionRequests");
-        this.attributes = Map.of();
+        this.attributes = dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -76,7 +78,7 @@ public class AiMessage implements ChatMessage {
         this.text = text;
         this.thinking = null;
         this.toolExecutionRequests = copy(toolExecutionRequests);
-        this.attributes = Map.of();
+        this.attributes = dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -97,12 +99,7 @@ public class AiMessage implements ChatMessage {
      * @since 1.8.0
      */
     public AiMessage withText(String text) {
-        return builder()
-                .text(text)
-                .thinking(this.thinking)
-                .toolExecutionRequests(this.toolExecutionRequests)
-                .attributes(this.attributes)
-                .build();
+        return builder().text(text).thinking(this.thinking).toolExecutionRequests(this.toolExecutionRequests).attributes(this.attributes).build();
     }
 
     /**
@@ -133,7 +130,7 @@ public class AiMessage implements ChatMessage {
      * @since 1.11.0
      */
     public List<Image> images() {
-        return (List<Image>) attributes.getOrDefault(GENERATED_IMAGES_KEY, List.of());
+        return (List<Image>) attributes.getOrDefault(GENERATED_IMAGES_KEY, dev.langchain4j.internal.Jdk8.list());
     }
 
     /**
@@ -145,7 +142,7 @@ public class AiMessage implements ChatMessage {
      */
     @Experimental
     public List<Audio> audios() {
-        return (List<Audio>) attributes.getOrDefault(GENERATED_AUDIO_KEY, List.of());
+        return (List<Audio>) attributes.getOrDefault(GENERATED_AUDIO_KEY, dev.langchain4j.internal.Jdk8.list());
     }
 
     /**
@@ -195,13 +192,12 @@ public class AiMessage implements ChatMessage {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AiMessage that = (AiMessage) o;
-        return Objects.equals(this.text, that.text)
-                && Objects.equals(this.thinking, that.thinking)
-                && Objects.equals(this.toolExecutionRequests, that.toolExecutionRequests)
-                && Objects.equals(this.attributes, that.attributes);
+        return Objects.equals(this.text, that.text) && Objects.equals(this.thinking, that.thinking) && Objects.equals(this.toolExecutionRequests, that.toolExecutionRequests) && Objects.equals(this.attributes, that.attributes);
     }
 
     @Override
@@ -211,22 +207,14 @@ public class AiMessage implements ChatMessage {
 
     @Override
     public String toString() {
-        return "AiMessage {" + " text = "
-                + quoted(text) + ", thinking = "
-                + quoted(thinking) + ", toolExecutionRequests = "
-                + toolExecutionRequests + ", attributes = "
-                + attributes + " }";
+        return "AiMessage {" + " text = " + quoted(text) + ", thinking = " + quoted(thinking) + ", toolExecutionRequests = " + toolExecutionRequests + ", attributes = " + attributes + " }";
     }
 
     /**
      * @since 1.12.0
      */
     public Builder toBuilder() {
-        return builder()
-                .text(text)
-                .thinking(thinking)
-                .toolExecutionRequests(toolExecutionRequests)
-                .attributes(attributes);
+        return builder().text(text).thinking(thinking).toolExecutionRequests(toolExecutionRequests).attributes(attributes);
     }
 
     public static Builder builder() {
@@ -236,8 +224,11 @@ public class AiMessage implements ChatMessage {
     public static class Builder {
 
         private String text;
+
         private String thinking;
+
         private List<ToolExecutionRequest> toolExecutionRequests;
+
         private Map<String, Object> attributes;
 
         public Builder text(String text) {

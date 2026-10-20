@@ -21,7 +21,6 @@ public enum EmbeddingInputType {
      * The text is a search query (the canonical "query" side of a retrieval pair).
      */
     QUERY,
-
     /**
      * The text is a document/passage to be indexed and later retrieved (the "passage" side).
      */

@@ -12,4 +12,5 @@ import dev.langchain4j.Experimental;
  * @since 1.21.0
  */
 @Experimental
-public interface DecisionAnswer {}
+public interface DecisionAnswer {
+}

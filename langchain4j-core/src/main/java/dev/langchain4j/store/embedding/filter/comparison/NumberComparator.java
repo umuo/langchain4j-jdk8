@@ -55,13 +55,11 @@ class NumberComparator {
     }
 
     private static boolean isNaN(Object number) {
-        return number instanceof Double doubleValue && doubleValue.isNaN()
-                || number instanceof Float floatValue && floatValue.isNaN();
+        return number instanceof Double && ((Double) number).isNaN() || number instanceof Float && ((Float) number).isNaN();
     }
 
     private static boolean isInfinite(Object number) {
-        return number instanceof Double doubleValue && doubleValue.isInfinite()
-                || number instanceof Float floatValue && floatValue.isInfinite();
+        return number instanceof Double && ((Double) number).isInfinite() || number instanceof Float && ((Float) number).isInfinite();
     }
 
     private static double doubleValue(Object number) {

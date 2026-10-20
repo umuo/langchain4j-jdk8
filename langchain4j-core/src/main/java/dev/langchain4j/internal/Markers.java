@@ -7,7 +7,8 @@ import org.slf4j.MarkerFactory;
 @Internal
 public class Markers {
 
-    private Markers() {}
+    private Markers() {
+    }
 
     public static final Marker SENSITIVE = MarkerFactory.getMarker("SENSITIVE");
 }

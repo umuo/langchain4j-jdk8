@@ -1,7 +1,6 @@
 package dev.langchain4j.model.moderation;
 
 import static dev.langchain4j.internal.Utils.quoted;
-
 import java.io.Serializable;
 import java.util.Objects;
 import org.jspecify.annotations.Nullable;
@@ -46,14 +45,17 @@ public class Moderation implements Serializable {
      * Returns the text that was flagged.
      * @return the text that was flagged or <code>null</code> if the text was not flagged.
      */
-    public @Nullable String flaggedText() {
+    @Nullable
+    public String flaggedText() {
         return flaggedText;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Moderation that = (Moderation) o;
         return this.flagged == that.flagged && Objects.equals(this.flaggedText, that.flaggedText);
     }

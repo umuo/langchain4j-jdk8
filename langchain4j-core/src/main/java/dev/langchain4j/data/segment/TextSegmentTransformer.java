@@ -1,7 +1,6 @@
 package dev.langchain4j.data.segment;
 
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.internal.Utils;
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +27,7 @@ public interface TextSegmentTransformer {
      * @return A list of transformed segments. The length of this list may be shorter or longer than the original list. Returns an empty list if all segments were filtered out.
      */
     default List<TextSegment> transformAll(List<TextSegment> segments) {
-        return segments.stream().map(this::transform).filter(Objects::nonNull).collect(toList());
+        return segments.stream().map(this::transform).filter(Objects::nonNull).collect(java.util.stream.Collectors.toList());
     }
 
     /**
@@ -45,7 +44,7 @@ public interface TextSegmentTransformer {
      */
     default List<TextSegment> transformAll(TextSegment... textSegments) {
         if (Utils.isNullOrEmpty(textSegments)) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
         return transformAll(Arrays.asList(textSegments));
     }

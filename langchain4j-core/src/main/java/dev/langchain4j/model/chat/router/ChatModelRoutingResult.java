@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.router;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import java.util.Objects;
 
@@ -59,9 +58,11 @@ public final class ChatModelRoutingResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChatModelRoutingResult that)) return false;
-        return Objects.equals(routeName, that.routeName);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChatModelRoutingResult))
+            return false;
+        return Objects.equals(routeName, ((ChatModelRoutingResult) o).routeName);
     }
 
     @Override

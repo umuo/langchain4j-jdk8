@@ -1,7 +1,6 @@
 package dev.langchain4j.model.output;
 
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.getOrDefault;
 
 /**
@@ -10,7 +9,9 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 public class TokenUsage {
 
     private final Integer inputTokenCount;
+
     private final Integer outputTokenCount;
+
     private final Integer totalTokenCount;
 
     /**
@@ -120,18 +121,12 @@ public class TokenUsage {
         if (that == null) {
             return this;
         }
-
         if (that.getClass() != TokenUsage.class) {
             // when adding TokenUsage ("this") and one of TokenUsage's subclasses ("that"),
             // we want to call "add" on the subclass to preserve extra information present in the subclass
             return that.add(asTokenUsage());
         }
-
-        return new TokenUsage(
-                sum(this.inputTokenCount, that.inputTokenCount),
-                sum(this.outputTokenCount, that.outputTokenCount),
-                sum(this.totalTokenCount, that.totalTokenCount)
-        );
+        return new TokenUsage(sum(this.inputTokenCount, that.inputTokenCount), sum(this.outputTokenCount, that.outputTokenCount), sum(this.totalTokenCount, that.totalTokenCount));
     }
 
     /**
@@ -142,9 +137,7 @@ public class TokenUsage {
      * subclass stops the two from delegating to each other until the stack overflows.
      */
     private TokenUsage asTokenUsage() {
-        return getClass() == TokenUsage.class
-                ? this
-                : new TokenUsage(inputTokenCount, outputTokenCount, totalTokenCount);
+        return getClass() == TokenUsage.class ? this : new TokenUsage(inputTokenCount, outputTokenCount, totalTokenCount);
     }
 
     /**
@@ -158,18 +151,17 @@ public class TokenUsage {
         if (first == null && second == null) {
             return null;
         }
-
         return getOrDefault(first, 0) + getOrDefault(second, 0);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         TokenUsage that = (TokenUsage) o;
-        return Objects.equals(this.inputTokenCount, that.inputTokenCount)
-                && Objects.equals(this.outputTokenCount, that.outputTokenCount)
-                && Objects.equals(this.totalTokenCount, that.totalTokenCount);
+        return Objects.equals(this.inputTokenCount, that.inputTokenCount) && Objects.equals(this.outputTokenCount, that.outputTokenCount) && Objects.equals(this.totalTokenCount, that.totalTokenCount);
     }
 
     @Override
@@ -179,10 +171,6 @@ public class TokenUsage {
 
     @Override
     public String toString() {
-        return "TokenUsage {" +
-                " inputTokenCount = " + inputTokenCount +
-                ", outputTokenCount = " + outputTokenCount +
-                ", totalTokenCount = " + totalTokenCount +
-                " }";
+        return "TokenUsage {" + " inputTokenCount = " + inputTokenCount + ", outputTokenCount = " + outputTokenCount + ", totalTokenCount = " + totalTokenCount + " }";
     }
 }

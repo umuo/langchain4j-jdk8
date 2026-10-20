@@ -2,7 +2,6 @@ package dev.langchain4j.model.output;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.Map;
 import java.util.Objects;
 import org.jspecify.annotations.NullMarked;
@@ -35,7 +34,7 @@ public class Response<T> {
      * @param content the content to wrap.
      */
     public Response(T content) {
-        this(content, null, null, Map.of());
+        this(content, null, null, dev.langchain4j.internal.Jdk8.map());
     }
 
     /**
@@ -46,7 +45,7 @@ public class Response<T> {
      * @param finishReason the finish reason, or {@code null}.
      */
     public Response(T content, @Nullable TokenUsage tokenUsage, @Nullable FinishReason finishReason) {
-        this(content, tokenUsage, finishReason, Map.of());
+        this(content, tokenUsage, finishReason, dev.langchain4j.internal.Jdk8.map());
     }
 
     /**
@@ -57,11 +56,7 @@ public class Response<T> {
      * @param finishReason the finish reason, or {@code null}.
      * @param metadata     the response metadata, or {@code null}.
      */
-    public Response(
-            T content,
-            @Nullable TokenUsage tokenUsage,
-            @Nullable FinishReason finishReason,
-            @Nullable Map<String, Object> metadata) {
+    public Response(T content, @Nullable TokenUsage tokenUsage, @Nullable FinishReason finishReason, @Nullable Map<String, Object> metadata) {
         this.content = ensureNotNull(content, "content");
         this.tokenUsage = tokenUsage;
         this.finishReason = finishReason;
@@ -108,13 +103,12 @@ public class Response<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Response<?> that = (Response<?>) o;
-        return Objects.equals(this.content, that.content)
-                && Objects.equals(this.tokenUsage, that.tokenUsage)
-                && Objects.equals(this.finishReason, that.finishReason)
-                && Objects.equals(this.metadata, that.metadata);
+        return Objects.equals(this.content, that.content) && Objects.equals(this.tokenUsage, that.tokenUsage) && Objects.equals(this.finishReason, that.finishReason) && Objects.equals(this.metadata, that.metadata);
     }
 
     @Override
@@ -124,11 +118,7 @@ public class Response<T> {
 
     @Override
     public String toString() {
-        return "Response {" + " content = "
-                + content + ", tokenUsage = "
-                + tokenUsage + ", finishReason = "
-                + finishReason + ", metadata = "
-                + metadata + " }";
+        return "Response {" + " content = " + content + ", tokenUsage = " + tokenUsage + ", finishReason = " + finishReason + ", metadata = " + metadata + " }";
     }
 
     /**
@@ -163,8 +153,7 @@ public class Response<T> {
      * @param <T>          the type of content.
      * @return the new Response.
      */
-    public static <T> Response<T> from(
-            T content, @Nullable TokenUsage tokenUsage, @Nullable FinishReason finishReason) {
+    public static <T> Response<T> from(T content, @Nullable TokenUsage tokenUsage, @Nullable FinishReason finishReason) {
         return new Response<>(content, tokenUsage, finishReason);
     }
 
@@ -178,11 +167,7 @@ public class Response<T> {
      * @param <T>          the type of content.
      * @return the new Response.
      */
-    public static <T> Response<T> from(
-            T content,
-            @Nullable TokenUsage tokenUsage,
-            @Nullable FinishReason finishReason,
-            @Nullable Map<String, Object> metadata) {
+    public static <T> Response<T> from(T content, @Nullable TokenUsage tokenUsage, @Nullable FinishReason finishReason, @Nullable Map<String, Object> metadata) {
         return new Response<>(content, tokenUsage, finishReason, metadata);
     }
 }

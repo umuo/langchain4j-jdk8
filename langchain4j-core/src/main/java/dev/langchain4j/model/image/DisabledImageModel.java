@@ -3,7 +3,6 @@ package dev.langchain4j.model.image;
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.model.ModelDisabledException;
 import dev.langchain4j.model.output.Response;
-
 import java.util.List;
 
 /**
@@ -13,6 +12,7 @@ import java.util.List;
  * </p>
  */
 public class DisabledImageModel implements ImageModel {
+
     @Override
     public Response<Image> generate(String prompt) {
         throw new ModelDisabledException("ImageModel is disabled");

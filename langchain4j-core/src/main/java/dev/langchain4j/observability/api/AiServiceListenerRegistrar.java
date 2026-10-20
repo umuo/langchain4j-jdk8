@@ -10,6 +10,7 @@ import dev.langchain4j.spi.observability.AiServiceListenerRegistrarFactory;
  * A registrar for registering {@link AiServiceListener}s.
  */
 public interface AiServiceListenerRegistrar {
+
     /**
      * Registers a listener to receive {@link AiServiceEvent} notifications.
      */
@@ -120,11 +121,7 @@ public interface AiServiceListenerRegistrar {
      *                                         will be handled silently.
      */
     static AiServiceListenerRegistrar newInstance(boolean shouldThrowExceptionOnEventError) {
-        var registrar = ServiceLoader.load(AiServiceListenerRegistrarFactory.class)
-                .findFirst()
-                .map(AiServiceListenerRegistrarFactory::get)
-                .orElseGet(DefaultAiServiceListenerRegistrar::new);
-
+        dev.langchain4j.observability.api.AiServiceListenerRegistrar registrar = dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(AiServiceListenerRegistrarFactory.class)).map(AiServiceListenerRegistrarFactory::get).orElseGet(DefaultAiServiceListenerRegistrar::new);
         registrar.shouldThrowExceptionOnEventError(shouldThrowExceptionOnEventError);
         return registrar;
     }

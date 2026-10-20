@@ -2,10 +2,8 @@ package dev.langchain4j.rag.query.router;
 
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableCollection;

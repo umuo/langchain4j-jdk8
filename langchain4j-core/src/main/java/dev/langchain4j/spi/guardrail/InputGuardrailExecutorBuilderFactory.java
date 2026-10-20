@@ -13,11 +13,5 @@ import dev.langchain4j.observability.api.event.InputGuardrailExecutedEvent;
  * for input guardrails. It provides methods to configure and build execution environments for guardrails that operate on inputs,
  * ensuring that they adhere to predefined rules or constraints.
  */
-public non-sealed interface InputGuardrailExecutorBuilderFactory
-        extends GuardrailExecutorBuilderFactory<
-                InputGuardrailsConfig,
-                InputGuardrailResult,
-                InputGuardrailRequest,
-                InputGuardrail,
-                InputGuardrailExecutedEvent,
-                InputGuardrailExecutor.InputGuardrailExecutorBuilder> {}
+public interface InputGuardrailExecutorBuilderFactory extends GuardrailExecutorBuilderFactory<InputGuardrailsConfig, InputGuardrailResult, InputGuardrailRequest, InputGuardrail, InputGuardrailExecutedEvent, InputGuardrailExecutor.InputGuardrailExecutorBuilder> {
+}

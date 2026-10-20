@@ -10,8 +10,11 @@ import dev.langchain4j.data.audio.Audio;
 public class AudioTranscriptionRequest {
 
     private final Audio audio;
+
     private final String prompt;
+
     private final String language;
+
     private final Double temperature;
 
     private AudioTranscriptionRequest(Builder builder) {
@@ -58,9 +61,13 @@ public class AudioTranscriptionRequest {
     }
 
     public static class Builder {
+
         private Audio audio;
+
         private String prompt;
+
         private String language;
+
         private Double temperature;
 
         /**

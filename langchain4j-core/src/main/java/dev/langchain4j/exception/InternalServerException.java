@@ -8,6 +8,7 @@ package dev.langchain4j.exception;
  * across multiple retries, it likely indicates an ongoing outage with the provider.
  */
 public class InternalServerException extends RetriableException {
+
     public InternalServerException(String message) {
         super(message);
     }

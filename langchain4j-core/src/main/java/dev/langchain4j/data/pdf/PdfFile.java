@@ -2,7 +2,6 @@ package dev.langchain4j.data.pdf;
 
 import java.net.URI;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.Utils.quoted;
 
@@ -11,7 +10,9 @@ public class PdfFile {
     public static String DEFAULT_MIME_TYPE = "application/pdf";
 
     private final URI url;
+
     private final String base64Data;
+
     private final String mimeType;
 
     /**
@@ -63,12 +64,12 @@ public class PdfFile {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         PdfFile that = (PdfFile) o;
-        return Objects.equals(this.url, that.url)
-                && Objects.equals(this.base64Data, that.base64Data)
-                && Objects.equals(this.mimeType, that.mimeType);
+        return Objects.equals(this.url, that.url) && Objects.equals(this.base64Data, that.base64Data) && Objects.equals(this.mimeType, that.mimeType);
     }
 
     @Override
@@ -78,11 +79,7 @@ public class PdfFile {
 
     @Override
     public String toString() {
-        return "PdfFile {" +
-                " url = " + quoted(url) +
-                ", base64Data = " + quoted(base64Data) +
-                ", mimeType = " + quoted(mimeType) +
-                " }";
+        return "PdfFile {" + " url = " + quoted(url) + ", base64Data = " + quoted(base64Data) + ", mimeType = " + quoted(mimeType) + " }";
     }
 
     /**
@@ -91,7 +88,9 @@ public class PdfFile {
     public static class Builder {
 
         private URI url;
+
         private String base64Data;
+
         private String mimeType;
 
         /**

@@ -3,7 +3,6 @@ package dev.langchain4j.internal;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,10 +20,8 @@ class JacksonProviderJsonCodec implements Json.JsonCodec {
     private final ObjectMapper objectMapper;
 
     JacksonProviderJsonCodec(ProviderJsonSpec spec) {
-        JsonMapper.Builder builder = JsonMapper.builder()
-                .disable(FAIL_ON_IGNORED_PROPERTIES)
-                // a provider adding a field must never break deserialization
-                .disable(FAIL_ON_UNKNOWN_PROPERTIES);
+        JsonMapper.Builder builder = JsonMapper.builder().disable(FAIL_ON_IGNORED_PROPERTIES).// a provider adding a field must never break deserialization
+        disable(FAIL_ON_UNKNOWN_PROPERTIES);
         if (spec.prettyPrint()) {
             builder.enable(INDENT_OUTPUT);
         }
@@ -36,11 +33,16 @@ class JacksonProviderJsonCodec implements Json.JsonCodec {
     }
 
     private static JsonInclude.Include toJacksonInclude(ProviderJsonSpec.Inclusion inclusion) {
-        return switch (inclusion) {
-            case NON_NULL -> JsonInclude.Include.NON_NULL;
-            case NON_EMPTY -> JsonInclude.Include.NON_EMPTY;
-            case ALWAYS -> JsonInclude.Include.ALWAYS;
-        };
+        switch(inclusion) {
+            case NON_NULL:
+                return JsonInclude.Include.NON_NULL;
+            case NON_EMPTY:
+                return JsonInclude.Include.NON_EMPTY;
+            case ALWAYS:
+                return JsonInclude.Include.ALWAYS;
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
     @Override

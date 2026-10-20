@@ -2,7 +2,6 @@ package dev.langchain4j.rag.content.aggregator;
 
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -56,10 +55,8 @@ public class DefaultContentAggregator implements ContentAggregator {
 
     @Override
     public List<Content> aggregate(Map<Query, Collection<List<Content>>> queryToContents) {
-
         // First, for each query, fuse all contents retrieved from different sources using that query.
         Map<Query, List<Content>> fused = fuse(queryToContents);
-
         // Then, fuse all contents retrieved using all queries
         return ReciprocalRankFuser.fuse(fused.values());
     }

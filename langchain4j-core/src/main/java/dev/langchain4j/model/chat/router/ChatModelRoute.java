@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.router;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +15,7 @@ import java.util.Objects;
 public final class ChatModelRoute {
 
     private final String name;
+
     private final List<String> descriptions;
 
     /**
@@ -23,7 +23,7 @@ public final class ChatModelRoute {
      * @param description what kind of requests the route is meant for, or {@code null}.
      */
     public ChatModelRoute(String name, String description) {
-        this(name, description == null ? List.of() : List.of(description));
+        this(name, description == null ? dev.langchain4j.internal.Jdk8.list() : dev.langchain4j.internal.Jdk8.list(description));
     }
 
     /**
@@ -37,7 +37,7 @@ public final class ChatModelRoute {
         if (descriptions != null) {
             descriptions.forEach(description -> copy.add(ensureNotBlank(description, "description of route " + name)));
         }
-        this.descriptions = List.copyOf(copy);
+        this.descriptions = dev.langchain4j.internal.Jdk8.copyList(copy);
     }
 
     /**
@@ -56,9 +56,11 @@ public final class ChatModelRoute {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChatModelRoute that)) return false;
-        return Objects.equals(name, that.name) && Objects.equals(descriptions, that.descriptions);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChatModelRoute))
+            return false;
+        return Objects.equals(name, ((ChatModelRoute) o).name) && Objects.equals(descriptions, ((ChatModelRoute) o).descriptions);
     }
 
     @Override

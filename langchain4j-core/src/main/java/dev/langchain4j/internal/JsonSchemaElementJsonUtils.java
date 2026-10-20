@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.chat.request.json.JsonAnyOfSchema;
 import dev.langchain4j.model.chat.request.json.JsonArraySchema;
@@ -39,63 +38,73 @@ public class JsonSchemaElementJsonUtils {
     // that cannot be represented by the corresponding JsonSchemaElement subtype.
     // When a map contains keys outside this set, fromMap() falls back to JsonRawSchema.
     // NOTE: When adding new JsonSchemaElement subtypes, update these sets accordingly.
-    private static final Set<String> STRING_KEYS = Set.of("type", "description");
-    private static final Set<String> INTEGER_KEYS = Set.of("type", "description");
-    private static final Set<String> NUMBER_KEYS = Set.of("type", "description");
-    private static final Set<String> BOOLEAN_KEYS = Set.of("type", "description");
-    private static final Set<String> NULL_KEYS = Set.of("type");
-    private static final Set<String> OBJECT_KEYS =
-            Set.of("type", "description", "properties", "required", "additionalProperties", "$defs");
-    private static final Set<String> ARRAY_KEYS = Set.of("type", "description", "items");
-    private static final Set<String> ENUM_KEYS = Set.of("type", "description", "enum");
-    private static final Set<String> ANYOF_KEYS = Set.of("anyOf", "description");
-    private static final Set<String> REF_KEYS = Set.of("$ref");
+    private static final Set<String> STRING_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description");
 
-    private JsonSchemaElementJsonUtils() {}
+    private static final Set<String> INTEGER_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description");
+
+    private static final Set<String> NUMBER_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description");
+
+    private static final Set<String> BOOLEAN_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description");
+
+    private static final Set<String> NULL_KEYS = dev.langchain4j.internal.Jdk8.set("type");
+
+    private static final Set<String> OBJECT_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description", "properties", "required", "additionalProperties", "$defs");
+
+    private static final Set<String> ARRAY_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description", "items");
+
+    private static final Set<String> ENUM_KEYS = dev.langchain4j.internal.Jdk8.set("type", "description", "enum");
+
+    private static final Set<String> ANYOF_KEYS = dev.langchain4j.internal.Jdk8.set("anyOf", "description");
+
+    private static final Set<String> REF_KEYS = dev.langchain4j.internal.Jdk8.set("$ref");
+
+    private JsonSchemaElementJsonUtils() {
+    }
 
     // ---- toMap: JsonSchemaElement -> Map<String, Object> ----
-
     /**
      * Converts a {@link JsonSchemaElement} to a standard JSON Schema {@link Map} representation.
      */
     public static Map<String, Object> toMap(JsonSchemaElement element) {
         ensureNotNull(element, "element");
-
         // Composite types: own implementation (recursive, preserves additionalProperties / null items)
-        if (element instanceof JsonObjectSchema obj) return objectSchemaToMap(obj);
-        if (element instanceof JsonArraySchema arr) return arraySchemaToMap(arr);
-        if (element instanceof JsonAnyOfSchema anyOf) return anyOfSchemaToMap(anyOf);
-
+        if (element instanceof JsonObjectSchema)
+            return objectSchemaToMap(((JsonObjectSchema) element));
+        if (element instanceof JsonArraySchema)
+            return arraySchemaToMap(((JsonArraySchema) element));
+        if (element instanceof JsonAnyOfSchema)
+            return anyOfSchemaToMap(((JsonAnyOfSchema) element));
         // Enum: type + description + enum values
-        if (element instanceof JsonEnumSchema en) {
-            Map<String, Object> map = typedSchema("string", en.description());
-            map.put("enum", new ArrayList<>(en.enumValues()));
+        if (element instanceof JsonEnumSchema) {
+            Map<String, Object> map = typedSchema("string", ((JsonEnumSchema) element).description());
+            map.put("enum", new ArrayList<>(((JsonEnumSchema) element).enumValues()));
             return map;
         }
-
         // Simple typed schemas: type + description
-        if (element instanceof JsonStringSchema s) return typedSchema("string", s.description());
-        if (element instanceof JsonIntegerSchema i) return typedSchema("integer", i.description());
-        if (element instanceof JsonNumberSchema n) return typedSchema("number", n.description());
-        if (element instanceof JsonBooleanSchema b) return typedSchema("boolean", b.description());
-        if (element instanceof JsonNullSchema) return typedSchema("null", null);
-
+        if (element instanceof JsonStringSchema)
+            return typedSchema("string", ((JsonStringSchema) element).description());
+        if (element instanceof JsonIntegerSchema)
+            return typedSchema("integer", ((JsonIntegerSchema) element).description());
+        if (element instanceof JsonNumberSchema)
+            return typedSchema("number", ((JsonNumberSchema) element).description());
+        if (element instanceof JsonBooleanSchema)
+            return typedSchema("boolean", ((JsonBooleanSchema) element).description());
+        if (element instanceof JsonNullSchema)
+            return typedSchema("null", null);
         // Reference
-        if (element instanceof JsonReferenceSchema ref) {
+        if (element instanceof JsonReferenceSchema) {
             Map<String, Object> map = new LinkedHashMap<>();
-            if (ref.reference() != null) {
-                map.put("$ref", "#/$defs/" + ref.reference());
+            if (((JsonReferenceSchema) element).reference() != null) {
+                map.put("$ref", "#/$defs/" + ((JsonReferenceSchema) element).reference());
             }
             return map;
         }
-
         // Raw fallback
-        if (element instanceof JsonRawSchema raw) {
+        if (element instanceof JsonRawSchema) {
             @SuppressWarnings("unchecked")
-            Map<String, Object> map = Json.fromJson(raw.schema(), Map.class);
+            Map<String, Object> map = Json.fromJson(((JsonRawSchema) element).schema(), Map.class);
             return map;
         }
-
         throw new IllegalArgumentException("Unknown JsonSchemaElement type: " + element.getClass());
     }
 
@@ -157,7 +166,6 @@ public class JsonSchemaElementJsonUtils {
     }
 
     // ---- fromMap: Map<String, Object> -> JsonSchemaElement ----
-
     /**
      * Converts a standard JSON Schema {@link Map} representation back to a {@link JsonSchemaElement}.
      * <p>
@@ -175,20 +183,18 @@ public class JsonSchemaElementJsonUtils {
     @SuppressWarnings("unchecked")
     public static JsonSchemaElement fromMap(Map<String, Object> map) {
         ensureNotNull(map, "map");
-
         // $ref
         if (map.containsKey("$ref")) {
             Object refObj = map.get("$ref");
-            if (!(refObj instanceof String ref)) {
+            if (!(refObj instanceof String)) {
                 throw new IllegalArgumentException("\"$ref\" must be a string, but was: " + className(refObj));
             }
-            if (!ref.startsWith("#/$defs/") || !isRepresentable(map, REF_KEYS)) {
+            if (!((String) refObj).startsWith("#/$defs/") || !isRepresentable(map, REF_KEYS)) {
                 return rawFallback(map);
             }
-            String reference = ref.substring("#/$defs/".length());
+            String reference = ((String) refObj).substring("#/$defs/".length());
             return JsonReferenceSchema.builder().reference(reference).build();
         }
-
         // anyOf
         if (map.containsKey("anyOf")) {
             Object anyOfObj = map.get("anyOf");
@@ -202,156 +208,114 @@ public class JsonSchemaElementJsonUtils {
             List<JsonSchemaElement> anyOf = new ArrayList<>(anyOfList.size());
             for (Object element : anyOfList) {
                 if (!(element instanceof Map)) {
-                    throw new IllegalArgumentException(
-                            "\"anyOf\" elements must be JSON objects, but found: " + className(element));
+                    throw new IllegalArgumentException("\"anyOf\" elements must be JSON objects, but found: " + className(element));
                 }
                 anyOf.add(fromMap((Map<String, Object>) element));
             }
-            return JsonAnyOfSchema.builder()
-                    .description(optionalString(map, "description"))
-                    .anyOf(anyOf)
-                    .build();
+            return JsonAnyOfSchema.builder().description(optionalString(map, "description")).anyOf(anyOf).build();
         }
-
         // enum
         if (map.containsKey("enum")) {
             Object enumObj = map.get("enum");
-            if (!(enumObj instanceof List<?> enumList)) {
+            if (!(enumObj instanceof List<?>)) {
                 throw new IllegalArgumentException("\"enum\" must be a list, but was: " + className(enumObj));
             }
             // JsonEnumSchema always serializes as type:"string", so only match when
             // type is absent or explicitly "string" to avoid silent schema rewriting.
             // Note: isRepresentable() already rejects null values (e.g., type:null).
             Object enumTypeObj = map.get("type");
-            if (!isRepresentable(map, ENUM_KEYS)
-                    || !allStrings(enumList)
-                    || (enumTypeObj != null && !"string".equals(enumTypeObj))) {
+            if (!isRepresentable(map, ENUM_KEYS) || !allStrings(((List<?>) enumObj)) || (enumTypeObj != null && !"string".equals(enumTypeObj))) {
                 return rawFallback(map);
             }
-            List<String> enumValues = requireStringList("enum", enumList);
-            return JsonEnumSchema.builder()
-                    .description(optionalString(map, "description"))
-                    .enumValues(enumValues)
-                    .build();
+            List<String> enumValues = requireStringList("enum", ((List<?>) enumObj));
+            return JsonEnumSchema.builder().description(optionalString(map, "description")).enumValues(enumValues).build();
         }
-
         // type-based dispatch
         Object typeObj = map.get("type");
-        if (!(typeObj instanceof String type)) {
+        if (!(typeObj instanceof String)) {
             return rawFallback(map);
         }
-
-        return switch (type) {
-            case "string" ->
-                isRepresentable(map, STRING_KEYS)
-                        ? JsonStringSchema.builder()
-                                .description(optionalString(map, "description"))
-                                .build()
-                        : rawFallback(map);
-            case "integer" ->
-                isRepresentable(map, INTEGER_KEYS)
-                        ? JsonIntegerSchema.builder()
-                                .description(optionalString(map, "description"))
-                                .build()
-                        : rawFallback(map);
-            case "number" ->
-                isRepresentable(map, NUMBER_KEYS)
-                        ? JsonNumberSchema.builder()
-                                .description(optionalString(map, "description"))
-                                .build()
-                        : rawFallback(map);
-            case "boolean" ->
-                isRepresentable(map, BOOLEAN_KEYS)
-                        ? JsonBooleanSchema.builder()
-                                .description(optionalString(map, "description"))
-                                .build()
-                        : rawFallback(map);
-            case "null" -> isRepresentable(map, NULL_KEYS) ? new JsonNullSchema() : rawFallback(map);
-            case "object" -> {
-                if (!isRepresentable(map, OBJECT_KEYS)) {
-                    yield rawFallback(map);
+        switch(((String) typeObj)) {
+            case "string":
+                return isRepresentable(map, STRING_KEYS) ? JsonStringSchema.builder().description(optionalString(map, "description")).build() : rawFallback(map);
+            case "integer":
+                return isRepresentable(map, INTEGER_KEYS) ? JsonIntegerSchema.builder().description(optionalString(map, "description")).build() : rawFallback(map);
+            case "number":
+                return isRepresentable(map, NUMBER_KEYS) ? JsonNumberSchema.builder().description(optionalString(map, "description")).build() : rawFallback(map);
+            case "boolean":
+                return isRepresentable(map, BOOLEAN_KEYS) ? JsonBooleanSchema.builder().description(optionalString(map, "description")).build() : rawFallback(map);
+            case "null":
+                return isRepresentable(map, NULL_KEYS) ? new JsonNullSchema() : rawFallback(map);
+            case "object":
+                {
+                    if (!isRepresentable(map, OBJECT_KEYS)) {
+                        return rawFallback(map);
+                    }
+                    // schema-valued additionalProperties (e.g., {"type":"string"}) is not representable
+                    Object additionalProps = map.get("additionalProperties");
+                    if (additionalProps != null && !(additionalProps instanceof Boolean)) {
+                        return rawFallback(map);
+                    }
+                    JsonObjectSchema.Builder builder = JsonObjectSchema.builder().description(optionalString(map, "description"));
+                    Object propertiesObj = map.get("properties");
+                    if (propertiesObj instanceof Map) {
+                        Map<String, Object> properties = (Map<String, Object>) propertiesObj;
+                        Map<String, JsonSchemaElement> schemaProperties = new LinkedHashMap<>();
+                        properties.forEach((name, propValue) -> {
+                            if (!(propValue instanceof Map)) {
+                                throw new IllegalArgumentException("Property \"" + name + "\" must be a JSON object, but was: " + className(propValue));
+                            }
+                            schemaProperties.put(name, fromMap((Map<String, Object>) propValue));
+                        });
+                        builder.addProperties(schemaProperties);
+                    } else if (propertiesObj != null) {
+                        throw new IllegalArgumentException("\"properties\" must be a JSON object, but was: " + className(propertiesObj));
+                    }
+                    Object requiredObj = map.get("required");
+                    if (requiredObj instanceof List) {
+                        builder.required(requireStringList("required", (List<?>) requiredObj));
+                    } else if (requiredObj != null) {
+                        throw new IllegalArgumentException("\"required\" must be a list, but was: " + className(requiredObj));
+                    }
+                    if (additionalProps instanceof Boolean) {
+                        builder.additionalProperties((Boolean) additionalProps);
+                    }
+                    Object defsObj = map.get("$defs");
+                    if (defsObj instanceof Map) {
+                        Map<String, Object> defs = (Map<String, Object>) defsObj;
+                        Map<String, JsonSchemaElement> definitions = new LinkedHashMap<>();
+                        defs.forEach((name, defValue) -> {
+                            if (!(defValue instanceof Map)) {
+                                throw new IllegalArgumentException("Definition \"" + name + "\" must be a JSON object, but was: " + className(defValue));
+                            }
+                            definitions.put(name, fromMap((Map<String, Object>) defValue));
+                        });
+                        builder.definitions(definitions);
+                    } else if (defsObj != null) {
+                        throw new IllegalArgumentException("\"$defs\" must be a JSON object, but was: " + className(defsObj));
+                    }
+                    return builder.build();
                 }
-                // schema-valued additionalProperties (e.g., {"type":"string"}) is not representable
-                Object additionalProps = map.get("additionalProperties");
-                if (additionalProps != null && !(additionalProps instanceof Boolean)) {
-                    yield rawFallback(map);
+            case "array":
+                {
+                    if (!isRepresentable(map, ARRAY_KEYS)) {
+                        return rawFallback(map);
+                    }
+                    JsonArraySchema.Builder builder = JsonArraySchema.builder().description(optionalString(map, "description"));
+                    Object itemsObj = map.get("items");
+                    if (itemsObj instanceof Map) {
+                        builder.items(fromMap((Map<String, Object>) itemsObj));
+                    } else if (itemsObj != null) {
+                        throw new IllegalArgumentException("\"items\" must be a JSON object, but was: " + className(itemsObj));
+                    }
+                    return builder.build();
                 }
-
-                JsonObjectSchema.Builder builder =
-                        JsonObjectSchema.builder().description(optionalString(map, "description"));
-
-                Object propertiesObj = map.get("properties");
-                if (propertiesObj instanceof Map) {
-                    Map<String, Object> properties = (Map<String, Object>) propertiesObj;
-                    Map<String, JsonSchemaElement> schemaProperties = new LinkedHashMap<>();
-                    properties.forEach((name, propValue) -> {
-                        if (!(propValue instanceof Map)) {
-                            throw new IllegalArgumentException("Property \"" + name
-                                    + "\" must be a JSON object, but was: " + className(propValue));
-                        }
-                        schemaProperties.put(name, fromMap((Map<String, Object>) propValue));
-                    });
-                    builder.addProperties(schemaProperties);
-                } else if (propertiesObj != null) {
-                    throw new IllegalArgumentException(
-                            "\"properties\" must be a JSON object, but was: " + className(propertiesObj));
-                }
-
-                Object requiredObj = map.get("required");
-                if (requiredObj instanceof List) {
-                    builder.required(requireStringList("required", (List<?>) requiredObj));
-                } else if (requiredObj != null) {
-                    throw new IllegalArgumentException(
-                            "\"required\" must be a list, but was: " + className(requiredObj));
-                }
-
-                if (additionalProps instanceof Boolean) {
-                    builder.additionalProperties((Boolean) additionalProps);
-                }
-
-                Object defsObj = map.get("$defs");
-                if (defsObj instanceof Map) {
-                    Map<String, Object> defs = (Map<String, Object>) defsObj;
-                    Map<String, JsonSchemaElement> definitions = new LinkedHashMap<>();
-                    defs.forEach((name, defValue) -> {
-                        if (!(defValue instanceof Map)) {
-                            throw new IllegalArgumentException("Definition \"" + name
-                                    + "\" must be a JSON object, but was: " + className(defValue));
-                        }
-                        definitions.put(name, fromMap((Map<String, Object>) defValue));
-                    });
-                    builder.definitions(definitions);
-                } else if (defsObj != null) {
-                    throw new IllegalArgumentException(
-                            "\"$defs\" must be a JSON object, but was: " + className(defsObj));
-                }
-
-                yield builder.build();
-            }
-            case "array" -> {
-                if (!isRepresentable(map, ARRAY_KEYS)) {
-                    yield rawFallback(map);
-                }
-
-                JsonArraySchema.Builder builder =
-                        JsonArraySchema.builder().description(optionalString(map, "description"));
-
-                Object itemsObj = map.get("items");
-                if (itemsObj instanceof Map) {
-                    builder.items(fromMap((Map<String, Object>) itemsObj));
-                } else if (itemsObj != null) {
-                    throw new IllegalArgumentException(
-                            "\"items\" must be a JSON object, but was: " + className(itemsObj));
-                }
-
-                yield builder.build();
-            }
-            default -> rawFallback(map);
-        };
+            default:
+                return rawFallback(map);
+        }
     }
 
     // ---- helpers ----
-
     private static boolean isRepresentable(Map<String, Object> map, Set<String> allowedKeys) {
         // Typed models drop null values (e.g., description:null → absent), so any
         // explicit null in the map makes it unrepresentable for round-trip fidelity.
@@ -361,7 +325,8 @@ public class JsonSchemaElementJsonUtils {
 
     private static boolean hasNullValue(Map<String, Object> map) {
         for (Object value : map.values()) {
-            if (value == null) return true;
+            if (value == null)
+                return true;
         }
         return false;
     }
@@ -393,8 +358,7 @@ public class JsonSchemaElementJsonUtils {
         List<String> result = new ArrayList<>(list.size());
         for (Object element : list) {
             if (!(element instanceof String)) {
-                throw new IllegalArgumentException(
-                        "\"" + fieldName + "\" elements must be strings, but found: " + className(element));
+                throw new IllegalArgumentException("\"" + fieldName + "\" elements must be strings, but found: " + className(element));
             }
             result.add((String) element);
         }

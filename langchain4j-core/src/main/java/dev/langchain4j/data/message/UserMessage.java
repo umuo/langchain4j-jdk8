@@ -7,7 +7,6 @@ import static dev.langchain4j.internal.Utils.mutableCopy;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static java.util.Arrays.asList;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -15,7 +14,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.memory.ChatMemory;
 
@@ -39,7 +37,9 @@ import dev.langchain4j.memory.ChatMemory;
 public class UserMessage implements ChatMessage {
 
     private final String name;
+
     private final List<Content> contents;
+
     private final Map<String, Object> attributes;
 
     /**
@@ -190,20 +190,17 @@ public class UserMessage implements ChatMessage {
     }
 
     public Builder toBuilder() {
-        return builder()
-                .name(name)
-                .contents(mutableCopy(contents))
-                .attributes(attributes);
+        return builder().name(name).contents(mutableCopy(contents)).attributes(attributes);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         UserMessage that = (UserMessage) o;
-        return Objects.equals(this.name, that.name)
-                && Objects.equals(this.contents, that.contents)
-                && Objects.equals(this.attributes, that.attributes);
+        return Objects.equals(this.name, that.name) && Objects.equals(this.contents, that.contents) && Objects.equals(this.attributes, that.attributes);
     }
 
     @Override
@@ -213,11 +210,7 @@ public class UserMessage implements ChatMessage {
 
     @Override
     public String toString() {
-        return "UserMessage {" +
-                " name = " + quoted(name) +
-                ", contents = " + contents +
-                ", attributes = " + attributes +
-                " }";
+        return "UserMessage {" + " name = " + quoted(name) + ", contents = " + contents + ", attributes = " + attributes + " }";
     }
 
     public static Builder builder() {
@@ -227,7 +220,9 @@ public class UserMessage implements ChatMessage {
     public static class Builder {
 
         private String name;
+
         private List<Content> contents;
+
         private Map<String, Object> attributes;
 
         public Builder name(String name) {
@@ -388,10 +383,7 @@ public class UserMessage implements ChatMessage {
     }
 
     public static Optional<UserMessage> findLast(Collection<ChatMessage> messages) {
-        return messages.stream()
-                .filter(UserMessage.class::isInstance)
-                .map(UserMessage.class::cast)
-                .reduce((first, second) -> second);
+        return messages.stream().filter(UserMessage.class::isInstance).map(UserMessage.class::cast).reduce((first, second) -> second);
     }
 
     /**
@@ -410,8 +402,8 @@ public class UserMessage implements ChatMessage {
             return messages;
         }
         for (int i = messages.size() - 1; i >= 0; i--) {
-            if (messages.get(i) instanceof UserMessage existing) {
-                if (existing.equals(replacement)) {
+            if (messages.get(i) instanceof UserMessage) {
+                if (((UserMessage) messages.get(i)).equals(replacement)) {
                     return messages;
                 }
                 List<ChatMessage> result = new ArrayList<>(messages);

@@ -15,8 +15,7 @@ import dev.langchain4j.observability.event.DefaultInputGuardrailExecutedEvent;
  * associated input guardrail, all encapsulating the logic for validating input interactions
  * within the system.
  */
-public interface InputGuardrailExecutedEvent
-        extends GuardrailExecutedEvent<InputGuardrailRequest, InputGuardrailResult, InputGuardrail> {
+public interface InputGuardrailExecutedEvent extends GuardrailExecutedEvent<InputGuardrailRequest, InputGuardrailResult, InputGuardrail> {
 
     /**
      * Retrieves a rewritten user message if a successful rewritten result exists.
@@ -44,10 +43,10 @@ public interface InputGuardrailExecutedEvent
     /**
      * Builder for {@link InputGuardrailExecutedEvent} instances.
      */
-    class InputGuardrailExecutedEventBuilder
-            extends GuardrailExecutedEventBuilder<
-                    InputGuardrailRequest, InputGuardrailResult, InputGuardrail, InputGuardrailExecutedEvent> {
-        protected InputGuardrailExecutedEventBuilder() {}
+    class InputGuardrailExecutedEventBuilder extends GuardrailExecutedEventBuilder<InputGuardrailRequest, InputGuardrailResult, InputGuardrail, InputGuardrailExecutedEvent> {
+
+        protected InputGuardrailExecutedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link InputGuardrailExecutedEvent}.

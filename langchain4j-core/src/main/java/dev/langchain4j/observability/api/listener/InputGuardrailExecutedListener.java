@@ -12,9 +12,8 @@ import dev.langchain4j.observability.api.event.InputGuardrailExecutedEvent;
  * input request, result, and guardrail implementation.
  */
 @FunctionalInterface
-public non-sealed interface InputGuardrailExecutedListener
-        extends GuardrailExecutedListener<
-                InputGuardrailExecutedEvent, InputGuardrailRequest, InputGuardrailResult, InputGuardrail> {
+public interface InputGuardrailExecutedListener extends GuardrailExecutedListener<InputGuardrailExecutedEvent, InputGuardrailRequest, InputGuardrailResult, InputGuardrail> {
+
     @Override
     default Class<InputGuardrailExecutedEvent> getEventClass() {
         return InputGuardrailExecutedEvent.class;

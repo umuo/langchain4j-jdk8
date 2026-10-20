@@ -1,10 +1,8 @@
 package dev.langchain4j.model.batch;
 
 import dev.langchain4j.Experimental;
-
 import java.util.List;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -26,7 +24,9 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class BatchResponse<T> {
 
     private final String batchId;
+
     private final BatchState state;
+
     private final List<BatchItemResult<T>> results;
 
     public BatchResponse(Builder<T> builder) {
@@ -67,10 +67,7 @@ public class BatchResponse<T> {
      * <p>To correlate responses with their originating requests, use {@link #results()} instead.</p>
      */
     public List<T> responses() {
-        return results.stream()
-                .filter(BatchItemResult::isSuccess)
-                .map(BatchItemResult::response)
-                .toList();
+        return results.stream().filter(BatchItemResult::isSuccess).map(BatchItemResult::response).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     /**
@@ -79,16 +76,15 @@ public class BatchResponse<T> {
      * <p>To correlate errors with their originating requests, use {@link #results()} instead.</p>
      */
     public List<BatchError> errors() {
-        return results.stream()
-                .filter(result -> !result.isSuccess())
-                .map(BatchItemResult::error)
-                .toList();
+        return results.stream().filter(result -> !result.isSuccess()).map(BatchItemResult::error).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         BatchResponse<?> that = (BatchResponse<?>) o;
         return Objects.equals(batchId, that.batchId) && state == that.state && Objects.equals(results, that.results);
     }
@@ -121,7 +117,9 @@ public class BatchResponse<T> {
     public static class Builder<T> {
 
         private String batchId;
+
         private BatchState state;
+
         private List<BatchItemResult<T>> results;
 
         /**

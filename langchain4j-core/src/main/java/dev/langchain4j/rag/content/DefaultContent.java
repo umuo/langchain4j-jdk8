@@ -1,10 +1,8 @@
 package dev.langchain4j.rag.content;
 
 import dev.langchain4j.data.segment.TextSegment;
-
 import java.util.Map;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -18,6 +16,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class DefaultContent implements Content {
 
     private final TextSegment textSegment;
+
     private final Map<ContentMetadata, Object> metadata;
 
     public DefaultContent(TextSegment textSegment, Map<ContentMetadata, Object> metadata) {
@@ -30,7 +29,7 @@ public class DefaultContent implements Content {
     }
 
     public DefaultContent(TextSegment textSegment) {
-        this(textSegment, Map.of());
+        this(textSegment, dev.langchain4j.internal.Jdk8.map());
     }
 
     @Override
@@ -51,8 +50,10 @@ public class DefaultContent implements Content {
      */
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Content that = (Content) o;
         return Objects.equals(this.textSegment, that.textSegment());
     }
@@ -71,9 +72,6 @@ public class DefaultContent implements Content {
 
     @Override
     public String toString() {
-        return "DefaultContent {" +
-                " textSegment = " + textSegment +
-                ", metadata = " + metadata +
-                " }";
+        return "DefaultContent {" + " textSegment = " + textSegment + ", metadata = " + metadata + " }";
     }
 }

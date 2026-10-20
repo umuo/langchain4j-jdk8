@@ -2,14 +2,12 @@ package dev.langchain4j.observability.event;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.observability.api.event.CompensationReason;
 import dev.langchain4j.observability.api.event.ToolCompensatedEvent;
-
 import java.util.List;
 
 /**
@@ -20,21 +18,21 @@ import java.util.List;
 public class DefaultToolCompensatedEvent extends AbstractAiServiceEvent implements ToolCompensatedEvent {
 
     private final ToolExecutionRequest request;
+
     private final List<Content> resultContents;
+
     private final CompensationReason reason;
 
     public DefaultToolCompensatedEvent(ToolCompensatedEventBuilder builder) {
         super(builder);
         this.request = ensureNotNull(builder.request(), "request");
         this.reason = ensureNotNull(builder.reason(), "reason");
-
         boolean hasResultText = builder.resultText() != null;
         boolean hasResultContents = builder.resultContents() != null && !builder.resultContents().isEmpty();
-
         if (hasResultText && hasResultContents) {
             throw new IllegalArgumentException("resultText and resultContents are mutually exclusive");
         } else if (hasResultText) {
-            this.resultContents = List.of(TextContent.from(builder.resultText()));
+            this.resultContents = dev.langchain4j.internal.Jdk8.list(TextContent.from(builder.resultText()));
         } else if (hasResultContents) {
             this.resultContents = copy(builder.resultContents());
         } else {
@@ -49,12 +47,10 @@ public class DefaultToolCompensatedEvent extends AbstractAiServiceEvent implemen
 
     @Override
     public String resultText() {
-        if (resultContents.size() == 1 && resultContents.get(0) instanceof TextContent textContent) {
-            return textContent.text();
+        if (resultContents.size() == 1 && resultContents.get(0) instanceof TextContent) {
+            return ((TextContent) resultContents.get(0)).text();
         }
-        throw new IllegalStateException(
-                "resultText() cannot be called when resultContents contains non-text or multiple content elements. "
-                        + "Use resultContents() instead.");
+        throw new IllegalStateException("resultText() cannot be called when resultContents contains non-text or multiple content elements. " + "Use resultContents() instead.");
     }
 
     @Override

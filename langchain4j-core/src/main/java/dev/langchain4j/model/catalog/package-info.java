@@ -12,3 +12,4 @@
  * </ul>
  */
 package dev.langchain4j.model.catalog;
+

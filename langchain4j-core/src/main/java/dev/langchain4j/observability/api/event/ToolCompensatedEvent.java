@@ -6,7 +6,6 @@ import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.observability.event.DefaultToolCompensatedEvent;
-
 import java.util.List;
 
 /**
@@ -68,11 +67,15 @@ public interface ToolCompensatedEvent extends AiServiceEvent {
     class ToolCompensatedEventBuilder extends Builder<ToolCompensatedEvent> {
 
         private ToolExecutionRequest request;
+
         private String resultText;
+
         private List<Content> resultContents;
+
         private CompensationReason reason;
 
-        protected ToolCompensatedEventBuilder() {}
+        protected ToolCompensatedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link ToolCompensatedEvent}.

@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.spi.json.StateJsonCodecFactory;
 
@@ -17,7 +16,8 @@ import dev.langchain4j.spi.json.StateJsonCodecFactory;
 @Internal
 public final class StateJson {
 
-    private StateJson() {}
+    private StateJson() {
+    }
 
     /**
      * A codec is built per call rather than cached, because a {@link TypeAllowlist} is mutable and
@@ -35,8 +35,6 @@ public final class StateJson {
      */
     public static Json.JsonCodec codec(TypeAllowlist allowlist, ClassLoader classLoader) {
         StateJsonCodecFactory factory = loadFactory(StateJsonCodecFactory.class);
-        return factory != null
-                ? factory.create(allowlist, classLoader)
-                : new JacksonStateJsonCodec(allowlist, classLoader);
+        return factory != null ? factory.create(allowlist, classLoader) : new JacksonStateJsonCodec(allowlist, classLoader);
     }
 }

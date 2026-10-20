@@ -1,9 +1,7 @@
 package dev.langchain4j.data.message;
 
 import dev.langchain4j.spi.data.message.ChatMessageJsonCodecFactory;
-
 import java.util.List;
-
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
 
 public class ChatMessageSerializer {

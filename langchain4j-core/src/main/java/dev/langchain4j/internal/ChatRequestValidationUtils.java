@@ -10,10 +10,8 @@ import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.request.ResponseFormat;
 import dev.langchain4j.model.chat.request.ResponseFormatType;
 import dev.langchain4j.model.chat.request.ToolChoice;
-
 import java.util.List;
 import java.util.Locale;
-
 import static dev.langchain4j.data.message.ContentType.TEXT;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.model.chat.request.ToolChoice.AUTO;
@@ -23,12 +21,10 @@ public class ChatRequestValidationUtils {
 
     public static void validateMessages(List<ChatMessage> messages) {
         for (ChatMessage message : messages) {
-            if (message instanceof UserMessage userMessage) {
-                for (Content content : userMessage.contents()) {
+            if (message instanceof UserMessage) {
+                for (Content content : ((UserMessage) message).contents()) {
                     if (content.type() != TEXT) {
-                        throw new UnsupportedFeatureException(String.format(
-                                "Content of type %s is not supported yet by this model provider",
-                                content.type().toString().toLowerCase(Locale.ROOT)));
+                        throw new UnsupportedFeatureException(String.format("Content of type %s is not supported yet by this model provider", content.type().toString().toLowerCase(Locale.ROOT)));
                     }
                 }
             }
@@ -37,7 +33,6 @@ public class ChatRequestValidationUtils {
 
     public static void validateParameters(ChatRequestParameters parameters) {
         String errorTemplate = "%s is not supported yet by this model provider";
-
         if (parameters.modelName() != null) {
             throw new UnsupportedFeatureException(String.format(errorTemplate, "'modelName' parameter"));
         }
@@ -72,8 +67,7 @@ public class ChatRequestValidationUtils {
 
     public static void validate(ToolChoice toolChoice) {
         if (toolChoice != null && toolChoice != AUTO) {
-            throw new UnsupportedFeatureException(String.format("%s.%s is not supported yet by this model provider",
-                    ToolChoice.class.getSimpleName(), toolChoice));
+            throw new UnsupportedFeatureException(String.format("%s.%s is not supported yet by this model provider", ToolChoice.class.getSimpleName(), toolChoice));
         }
     }
 

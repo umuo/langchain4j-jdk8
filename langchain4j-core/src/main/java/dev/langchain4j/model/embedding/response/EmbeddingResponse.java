@@ -1,7 +1,6 @@
 package dev.langchain4j.model.embedding.response;
 
 import static dev.langchain4j.internal.Utils.copy;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.model.output.TokenUsage;
@@ -19,11 +18,11 @@ import java.util.Objects;
 public class EmbeddingResponse {
 
     private final List<Embedding> embeddings;
+
     private final EmbeddingResponseMetadata metadata;
 
     protected EmbeddingResponse(Builder builder) {
         this.embeddings = copy(builder.embeddings);
-
         EmbeddingResponseMetadata.Builder<?> metadataBuilder = EmbeddingResponseMetadata.builder();
         if (builder.modelName != null) {
             validate(builder, "modelName");
@@ -58,8 +57,10 @@ public class EmbeddingResponse {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingResponse that = (EmbeddingResponse) o;
         return Objects.equals(embeddings, that.embeddings) && Objects.equals(metadata, that.metadata);
     }
@@ -81,9 +82,11 @@ public class EmbeddingResponse {
     public static class Builder {
 
         private List<Embedding> embeddings;
+
         private EmbeddingResponseMetadata metadata;
 
         private String modelName;
+
         private TokenUsage tokenUsage;
 
         public Builder embeddings(List<Embedding> embeddings) {
@@ -113,8 +116,7 @@ public class EmbeddingResponse {
 
     private static void validate(Builder builder, String name) {
         if (builder.metadata != null) {
-            throw new IllegalArgumentException(
-                    "Cannot set both 'metadata' and '%s' on EmbeddingResponse".formatted(name));
+            throw new IllegalArgumentException(String.format("Cannot set both 'metadata' and '%s' on EmbeddingResponse", name));
         }
     }
 }

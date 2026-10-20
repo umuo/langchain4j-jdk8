@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.request.json;
 
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 public class JsonNumberSchema implements JsonSchemaElement {
@@ -41,8 +40,10 @@ public class JsonNumberSchema implements JsonSchemaElement {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JsonNumberSchema that = (JsonNumberSchema) o;
         return Objects.equals(this.description, that.description);
     }
@@ -54,8 +55,6 @@ public class JsonNumberSchema implements JsonSchemaElement {
 
     @Override
     public String toString() {
-        return "JsonNumberSchema {" +
-                "description = " + quoted(description) +
-                " }";
+        return "JsonNumberSchema {" + "description = " + quoted(description) + " }";
     }
 }

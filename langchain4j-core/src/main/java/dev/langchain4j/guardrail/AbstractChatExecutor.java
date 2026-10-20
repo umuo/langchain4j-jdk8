@@ -3,7 +3,6 @@ package dev.langchain4j.guardrail;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import dev.langchain4j.internal.AsyncNotSupported;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.invocation.InvocationContext;
@@ -33,8 +32,11 @@ import java.util.concurrent.CompletableFuture;
  */
 @Internal
 abstract class AbstractChatExecutor implements ChatExecutor {
+
     protected final ChatRequest chatRequest;
+
     protected final InvocationContext invocationContext;
+
     protected final AiServiceListenerRegistrar eventListenerRegistrar;
 
     protected AbstractChatExecutor(AbstractBuilder<?> builder) {
@@ -50,17 +52,17 @@ abstract class AbstractChatExecutor implements ChatExecutor {
 
     @Override
     public ChatExchange exchange(List<ChatMessage> chatMessages) {
-        var newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
+        dev.langchain4j.model.chat.request.ChatRequest newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
         return new ChatExchange(newChatRequest, executeInternal(newChatRequest));
     }
 
     @Override
     public CompletableFuture<ChatExchange> exchangeAsync(List<ChatMessage> chatMessages) {
         try {
-            var newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
+            dev.langchain4j.model.chat.request.ChatRequest newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
             return ChatExchange.exchangeAsync(newChatRequest, executeInternalAsync(newChatRequest));
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(e);
+            return dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
     }
 
@@ -71,10 +73,7 @@ abstract class AbstractChatExecutor implements ChatExecutor {
 
     protected void fireRequestIssuedEvent(ChatRequest chatRequest) {
         if (this.eventListenerRegistrar != null) {
-            this.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder()
-                    .invocationContext(this.invocationContext)
-                    .request(chatRequest)
-                    .build());
+            this.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(this.invocationContext).request(chatRequest).build());
         }
     }
 
@@ -85,7 +84,7 @@ abstract class AbstractChatExecutor implements ChatExecutor {
 
     @Override
     public CompletableFuture<ChatResponse> executeAsync(List<ChatMessage> chatMessages) {
-        var newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
+        dev.langchain4j.model.chat.request.ChatRequest newChatRequest = this.chatRequest.toBuilder().messages(chatMessages).build();
         return executeInternalAsync(newChatRequest);
     }
 

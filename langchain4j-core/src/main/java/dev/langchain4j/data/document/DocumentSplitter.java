@@ -1,7 +1,6 @@
 package dev.langchain4j.data.document;
 
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.internal.Utils;
 import java.util.Arrays;
@@ -35,7 +34,7 @@ public interface DocumentSplitter {
      * @return A list of TextSegment objects derived from the input Documents.
      */
     default List<TextSegment> splitAll(List<Document> documents) {
-        return documents.stream().flatMap(document -> split(document).stream()).collect(toList());
+        return documents.stream().flatMap(document -> split(document).stream()).collect(java.util.stream.Collectors.toList());
     }
 
     /**

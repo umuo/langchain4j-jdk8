@@ -1,10 +1,8 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -15,16 +13,19 @@ import java.util.Optional;
  * The result of the validation of an {@link InputGuardrail}
  */
 public final class InputGuardrailResult implements GuardrailResult<InputGuardrailResult> {
+
     private static final InputGuardrailResult SUCCESS = new InputGuardrailResult();
 
     private final Result result;
+
     private final String successfulText;
+
     private final List<Failure> failures;
 
     private InputGuardrailResult(Result result, String successfulText, List<Failure> failures) {
         this.result = ensureNotNull(result, "result");
         this.successfulText = successfulText;
-        this.failures = Optional.ofNullable(failures).orElseGet(List::of);
+        this.failures = Optional.ofNullable(failures).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
     private InputGuardrailResult() {
@@ -36,7 +37,7 @@ public final class InputGuardrailResult implements GuardrailResult<InputGuardrai
     }
 
     InputGuardrailResult(Failure failure, boolean fatal) {
-        this(new ArrayList<>(List.of(failure)), fatal);
+        this(new ArrayList<>(dev.langchain4j.internal.Jdk8.list(failure)), fatal);
     }
 
     private InputGuardrailResult(String successfulText) {
@@ -98,12 +99,12 @@ public final class InputGuardrailResult implements GuardrailResult<InputGuardrai
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         InputGuardrailResult that = (InputGuardrailResult) o;
-        return result == that.result
-                && Objects.equals(successfulText, that.successfulText)
-                && Objects.equals(failures, that.failures);
+        return result == that.result && Objects.equals(successfulText, that.successfulText) && Objects.equals(failures, that.failures);
     }
 
     @Override
@@ -116,8 +117,11 @@ public final class InputGuardrailResult implements GuardrailResult<InputGuardrai
      * Represents an input guardrail failure
      */
     public static final class Failure implements GuardrailResult.Failure {
+
         private final String message;
+
         private final Throwable cause;
+
         private final Class<? extends Guardrail> guardrailClass;
 
         Failure(String message, Throwable cause, Class<? extends Guardrail> guardrailClass) {

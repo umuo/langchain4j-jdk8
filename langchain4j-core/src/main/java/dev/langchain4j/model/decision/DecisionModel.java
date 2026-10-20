@@ -6,7 +6,6 @@ import static dev.langchain4j.model.ModelProvider.OTHER;
 import static dev.langchain4j.model.decision.DecisionModelListenerUtils.onError;
 import static dev.langchain4j.model.decision.DecisionModelListenerUtils.onRequest;
 import static dev.langchain4j.model.decision.DecisionModelListenerUtils.onResponse;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.internal.AsyncNotSupported;
 import dev.langchain4j.model.ModelProvider;
@@ -58,7 +57,6 @@ public interface DecisionModel {
         DecisionRequest finalRequest = withDefaultParameters(request);
         List<DecisionModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>();
-
         onRequest(finalRequest, provider(), attributes, listeners);
         try {
             DecisionResponse response = DecisionResponseValidator.validate(finalRequest, doDecide(finalRequest));
@@ -93,23 +91,19 @@ public interface DecisionModel {
         try {
             finalRequest = withDefaultParameters(request);
         } catch (Exception error) {
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         }
         List<DecisionModelListener> listeners = listeners();
         Map<Object, Object> attributes = new ConcurrentHashMap<>();
-
         onRequest(finalRequest, provider(), attributes, listeners);
-
         CompletableFuture<DecisionResponse> source;
         try {
             source = doDecideAsync(finalRequest);
         } catch (Exception error) {
             onError(error, finalRequest, provider(), attributes, listeners);
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         }
-
-        CompletableFuture<DecisionResponse> validated =
-                source.thenApply(response -> DecisionResponseValidator.validate(finalRequest, response));
+        CompletableFuture<DecisionResponse> validated = source.thenApply(response -> DecisionResponseValidator.validate(finalRequest, response));
         CompletableFuture<DecisionResponse> result = validated.whenComplete((response, error) -> {
             if (error != null) {
                 Throwable cause = unwrapCompletionException(error);
@@ -120,7 +114,6 @@ public interface DecisionModel {
                 onResponse(response, finalRequest, provider(), attributes, listeners);
             }
         });
-
         propagateCancellation(result, source);
         return result;
     }
@@ -148,7 +141,7 @@ public interface DecisionModel {
      * The listeners notified of every request, response and error of this model.
      */
     default List<DecisionModelListener> listeners() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     /**
@@ -165,9 +158,7 @@ public interface DecisionModel {
         return defaultRequestParameters().modelName();
     }
 
-    private DecisionRequest withDefaultParameters(DecisionRequest request) {
-        return request.toBuilder()
-                .parameters(defaultRequestParameters().overrideWith(request.parameters()))
-                .build();
+    default DecisionRequest withDefaultParameters(DecisionRequest request) {
+        return request.toBuilder().parameters(defaultRequestParameters().overrideWith(request.parameters())).build();
     }
 }

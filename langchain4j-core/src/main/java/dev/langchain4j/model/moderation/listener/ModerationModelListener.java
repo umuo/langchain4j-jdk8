@@ -16,7 +16,8 @@ public interface ModerationModelListener {
      *                       The attributes can be used to pass data between methods of this listener
      *                       or between multiple listeners.
      */
-    default void onRequest(ModerationModelRequestContext requestContext) {}
+    default void onRequest(ModerationModelRequestContext requestContext) {
+    }
 
     /**
      * This method is called after the response is received from the model.
@@ -26,7 +27,8 @@ public interface ModerationModelListener {
      *                        The attributes can be used to pass data between methods of this listener
      *                        or between multiple listeners.
      */
-    default void onResponse(ModerationModelResponseContext responseContext) {}
+    default void onResponse(ModerationModelResponseContext responseContext) {
+    }
 
     /**
      * This method is called when an error occurs during interaction with the model.
@@ -36,5 +38,6 @@ public interface ModerationModelListener {
      *                     The attributes can be used to pass data between methods of this listener
      *                     or between multiple listeners.
      */
-    default void onError(ModerationModelErrorContext errorContext) {}
+    default void onError(ModerationModelErrorContext errorContext) {
+    }
 }

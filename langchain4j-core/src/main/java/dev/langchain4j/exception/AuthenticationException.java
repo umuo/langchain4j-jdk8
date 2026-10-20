@@ -9,6 +9,7 @@ package dev.langchain4j.exception;
  * reconfigure the client before retrying.
  */
 public class AuthenticationException extends NonRetriableException {
+
     public AuthenticationException(String message) {
         super(message);
     }

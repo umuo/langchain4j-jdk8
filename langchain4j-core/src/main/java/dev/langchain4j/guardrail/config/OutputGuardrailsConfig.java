@@ -12,6 +12,7 @@ import java.util.ServiceLoader;
  */
 @JacocoIgnoreCoverageGenerated
 public interface OutputGuardrailsConfig extends GuardrailsConfig {
+
     /**
      * Default maximum number of retries for the guardrail.
      */
@@ -31,10 +32,7 @@ public interface OutputGuardrailsConfig extends GuardrailsConfig {
      * @return A {@link OutputGuardrailsConfigBuilder} for building {@link OutputGuardrailsConfig} instances.
      */
     static OutputGuardrailsConfigBuilder builder() {
-        return ServiceLoader.load(OutputGuardrailsConfigBuilderFactory.class)
-                .findFirst()
-                .map(OutputGuardrailsConfigBuilderFactory::get)
-                .orElseGet(DefaultOutputGuardrailsConfig::builder);
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(OutputGuardrailsConfigBuilderFactory.class)).map(OutputGuardrailsConfigBuilderFactory::get).orElseGet(DefaultOutputGuardrailsConfig::builder);
     }
 
     /**
@@ -45,6 +43,7 @@ public interface OutputGuardrailsConfig extends GuardrailsConfig {
      * </p>
      */
     interface OutputGuardrailsConfigBuilder extends GuardrailsConfigBuilder<OutputGuardrailsConfig> {
+
         /**
          * Sets the maximum number of retries for output guardrails.
          * <p>

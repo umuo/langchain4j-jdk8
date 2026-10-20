@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.isNotNullOrBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.segment.TextSegment;
@@ -30,9 +29,13 @@ import java.util.Objects;
 public class WebSearchOrganicResult {
 
     private final String title;
+
     private final URI url;
+
     private final String snippet;
+
     private final String content;
+
     private final Map<String, String> metadata;
 
     /**
@@ -54,7 +57,7 @@ public class WebSearchOrganicResult {
      * @param content The most query related content from the scraped url.
      */
     public WebSearchOrganicResult(String title, URI url, String snippet, String content) {
-        this(title, url, snippet, content, Map.of());
+        this(title, url, snippet, content, dev.langchain4j.internal.Jdk8.map());
     }
 
     /**
@@ -121,14 +124,12 @@ public class WebSearchOrganicResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         WebSearchOrganicResult that = (WebSearchOrganicResult) o;
-        return Objects.equals(title, that.title)
-                && Objects.equals(url, that.url)
-                && Objects.equals(snippet, that.snippet)
-                && Objects.equals(content, that.content)
-                && Objects.equals(metadata, that.metadata);
+        return Objects.equals(title, that.title) && Objects.equals(url, that.url) && Objects.equals(snippet, that.snippet) && Objects.equals(content, that.content) && Objects.equals(metadata, that.metadata);
     }
 
     @Override
@@ -138,12 +139,7 @@ public class WebSearchOrganicResult {
 
     @Override
     public String toString() {
-        return "WebSearchOrganicResult{" + "title='"
-                + title + '\'' + ", url="
-                + url + ", snippet='"
-                + snippet + '\'' + ", content='"
-                + content + '\'' + ", metadata="
-                + metadata + '}';
+        return "WebSearchOrganicResult{" + "title='" + title + '\'' + ", url=" + url + ", snippet='" + snippet + '\'' + ", content='" + content + '\'' + ", metadata=" + metadata + '}';
     }
 
     /**
@@ -219,8 +215,7 @@ public class WebSearchOrganicResult {
      * @param metadata  The metadata associated with the search result.
      * @return The created WebSearchOrganicResult object.
      */
-    public static WebSearchOrganicResult from(
-            String title, URI url, String snippet, String content, Map<String, String> metadata) {
+    public static WebSearchOrganicResult from(String title, URI url, String snippet, String content, Map<String, String> metadata) {
         return new WebSearchOrganicResult(title, url, snippet, content, metadata);
     }
 }

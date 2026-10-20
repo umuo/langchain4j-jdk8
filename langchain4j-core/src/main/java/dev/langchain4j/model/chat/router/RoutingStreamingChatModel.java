@@ -2,7 +2,6 @@ package dev.langchain4j.model.chat.router;
 
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.chat.Capability;
 import dev.langchain4j.model.chat.ChatRequestOptions;
@@ -23,9 +22,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow.Publisher;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,11 +60,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
     private final RouteSelector<StreamingChatModel> selector;
 
     protected RoutingStreamingChatModel(Builder builder) {
-        this.selector = new RouteSelector<>(
-                builder.routes,
-                builder.router,
-                builder.defaultRoute,
-                StreamingChatModel::supportedCapabilities);
+        this.selector = new RouteSelector<>(builder.routes, builder.router, builder.defaultRoute, StreamingChatModel::supportedCapabilities);
     }
 
     @Override
@@ -80,8 +75,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
             return;
         }
         try {
-            selector.model(routeName)
-                    .chat(request, RouteSelector.withRoute(options, routeName), new RouteRecordingHandler(handler, routeName));
+            selector.model(routeName).chat(request, RouteSelector.withRoute(options, routeName), new RouteRecordingHandler(handler, routeName));
         } catch (Exception e) {
             onError(handler, e);
         }
@@ -128,13 +122,12 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
     private static final class RouteRecordingSubscriber implements Subscriber<ChatModelStreamingEvent> {
 
         private final Subscriber<? super ChatModelStreamingEvent> downstream;
+
         private final DeferredSubscription subscription;
+
         private final String routeName;
 
-        private RouteRecordingSubscriber(
-                Subscriber<? super ChatModelStreamingEvent> downstream,
-                DeferredSubscription subscription,
-                String routeName) {
+        private RouteRecordingSubscriber(Subscriber<? super ChatModelStreamingEvent> downstream, DeferredSubscription subscription, String routeName) {
             this.downstream = downstream;
             this.subscription = subscription;
             this.routeName = routeName;
@@ -147,8 +140,8 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
 
         @Override
         public void onNext(ChatModelStreamingEvent event) {
-            if (event instanceof CompleteResponse completeResponse) {
-                downstream.onNext(new CompleteResponse(RouteSelector.withRoute(completeResponse.chatResponse(), routeName)));
+            if (event instanceof CompleteResponse) {
+                downstream.onNext(new CompleteResponse(RouteSelector.withRoute(((CompleteResponse) event).chatResponse(), routeName)));
             } else {
                 downstream.onNext(event);
             }
@@ -183,9 +176,13 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
     private static final class DeferredSubscription implements Subscription {
 
         private final Subscriber<? super ChatModelStreamingEvent> downstream;
+
         private volatile Subscription upstream;
+
         private CompletableFuture<?> routing;
+
         private long pendingDemand;
+
         private boolean cancelled;
 
         private DeferredSubscription(Subscriber<? super ChatModelStreamingEvent> downstream) {
@@ -196,7 +193,8 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
         public void request(long n) {
             Subscription current = upstream;
             if (current != null) {
-                current.request(n); // the upstream validates n and serializes its own signals
+                // the upstream validates n and serializes its own signals
+                current.request(n);
                 return;
             }
             boolean invalid = false;
@@ -217,8 +215,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
             if (current != null) {
                 current.request(n);
             } else if (invalid) {
-                downstream.onError(new IllegalArgumentException(
-                        "The number of requested elements must be positive, but was " + n));
+                downstream.onError(new IllegalArgumentException("The number of requested elements must be positive, but was " + n));
             }
         }
 
@@ -292,6 +289,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
     private static final class RouteRecordingHandler implements StreamingChatResponseHandler {
 
         private final StreamingChatResponseHandler delegate;
+
         private final String routeName;
 
         private RouteRecordingHandler(StreamingChatResponseHandler delegate, String routeName) {
@@ -353,7 +351,9 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
     public static class Builder {
 
         private final List<RouteSelector.Route<StreamingChatModel>> routes = new ArrayList<>();
+
         private ChatModelRouter router;
+
         private String defaultRoute;
 
         /**
@@ -363,7 +363,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
          * @param model the streaming chat model that handles the requests sent to this route.
          */
         public Builder route(String name, StreamingChatModel model) {
-            return route(name, List.of(), model);
+            return route(name, dev.langchain4j.internal.Jdk8.list(), model);
         }
 
         /**
@@ -377,7 +377,7 @@ public class RoutingStreamingChatModel implements StreamingChatModel {
          * @param model       the streaming chat model that handles the requests sent to this route.
          */
         public Builder route(String name, String description, StreamingChatModel model) {
-            return route(name, description == null ? List.of() : List.of(description), model);
+            return route(name, description == null ? dev.langchain4j.internal.Jdk8.list() : dev.langchain4j.internal.Jdk8.list(description), model);
         }
 
         /**

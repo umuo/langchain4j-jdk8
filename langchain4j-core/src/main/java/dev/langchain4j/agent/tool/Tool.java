@@ -2,10 +2,8 @@ package dev.langchain4j.agent.tool;
 
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.chat.ChatModel;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -22,7 +20,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  * In all other cases, the returned value will be serialized into a JSON string and sent to the LLM.
  */
 @Retention(RUNTIME)
-@Target({METHOD})
+@Target({ METHOD })
 public @interface Tool {
 
     /**

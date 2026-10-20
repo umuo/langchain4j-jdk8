@@ -21,19 +21,22 @@ public interface DecisionModelListener {
      * @param requestContext the request and the attributes. The attributes can be used to pass data between the
      *                       methods of this listener, or between multiple listeners.
      */
-    default void onRequest(DecisionModelRequestContext requestContext) {}
+    default void onRequest(DecisionModelRequestContext requestContext) {
+    }
 
     /**
      * Called after the response is received from the model.
      *
      * @param responseContext the response, the corresponding request and the attributes.
      */
-    default void onResponse(DecisionModelResponseContext responseContext) {}
+    default void onResponse(DecisionModelResponseContext responseContext) {
+    }
 
     /**
      * Called when an error occurs during the interaction with the model.
      *
      * @param errorContext the error, the corresponding request and the attributes.
      */
-    default void onError(DecisionModelErrorContext errorContext) {}
+    default void onError(DecisionModelErrorContext errorContext) {
+    }
 }

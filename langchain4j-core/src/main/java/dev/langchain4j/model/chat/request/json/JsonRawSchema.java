@@ -2,7 +2,6 @@ package dev.langchain4j.model.chat.request.json;
 
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import java.util.Objects;
 
 public class JsonRawSchema implements JsonSchemaElement {

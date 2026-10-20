@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.Experimental;
 import java.util.Objects;
 
@@ -25,7 +24,9 @@ import java.util.Objects;
 public final class YesNoQuestion implements Question {
 
     private final String text;
+
     private final String yesWhen;
+
     private final String noWhen;
 
     private YesNoQuestion(Builder builder) {
@@ -66,11 +67,11 @@ public final class YesNoQuestion implements Question {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof YesNoQuestion that)) return false;
-        return Objects.equals(text, that.text)
-                && Objects.equals(yesWhen, that.yesWhen)
-                && Objects.equals(noWhen, that.noWhen);
+        if (this == o)
+            return true;
+        if (!(o instanceof YesNoQuestion))
+            return false;
+        return Objects.equals(text, ((YesNoQuestion) o).text) && Objects.equals(yesWhen, ((YesNoQuestion) o).yesWhen) && Objects.equals(noWhen, ((YesNoQuestion) o).noWhen);
     }
 
     @Override
@@ -80,14 +81,15 @@ public final class YesNoQuestion implements Question {
 
     @Override
     public String toString() {
-        return "YesNoQuestion{text=" + text + ", yesWhen=" + yesWhen + ", noWhen=" + noWhen
-                + '}';
+        return "YesNoQuestion{text=" + text + ", yesWhen=" + yesWhen + ", noWhen=" + noWhen + '}';
     }
 
     public static final class Builder {
 
         private String text;
+
         private String yesWhen;
+
         private String noWhen;
 
         public Builder text(String text) {

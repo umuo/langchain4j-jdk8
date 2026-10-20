@@ -2,7 +2,6 @@ package dev.langchain4j.model.embedding.listener;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -26,11 +25,15 @@ import java.util.Map;
 public class EmbeddingModelResponseContext {
 
     private final EmbeddingRequest embeddingRequest;
+
     private final EmbeddingResponse embeddingResponse;
+
     private final EmbeddingModel embeddingModel;
+
     private final Map<Object, Object> attributes;
 
     private final Response<List<Embedding>> response;
+
     private final List<TextSegment> textSegments;
 
     public EmbeddingModelResponseContext(Builder builder) {
@@ -106,13 +109,19 @@ public class EmbeddingModelResponseContext {
     public static class Builder {
 
         private EmbeddingRequest embeddingRequest;
+
         private EmbeddingResponse embeddingResponse;
+
         private EmbeddingModel embeddingModel;
+
         private Map<Object, Object> attributes;
+
         private Response<List<Embedding>> response;
+
         private List<TextSegment> textSegments;
 
-        Builder() {}
+        Builder() {
+        }
 
         public Builder embeddingRequest(EmbeddingRequest embeddingRequest) {
             this.embeddingRequest = embeddingRequest;

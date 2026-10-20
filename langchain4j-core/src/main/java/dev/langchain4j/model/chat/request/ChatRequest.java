@@ -4,53 +4,26 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.List;
 import java.util.Objects;
 
 public class ChatRequest {
 
     private final List<ChatMessage> messages;
+
     private final ChatRequestParameters parameters;
 
     protected ChatRequest(Builder builder) {
         this.messages = copy(ensureNotEmpty(builder.messages, "messages"));
-
-        boolean individualParametersAreSpecified = builder.modelName != null
-                || builder.temperature != null
-                || builder.topP != null
-                || builder.topK != null
-                || builder.frequencyPenalty != null
-                || builder.presencePenalty != null
-                || builder.maxOutputTokens != null
-                || !isNullOrEmpty(builder.stopSequences)
-                || !isNullOrEmpty(builder.toolSpecifications)
-                || builder.toolChoice != null
-                || builder.responseFormat != null;
-
+        boolean individualParametersAreSpecified = builder.modelName != null || builder.temperature != null || builder.topP != null || builder.topK != null || builder.frequencyPenalty != null || builder.presencePenalty != null || builder.maxOutputTokens != null || !isNullOrEmpty(builder.stopSequences) || !isNullOrEmpty(builder.toolSpecifications) || builder.toolChoice != null || builder.responseFormat != null;
         if (!individualParametersAreSpecified) {
             this.parameters = builder.parameters != null ? builder.parameters : DefaultChatRequestParameters.EMPTY;
             return;
         }
-
-        ChatRequestParameters overrides = ChatRequestParameters.builder()
-                .modelName(builder.modelName)
-                .temperature(builder.temperature)
-                .topP(builder.topP)
-                .topK(builder.topK)
-                .frequencyPenalty(builder.frequencyPenalty)
-                .presencePenalty(builder.presencePenalty)
-                .maxOutputTokens(builder.maxOutputTokens)
-                .stopSequences(builder.stopSequences)
-                .toolSpecifications(builder.toolSpecifications)
-                .toolChoice(builder.toolChoice)
-                .responseFormat(builder.responseFormat)
-                .build();
-
+        ChatRequestParameters overrides = ChatRequestParameters.builder().modelName(builder.modelName).temperature(builder.temperature).topP(builder.topP).topK(builder.topK).frequencyPenalty(builder.frequencyPenalty).presencePenalty(builder.presencePenalty).maxOutputTokens(builder.maxOutputTokens).stopSequences(builder.stopSequences).toolSpecifications(builder.toolSpecifications).toolChoice(builder.toolChoice).responseFormat(builder.responseFormat).build();
         this.parameters = builder.parameters != null ? builder.parameters.overrideWith(overrides) : overrides;
     }
 
@@ -109,8 +82,10 @@ public class ChatRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ChatRequest that = (ChatRequest) o;
         return Objects.equals(this.messages, that.messages) && Objects.equals(this.parameters, that.parameters);
     }
@@ -167,21 +142,33 @@ public class ChatRequest {
     public static class Builder {
 
         private List<ChatMessage> messages;
+
         private ChatRequestParameters parameters;
 
         private String modelName;
+
         private Double temperature;
+
         private Double topP;
+
         private Integer topK;
+
         private Double frequencyPenalty;
+
         private Double presencePenalty;
+
         private Integer maxOutputTokens;
+
         private List<String> stopSequences;
+
         private List<ToolSpecification> toolSpecifications;
+
         private ToolChoice toolChoice;
+
         private ResponseFormat responseFormat;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         public Builder(ChatRequest chatRequest) {
             this.messages = chatRequest.messages;

@@ -14,6 +14,7 @@ import dev.langchain4j.observability.api.event.AiServiceErrorEvent;
  */
 @FunctionalInterface
 public interface AiServiceErrorListener extends AiServiceListener<AiServiceErrorEvent> {
+
     @Override
     default Class<AiServiceErrorEvent> getEventClass() {
         return AiServiceErrorEvent.class;

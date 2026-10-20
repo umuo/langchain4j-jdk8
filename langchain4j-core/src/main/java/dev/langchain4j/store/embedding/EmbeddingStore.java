@@ -6,7 +6,6 @@ import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.Utils.randomUUID;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static java.util.Collections.singletonList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
@@ -25,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
  * @param <Embedded> The class of the object that has been embedded. Typically, this is {@link dev.langchain4j.data.segment.TextSegment}.
  */
 public interface EmbeddingStore<Embedded> {
+
     /**
      * Adds a given embedding to the store.
      *
@@ -196,7 +196,7 @@ public interface EmbeddingStore<Embedded> {
      */
     @Experimental
     default EmbeddingStore<Embedded> addListener(EmbeddingStoreListener listener) {
-        return addListeners(listener == null ? null : List.of(listener));
+        return addListeners(listener == null ? null : dev.langchain4j.internal.Jdk8.list(listener));
     }
 
     /**
@@ -213,8 +213,8 @@ public interface EmbeddingStore<Embedded> {
         if (isNullOrEmpty(listeners)) {
             return this;
         }
-        if (this instanceof ListeningEmbeddingStore<Embedded> listeningEmbeddingStore) {
-            return listeningEmbeddingStore.withAdditionalListeners(listeners);
+        if (this instanceof ListeningEmbeddingStore) {
+            return ((ListeningEmbeddingStore<Embedded>) this).withAdditionalListeners(listeners);
         }
         return new ListeningEmbeddingStore<>(this, listeners);
     }

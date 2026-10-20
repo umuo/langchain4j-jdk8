@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
-
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.annotation.JsonTypeName;
@@ -21,10 +20,13 @@ import java.util.Set;
 @Internal
 public final class PolymorphicTypes {
 
-    /** Default discriminator property name when {@code @JsonTypeInfo} is not configured. */
+    /**
+     * Default discriminator property name when {@code @JsonTypeInfo} is not configured.
+     */
     public static final String DEFAULT_DISCRIMINATOR_PROPERTY = "type";
 
-    private PolymorphicTypes() {}
+    private PolymorphicTypes() {
+    }
 
     /**
      * Returns {@code true} if {@code type} is a polymorphic base — sealed, or annotated with
@@ -34,7 +36,7 @@ public final class PolymorphicTypes {
         if (type == null || type.isPrimitive() || type.isEnum() || type.isArray()) {
             return false;
         }
-        if (type.getAnnotation(JsonSubTypes.class) != null || type.isSealed()) {
+        if (type.getAnnotation(JsonSubTypes.class) != null || dev.langchain4j.internal.Jdk8.isSealed(type)) {
             return !findConcreteSubtypes(type).isEmpty();
         }
         return false;
@@ -58,8 +60,8 @@ public final class PolymorphicTypes {
             }
             return;
         }
-        if (type.isSealed()) {
-            for (Class<?> permitted : type.getPermittedSubclasses()) {
+        if (dev.langchain4j.internal.Jdk8.isSealed(type)) {
+            for (Class<?> permitted : dev.langchain4j.internal.Jdk8.getPermittedSubclasses(type)) {
                 flatten(permitted, result);
             }
             return;
@@ -116,16 +118,10 @@ public final class PolymorphicTypes {
             return;
         }
         if (ann.use() != JsonTypeInfo.Id.NAME && ann.use() != JsonTypeInfo.Id.SIMPLE_NAME) {
-            throw new UnsupportedFeatureException(String.format(
-                    "@JsonTypeInfo(use = Id.%s) on %s is not supported for AI Service return types. "
-                            + "Supported values: Id.NAME, Id.SIMPLE_NAME.",
-                    ann.use().name(), baseType.getName()));
+            throw new UnsupportedFeatureException(String.format("@JsonTypeInfo(use = Id.%s) on %s is not supported for AI Service return types. " + "Supported values: Id.NAME, Id.SIMPLE_NAME.", ann.use().name(), baseType.getName()));
         }
         if (ann.include() != JsonTypeInfo.As.PROPERTY && ann.include() != JsonTypeInfo.As.EXISTING_PROPERTY) {
-            throw new UnsupportedFeatureException(String.format(
-                    "@JsonTypeInfo(include = As.%s) on %s is not supported for AI Service return types. "
-                            + "Supported values: As.PROPERTY, As.EXISTING_PROPERTY.",
-                    ann.include().name(), baseType.getName()));
+            throw new UnsupportedFeatureException(String.format("@JsonTypeInfo(include = As.%s) on %s is not supported for AI Service return types. " + "Supported values: As.PROPERTY, As.EXISTING_PROPERTY.", ann.include().name(), baseType.getName()));
         }
     }
 }

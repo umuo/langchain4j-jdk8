@@ -25,7 +25,7 @@ public interface LangChain4jManaged {
     }
 
     static <T extends LangChain4jManaged> T current(Class<T> clazz) {
-        var current = CURRENT.get();
+        java.util.Map<java.lang.Class<? extends dev.langchain4j.invocation.LangChain4jManaged>, dev.langchain4j.invocation.LangChain4jManaged> current = CURRENT.get();
         return current != null ? clazz.cast(current.get(clazz)) : null;
     }
 

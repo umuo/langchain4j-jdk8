@@ -4,13 +4,13 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static java.util.Arrays.asList;
-
 import java.util.List;
 import java.util.Objects;
 
 public class JsonAnyOfSchema implements JsonSchemaElement {
 
     private final String description;
+
     private final List<JsonSchemaElement> anyOf;
 
     public JsonAnyOfSchema(Builder builder) {
@@ -34,6 +34,7 @@ public class JsonAnyOfSchema implements JsonSchemaElement {
     public static class Builder {
 
         private String description;
+
         private List<JsonSchemaElement> anyOf;
 
         public Builder description(String description) {
@@ -57,9 +58,11 @@ public class JsonAnyOfSchema implements JsonSchemaElement {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof final JsonAnyOfSchema that)) return false;
-        return Objects.equals(description, that.description) && Objects.equals(anyOf, that.anyOf);
+        if (this == o)
+            return true;
+        if (!(o instanceof JsonAnyOfSchema))
+            return false;
+        return Objects.equals(description, ((JsonAnyOfSchema) o).description) && Objects.equals(anyOf, ((JsonAnyOfSchema) o).anyOf);
     }
 
     @Override

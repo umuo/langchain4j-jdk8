@@ -15,9 +15,7 @@ import java.time.Duration;
  * @param <R> the type of guardrail result produced by the validation process
  * @param <G> the type of guardrail class used in the validation process
  */
-public interface GuardrailExecutedEvent<
-                P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>>
-        extends AiServiceEvent {
+public interface GuardrailExecutedEvent<P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>> extends AiServiceEvent {
 
     /**
      * Retrieves the request used for input guardrail validation.
@@ -60,20 +58,20 @@ public interface GuardrailExecutedEvent<
      */
     Duration duration();
 
-    abstract class GuardrailExecutedEventBuilder<
-                    P extends GuardrailRequest<P>,
-                    R extends GuardrailResult<R>,
-                    G extends Guardrail<P, R>,
-                    T extends GuardrailExecutedEvent<P, R, G>>
-            extends Builder<T> {
+    abstract class GuardrailExecutedEventBuilder<P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>, T extends GuardrailExecutedEvent<P, R, G>> extends Builder<T> {
 
         private P request;
+
         private R result;
+
         private Class<G> guardrailClass;
+
         private String guardrailName;
+
         private Duration duration;
 
-        protected GuardrailExecutedEventBuilder() {}
+        protected GuardrailExecutedEventBuilder() {
+        }
 
         protected GuardrailExecutedEventBuilder(T src) {
             super(src);

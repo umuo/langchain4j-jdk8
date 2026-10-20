@@ -2,10 +2,8 @@ package dev.langchain4j.model.catalog;
 
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.ModelProvider;
-
 import java.time.Instant;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**
@@ -22,13 +20,21 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ModelDescription {
 
     private final String name;
+
     private final String displayName;
+
     private final String description;
+
     private final ModelProvider provider;
+
     private final ModelType type;
+
     private final Integer maxInputTokens;
+
     private final Integer maxOutputTokens;
+
     private final Instant createdAt;
+
     private final String owner;
 
     private ModelDescription(Builder builder) {
@@ -119,8 +125,10 @@ public class ModelDescription {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ModelDescription)) return false;
+        if (this == o)
+            return true;
+        if (!(o instanceof ModelDescription))
+            return false;
         ModelDescription that = (ModelDescription) o;
         return Objects.equals(name, that.name) && Objects.equals(provider, that.provider);
     }
@@ -132,28 +140,27 @@ public class ModelDescription {
 
     @Override
     public String toString() {
-        return "ModelDescription{" + "name='"
-                + name + '\'' + ", displayName='"
-                + displayName + '\'' + ", description='"
-                + description + '\'' + ", provider="
-                + provider + ", type="
-                + type + ", maxInputTokens="
-                + maxInputTokens + ", maxOutputTokens="
-                + maxOutputTokens + ", createdAt="
-                + createdAt + ", owner='"
-                + owner + '\'' + '}';
+        return "ModelDescription{" + "name='" + name + '\'' + ", displayName='" + displayName + '\'' + ", description='" + description + '\'' + ", provider=" + provider + ", type=" + type + ", maxInputTokens=" + maxInputTokens + ", maxOutputTokens=" + maxOutputTokens + ", createdAt=" + createdAt + ", owner='" + owner + '\'' + '}';
     }
 
     public static class Builder {
 
         private String name;
+
         private String displayName;
+
         private String description;
+
         private ModelProvider provider;
+
         private ModelType type;
+
         private Integer maxInputTokens;
+
         private Integer maxOutputTokens;
+
         private Instant createdAt;
+
         private String owner;
 
         /**

@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail.config;
 
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**
@@ -9,6 +8,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
  */
 @JacocoIgnoreCoverageGenerated
 final class DefaultOutputGuardrailsConfig implements OutputGuardrailsConfig {
+
     private final int maxRetries;
 
     DefaultOutputGuardrailsConfig(Builder builder) {
@@ -33,6 +33,7 @@ final class DefaultOutputGuardrailsConfig implements OutputGuardrailsConfig {
      * Builder for {@link DefaultOutputGuardrailsConfig} instances.
      */
     static class Builder implements OutputGuardrailsConfigBuilder {
+
         private int maxRetries = MAX_RETRIES_DEFAULT;
 
         @Override

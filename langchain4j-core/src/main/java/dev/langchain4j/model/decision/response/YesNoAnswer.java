@@ -45,9 +45,11 @@ public final class YesNoAnswer implements DecisionAnswer {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof YesNoAnswer that)) return false;
-        return Double.compare(probability, that.probability) == 0;
+        if (this == o)
+            return true;
+        if (!(o instanceof YesNoAnswer))
+            return false;
+        return Double.compare(probability, ((YesNoAnswer) o).probability) == 0;
     }
 
     @Override

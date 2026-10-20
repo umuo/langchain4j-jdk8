@@ -2,7 +2,6 @@ package dev.langchain4j.model.embedding.request;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import java.util.Objects;
 
@@ -30,12 +29,7 @@ import java.util.Objects;
  * @since 1.18.0
  */
 @Experimental
-public record EmbeddingParameter<T>(String name, Class<T> type) {
-
-    public EmbeddingParameter {
-        name = ensureNotBlank(name, "name");
-        type = ensureNotNull(type, "type");
-    }
+public final class EmbeddingParameter<T> {
 
     /**
      * Casts the given value to this parameter's {@link #type()}.
@@ -49,8 +43,10 @@ public record EmbeddingParameter<T>(String name, Class<T> type) {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingParameter<?> that = (EmbeddingParameter<?>) o;
         return Objects.equals(name, that.name);
     }
@@ -63,5 +59,24 @@ public record EmbeddingParameter<T>(String name, Class<T> type) {
     @Override
     public String toString() {
         return name;
+    }
+
+    private final String name;
+
+    public String name() {
+        return name;
+    }
+
+    private final Class<T> type;
+
+    public Class<T> type() {
+        return type;
+    }
+
+    public EmbeddingParameter(String name, Class<T> type) {
+        name = ensureNotBlank(name, "name");
+        type = ensureNotNull(type, "type");
+        this.name = name;
+        this.type = type;
     }
 }

@@ -3,9 +3,7 @@ package dev.langchain4j.model.moderation.listener;
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.moderation.ModerationRequest;
 import dev.langchain4j.model.moderation.ModerationResponse;
-
 import java.util.Map;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**
@@ -17,8 +15,11 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ModerationModelResponseContext {
 
     private final ModerationResponse moderationResponse;
+
     private final ModerationRequest moderationRequest;
+
     private final ModelProvider modelProvider;
+
     private final Map<Object, Object> attributes;
 
     /**
@@ -29,11 +30,7 @@ public class ModerationModelResponseContext {
      * @param modelProvider      the model provider.
      * @param attributes         the attributes map.
      */
-    public ModerationModelResponseContext(
-            ModerationResponse moderationResponse,
-            ModerationRequest moderationRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes) {
+    public ModerationModelResponseContext(ModerationResponse moderationResponse, ModerationRequest moderationRequest, ModelProvider modelProvider, Map<Object, Object> attributes) {
         this.moderationResponse = ensureNotNull(moderationResponse, "moderationResponse");
         this.moderationRequest = ensureNotNull(moderationRequest, "moderationRequest");
         this.modelProvider = ensureNotNull(modelProvider, "modelProvider");
@@ -71,10 +68,6 @@ public class ModerationModelResponseContext {
 
     @Override
     public String toString() {
-        return "ModerationModelResponseContext{" + "moderationResponse="
-                + moderationResponse + ", moderationRequest="
-                + moderationRequest + ", modelProvider="
-                + modelProvider + ", attributes="
-                + attributes + '}';
+        return "ModerationModelResponseContext{" + "moderationResponse=" + moderationResponse + ", moderationRequest=" + moderationRequest + ", modelProvider=" + modelProvider + ", attributes=" + attributes + '}';
     }
 }

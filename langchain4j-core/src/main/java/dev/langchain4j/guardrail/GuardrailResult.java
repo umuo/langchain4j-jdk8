@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,12 +15,13 @@ import java.util.stream.Collectors;
  * @see InputGuardrailResult
  * @see OutputGuardrailResult
  */
-public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
-        permits InputGuardrailResult, OutputGuardrailResult {
+public interface GuardrailResult<GR extends GuardrailResult<GR>> {
+
     /**
      * The possible results of a guardrails validation.
      */
     enum Result {
+
         /**
          * A successful validation.
          */
@@ -43,7 +43,8 @@ public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
     /**
      * The message and the cause of the failure of a single validation.
      */
-    sealed interface Failure permits InputGuardrailResult.Failure, OutputGuardrailResult.Failure {
+    interface Failure {
+
         /**
          * Build a failure from a specific {@link Guardrail} class
          */
@@ -69,10 +70,8 @@ public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
          * @return A string representation of the failure
          */
         default String asString() {
-            var guardrailName =
-                    Optional.ofNullable(guardrailClass()).map(Class::getName).orElse("");
-
-            return "The guardrail %s failed with this message: %s".formatted(guardrailName, message());
+            java.lang.String guardrailName = Optional.ofNullable(guardrailClass()).map(Class::getName).orElse("");
+            return String.format("The guardrail %s failed with this message: %s", guardrailName, message());
         }
     }
 
@@ -109,7 +108,7 @@ public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
      * Whether or not the result is considered successful
      */
     default boolean isSuccess() {
-        var result = result();
+        dev.langchain4j.guardrail.GuardrailResult.Result result = result();
         return (result == Result.SUCCESS) || (result == Result.SUCCESS_WITH_RESULT);
     }
 
@@ -117,13 +116,7 @@ public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
      * Gets the exception from the first failure
      */
     default Throwable getFirstFailureException() {
-        return !isSuccess()
-                ? failures().stream()
-                        .map(Failure::cause)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                        .orElse(null)
-                : null;
+        return !isSuccess() ? failures().stream().map(Failure::cause).filter(Objects::nonNull).findFirst().orElse(null) : null;
     }
 
     /**
@@ -131,25 +124,20 @@ public sealed interface GuardrailResult<GR extends GuardrailResult<GR>>
      */
     default GR validatedBy(Class<? extends Guardrail> guardrailClass) {
         ensureNotNull(guardrailClass, "guardrailClass");
-
         if (!isSuccess()) {
-            var failures = failures();
-
+            java.util.List<dev.langchain4j.guardrail.GuardrailResult.Failure> failures = failures();
             if (failures.size() != 1) {
                 throw new IllegalArgumentException();
             }
-
             failures.set(0, failures.get(0).withGuardrailClass(guardrailClass));
         }
-
         return (GR) this;
     }
 
     default String asString() {
         if (isSuccess()) {
-            return hasRewrittenResult() ? "Success with '%s'".formatted(successfulText()) : "Success";
+            return hasRewrittenResult() ? String.format("Success with '%s'", successfulText()) : "Success";
         }
-
         return failures().stream().map(Failure::toString).collect(Collectors.joining(", "));
     }
 }

@@ -3,7 +3,6 @@ package dev.langchain4j.internal;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.langchain4j.agent.tool.ToolSpecificationJsonCodec;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**

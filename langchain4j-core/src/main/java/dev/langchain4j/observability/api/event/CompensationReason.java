@@ -1,6 +1,7 @@
 package dev.langchain4j.observability.api.event;
 
 import dev.langchain4j.Experimental;
+
 /**
  * Why a successfully-executed tool was compensated (rolled back). Carried by {@link ToolCompensatedEvent}.
  *
@@ -14,7 +15,6 @@ public enum CompensationReason {
      * rolled back to keep the round consistent.
      */
     TOOL_EXECUTION_FAILED,
-
     /**
      * The AI Service invocation was cancelled, so this tool - which had executed successfully - was rolled back.
      */

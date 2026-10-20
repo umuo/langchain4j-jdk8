@@ -7,7 +7,6 @@ import dev.langchain4j.model.embedding.EmbeddingModel;
 import dev.langchain4j.rag.content.Content;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Query;
-
 import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
@@ -40,7 +39,7 @@ public interface QueryRouter {
     /**
      * Non-blocking counterpart of {@link #route(Query)}, invoked by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link java.util.concurrent.CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service modes when RAG is configured.
+     * ({@link org.reactivestreams.Publisher}) AI Service modes when RAG is configured.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}: a router backed by a blocking LLM
      * call (e.g. {@link LanguageModelQueryRouter}) must opt in by overriding this method to stay off the calling

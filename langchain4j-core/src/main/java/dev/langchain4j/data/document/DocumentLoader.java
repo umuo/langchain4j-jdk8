@@ -14,7 +14,8 @@ public class DocumentLoader {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentLoader.class);
 
-    private DocumentLoader() {}
+    private DocumentLoader() {
+    }
 
     /**
      * Loads a document from the given source using the given parser.
@@ -48,36 +49,19 @@ public class DocumentLoader {
         if (conflicts.isEmpty()) {
             return;
         }
-        log.warn(
-                "Metadata keys set by both the document and the source, with different values: {}. "
-                        + "Keeping the source values and discarding the document values. "
-                        + "To control this, remove these keys in your DocumentParser "
-                        + "before returning the Document.",
-                "{" + String.join(", ", conflicts) + "}");
+        log.warn("Metadata keys set by both the document and the source, with different values: {}. " + "Keeping the source values and discarding the document values. " + "To control this, remove these keys in your DocumentParser " + "before returning the Document.", "{" + String.join(", ", conflicts) + "}");
     }
 
     static List<String> describeConflicts(Metadata documentMetadata, Map<String, Object> sourceMetadata) {
         Map<String, Object> documentValues = documentMetadata.toMap();
-        return sourceMetadata.entrySet().stream()
-                .filter(sourceEntry -> documentValues.containsKey(sourceEntry.getKey())
-                        && !Objects.equals(documentValues.get(sourceEntry.getKey()), sourceEntry.getValue()))
-                .sorted(Map.Entry.comparingByKey())
-                .map(sourceEntry -> describeConflict(
-                        sourceEntry.getKey(), documentValues.get(sourceEntry.getKey()), sourceEntry.getValue()))
-                .toList();
+        return sourceMetadata.entrySet().stream().filter(sourceEntry -> documentValues.containsKey(sourceEntry.getKey()) && !Objects.equals(documentValues.get(sourceEntry.getKey()), sourceEntry.getValue())).sorted(Map.Entry.comparingByKey()).map(sourceEntry -> describeConflict(sourceEntry.getKey(), documentValues.get(sourceEntry.getKey()), sourceEntry.getValue())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     private static String describeConflict(String key, Object documentValue, Object sourceValue) {
         if (documentValue.toString().equals(sourceValue.toString())) {
             // the values differ only in type, so without it the two would be indistinguishable
-            return "%s=(document=\"%s\" (%s), source=\"%s\" (%s))"
-                    .formatted(
-                            key,
-                            documentValue,
-                            documentValue.getClass().getSimpleName(),
-                            sourceValue,
-                            sourceValue.getClass().getSimpleName());
+            return String.format("%s=(document=\"%s\" (%s), source=\"%s\" (%s))", key, documentValue, documentValue.getClass().getSimpleName(), sourceValue, sourceValue.getClass().getSimpleName());
         }
-        return "%s=(document=\"%s\", source=\"%s\")".formatted(key, documentValue, sourceValue);
+        return String.format("%s=(document=\"%s\", source=\"%s\")", key, documentValue, sourceValue);
     }
 }

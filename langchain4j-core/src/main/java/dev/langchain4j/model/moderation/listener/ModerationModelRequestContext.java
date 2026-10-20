@@ -2,9 +2,7 @@ package dev.langchain4j.model.moderation.listener;
 
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.moderation.ModerationRequest;
-
 import java.util.Map;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**
@@ -16,7 +14,9 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ModerationModelRequestContext {
 
     private final ModerationRequest moderationRequest;
+
     private final ModelProvider modelProvider;
+
     private final Map<Object, Object> attributes;
 
     /**
@@ -26,10 +26,7 @@ public class ModerationModelRequestContext {
      * @param modelProvider     the model provider.
      * @param attributes        the attributes map.
      */
-    public ModerationModelRequestContext(
-            ModerationRequest moderationRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes) {
+    public ModerationModelRequestContext(ModerationRequest moderationRequest, ModelProvider modelProvider, Map<Object, Object> attributes) {
         this.moderationRequest = ensureNotNull(moderationRequest, "moderationRequest");
         this.modelProvider = ensureNotNull(modelProvider, "modelProvider");
         this.attributes = ensureNotNull(attributes, "attributes");
@@ -59,9 +56,6 @@ public class ModerationModelRequestContext {
 
     @Override
     public String toString() {
-        return "ModerationModelRequestContext{" + "moderationRequest="
-                + moderationRequest + ", modelProvider="
-                + modelProvider + ", attributes="
-                + attributes + '}';
+        return "ModerationModelRequestContext{" + "moderationRequest=" + moderationRequest + ", modelProvider=" + modelProvider + ", attributes=" + attributes + '}';
     }
 }

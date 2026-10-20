@@ -2,9 +2,7 @@ package dev.langchain4j.rag;
 
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.rag.content.Content;
-
 import java.util.List;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -43,6 +41,7 @@ public class AugmentationResult {
     public static class AugmentationResultBuilder {
 
         private ChatMessage chatMessage;
+
         private List<Content> contents;
 
         AugmentationResultBuilder() {

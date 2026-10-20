@@ -1,9 +1,7 @@
 package dev.langchain4j.store.embedding;
 
 import dev.langchain4j.data.embedding.Embedding;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -15,8 +13,11 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class EmbeddingMatch<Embedded> {
 
     private final Double score;
+
     private final String embeddingId;
+
     private final Embedding embedding;
+
     private final Embedded embedded;
 
     /**
@@ -71,13 +72,12 @@ public class EmbeddingMatch<Embedded> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingMatch<?> that = (EmbeddingMatch<?>) o;
-        return Objects.equals(this.score, that.score)
-                && Objects.equals(this.embeddingId, that.embeddingId)
-                && Objects.equals(this.embedding, that.embedding)
-                && Objects.equals(this.embedded, that.embedded);
+        return Objects.equals(this.score, that.score) && Objects.equals(this.embeddingId, that.embeddingId) && Objects.equals(this.embedding, that.embedding) && Objects.equals(this.embedded, that.embedded);
     }
 
     @Override
@@ -87,11 +87,6 @@ public class EmbeddingMatch<Embedded> {
 
     @Override
     public String toString() {
-        return "EmbeddingMatch {" +
-                " score = " + score +
-                ", embedded = " + embedded +
-                ", embeddingId = " + embeddingId +
-                ", embedding = " + embedding +
-                " }";
+        return "EmbeddingMatch {" + " score = " + score + ", embedded = " + embedded + ", embeddingId = " + embeddingId + ", embedding = " + embedding + " }";
     }
 }

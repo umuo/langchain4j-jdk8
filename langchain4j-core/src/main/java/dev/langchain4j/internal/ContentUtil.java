@@ -7,7 +7,8 @@ import java.util.Base64;
 
 public class ContentUtil {
 
-    private ContentUtil() { }
+    private ContentUtil() {
+    }
 
     public static String extractBase64Content(Path filePath) {
         try {

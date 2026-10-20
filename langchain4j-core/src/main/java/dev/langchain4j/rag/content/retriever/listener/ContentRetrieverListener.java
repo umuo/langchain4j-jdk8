@@ -18,7 +18,8 @@ public interface ContentRetrieverListener {
      *                       The attributes can be used to pass data between methods of this listener
      *                       or between multiple listeners.
      */
-    default void onRequest(ContentRetrieverRequestContext requestContext) {}
+    default void onRequest(ContentRetrieverRequestContext requestContext) {
+    }
 
     /**
      * This method is called after a successful retrieval.
@@ -27,7 +28,8 @@ public interface ContentRetrieverListener {
      *                        The attributes can be used to pass data between methods of this listener
      *                        or between multiple listeners.
      */
-    default void onResponse(ContentRetrieverResponseContext responseContext) {}
+    default void onResponse(ContentRetrieverResponseContext responseContext) {
+    }
 
     /**
      * This method is called when an error occurs during retrieval.
@@ -36,5 +38,6 @@ public interface ContentRetrieverListener {
      *                     The attributes can be used to pass data between methods of this listener
      *                     or between multiple listeners.
      */
-    default void onError(ContentRetrieverErrorContext errorContext) {}
+    default void onError(ContentRetrieverErrorContext errorContext) {
+    }
 }

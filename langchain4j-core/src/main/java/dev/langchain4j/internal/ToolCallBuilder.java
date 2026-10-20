@@ -2,7 +2,6 @@ package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.Utils.isNotNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNotNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.model.chat.response.CompleteToolCall;
@@ -25,7 +24,9 @@ public class ToolCallBuilder {
     private volatile int index;
 
     private volatile String id;
+
     private volatile String name;
+
     private final StringBuffer arguments = new StringBuffer();
 
     private final Queue<ToolExecutionRequest> toolExecutionRequests = new ConcurrentLinkedQueue<>();
@@ -81,16 +82,9 @@ public class ToolCallBuilder {
         if (arguments.isEmpty()) {
             arguments = "{}";
         }
-
-        ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder()
-                .id(this.id)
-                .name(this.name)
-                .arguments(arguments)
-                .build();
+        ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder().id(this.id).name(this.name).arguments(arguments).build();
         toolExecutionRequests.add(toolExecutionRequest);
-
         reset();
-
         return new CompleteToolCall(this.index, toolExecutionRequest);
     }
 

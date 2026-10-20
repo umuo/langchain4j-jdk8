@@ -3,7 +3,6 @@ package dev.langchain4j.internal;
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import java.util.Collection;
 import java.util.List;
@@ -16,7 +15,8 @@ import java.util.Objects;
 @Internal
 public class ValidationUtils {
 
-    private ValidationUtils() {}
+    private ValidationUtils() {
+    }
 
     /**
      * Ensure that the two values are equal.
@@ -53,15 +53,9 @@ public class ValidationUtils {
     public static void ensureConsistentSizes(List<?> ids, List<?> embeddings, List<?> embedded) {
         int idsSize = ids == null ? 0 : ids.size();
         int embeddingsSize = embeddings == null ? 0 : embeddings.size();
-        ensureEq(
-                idsSize, embeddingsSize, "ids size (%s) is not equal to embeddings size (%s)", idsSize, embeddingsSize);
+        ensureEq(idsSize, embeddingsSize, "ids size (%s) is not equal to embeddings size (%s)", idsSize, embeddingsSize);
         if (embedded != null) {
-            ensureEq(
-                    embeddingsSize,
-                    embedded.size(),
-                    "embeddings size (%s) is not equal to embedded size (%s)",
-                    embeddingsSize,
-                    embedded.size());
+            ensureEq(embeddingsSize, embedded.size(), "embeddings size (%s) is not equal to embedded size (%s)", embeddingsSize, embedded.size());
         }
     }
 
@@ -104,7 +98,6 @@ public class ValidationUtils {
         if (isNullOrEmpty(collection)) {
             throw illegalArgument("%s cannot be null or empty", name);
         }
-
         return collection;
     }
 
@@ -150,7 +143,6 @@ public class ValidationUtils {
         if (isNullOrEmpty(map)) {
             throw illegalArgument("%s cannot be null or empty", name);
         }
-
         return map;
     }
 
@@ -229,7 +221,6 @@ public class ValidationUtils {
         if (i == null || i < 0) {
             throw illegalArgument("%s must not be negative, but is: %s", name, i);
         }
-
         return i;
     }
 
@@ -244,7 +235,6 @@ public class ValidationUtils {
         if (i == null || i <= 0) {
             throw illegalArgument("%s must be greater than zero, but is: %s", name, i);
         }
-
         return i;
     }
 
@@ -259,7 +249,6 @@ public class ValidationUtils {
         if (i == null || i <= 0) {
             throw illegalArgument("%s must be greater than zero, but is: %s", name, i);
         }
-
         return i;
     }
 

@@ -2,13 +2,13 @@ package dev.langchain4j.model.image;
 
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.model.output.Response;
-
 import java.util.List;
 
 /**
  * Text to Image generator model.
  */
 public interface ImageModel {
+
     /**
      * Given a prompt, generate an image.
      * @param prompt The prompt to generate an image from.

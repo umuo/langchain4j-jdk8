@@ -2,7 +2,6 @@ package dev.langchain4j.model.output.structured;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
@@ -10,7 +9,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Annotation to attach a description to a class field.
  */
-@Target({FIELD, TYPE})
+@Target({ FIELD, TYPE })
 @Retention(RUNTIME)
 public @interface Description {
 

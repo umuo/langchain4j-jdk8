@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.observability.api.AiServiceListenerRegistrar;
@@ -17,10 +16,15 @@ import java.util.Optional;
 public final class GuardrailRequestParams {
 
     private final ChatMemory chatMemory;
+
     private final AugmentationResult augmentationResult;
+
     private final String userMessageTemplate;
+
     private final Map<String, Object> variables;
+
     private final InvocationContext invocationContext;
+
     private final AiServiceListenerRegistrar aiServiceListenerRegistrar;
 
     private GuardrailRequestParams(Builder builder) {
@@ -29,8 +33,7 @@ public final class GuardrailRequestParams {
         this.userMessageTemplate = ensureNotNull(builder.userMessageTemplate, "userMessageTemplate");
         this.variables = ensureNotNull(builder.variables, "variables");
         this.invocationContext = builder.invocationContext;
-        this.aiServiceListenerRegistrar = Optional.ofNullable(builder.aiServiceListenerRegistrar)
-                .orElseGet(AiServiceListenerRegistrar::newInstance);
+        this.aiServiceListenerRegistrar = Optional.ofNullable(builder.aiServiceListenerRegistrar).orElseGet(AiServiceListenerRegistrar::newInstance);
     }
 
     /**
@@ -112,14 +115,21 @@ public final class GuardrailRequestParams {
      * Builder for {@link GuardrailRequestParams}.
      */
     public static class Builder {
+
         private ChatMemory chatMemory;
+
         private AugmentationResult augmentationResult;
+
         private String userMessageTemplate;
+
         private Map<String, Object> variables;
+
         private InvocationContext invocationContext;
+
         private AiServiceListenerRegistrar aiServiceListenerRegistrar;
 
-        public Builder() {}
+        public Builder() {
+        }
 
         public Builder(GuardrailRequestParams src) {
             this.chatMemory = src.chatMemory;

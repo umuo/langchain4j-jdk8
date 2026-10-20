@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat;
 
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
@@ -20,13 +19,10 @@ class ChatModelListenerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ChatModelListenerUtils.class);
 
-    private ChatModelListenerUtils() {}
+    private ChatModelListenerUtils() {
+    }
 
-    static void onRequest(
-            ChatRequest chatRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes,
-            List<ChatModelListener> listeners) {
+    static void onRequest(ChatRequest chatRequest, ModelProvider modelProvider, Map<Object, Object> attributes, List<ChatModelListener> listeners) {
         if (isNullOrEmpty(listeners)) {
             return;
         }
@@ -35,43 +31,26 @@ class ChatModelListenerUtils {
             try {
                 listener.onRequest(requestContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the chat model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the chat model listener. " + "This exception has been ignored.", e);
             }
         });
     }
 
-    static void onResponse(
-            ChatResponse chatResponse,
-            ChatRequest chatRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes,
-            List<ChatModelListener> listeners) {
+    static void onResponse(ChatResponse chatResponse, ChatRequest chatRequest, ModelProvider modelProvider, Map<Object, Object> attributes, List<ChatModelListener> listeners) {
         if (isNullOrEmpty(listeners)) {
             return;
         }
-        ChatModelResponseContext responseContext =
-                new ChatModelResponseContext(chatResponse, chatRequest, modelProvider, attributes);
+        ChatModelResponseContext responseContext = new ChatModelResponseContext(chatResponse, chatRequest, modelProvider, attributes);
         listeners.forEach(listener -> {
             try {
                 listener.onResponse(responseContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the chat model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the chat model listener. " + "This exception has been ignored.", e);
             }
         });
     }
 
-    static void onError(
-            Throwable error,
-            ChatRequest chatRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes,
-            List<ChatModelListener> listeners) {
+    static void onError(Throwable error, ChatRequest chatRequest, ModelProvider modelProvider, Map<Object, Object> attributes, List<ChatModelListener> listeners) {
         if (isNullOrEmpty(listeners)) {
             return;
         }
@@ -80,10 +59,7 @@ class ChatModelListenerUtils {
             try {
                 listener.onError(errorContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the chat model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the chat model listener. " + "This exception has been ignored.", e);
             }
         });
     }

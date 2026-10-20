@@ -17,10 +17,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
 @Internal
 public class TypeAllowlist {
 
-    private static final Set<Class<?>> ALLOWED_BASE_CLASSES =
-            Set.of(Number.class, String.class, Boolean.class, Character.class, Enum.class);
+    private static final Set<Class<?>> ALLOWED_BASE_CLASSES = dev.langchain4j.internal.Jdk8.set(Number.class, String.class, Boolean.class, Character.class, Enum.class);
 
     private final Set<String> allowedPrefixes = new CopyOnWriteArraySet<>();
+
     private final Set<String> allowedClasses = new CopyOnWriteArraySet<>();
 
     /**

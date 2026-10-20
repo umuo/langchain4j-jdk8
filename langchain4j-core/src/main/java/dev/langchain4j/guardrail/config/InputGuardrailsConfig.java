@@ -10,15 +10,13 @@ import java.util.ServiceLoader;
  * </p>
  */
 public interface InputGuardrailsConfig extends GuardrailsConfig {
+
     /**
      * Gets a builder instance for building {@link InputGuardrailsConfig} instances.
      * @return A {@link InputGuardrailsConfigBuilder} for building {@link InputGuardrailsConfig} instances.
      */
     static InputGuardrailsConfigBuilder builder() {
-        return ServiceLoader.load(InputGuardrailsConfigBuilderFactory.class)
-                .findFirst()
-                .map(InputGuardrailsConfigBuilderFactory::get)
-                .orElseGet(DefaultInputGuardrailsConfig::builder);
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(InputGuardrailsConfigBuilderFactory.class)).map(InputGuardrailsConfigBuilderFactory::get).orElseGet(DefaultInputGuardrailsConfig::builder);
     }
 
     /**
@@ -28,5 +26,6 @@ public interface InputGuardrailsConfig extends GuardrailsConfig {
      *     implementations while also adhering to the interfaces and specs defined here.
      * </p>
      */
-    interface InputGuardrailsConfigBuilder extends GuardrailsConfigBuilder<InputGuardrailsConfig> {}
+    interface InputGuardrailsConfigBuilder extends GuardrailsConfigBuilder<InputGuardrailsConfig> {
+    }
 }

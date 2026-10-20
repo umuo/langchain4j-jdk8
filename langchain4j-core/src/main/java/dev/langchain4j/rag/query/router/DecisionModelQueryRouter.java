@@ -9,7 +9,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.Collections.emptyList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.internal.DecisionModelInputUtils;
 import dev.langchain4j.exception.AsyncNotSupportedException;
@@ -71,10 +70,12 @@ public class DecisionModelQueryRouter implements QueryRouter {
      * The default template of the question asked for each retriever:
      * {@code "Could the following data source contain information that helps answer the query?\n{{description}}"}.
      */
-    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = PromptTemplate.from(
-            "Could the following data source contain information that helps answer the query?\n{{description}}");
+    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = PromptTemplate.from("Could the following data source contain information that helps answer the query?\n{{description}}");
+
     private static final double DEFAULT_MIN_PROBABILITY = 0.5;
+
     private static final int DEFAULT_MAX_MESSAGES = 10;
+
     private static final int DEFAULT_MAX_MESSAGE_LENGTH = 2000;
 
     /**
@@ -86,12 +87,10 @@ public class DecisionModelQueryRouter implements QueryRouter {
          * The query is not routed to any retriever, so no content is retrieved, and a warning is logged.
          */
         DO_NOT_ROUTE,
-
         /**
          * The query is routed to all retrievers, and a warning is logged.
          */
         ROUTE_TO_ALL,
-
         /**
          * The error of the decision model is rethrown, so the request fails.
          */
@@ -99,12 +98,19 @@ public class DecisionModelQueryRouter implements QueryRouter {
     }
 
     private final DecisionModel decisionModel;
+
     private final Map<String, ContentRetriever> retrievers;
+
     private final Map<String, YesNoQuestion> questions;
+
     private final double minProbability;
+
     private final FallbackStrategy fallbackStrategy;
+
     private final int maxMessages;
+
     private final int maxMessageLength;
+
     private final Predicate<? super ChatMessage> messageFilter;
 
     public DecisionModelQueryRouter(DecisionModel decisionModel, Map<ContentRetriever, String> retrieverToDescription) {
@@ -116,14 +122,11 @@ public class DecisionModelQueryRouter implements QueryRouter {
         ensureNotEmpty(builder.retrieverToDescription, "retrieverToDescription");
         PromptTemplate questionTemplate = getOrDefault(builder.questionTemplate, DEFAULT_QUESTION_TEMPLATE);
         validate(questionTemplate);
-        this.minProbability = ensureBetween(
-                getOrDefault(builder.minProbability, DEFAULT_MIN_PROBABILITY), 0, 1, "minProbability");
+        this.minProbability = ensureBetween(getOrDefault(builder.minProbability, DEFAULT_MIN_PROBABILITY), 0, 1, "minProbability");
         this.fallbackStrategy = getOrDefault(builder.fallbackStrategy, FallbackStrategy.DO_NOT_ROUTE);
         this.maxMessages = ensureGreaterThanZero(getOrDefault(builder.maxMessages, DEFAULT_MAX_MESSAGES), "maxMessages");
-        this.maxMessageLength = ensureGreaterThanZero(
-                getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
+        this.maxMessageLength = ensureGreaterThanZero(getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
         this.messageFilter = getOrDefault(builder.messageFilter, message -> true);
-
         Map<String, ContentRetriever> retrievers = new LinkedHashMap<>();
         Map<String, YesNoQuestion> questions = new LinkedHashMap<>();
         int id = 1;
@@ -131,11 +134,7 @@ public class DecisionModelQueryRouter implements QueryRouter {
             String name = "source" + id++;
             retrievers.put(name, ensureNotNull(entry.getKey(), "ContentRetriever"));
             String description = ensureNotBlank(entry.getValue(), "ContentRetriever description");
-            questions.put(
-                    name,
-                    YesNoQuestion.of(questionTemplate
-                            .apply(Map.of("description", description))
-                            .text()));
+            questions.put(name, YesNoQuestion.of(questionTemplate.apply(dev.langchain4j.internal.Jdk8.map("description", description)).text()));
         }
         this.retrievers = retrievers;
         this.questions = questions;
@@ -159,36 +158,29 @@ public class DecisionModelQueryRouter implements QueryRouter {
             try {
                 return CompletableFuture.completedFuture(fallback(query, e));
             } catch (RuntimeException fallbackError) {
-                return CompletableFuture.failedFuture(fallbackError);
+                return dev.langchain4j.internal.Jdk8.failedFuture(fallbackError);
             }
         }
-        CompletableFuture<Collection<ContentRetriever>> result = source.thenApply(this::select)
-                .exceptionally(error -> {
-                    Throwable cause = unwrapCompletionException(error);
-                    // AsyncNotSupportedException is propagated, so that the caller can call route() instead
-                    if (cause instanceof Exception e
-                            && !(cause instanceof CancellationException)
-                            && !(cause instanceof AsyncNotSupportedException)) {
-                        return fallback(query, e);
-                    }
-                    throw cause instanceof RuntimeException re ? re : new CompletionException(cause);
-                });
+        CompletableFuture<Collection<ContentRetriever>> result = source.thenApply(this::select).exceptionally(error -> {
+            Throwable cause = unwrapCompletionException(error);
+            // AsyncNotSupportedException is propagated, so that the caller can call route() instead
+            if (cause instanceof Exception && !(cause instanceof CancellationException) && !(cause instanceof AsyncNotSupportedException)) {
+                return fallback(query, ((Exception) cause));
+            }
+            throw cause instanceof RuntimeException ? ((RuntimeException) cause) : new CompletionException(cause);
+        });
         propagateCancellation(result, source);
         return result;
     }
 
     private static void validate(PromptTemplate template) {
         if (!template.template().contains("{{description}}")) {
-            throw new IllegalArgumentException(
-                    "The question template must contain {{description}}, but was: " + template.template());
+            throw new IllegalArgumentException("The question template must contain {{description}}, but was: " + template.template());
         }
         try {
-            template.apply(Map.of("description", "description"));
+            template.apply(dev.langchain4j.internal.Jdk8.map("description", "description"));
         } catch (RuntimeException e) {
-            throw new IllegalArgumentException(
-                    "The question template can only use the {{description}} variable, but was: "
-                            + template.template(),
-                    e);
+            throw new IllegalArgumentException("The question template can only use the {{description}} variable, but was: " + template.template(), e);
         }
     }
 
@@ -209,7 +201,7 @@ public class DecisionModelQueryRouter implements QueryRouter {
     private List<ChatMessage> previousMessages(Query query) {
         Metadata metadata = query.metadata();
         if (metadata == null) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
         List<ChatMessage> messages = new ArrayList<>();
         if (metadata.systemMessage() != null) {
@@ -221,9 +213,7 @@ public class DecisionModelQueryRouter implements QueryRouter {
                     messages.add(message);
                 }
             }
-            if (!messages.isEmpty()
-                    && messages.get(messages.size() - 1) instanceof UserMessage userMessage
-                    && DecisionModelInputUtils.text(userMessage).equals(query.text())) {
+            if (!messages.isEmpty() && messages.get(messages.size() - 1) instanceof UserMessage && DecisionModelInputUtils.text(((UserMessage) messages.get(messages.size() - 1))).equals(query.text())) {
                 messages.remove(messages.size() - 1);
             }
         }
@@ -238,27 +228,28 @@ public class DecisionModelQueryRouter implements QueryRouter {
             }
         });
         if (log.isDebugEnabled()) {
-            retrievers.keySet().forEach(name -> log.debug(
-                    "Retriever {} (question '{}'): probability {}",
-                    name,
-                    questions.get(name).text(),
-                    response.yesNo(name).probability()));
+            retrievers.keySet().forEach(name -> log.debug("Retriever {} (question '{}'): probability {}", name, questions.get(name).text(), response.yesNo(name).probability()));
         }
         return selected;
     }
 
     protected Collection<ContentRetriever> fallback(Query query, Exception e) {
-        return switch (fallbackStrategy) {
-            case DO_NOT_ROUTE -> {
-                log.warn("Failed to route the query, no content will be retrieved", e);
-                yield emptyList();
-            }
-            case ROUTE_TO_ALL -> {
-                log.warn("Failed to route the query, it will be routed to all content retrievers", e);
-                yield new ArrayList<>(retrievers.values());
-            }
-            case FAIL -> throw e instanceof RuntimeException re ? re : new RuntimeException(e);
-        };
+        switch(fallbackStrategy) {
+            case DO_NOT_ROUTE:
+                {
+                    log.warn("Failed to route the query, no content will be retrieved", e);
+                    return emptyList();
+                }
+            case ROUTE_TO_ALL:
+                {
+                    log.warn("Failed to route the query, it will be routed to all content retrievers", e);
+                    return new ArrayList<>(retrievers.values());
+                }
+            case FAIL:
+                throw e instanceof RuntimeException ? ((RuntimeException) e) : new RuntimeException(e);
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
     public static Builder builder() {
@@ -268,12 +259,19 @@ public class DecisionModelQueryRouter implements QueryRouter {
     public static class Builder {
 
         private DecisionModel decisionModel;
+
         private Map<ContentRetriever, String> retrieverToDescription;
+
         private PromptTemplate questionTemplate;
+
         private Double minProbability;
+
         private FallbackStrategy fallbackStrategy;
+
         private Integer maxMessages;
+
         private Integer maxMessageLength;
+
         private Predicate<? super ChatMessage> messageFilter;
 
         /**

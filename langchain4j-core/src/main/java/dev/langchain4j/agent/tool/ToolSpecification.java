@@ -3,7 +3,6 @@ package dev.langchain4j.agent.tool;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.mutableCopy;
 import static dev.langchain4j.internal.Utils.quoted;
-
 import dev.langchain4j.internal.ToolSpecificationJsonUtils;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
@@ -21,9 +20,13 @@ public class ToolSpecification {
     public static final String METADATA_SEARCH_BEHAVIOR = "searchBehavior";
 
     private final String name;
+
     private final String description;
+
     private final JsonObjectSchema parameters;
+
     private final Map<String, Object> metadata;
+
     private final Boolean strict;
 
     /**
@@ -94,16 +97,13 @@ public class ToolSpecification {
 
     @Override
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ToolSpecification ts && equalTo(ts);
+        if (this == another)
+            return true;
+        return another instanceof ToolSpecification && equalTo(((ToolSpecification) another));
     }
 
     private boolean equalTo(ToolSpecification another) {
-        return Objects.equals(name, another.name)
-                && Objects.equals(description, another.description)
-                && Objects.equals(parameters, another.parameters)
-                && Objects.equals(metadata, another.metadata)
-                && Objects.equals(strict, another.strict);
+        return Objects.equals(name, another.name) && Objects.equals(description, another.description) && Objects.equals(parameters, another.parameters) && Objects.equals(metadata, another.metadata) && Objects.equals(strict, another.strict);
     }
 
     @Override
@@ -119,13 +119,7 @@ public class ToolSpecification {
 
     @Override
     public String toString() {
-        return "ToolSpecification {"
-                + " name = " + quoted(name)
-                + ", description = " + quoted(description)
-                + ", parameters = " + parameters
-                + ", metadata = " + metadata
-                + ", strict = " + strict
-                + " }";
+        return "ToolSpecification {" + " name = " + quoted(name) + ", description = " + quoted(description) + ", parameters = " + parameters + ", metadata = " + metadata + ", strict = " + strict + " }";
     }
 
     /**
@@ -150,12 +144,7 @@ public class ToolSpecification {
     }
 
     public Builder toBuilder() {
-        return builder()
-                .name(name)
-                .description(description)
-                .parameters(parameters)
-                .metadata(mutableCopy(metadata))
-                .strict(strict);
+        return builder().name(name).description(description).parameters(parameters).metadata(mutableCopy(metadata)).strict(strict);
     }
 
     /**
@@ -173,9 +162,13 @@ public class ToolSpecification {
     public static final class Builder {
 
         private String name;
+
         private String description;
+
         private JsonObjectSchema parameters;
+
         private Map<String, Object> metadata;
+
         private Boolean strict;
 
         /**

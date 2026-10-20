@@ -13,7 +13,6 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.chat.response.StreamingHandle;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 
 @Internal
@@ -25,22 +24,18 @@ public class InternalStreamingChatResponseHandlerUtils {
         try {
             runnable.run();
         } catch (Exception e) {
-            log.warn(
-                    "An exception occurred during the invocation of StreamingChatResponseHandler.onError(). "
-                            + "This exception has been ignored.",
-                    e);
+            log.warn("An exception occurred during the invocation of StreamingChatResponseHandler.onError(). " + "This exception has been ignored.", e);
         }
     }
 
     /**
      * @deprecated Use {@link #onPartialResponse(StreamingChatResponseHandler, String, StreamingHandle)} instead.
      */
-    @Deprecated(forRemoval = true, since = "1.8.0")
+    @Deprecated
     public static void onPartialResponse(StreamingChatResponseHandler handler, String partialResponse) {
         if (isNullOrEmpty(partialResponse)) {
             return;
         }
-
         try {
             handler.onPartialResponse(partialResponse);
         } catch (Exception e) {
@@ -51,15 +46,12 @@ public class InternalStreamingChatResponseHandlerUtils {
     /**
      * @since 1.8.0
      */
-    public static void onPartialResponse(
-            StreamingChatResponseHandler handler, String partialResponse, StreamingHandle streamingHandle) {
+    public static void onPartialResponse(StreamingChatResponseHandler handler, String partialResponse, StreamingHandle streamingHandle) {
         if (isNullOrEmpty(partialResponse)) {
             return;
         }
-
         try {
-            handler.onPartialResponse(
-                    new PartialResponse(partialResponse), new PartialResponseContext(streamingHandle));
+            handler.onPartialResponse(new PartialResponse(partialResponse), new PartialResponseContext(streamingHandle));
         } catch (Exception e) {
             withLoggingExceptions(() -> handler.onError(e));
         }
@@ -68,12 +60,11 @@ public class InternalStreamingChatResponseHandlerUtils {
     /**
      * @deprecated Use {@link #onPartialThinking(StreamingChatResponseHandler, String, StreamingHandle)} instead.
      */
-    @Deprecated(forRemoval = true, since = "1.8.0")
+    @Deprecated
     public static void onPartialThinking(StreamingChatResponseHandler handler, String partialThinking) {
         if (isNullOrEmpty(partialThinking)) {
             return;
         }
-
         try {
             handler.onPartialThinking(new PartialThinking(partialThinking));
         } catch (Exception e) {
@@ -84,15 +75,12 @@ public class InternalStreamingChatResponseHandlerUtils {
     /**
      * @since 1.8.0
      */
-    public static void onPartialThinking(
-            StreamingChatResponseHandler handler, String partialThinking, StreamingHandle streamingHandle) {
+    public static void onPartialThinking(StreamingChatResponseHandler handler, String partialThinking, StreamingHandle streamingHandle) {
         if (isNullOrEmpty(partialThinking)) {
             return;
         }
-
         try {
-            handler.onPartialThinking(
-                    new PartialThinking(partialThinking), new PartialThinkingContext(streamingHandle));
+            handler.onPartialThinking(new PartialThinking(partialThinking), new PartialThinkingContext(streamingHandle));
         } catch (Exception e) {
             withLoggingExceptions(() -> handler.onError(e));
         }
@@ -101,7 +89,7 @@ public class InternalStreamingChatResponseHandlerUtils {
     /**
      * @deprecated Use {@link #onPartialToolCall(StreamingChatResponseHandler, PartialToolCall, StreamingHandle)} instead.
      */
-    @Deprecated(forRemoval = true, since = "1.8.0")
+    @Deprecated
     public static void onPartialToolCall(StreamingChatResponseHandler handler, PartialToolCall partialToolCall) {
         try {
             handler.onPartialToolCall(partialToolCall);
@@ -113,8 +101,7 @@ public class InternalStreamingChatResponseHandlerUtils {
     /**
      * @since 1.8.0
      */
-    public static void onPartialToolCall(
-            StreamingChatResponseHandler handler, PartialToolCall partialToolCall, StreamingHandle streamingHandle) {
+    public static void onPartialToolCall(StreamingChatResponseHandler handler, PartialToolCall partialToolCall, StreamingHandle streamingHandle) {
         try {
             handler.onPartialToolCall(partialToolCall, new PartialToolCallContext(streamingHandle));
         } catch (Exception e) {

@@ -6,7 +6,8 @@ import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.CompleteResponse;
 import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import java.util.function.Consumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,7 +26,8 @@ public final class StreamingChatModelHelper {
 
     private static final Logger log = LoggerFactory.getLogger(StreamingChatModelHelper.class);
 
-    private StreamingChatModelHelper() {}
+    private StreamingChatModelHelper() {
+    }
 
     public static CompletableFuture<ChatResponse> chatAsync(StreamingChatModel streamingChatModel, ChatRequest request) {
         return chatAsync(streamingChatModel, request, null);
@@ -35,15 +37,14 @@ public final class StreamingChatModelHelper {
      * As {@link #chatAsync(StreamingChatModel, ChatRequest)}, but additionally notifies {@code errorHandler} (if
      * non-null) when the stream fails, before the returned future completes exceptionally.
      */
-    public static CompletableFuture<ChatResponse> chatAsync(
-            StreamingChatModel streamingChatModel, ChatRequest request, Consumer<Throwable> errorHandler) {
+    public static CompletableFuture<ChatResponse> chatAsync(StreamingChatModel streamingChatModel, ChatRequest request, Consumer<Throwable> errorHandler) {
         CompletableFuture<ChatResponse> future = new CompletableFuture<>();
-        streamingChatModel.chat(request).subscribe(new Flow.Subscriber<>() {
+        streamingChatModel.chat(request).subscribe(new Subscriber<dev.langchain4j.model.chat.response.ChatModelStreamingEvent>() {
 
             private ChatResponse response;
 
             @Override
-            public void onSubscribe(Flow.Subscription subscription) {
+            public void onSubscribe(Subscription subscription) {
                 future.whenComplete((response, error) -> {
                     if (future.isCancelled()) {
                         subscription.cancel();
@@ -54,8 +55,8 @@ public final class StreamingChatModelHelper {
 
             @Override
             public void onNext(ChatModelStreamingEvent event) {
-                if (event instanceof CompleteResponse completeResponse) {
-                    this.response = completeResponse.chatResponse();
+                if (event instanceof CompleteResponse) {
+                    this.response = ((CompleteResponse) event).chatResponse();
                 }
             }
 
@@ -77,8 +78,7 @@ public final class StreamingChatModelHelper {
                 if (response != null) {
                     future.complete(response);
                 } else {
-                    future.completeExceptionally(new IllegalStateException(
-                            "The streaming model completed without emitting a CompleteResponse"));
+                    future.completeExceptionally(new IllegalStateException("The streaming model completed without emitting a CompleteResponse"));
                 }
             }
         });

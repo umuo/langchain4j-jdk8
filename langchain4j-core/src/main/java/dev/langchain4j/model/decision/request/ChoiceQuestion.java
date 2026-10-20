@@ -3,7 +3,6 @@ package dev.langchain4j.model.decision.request;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureTrue;
-
 import dev.langchain4j.Experimental;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -31,6 +30,7 @@ import java.util.Objects;
 public final class ChoiceQuestion implements Question {
 
     private final String text;
+
     private final Map<String, String> options;
 
     private ChoiceQuestion(Builder builder) {
@@ -77,9 +77,11 @@ public final class ChoiceQuestion implements Question {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ChoiceQuestion that)) return false;
-        return Objects.equals(text, that.text) && Objects.equals(options, that.options);
+        if (this == o)
+            return true;
+        if (!(o instanceof ChoiceQuestion))
+            return false;
+        return Objects.equals(text, ((ChoiceQuestion) o).text) && Objects.equals(options, ((ChoiceQuestion) o).options);
     }
 
     @Override
@@ -95,6 +97,7 @@ public final class ChoiceQuestion implements Question {
     public static final class Builder {
 
         private String text;
+
         private final Map<String, String> options = new LinkedHashMap<>();
 
         public Builder text(String text) {
@@ -137,7 +140,7 @@ public final class ChoiceQuestion implements Question {
 
         private Builder addOption(String name, String description) {
             if (options.containsKey(ensureNotBlank(name, "option name"))) {
-                throw new IllegalArgumentException("Option '%s' is already defined".formatted(name));
+                throw new IllegalArgumentException(String.format("Option '%s' is already defined", name));
             }
             options.put(name, description);
             return this;

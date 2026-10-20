@@ -16,17 +16,29 @@ import java.util.UUID;
 public class DefaultInvocationContext implements InvocationContext {
 
     private final UUID invocationId;
+
     private final String interfaceName;
+
     private final String methodName;
+
     private final List<Object> methodArguments = new ArrayList<>();
+
     private final UserMessage userMessage;
+
     private final UserMessage originalUserMessage;
+
     private final Object chatMemoryId;
+
     private final ChatRequestParameters defaultRequestParameters;
+
     private final ModelProvider modelProvider;
+
     private final InvocationParameters invocationParameters;
+
     private final Map<Class<? extends LangChain4jManaged>, LangChain4jManaged> managedParameters;
+
     private final Instant timestamp;
+
     private final dev.langchain4j.spi.CapturedContext capturedContext;
 
     public DefaultInvocationContext(InvocationContext.Builder builder) {
@@ -111,55 +123,21 @@ public class DefaultInvocationContext implements InvocationContext {
 
     @Override
     public boolean equals(final Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         DefaultInvocationContext that = (DefaultInvocationContext) object;
-        return Objects.equals(invocationId, that.invocationId)
-                && Objects.equals(interfaceName, that.interfaceName)
-                && Objects.equals(methodName, that.methodName)
-                && Objects.equals(methodArguments, that.methodArguments)
-                && Objects.equals(userMessage, that.userMessage)
-                && Objects.equals(originalUserMessage, that.originalUserMessage)
-                && Objects.equals(chatMemoryId, that.chatMemoryId)
-                && Objects.equals(defaultRequestParameters, that.defaultRequestParameters)
-                && Objects.equals(modelProvider, that.modelProvider)
-                && Objects.equals(invocationParameters, that.invocationParameters)
-                && Objects.equals(managedParameters, that.managedParameters)
-                && Objects.equals(timestamp, that.timestamp);
+        return Objects.equals(invocationId, that.invocationId) && Objects.equals(interfaceName, that.interfaceName) && Objects.equals(methodName, that.methodName) && Objects.equals(methodArguments, that.methodArguments) && Objects.equals(userMessage, that.userMessage) && Objects.equals(originalUserMessage, that.originalUserMessage) && Objects.equals(chatMemoryId, that.chatMemoryId) && Objects.equals(defaultRequestParameters, that.defaultRequestParameters) && Objects.equals(modelProvider, that.modelProvider) && Objects.equals(invocationParameters, that.invocationParameters) && Objects.equals(managedParameters, that.managedParameters) && Objects.equals(timestamp, that.timestamp);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                invocationId,
-                interfaceName,
-                methodName,
-                methodArguments,
-                userMessage,
-                originalUserMessage,
-                chatMemoryId,
-                defaultRequestParameters,
-                modelProvider,
-                invocationParameters,
-                managedParameters,
-                timestamp);
+        return Objects.hash(invocationId, interfaceName, methodName, methodArguments, userMessage, originalUserMessage, chatMemoryId, defaultRequestParameters, modelProvider, invocationParameters, managedParameters, timestamp);
     }
 
     @Override
     public String toString() {
-        return "DefaultInvocationContext{" +
-                "invocationId=" + invocationId +
-                ", interfaceName='" + interfaceName + '\'' +
-                ", methodName='" + methodName + '\'' +
-                ", methodArguments=" + methodArguments +
-                ", userMessage=" + userMessage +
-                ", originalUserMessage=" + originalUserMessage +
-                ", chatMemoryId=" + chatMemoryId +
-                ", defaultRequestParameters=" + defaultRequestParameters +
-                ", modelProvider=" + modelProvider +
-                ", invocationParameters=" + invocationParameters +
-                ", managedParameters=" + managedParameters +
-                ", timestamp=" + timestamp +
-                '}';
+        return "DefaultInvocationContext{" + "invocationId=" + invocationId + ", interfaceName='" + interfaceName + '\'' + ", methodName='" + methodName + '\'' + ", methodArguments=" + methodArguments + ", userMessage=" + userMessage + ", originalUserMessage=" + originalUserMessage + ", chatMemoryId=" + chatMemoryId + ", defaultRequestParameters=" + defaultRequestParameters + ", modelProvider=" + modelProvider + ", invocationParameters=" + invocationParameters + ", managedParameters=" + managedParameters + ", timestamp=" + timestamp + '}';
     }
 }

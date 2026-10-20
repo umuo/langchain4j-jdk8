@@ -2,7 +2,6 @@ package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.internal.VirtualThreadUtils.createVirtualThreadExecutor;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.spi.CapturedContext;
 import dev.langchain4j.spi.ExecutorProvider;
@@ -28,7 +27,8 @@ import java.util.concurrent.TimeUnit;
 @Internal
 public class DefaultExecutorProvider {
 
-    private DefaultExecutorProvider() {}
+    private DefaultExecutorProvider() {
+    }
 
     private static volatile ExecutorProvider programmaticProvider;
 
@@ -68,11 +68,11 @@ public class DefaultExecutorProvider {
      *         {@link Executor}); no internal site needs an {@code ExecutorService} anymore. Retained only for
      *         backward compatibility with external callers. Prefer {@link #getDefaultExecutor()}.
      */
-    @Deprecated(since = "1.19.0")
+    @Deprecated
     public static ExecutorService getDefaultExecutorService() {
         Executor executor = resolveProvidedExecutor();
-        if (executor instanceof ExecutorService executorService) {
-            return executorService;
+        if (executor instanceof ExecutorService) {
+            return ((ExecutorService) executor);
         }
         return BuiltInHolder.EXECUTOR_SERVICE;
     }
@@ -89,8 +89,7 @@ public class DefaultExecutorProvider {
         if (provider == null) {
             return null;
         }
-        CapturedContext capturedContext = ensureNotNull(
-                provider.captureContext(), "%s.captureContext()", provider.getClass().getName());
+        CapturedContext capturedContext = ensureNotNull(provider.captureContext(), "%s.captureContext()", provider.getClass().getName());
         return capturedContext == CapturedContext.NONE ? null : capturedContext;
     }
 
@@ -105,12 +104,13 @@ public class DefaultExecutorProvider {
     }
 
     private static final class SpiHolder {
+
         private static final ExecutorProvider PROVIDER = ServiceHelper.loadFactory(ExecutorProvider.class);
     }
 
     private static final class BuiltInHolder {
-        private static final ExecutorService EXECUTOR_SERVICE =
-                createVirtualThreadExecutor(BuiltInHolder::createPlatformThreadExecutorService);
+
+        private static final ExecutorService EXECUTOR_SERVICE = createVirtualThreadExecutor(BuiltInHolder::createPlatformThreadExecutorService);
 
         private static ExecutorService createPlatformThreadExecutorService() {
             return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 1, TimeUnit.SECONDS, new SynchronousQueue<>());

@@ -6,4 +6,5 @@ import java.util.function.Supplier;
 /**
  * A factory for creating {@link AiServiceListenerRegistrar} instances.
  */
-public interface AiServiceListenerRegistrarFactory extends Supplier<AiServiceListenerRegistrar> {}
+public interface AiServiceListenerRegistrarFactory extends Supplier<AiServiceListenerRegistrar> {
+}

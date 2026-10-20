@@ -1,7 +1,6 @@
 package dev.langchain4j.store.embedding.filter.logical;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.store.embedding.filter.Filter;
 import java.util.Objects;
@@ -27,9 +26,11 @@ public class Not implements Filter {
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof Not other)) return false;
-        return Objects.equals(this.expression, other.expression);
+        if (o == this)
+            return true;
+        if (!(o instanceof Not))
+            return false;
+        return Objects.equals(this.expression, ((Not) o).expression);
     }
 
     public int hashCode() {

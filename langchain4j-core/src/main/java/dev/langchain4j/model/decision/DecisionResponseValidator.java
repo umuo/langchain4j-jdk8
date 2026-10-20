@@ -26,7 +26,8 @@ import java.util.Map;
  */
 final class DecisionResponseValidator {
 
-    private DecisionResponseValidator() {}
+    private DecisionResponseValidator() {
+    }
 
     static DecisionResponse validate(DecisionRequest request, DecisionResponse response) {
         if (response == null) {
@@ -35,51 +36,40 @@ final class DecisionResponseValidator {
         Map<String, DecisionAnswer> answers = new LinkedHashMap<>(response.answers());
         request.questions().forEach((name, question) -> {
             validate(name, question, answers.get(name));
-            if (question instanceof ChoiceQuestion choice && answers.get(name) instanceof ChoiceAnswer answer) {
-                answers.put(name, withOptions(answer, choice));
+            if (question instanceof ChoiceQuestion && answers.get(name) instanceof ChoiceAnswer) {
+                answers.put(name, withOptions(((ChoiceAnswer) answers.get(name)), ((ChoiceQuestion) question)));
             }
         });
-        return DecisionResponse.builder()
-                .answers(answers)
-                .metadata(response.metadata())
-                .build();
+        return DecisionResponse.builder().answers(answers).metadata(response.metadata()).build();
     }
 
     private static ChoiceAnswer withOptions(ChoiceAnswer answer, ChoiceQuestion question) {
-        return ChoiceAnswer.builder()
-                .value(answer.value())
-                .probabilities(answer.probabilities())
-                .confidence(answer.confidence())
-                .options(question.options().keySet())
-                .build();
+        return ChoiceAnswer.builder().value(answer.value()).probabilities(answer.probabilities()).confidence(answer.confidence()).options(question.options().keySet()).build();
     }
 
     private static void validate(String name, Question question, DecisionAnswer answer) {
         if (answer == null) {
-            throw new InvalidDecisionResponseException(
-                    "The response contains no answer to question '%s'".formatted(name));
+            throw new InvalidDecisionResponseException(String.format("The response contains no answer to question '%s'", name));
         }
         if (answer instanceof RefusalAnswer) {
             return;
         }
         if (question instanceof YesNoQuestion) {
             ensureType(name, answer, YesNoAnswer.class);
-        } else if (question instanceof ChoiceQuestion choice) {
-            validate(name, choice, ensureType(name, answer, ChoiceAnswer.class));
-        } else if (question instanceof ScaleQuestion scale) {
-            validate(name, scale, ensureType(name, answer, ScaleAnswer.class));
+        } else if (question instanceof ChoiceQuestion) {
+            validate(name, ((ChoiceQuestion) question), ensureType(name, answer, ChoiceAnswer.class));
+        } else if (question instanceof ScaleQuestion) {
+            validate(name, ((ScaleQuestion) question), ensureType(name, answer, ScaleAnswer.class));
         }
     }
 
     private static void validate(String name, ChoiceQuestion question, ChoiceAnswer answer) {
         if (!question.options().containsKey(answer.value())) {
-            throw invalid(name, "chose '%s', which is not one of the options %s",
-                    answer.value(), question.options().keySet());
+            throw invalid(name, "chose '%s', which is not one of the options %s", answer.value(), question.options().keySet());
         }
         answer.probabilities().keySet().forEach(option -> {
             if (!question.options().containsKey(option)) {
-                throw invalid(name, "has a probability for '%s', which is not one of the options %s",
-                        option, question.options().keySet());
+                throw invalid(name, "has a probability for '%s', which is not one of the options %s", option, question.options().keySet());
             }
         });
     }
@@ -90,21 +80,18 @@ final class DecisionResponseValidator {
             throw invalid(name, "has a mean of %s, but the levels are 0 to %s", answer.mean(), levels - 1);
         }
         if (!answer.probabilities().isEmpty() && answer.probabilities().size() != levels) {
-            throw invalid(name, "has %s level probabilities, but the question has %s levels",
-                    answer.probabilities().size(), levels);
+            throw invalid(name, "has %s level probabilities, but the question has %s levels", answer.probabilities().size(), levels);
         }
     }
 
     private static <T extends DecisionAnswer> T ensureType(String name, DecisionAnswer answer, Class<T> type) {
         if (!type.isInstance(answer)) {
-            throw invalid(name, "is a %s, but a %s is expected",
-                    answer.getClass().getSimpleName(), type.getSimpleName());
+            throw invalid(name, "is a %s, but a %s is expected", answer.getClass().getSimpleName(), type.getSimpleName());
         }
         return type.cast(answer);
     }
 
     private static InvalidDecisionResponseException invalid(String name, String format, Object... args) {
-        return new InvalidDecisionResponseException(
-                "The answer to question '%s' %s".formatted(name, format.formatted(args)));
+        return new InvalidDecisionResponseException(String.format("The answer to question '%s' %s", name, String.format(format, args)));
     }
 }

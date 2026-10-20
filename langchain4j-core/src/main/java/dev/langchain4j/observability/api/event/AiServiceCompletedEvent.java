@@ -17,6 +17,7 @@ import org.jspecify.annotations.Nullable;
  * {@code null} if no meaningful result exists.
  */
 public interface AiServiceCompletedEvent extends AiServiceEvent {
+
     /**
      * Retrieves the result of the invocation. The result could be the outcome
      * of the invocation, a processed value, or {@code null} if no result exists.
@@ -41,9 +42,12 @@ public interface AiServiceCompletedEvent extends AiServiceEvent {
      * Builder for {@link DefaultAiServiceCompletedEvent} instances.
      */
     class AiServiceCompletedEventBuilder extends Builder<AiServiceCompletedEvent> {
-        private @Nullable Object result;
 
-        protected AiServiceCompletedEventBuilder() {}
+        @Nullable
+        private Object result;
+
+        protected AiServiceCompletedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link AiServiceCompletedEvent}.

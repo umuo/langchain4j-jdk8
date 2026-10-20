@@ -2,7 +2,6 @@ package dev.langchain4j.data.image;
 
 import java.net.URI;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 /**
@@ -11,8 +10,11 @@ import static dev.langchain4j.internal.Utils.quoted;
 public final class Image {
 
     private final URI url;
+
     private final String base64Data;
+
     private final String mimeType;
+
     private final String revisedPrompt;
 
     /**
@@ -68,13 +70,12 @@ public final class Image {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Image that = (Image) o;
-        return Objects.equals(this.url, that.url)
-                && Objects.equals(this.base64Data, that.base64Data)
-                && Objects.equals(this.mimeType, that.mimeType)
-                && Objects.equals(this.revisedPrompt, that.revisedPrompt);
+        return Objects.equals(this.url, that.url) && Objects.equals(this.base64Data, that.base64Data) && Objects.equals(this.mimeType, that.mimeType) && Objects.equals(this.revisedPrompt, that.revisedPrompt);
     }
 
     @Override
@@ -84,12 +85,7 @@ public final class Image {
 
     @Override
     public String toString() {
-        return "Image {" +
-                " url = " + quoted(url) +
-                ", base64Data = " + quoted(base64Data) +
-                ", mimeType = " + quoted(mimeType) +
-                ", revisedPrompt = " + quoted(revisedPrompt) +
-                " }";
+        return "Image {" + " url = " + quoted(url) + ", base64Data = " + quoted(base64Data) + ", mimeType = " + quoted(mimeType) + ", revisedPrompt = " + quoted(revisedPrompt) + " }";
     }
 
     /**
@@ -98,14 +94,18 @@ public final class Image {
     public static class Builder {
 
         private URI url;
+
         private String base64Data;
+
         private String mimeType;
+
         private String revisedPrompt;
 
         /**
          * Create a new {@link Builder}.
          */
-        public Builder() {}
+        public Builder() {
+        }
 
         /**
          * Set the url of the image.

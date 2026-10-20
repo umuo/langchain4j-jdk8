@@ -44,10 +44,13 @@ public interface AiServiceResponseReceivedEvent extends AiServiceEvent {
      * Builder for {@link DefaultAiServiceResponseReceivedEvent} instances.
      */
     class AiServiceResponseReceivedEventBuilder extends Builder<AiServiceResponseReceivedEvent> {
+
         private ChatResponse response;
+
         private ChatRequest request;
 
-        protected AiServiceResponseReceivedEventBuilder() {}
+        protected AiServiceResponseReceivedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link AiServiceResponseReceivedEvent}.

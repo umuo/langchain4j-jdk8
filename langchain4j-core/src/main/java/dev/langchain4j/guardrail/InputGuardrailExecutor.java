@@ -1,9 +1,7 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.observability.api.event.InputGuardrailExecutedEvent.InputGuardrailExecutedEventBuilder;
-
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
-
 import dev.langchain4j.guardrail.InputGuardrailResult.Failure;
 import dev.langchain4j.guardrail.config.InputGuardrailsConfig;
 import dev.langchain4j.internal.CancellationChain;
@@ -16,14 +14,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * The {@link GuardrailExecutor} for {@link InputGuardrail}s.
  */
-public non-sealed class InputGuardrailExecutor
-        extends AbstractGuardrailExecutor<
-                InputGuardrailsConfig,
-                InputGuardrailRequest,
-                InputGuardrailResult,
-                InputGuardrail,
-                InputGuardrailExecutedEvent,
-                Failure> {
+public class InputGuardrailExecutor extends AbstractGuardrailExecutor<InputGuardrailsConfig, InputGuardrailRequest, InputGuardrailResult, InputGuardrail, InputGuardrailExecutedEvent, Failure> {
 
     protected InputGuardrailExecutor(InputGuardrailsConfig config, List<InputGuardrail> guardrails) {
         super(config, guardrails);
@@ -66,12 +57,10 @@ public non-sealed class InputGuardrailExecutor
      */
     @Override
     public InputGuardrailResult execute(InputGuardrailRequest request) {
-        var result = executeGuardrails(request);
-
+        dev.langchain4j.guardrail.InputGuardrailResult result = executeGuardrails(request);
         if (!result.isSuccess()) {
             throw new InputGuardrailException(result.toString(), result.getFirstFailureException());
         }
-
         return result;
     }
 
@@ -79,21 +68,18 @@ public non-sealed class InputGuardrailExecutor
     public CompletableFuture<InputGuardrailResult> executeAsync(InputGuardrailRequest request) {
         CompletableFuture<InputGuardrailResult> result = new CompletableFuture<>();
         CancellationChain chain = new CancellationChain(result);
-        executeGuardrailsAsync(request, chain)
-                .thenApply(guardrailResult -> {
-                    if (!guardrailResult.isSuccess()) {
-                        throw new InputGuardrailException(
-                                guardrailResult.toString(), guardrailResult.getFirstFailureException());
-                    }
-                    return guardrailResult;
-                })
-                .whenComplete((guardrailResult, error) -> {
-                    if (error != null) {
-                        result.completeExceptionally(unwrapCompletionException(error));
-                    } else {
-                        result.complete(guardrailResult);
-                    }
-                });
+        executeGuardrailsAsync(request, chain).thenApply(guardrailResult -> {
+            if (!guardrailResult.isSuccess()) {
+                throw new InputGuardrailException(guardrailResult.toString(), guardrailResult.getFirstFailureException());
+            }
+            return guardrailResult;
+        }).whenComplete((guardrailResult, error) -> {
+            if (error != null) {
+                result.completeExceptionally(unwrapCompletionException(error));
+            } else {
+                result.complete(guardrailResult);
+            }
+        });
         return result;
     }
 
@@ -106,10 +92,7 @@ public non-sealed class InputGuardrailExecutor
      * @return An {@link InputGuardrailExecutorBuilder} used to create {@link InputGuardrailExecutor} instances
      */
     public static InputGuardrailExecutorBuilder builder() {
-        return ServiceLoader.load(InputGuardrailExecutorBuilderFactory.class)
-                .findFirst()
-                .map(InputGuardrailExecutorBuilderFactory::getBuilder)
-                .orElseGet(InputGuardrailExecutorBuilder::new);
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(InputGuardrailExecutorBuilderFactory.class)).map(InputGuardrailExecutorBuilderFactory::getBuilder).orElseGet(InputGuardrailExecutorBuilder::new);
     }
 
     /**
@@ -126,14 +109,7 @@ public non-sealed class InputGuardrailExecutor
      *
      * Provides the {@code build()} method to create an {@link InputGuardrailExecutor} instance.
      */
-    public static non-sealed class InputGuardrailExecutorBuilder
-            extends GuardrailExecutorBuilder<
-                    InputGuardrailsConfig,
-                    InputGuardrailResult,
-                    InputGuardrailRequest,
-                    InputGuardrail,
-                    InputGuardrailExecutedEvent,
-                    InputGuardrailExecutorBuilder> {
+    public static class InputGuardrailExecutorBuilder extends GuardrailExecutorBuilder<InputGuardrailsConfig, InputGuardrailResult, InputGuardrailRequest, InputGuardrail, InputGuardrailExecutedEvent, InputGuardrailExecutorBuilder> {
 
         public InputGuardrailExecutorBuilder() {
             super(InputGuardrailsConfig.builder().build());

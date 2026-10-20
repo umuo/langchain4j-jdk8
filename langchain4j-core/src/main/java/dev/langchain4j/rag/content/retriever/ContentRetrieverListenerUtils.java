@@ -1,7 +1,6 @@
 package dev.langchain4j.rag.content.retriever;
 
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverErrorContext;
 import dev.langchain4j.rag.content.retriever.listener.ContentRetrieverListener;
@@ -16,7 +15,8 @@ class ContentRetrieverListenerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(ContentRetrieverListenerUtils.class);
 
-    private ContentRetrieverListenerUtils() {}
+    private ContentRetrieverListenerUtils() {
+    }
 
     static void onRequest(ContentRetrieverRequestContext requestContext, List<ContentRetrieverListener> listeners) {
         if (isNullOrEmpty(listeners)) {
@@ -26,10 +26,7 @@ class ContentRetrieverListenerUtils {
             try {
                 listener.onRequest(requestContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the content retriever listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the content retriever listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -42,10 +39,7 @@ class ContentRetrieverListenerUtils {
             try {
                 listener.onResponse(responseContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the content retriever listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the content retriever listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -58,10 +52,7 @@ class ContentRetrieverListenerUtils {
             try {
                 listener.onError(errorContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the content retriever listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the content retriever listener. " + "This exception has been ignored.", e);
             }
         });
     }

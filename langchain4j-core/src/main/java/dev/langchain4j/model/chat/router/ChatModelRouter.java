@@ -45,9 +45,7 @@ public interface ChatModelRouter {
      * @return a future of the result, see {@link #route(ChatModelRoutingRequest)}.
      */
     default CompletableFuture<ChatModelRoutingResult> routeAsync(ChatModelRoutingRequest request) {
-        return AsyncNotSupported.failedFuture("routeAsync() is not implemented by " + getClass().getName()
-                + ". If route() does not block, implement routeAsync() by returning"
-                + " CompletableFuture.completedFuture(route(request))");
+        return AsyncNotSupported.failedFuture("routeAsync() is not implemented by " + getClass().getName() + ". If route() does not block, implement routeAsync() by returning" + " CompletableFuture.completedFuture(route(request))");
     }
 
     /**
@@ -58,5 +56,6 @@ public interface ChatModelRouter {
      * @param routes all routes, in the order in which they were configured.
      * @throws IllegalArgumentException if the router cannot route between these routes.
      */
-    default void validate(List<ChatModelRoute> routes) {}
+    default void validate(List<ChatModelRoute> routes) {
+    }
 }

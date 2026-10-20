@@ -2,10 +2,8 @@ package dev.langchain4j.store.embedding.filter.comparison;
 
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.store.embedding.filter.Filter;
-
 import java.util.Objects;
 import java.util.UUID;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.store.embedding.filter.comparison.NumberComparator.isEqualTo;
@@ -14,6 +12,7 @@ import static dev.langchain4j.store.embedding.filter.comparison.TypeChecker.ensu
 public class IsEqualTo implements Filter {
 
     private final String key;
+
     private final Object comparisonValue;
 
     public IsEqualTo(String key, Object comparisonValue) {
@@ -31,34 +30,29 @@ public class IsEqualTo implements Filter {
 
     @Override
     public boolean test(Object object) {
-        if (!(object instanceof Metadata metadata)) {
+        if (!(object instanceof Metadata)) {
             return false;
         }
-
-        if (!metadata.containsKey(key)) {
+        if (!((Metadata) object).containsKey(key)) {
             return false;
         }
-
-        Object actualValue = metadata.toMap().get(key);
+        Object actualValue = ((Metadata) object).toMap().get(key);
         ensureTypesAreCompatible(actualValue, comparisonValue, key);
-
         if (actualValue instanceof Number) {
             return isEqualTo(actualValue, comparisonValue);
         }
-
         if (comparisonValue instanceof UUID && actualValue instanceof String) {
             return actualValue.equals(comparisonValue.toString());
         }
-
         return actualValue.equals(comparisonValue);
     }
 
     public boolean equals(final Object o) {
-        if (o == this) return true;
-        if (!(o instanceof IsEqualTo other)) return false;
-
-        return Objects.equals(this.key, other.key)
-                && Objects.equals(this.comparisonValue, other.comparisonValue);
+        if (o == this)
+            return true;
+        if (!(o instanceof IsEqualTo))
+            return false;
+        return Objects.equals(this.key, ((IsEqualTo) o).key) && Objects.equals(this.comparisonValue, ((IsEqualTo) o).comparisonValue);
     }
 
     public int hashCode() {

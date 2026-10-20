@@ -1,7 +1,6 @@
 package dev.langchain4j.data.message;
 
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.ContentType.TEXT;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -36,8 +35,10 @@ public class TextContent implements Content {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         TextContent that = (TextContent) o;
         return Objects.equals(this.text, that.text);
     }
@@ -49,9 +50,7 @@ public class TextContent implements Content {
 
     @Override
     public String toString() {
-        return "TextContent {" +
-                " text = " + quoted(text) +
-                " }";
+        return "TextContent {" + " text = " + quoted(text) + " }";
     }
 
     /**

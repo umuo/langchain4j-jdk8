@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -16,23 +15,25 @@ import java.util.stream.Stream;
  * The result of the validation of an {@link OutputGuardrail}
  */
 public final class OutputGuardrailResult implements GuardrailResult<OutputGuardrailResult> {
+
     private static final OutputGuardrailResult SUCCESS = new OutputGuardrailResult();
 
     private final Result result;
+
     private final AiMessage successfulAiMessage;
+
     private final Object successfulResult;
+
     private final List<Failure> failures;
 
-    private OutputGuardrailResult(
-            Result result, AiMessage successfulAiMessage, Object successfulResult, List<Failure> failures) {
+    private OutputGuardrailResult(Result result, AiMessage successfulAiMessage, Object successfulResult, List<Failure> failures) {
         this.result = ensureNotNull(result, "result");
         this.successfulAiMessage = successfulAiMessage;
         this.successfulResult = successfulResult;
-        this.failures = Optional.ofNullable(failures).orElseGet(List::of);
+        this.failures = Optional.ofNullable(failures).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
-    private OutputGuardrailResult(
-            Result result, String successfulText, Object successfulResult, List<Failure> failures) {
+    private OutputGuardrailResult(Result result, String successfulText, Object successfulResult, List<Failure> failures) {
         this(result, successfulText == null ? null : AiMessage.from(successfulText), successfulResult, failures);
     }
 
@@ -158,12 +159,7 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
      * Whether or not the guardrail is forcing a reprompt
      */
     public boolean isReprompt() {
-        return !isSuccess()
-                && this.failures.stream()
-                                .map(Failure::reprompt)
-                                .filter(Objects::nonNull)
-                                .count()
-                        > 0;
+        return !isSuccess() && this.failures.stream().map(Failure::reprompt).filter(Objects::nonNull).count() > 0;
     }
 
     /**
@@ -178,12 +174,7 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
      * Gets the reprompt message
      */
     public Optional<String> getReprompt() {
-        return !isSuccess()
-                ? this.failures.stream()
-                        .map(Failure::reprompt)
-                        .filter(Objects::nonNull)
-                        .findFirst()
-                : Optional.empty();
+        return !isSuccess() ? this.failures.stream().map(Failure::reprompt).filter(Objects::nonNull).findFirst() : Optional.empty();
     }
 
     @Override
@@ -195,13 +186,12 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         OutputGuardrailResult that = (OutputGuardrailResult) o;
-        return result == that.result
-                && Objects.equals(successfulAiMessage, that.successfulAiMessage)
-                && Objects.equals(successfulResult, that.successfulResult)
-                && Objects.equals(failures, that.failures);
+        return result == that.result && Objects.equals(successfulAiMessage, that.successfulAiMessage) && Objects.equals(successfulResult, that.successfulResult) && Objects.equals(failures, that.failures);
     }
 
     @Override
@@ -223,10 +213,8 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
     }
 
     private ChatResponse createResponse(OutputGuardrailRequest params) {
-        var response = params.responseFromLLM();
-        return response.toBuilder()
-                .aiMessage(hasRewrittenResult() ? successfulAiMessage : response.aiMessage())
-                .build();
+        dev.langchain4j.model.chat.response.ChatResponse response = params.responseFromLLM();
+        return response.toBuilder().aiMessage(hasRewrittenResult() ? successfulAiMessage : response.aiMessage()).build();
     }
 
     @Override
@@ -250,9 +238,7 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
     }
 
     OutputGuardrailResult withSuccessfulResult(Object successfulResult) {
-        return Objects.equals(this.successfulResult, successfulResult)
-                ? this
-                : new OutputGuardrailResult(result, successfulAiMessage, successfulResult, failures);
+        return Objects.equals(this.successfulResult, successfulResult) ? this : new OutputGuardrailResult(result, successfulAiMessage, successfulResult, failures);
     }
 
     /**
@@ -313,20 +299,20 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
     }
 
     public static final class Failure implements GuardrailResult.Failure {
+
         private final String message;
+
         private final Throwable cause;
+
         private final Class<? extends Guardrail> guardrailClass;
+
         private final boolean retry;
+
         private final String reprompt;
+
         private final boolean removeViolatingMessage;
 
-        Failure(
-                String message,
-                Throwable cause,
-                Class<? extends Guardrail> guardrailClass,
-                boolean retry,
-                String reprompt,
-                boolean removeViolatingMessage) {
+        Failure(String message, Throwable cause, Class<? extends Guardrail> guardrailClass, boolean retry, String reprompt, boolean removeViolatingMessage) {
             this.message = ensureNotNull(message, "message");
             this.cause = cause;
             this.guardrailClass = guardrailClass;
@@ -354,8 +340,7 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
         @Override
         public Failure withGuardrailClass(Class<? extends Guardrail> guardrailClass) {
             ensureNotNull(guardrailClass, "guardrailClass");
-            return new Failure(
-                    message(), cause(), guardrailClass, this.retry, this.reprompt, this.removeViolatingMessage);
+            return new Failure(message(), cause(), guardrailClass, this.retry, this.reprompt, this.removeViolatingMessage);
         }
 
         @Override
@@ -377,15 +362,7 @@ public final class OutputGuardrailResult implements GuardrailResult<OutputGuardr
          * Create a failure from this failure that blocks retries
          */
         public Failure blockRetry() {
-            return this.retry
-                    ? new Failure(
-                            "Retry or reprompt is not allowed after a rewritten output",
-                            cause(),
-                            this.guardrailClass,
-                            false,
-                            this.reprompt,
-                            this.removeViolatingMessage)
-                    : this;
+            return this.retry ? new Failure("Retry or reprompt is not allowed after a rewritten output", cause(), this.guardrailClass, false, this.reprompt, this.removeViolatingMessage) : this;
         }
 
         @Override

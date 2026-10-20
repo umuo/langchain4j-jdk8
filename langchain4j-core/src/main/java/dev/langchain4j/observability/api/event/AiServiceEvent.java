@@ -3,6 +3,7 @@ package dev.langchain4j.observability.api.event;
 import dev.langchain4j.invocation.InvocationContext;
 
 public interface AiServiceEvent {
+
     /**
      * Retrieves the invocation context, containing general information
      * about where and how the invocation originated.
@@ -32,9 +33,11 @@ public interface AiServiceEvent {
      * @param <T> the specific type of {@link AiServiceEvent} being built
      */
     abstract class Builder<T extends AiServiceEvent> {
+
         private InvocationContext invocationContext;
 
-        protected Builder() {}
+        protected Builder() {
+        }
 
         protected Builder(T src) {
             this.invocationContext = src.invocationContext();

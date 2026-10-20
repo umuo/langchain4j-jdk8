@@ -13,10 +13,12 @@ public interface Document {
      * Common metadata key for the name of the file from which the document was loaded.
      */
     String FILE_NAME = "file_name";
+
     /**
      * Common metadata key for the absolute path of the directory from which the document was loaded.
      */
     String ABSOLUTE_DIRECTORY_PATH = "absolute_directory_path";
+
     /**
      * Common metadata key for the URL from which the document was loaded.
      */

@@ -1,7 +1,6 @@
 package dev.langchain4j.store.embedding;
 
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.store.embedding.listener.EmbeddingStoreErrorContext;
 import dev.langchain4j.store.embedding.listener.EmbeddingStoreListener;
@@ -16,7 +15,8 @@ class EmbeddingStoreListenerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddingStoreListenerUtils.class);
 
-    private EmbeddingStoreListenerUtils() {}
+    private EmbeddingStoreListenerUtils() {
+    }
 
     static void onRequest(EmbeddingStoreRequestContext<?> requestContext, List<EmbeddingStoreListener> listeners) {
         if (isNullOrEmpty(listeners)) {
@@ -26,10 +26,7 @@ class EmbeddingStoreListenerUtils {
             try {
                 listener.onRequest(requestContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding store listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding store listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -42,10 +39,7 @@ class EmbeddingStoreListenerUtils {
             try {
                 listener.onResponse(responseContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding store listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding store listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -58,10 +52,7 @@ class EmbeddingStoreListenerUtils {
             try {
                 listener.onError(errorContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding store listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding store listener. " + "This exception has been ignored.", e);
             }
         });
     }

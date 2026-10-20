@@ -1,10 +1,8 @@
 package dev.langchain4j.agent.tool;
 
 import dev.langchain4j.Experimental;
-
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
-
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
@@ -24,7 +22,7 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
  */
 @Experimental
 @Retention(RUNTIME)
-@Target({METHOD})
+@Target({ METHOD })
 public @interface CompensateFor {
 
     /**

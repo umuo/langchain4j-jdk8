@@ -1,10 +1,8 @@
 package dev.langchain4j.data.message;
 
 import dev.langchain4j.model.chat.ChatModel;
-
 import java.util.Map;
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.ChatMessageType.CUSTOM;
 import static dev.langchain4j.internal.Utils.copy;
 
@@ -41,8 +39,10 @@ public class CustomMessage implements ChatMessage {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         CustomMessage that = (CustomMessage) o;
         return Objects.equals(this.attributes, that.attributes);
     }

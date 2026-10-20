@@ -8,6 +8,7 @@ package dev.langchain4j.exception;
  * the model name or identifier is corrected in the client configuration.
  */
 public class ModelNotFoundException extends NonRetriableException {
+
     public ModelNotFoundException(String message) {
         super(message);
     }

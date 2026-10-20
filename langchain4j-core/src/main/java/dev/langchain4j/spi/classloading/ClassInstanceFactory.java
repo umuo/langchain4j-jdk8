@@ -8,6 +8,7 @@ package dev.langchain4j.spi.classloading;
  * </p>
  */
 public interface ClassInstanceFactory {
+
     /**
      * Provides an instance of the specified class type.
      *

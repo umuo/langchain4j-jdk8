@@ -14,6 +14,7 @@ import java.util.Optional;
  * @param <MethodKey> The type of the method key, representing a unique identifier for methods. Can be whatever it needs to be.
  */
 public interface ClassMetadataProviderFactory<MethodKey> {
+
     /**
      * Retrieves an annotation of the specified type from the given method.
      *

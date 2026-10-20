@@ -58,7 +58,6 @@ public enum ReturnBehavior {
      * continues. This is the default behavior.
      */
     TO_LLM,
-
     /**
      * Returns AI Service execution loop result(s) to the caller (inside the
      * {@code dev.langchain4j.service.Result}) when every tool in the response is
@@ -81,7 +80,6 @@ public enum ReturnBehavior {
      * Only allowed on AI services returning {@code dev.langchain4j.service.Result}.
      */
     IMMEDIATE,
-
     /**
      * Returns AI Service execution loop result(s) to the caller when this tool is positioned
      * <b>last</b> in the LLM response. Intended for tools the LLM uses to explicitly close an
@@ -109,5 +107,5 @@ public enum ReturnBehavior {
      * <p>
      * Only allowed on AI services returning {@code dev.langchain4j.service.Result}.
      */
-    IMMEDIATE_IF_LAST;
+    IMMEDIATE_IF_LAST
 }

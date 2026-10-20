@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Exceptions.runtime;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.stream.Collectors.joining;
-
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.store.embedding.EmbeddingStore;
 import java.util.HashMap;
@@ -38,18 +37,13 @@ public class Metadata {
 
     static {
         SUPPORTED_VALUE_TYPES.add(String.class);
-
         SUPPORTED_VALUE_TYPES.add(UUID.class);
-
         SUPPORTED_VALUE_TYPES.add(int.class);
         SUPPORTED_VALUE_TYPES.add(Integer.class);
-
         SUPPORTED_VALUE_TYPES.add(long.class);
         SUPPORTED_VALUE_TYPES.add(Long.class);
-
         SUPPORTED_VALUE_TYPES.add(float.class);
         SUPPORTED_VALUE_TYPES.add(Float.class);
-
         SUPPORTED_VALUE_TYPES.add(double.class);
         SUPPORTED_VALUE_TYPES.add(Double.class);
     }
@@ -78,10 +72,7 @@ public class Metadata {
         ensureNotNull(metadata, "metadata").forEach((key, value) -> {
             validate(key, value);
             if (!SUPPORTED_VALUE_TYPES.contains(value.getClass())) {
-                throw illegalArgument(
-                        "The metadata key '%s' has the value '%s', which is of the unsupported type '%s'. "
-                                + "Currently, the supported types are: %s",
-                        key, value, value.getClass().getName(), SUPPORTED_VALUE_TYPES);
+                throw illegalArgument("The metadata key '%s' has the value '%s', which is of the unsupported type '%s'. " + "Currently, the supported types are: %s", key, value, value.getClass().getName(), SUPPORTED_VALUE_TYPES);
             }
         });
     }
@@ -103,16 +94,11 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
         Object value = metadata.get(key);
-        if (value instanceof String string) {
-            return string;
+        if (value instanceof String) {
+            return ((String) value);
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as a String.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as a String.", key, value, value.getClass().getName());
     }
 
     /**
@@ -127,19 +113,14 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
         Object value = metadata.get(key);
-        if (value instanceof UUID iD) {
-            return iD;
+        if (value instanceof UUID) {
+            return ((UUID) value);
         }
-        if (value instanceof String string) {
-            return UUID.fromString(string);
+        if (value instanceof String) {
+            return UUID.fromString(((String) value));
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as a UUID.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as a UUID.", key, value, value.getClass().getName());
     }
 
     /**
@@ -163,18 +144,13 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
         Object value = metadata.get(key);
         if (value instanceof String) {
             return Integer.parseInt(value.toString());
-        } else if (value instanceof Number number) {
-            return number.intValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).intValue();
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as an Integer.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as an Integer.", key, value, value.getClass().getName());
     }
 
     /**
@@ -198,18 +174,13 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
         Object value = metadata.get(key);
         if (value instanceof String) {
             return Long.parseLong(value.toString());
-        } else if (value instanceof Number number) {
-            return number.longValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).longValue();
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as a Long.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as a Long.", key, value, value.getClass().getName());
     }
 
     /**
@@ -233,18 +204,13 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
-        final var value = metadata.get(key);
-        if (value instanceof String str) {
-            return Float.parseFloat(str);
-        } else if (value instanceof Number number) {
-            return number.floatValue();
+        final java.lang.Object value = metadata.get(key);
+        if (value instanceof String) {
+            return Float.parseFloat(((String) value));
+        } else if (value instanceof Number) {
+            return ((Number) value).floatValue();
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as a Float.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as a Float.", key, value, value.getClass().getName());
     }
 
     /**
@@ -268,18 +234,13 @@ public class Metadata {
         if (!containsKey(key)) {
             return null;
         }
-
         Object value = metadata.get(key);
         if (value instanceof String) {
             return Double.parseDouble(value.toString());
-        } else if (value instanceof Number number) {
-            return number.doubleValue();
+        } else if (value instanceof Number) {
+            return ((Number) value).doubleValue();
         }
-
-        throw runtime(
-                "Metadata entry with the key '%s' has a value of '%s' and type '%s'. "
-                        + "It cannot be returned as a Double.",
-                key, value, value.getClass().getName());
+        throw runtime("Metadata entry with the key '%s' has a value of '%s' and type '%s'. " + "It cannot be returned as a Double.", key, value, value.getClass().getName());
     }
 
     /**
@@ -407,8 +368,10 @@ public class Metadata {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Metadata that = (Metadata) o;
         return Objects.equals(this.metadata, that.metadata);
     }
@@ -467,18 +430,15 @@ public class Metadata {
         if (another == null || another.metadata.isEmpty()) {
             return this.copy();
         }
-        final var thisMap = this.toMap();
-        final var anotherMap = another.toMap();
-        final var commonKeys = new HashSet<>(thisMap.keySet());
+        final java.util.Map<java.lang.String, java.lang.Object> thisMap = this.toMap();
+        final java.util.Map<java.lang.String, java.lang.Object> anotherMap = another.toMap();
+        final java.util.HashSet<java.lang.String> commonKeys = new HashSet<>(thisMap.keySet());
         commonKeys.retainAll(anotherMap.keySet());
         if (!commonKeys.isEmpty()) {
-            final var conflicts = commonKeys.stream()
-                    .sorted()
-                    .map(key -> "%s=(\"%s\", \"%s\")".formatted(key, thisMap.get(key), anotherMap.get(key)))
-                    .collect(joining(", ", "{", "}"));
+            final java.lang.String conflicts = commonKeys.stream().sorted().map(key -> String.format("%s=(\"%s\", \"%s\")", key, thisMap.get(key), anotherMap.get(key))).collect(joining(", ", "{", "}"));
             throw illegalArgument("Metadata keys are not unique. Common keys and their values: %s", conflicts);
         }
-        final var mergedMap = new HashMap<>(thisMap);
+        final java.util.HashMap<java.lang.String, java.lang.Object> mergedMap = new HashMap<>(thisMap);
         mergedMap.putAll(anotherMap);
         return Metadata.from(mergedMap);
     }

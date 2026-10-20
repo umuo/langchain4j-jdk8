@@ -11,6 +11,7 @@ import dev.langchain4j.observability.event.DefaultAiServiceResponseReceivedEvent
  * when tools or guardrails exist.
  */
 public interface AiServiceRequestIssuedEvent extends AiServiceEvent {
+
     /**
      * Retrieves the chat request from the AI Service invocation event.
      *
@@ -36,9 +37,11 @@ public interface AiServiceRequestIssuedEvent extends AiServiceEvent {
      * Builder for {@link DefaultAiServiceResponseReceivedEvent} instances.
      */
     class AiServiceRequestIssuedEventBuilder extends Builder<AiServiceRequestIssuedEvent> {
+
         private ChatRequest request;
 
-        protected AiServiceRequestIssuedEventBuilder() {}
+        protected AiServiceRequestIssuedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link AiServiceRequestIssuedEvent}.

@@ -2,17 +2,17 @@ package dev.langchain4j.model.chat.request;
 
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 public class ResponseFormat {
 
     public static final ResponseFormat TEXT = ResponseFormat.builder().type(ResponseFormatType.TEXT).build();
+
     public static final ResponseFormat JSON = ResponseFormat.builder().type(ResponseFormatType.JSON).build();
 
     private final ResponseFormatType type;
+
     private final JsonSchema jsonSchema;
 
     private ResponseFormat(Builder builder) {
@@ -34,11 +34,12 @@ public class ResponseFormat {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ResponseFormat that = (ResponseFormat) o;
-        return Objects.equals(this.type, that.type)
-                && Objects.equals(this.jsonSchema, that.jsonSchema);
+        return Objects.equals(this.type, that.type) && Objects.equals(this.jsonSchema, that.jsonSchema);
     }
 
     @Override
@@ -50,10 +51,7 @@ public class ResponseFormat {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ResponseFormat {" +
-                " type = " + type +
-                ", jsonSchema = " + jsonSchema +
-                " }";
+        return "ResponseFormat {" + " type = " + type + ", jsonSchema = " + jsonSchema + " }";
     }
 
     public static Builder builder() {
@@ -63,6 +61,7 @@ public class ResponseFormat {
     public static class Builder {
 
         private ResponseFormatType type;
+
         private JsonSchema jsonSchema;
 
         public Builder type(ResponseFormatType type) {

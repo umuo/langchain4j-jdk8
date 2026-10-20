@@ -3,7 +3,8 @@ package dev.langchain4j.internal;
 import dev.langchain4j.Internal;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscription;
 
 /**
  * Factory for the "not implemented" result of an asynchronous / reactive SPI default method.
@@ -14,7 +15,7 @@ import java.util.concurrent.Flow;
  * escape the method's own return-type contract, so whether it is safe depends on whether the call site happened to be
  * inside a future/publisher stage that launders the throw - the defaults signal the failure through their
  * <em>return type's</em> error channel: a failed {@link CompletableFuture} for future-returning methods, or an
- * immediately-failing {@link Flow.Publisher} for publisher-returning methods. The framework's offload-or-fail-loud
+ * immediately-failing {@link Publisher} for publisher-returning methods. The framework's offload-or-fail-loud
  * orchestration then observes it uniformly (via {@code exceptionallyCompose}/{@code onError}), regardless of context.
  * <p>
  * This does not change genuine implementations, nor the public entry points ({@code chatAsync}, {@code embedAsync},
@@ -25,7 +26,8 @@ import java.util.concurrent.Flow;
 @Internal
 public final class AsyncNotSupported {
 
-    private AsyncNotSupported() {}
+    private AsyncNotSupported() {
+    }
 
     /**
      * @return an already-failed future carrying an {@link AsyncNotSupportedException} whose message follows the
@@ -40,31 +42,34 @@ public final class AsyncNotSupported {
      *         defaults that provide their own, more detailed guidance).
      */
     public static <T> CompletableFuture<T> failedFuture(String message) {
-        return CompletableFuture.failedFuture(new AsyncNotSupportedException(message));
+        return dev.langchain4j.internal.Jdk8.failedFuture(new AsyncNotSupportedException(message));
     }
 
     /**
-     * @return a cold {@link Flow.Publisher} that, on subscribe, immediately signals {@code onError} with an
+     * @return a cold {@link Publisher} that, on subscribe, immediately signals {@code onError} with an
      *         {@link AsyncNotSupportedException} whose message follows the convention
      *         {@code "<methodName>() is not implemented by <implementationType>"}.
      */
-    public static <T> Flow.Publisher<T> failingPublisher(Class<?> implementationType, String methodName) {
+    public static <T> Publisher<T> failingPublisher(Class<?> implementationType, String methodName) {
         return failingPublisher(methodName + "() is not implemented by " + implementationType.getName());
     }
 
     /**
-     * @return a cold {@link Flow.Publisher} that, on subscribe, immediately signals {@code onError} with an
+     * @return a cold {@link Publisher} that, on subscribe, immediately signals {@code onError} with an
      *         {@link AsyncNotSupportedException} carrying the given message.
      */
-    public static <T> Flow.Publisher<T> failingPublisher(String message) {
+    public static <T> Publisher<T> failingPublisher(String message) {
         AsyncNotSupportedException error = new AsyncNotSupportedException(message);
         return subscriber -> {
-            subscriber.onSubscribe(new Flow.Subscription() {
-                @Override
-                public void request(long n) {}
+            subscriber.onSubscribe(new Subscription() {
 
                 @Override
-                public void cancel() {}
+                public void request(long n) {
+                }
+
+                @Override
+                public void cancel() {
+                }
             });
             subscriber.onError(error);
         };

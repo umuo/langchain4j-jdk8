@@ -1,7 +1,6 @@
 package dev.langchain4j.model.chat.request.json;
 
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 /**
@@ -46,8 +45,10 @@ public class JsonReferenceSchema implements JsonSchemaElement {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JsonReferenceSchema that = (JsonReferenceSchema) o;
         return Objects.equals(this.reference, that.reference);
     }
@@ -59,8 +60,6 @@ public class JsonReferenceSchema implements JsonSchemaElement {
 
     @Override
     public String toString() {
-        return "JsonReferenceSchema {" +
-                "reference = " + quoted(reference) +
-                " }";
+        return "JsonReferenceSchema {" + "reference = " + quoted(reference) + " }";
     }
 }

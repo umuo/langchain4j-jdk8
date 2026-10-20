@@ -1,7 +1,6 @@
 package dev.langchain4j.model.scoring.response;
 
 import static dev.langchain4j.internal.Utils.copy;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.output.TokenUsage;
 import java.util.List;
@@ -17,11 +16,11 @@ import java.util.Objects;
 public class ScoringResponse {
 
     private final List<Double> scores;
+
     private final ScoringResponseMetadata metadata;
 
     protected ScoringResponse(Builder builder) {
         this.scores = copy(builder.scores);
-
         ScoringResponseMetadata.Builder<?> metadataBuilder = ScoringResponseMetadata.builder();
         if (builder.modelName != null) {
             validate(builder, "modelName");
@@ -55,8 +54,10 @@ public class ScoringResponse {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ScoringResponse that = (ScoringResponse) o;
         return Objects.equals(scores, that.scores) && Objects.equals(metadata, that.metadata);
     }
@@ -78,9 +79,11 @@ public class ScoringResponse {
     public static class Builder {
 
         private List<Double> scores;
+
         private ScoringResponseMetadata metadata;
 
         private String modelName;
+
         private TokenUsage tokenUsage;
 
         public Builder scores(List<Double> scores) {
@@ -110,8 +113,7 @@ public class ScoringResponse {
 
     private static void validate(Builder builder, String name) {
         if (builder.metadata != null) {
-            throw new IllegalArgumentException(
-                    "Cannot set both 'metadata' and '%s' on ScoringResponse".formatted(name));
+            throw new IllegalArgumentException(String.format("Cannot set both 'metadata' and '%s' on ScoringResponse", name));
         }
     }
 }

@@ -21,7 +21,8 @@ public final class RetryUtils {
 
     private static final Random RANDOM = new Random();
 
-    private RetryUtils() {}
+    private RetryUtils() {
+    }
 
     private static final Logger log = LoggerFactory.getLogger(RetryUtils.class);
 
@@ -45,14 +46,18 @@ public final class RetryUtils {
         public static final class Builder {
 
             private int maxRetries = 2;
+
             private int delayMillis = 1000;
+
             private double jitterScale = 0.2;
+
             private double backoffExp = 1.5;
 
             /**
              * Construct a RetryPolicy.Builder.
              */
-            public Builder() {}
+            public Builder() {
+            }
 
             /**
              * Sets the default maximum number of retries.
@@ -122,8 +127,11 @@ public final class RetryUtils {
         }
 
         private final int maxRetries;
+
         private final int delayMillis;
+
         private final double jitterScale;
+
         private final double backoffExp;
 
         /**
@@ -217,16 +225,10 @@ public final class RetryUtils {
                     if (Thread.currentThread().isInterrupted()) {
                         throw new RuntimeException("Interrupted during action execution", e);
                     }
-
                     if (retry >= maxRetries) {
-                        throw e instanceof RuntimeException re ? re : new LangChain4jException(e);
+                        throw e instanceof RuntimeException ? ((RuntimeException) e) : new LangChain4jException(e);
                     }
-
-                    log.warn(
-                            "A retriable exception occurred. Remaining retries: %s of %s"
-                                    .formatted(maxRetries - retry, maxRetries),
-                            e);
-
+                    log.warn(String.format("A retriable exception occurred. Remaining retries: %s of %s", maxRetries - retry, maxRetries), e);
                     sleep(retry);
                 }
                 retry++;
@@ -251,33 +253,23 @@ public final class RetryUtils {
          *         last attempt.
          * @since 1.20.0
          */
-        public <T> CompletableFuture<T> withRetryAsync(
-                Supplier<CompletableFuture<T>> action, int maxRetries, ExceptionMapper exceptionMapper) {
+        public <T> CompletableFuture<T> withRetryAsync(Supplier<CompletableFuture<T>> action, int maxRetries, ExceptionMapper exceptionMapper) {
             CompletableFuture<T> result = new CompletableFuture<>();
             attemptAsync(action, maxRetries, exceptionMapper, 0, result);
             return result;
         }
 
-        private <T> void attemptAsync(
-                Supplier<CompletableFuture<T>> action,
-                int maxRetries,
-                ExceptionMapper exceptionMapper,
-                int retry,
-                CompletableFuture<T> result) {
-
+        private <T> void attemptAsync(Supplier<CompletableFuture<T>> action, int maxRetries, ExceptionMapper exceptionMapper, int retry, CompletableFuture<T> result) {
             if (result.isDone()) {
                 return;
             }
-
             CompletableFuture<T> attempt;
             try {
                 attempt = action.get();
             } catch (Throwable t) {
-                attempt = CompletableFuture.failedFuture(t);
+                attempt = dev.langchain4j.internal.Jdk8.failedFuture(t);
             }
-
             CompletableFutureUtils.propagateCancellation(result, attempt);
-
             attempt.whenComplete((value, error) -> {
                 if (error == null) {
                     result.complete(value);
@@ -293,12 +285,8 @@ public final class RetryUtils {
                     result.completeExceptionally(mapped);
                     return;
                 }
-                log.warn(
-                        "A retriable exception occurred. Remaining retries: %s of %s"
-                                .formatted(maxRetries - retry, maxRetries),
-                        mapped);
-                Executor delayed = CompletableFuture.delayedExecutor(
-                        jitterDelayMillis(retry), TimeUnit.MILLISECONDS, DefaultExecutorProvider.getDefaultExecutor());
+                log.warn(String.format("A retriable exception occurred. Remaining retries: %s of %s", maxRetries - retry, maxRetries), mapped);
+                Executor delayed = dev.langchain4j.internal.Jdk8.delayedExecutor(jitterDelayMillis(retry), TimeUnit.MILLISECONDS, DefaultExecutorProvider.getDefaultExecutor());
                 delayed.execute(() -> attemptAsync(action, maxRetries, exceptionMapper, retry + 1, result));
             });
         }
@@ -307,12 +295,7 @@ public final class RetryUtils {
     /**
      * Default retry policy used by {@link #withRetry(Callable)}.
      */
-    public static final RetryPolicy DEFAULT_RETRY_POLICY = retryPolicyBuilder()
-            .maxRetries(2)
-            .delayMillis(500)
-            .jitterScale(0.2)
-            .backoffExp(1.5)
-            .build();
+    public static final RetryPolicy DEFAULT_RETRY_POLICY = retryPolicyBuilder().maxRetries(2).delayMillis(500).jitterScale(0.2).backoffExp(1.5).build();
 
     /**
      * This method attempts to execute a given action up to 3 times with an exponential backoff.
@@ -352,12 +335,10 @@ public final class RetryUtils {
      * @throws RuntimeException if the action fails on all attempts.
      */
     public static void withRetry(Runnable action, int maxRetries) {
-        DEFAULT_RETRY_POLICY.withRetry(
-                () -> {
-                    action.run();
-                    return null;
-                },
-                maxRetries);
+        DEFAULT_RETRY_POLICY.withRetry(() -> {
+            action.run();
+            return null;
+        }, maxRetries);
     }
 
     /**
@@ -400,8 +381,7 @@ public final class RetryUtils {
      * @return The result of the action if it is successful.
      * @throws RuntimeException if the action fails on all attempts.
      */
-    public static <T> T withRetryMappingExceptions(
-            Callable<T> action, int maxRetries, ExceptionMapper exceptionMapper) {
+    public static <T> T withRetryMappingExceptions(Callable<T> action, int maxRetries, ExceptionMapper exceptionMapper) {
         return withRetry(() -> exceptionMapper.withExceptionMapper(action), maxRetries);
     }
 
@@ -413,8 +393,7 @@ public final class RetryUtils {
      *
      * @since 1.20.0
      */
-    public static <T> CompletableFuture<T> withRetryMappingExceptionsAsync(
-            Supplier<CompletableFuture<T>> action, int maxRetries) {
+    public static <T> CompletableFuture<T> withRetryMappingExceptionsAsync(Supplier<CompletableFuture<T>> action, int maxRetries) {
         return withRetryMappingExceptionsAsync(action, maxRetries, ExceptionMapper.DEFAULT);
     }
 
@@ -423,8 +402,7 @@ public final class RetryUtils {
      *
      * @since 1.20.0
      */
-    public static <T> CompletableFuture<T> withRetryMappingExceptionsAsync(
-            Supplier<CompletableFuture<T>> action, int maxRetries, ExceptionMapper exceptionMapper) {
+    public static <T> CompletableFuture<T> withRetryMappingExceptionsAsync(Supplier<CompletableFuture<T>> action, int maxRetries, ExceptionMapper exceptionMapper) {
         return DEFAULT_RETRY_POLICY.withRetryAsync(action, maxRetries, exceptionMapper);
     }
 }

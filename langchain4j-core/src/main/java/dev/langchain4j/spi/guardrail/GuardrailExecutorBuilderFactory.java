@@ -20,14 +20,7 @@ import dev.langchain4j.observability.api.event.GuardrailExecutedEvent;
  * @param <E> the type of guardrail executed event, extending from {@link GuardrailExecutedEvent}
  * @param <B> the type of builder for creating {@link GuardrailExecutor}, extending from {@link GuardrailExecutorBuilder}
  */
-public sealed interface GuardrailExecutorBuilderFactory<
-                C extends GuardrailsConfig,
-                R extends GuardrailResult<R>,
-                P extends GuardrailRequest<P>,
-                G extends Guardrail<P, R>,
-                E extends GuardrailExecutedEvent<P, R, G>,
-                B extends GuardrailExecutorBuilder<C, R, P, G, E, B>>
-        permits InputGuardrailExecutorBuilderFactory, OutputGuardrailExecutorBuilderFactory {
+public interface GuardrailExecutorBuilderFactory<C extends GuardrailsConfig, R extends GuardrailResult<R>, P extends GuardrailRequest<P>, G extends Guardrail<P, R>, E extends GuardrailExecutedEvent<P, R, G>, B extends GuardrailExecutorBuilder<C, R, P, G, E, B>> {
 
     /**
      * Retrieves a builder for creating instances of {@link GuardrailExecutor}.

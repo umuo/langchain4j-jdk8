@@ -9,6 +9,7 @@ package dev.langchain4j.exception;
  * caller should verify the base URL in the client configuration before retrying.
  */
 public class UnresolvedModelServerException extends NonRetriableException {
+
     public UnresolvedModelServerException(String message) {
         super(message);
     }

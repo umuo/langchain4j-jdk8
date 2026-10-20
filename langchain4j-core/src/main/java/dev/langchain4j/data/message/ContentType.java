@@ -10,22 +10,18 @@ public enum ContentType {
      * Text content.
      */
     TEXT(TextContent.class),
-
     /**
      * Image content.
      */
     IMAGE(ImageContent.class),
-
     /**
      * Audio content.
      */
     AUDIO(AudioContent.class),
-
     /**
      * Video content.
      */
     VIDEO(VideoContent.class),
-
     /**
      * PDF file content.
      */

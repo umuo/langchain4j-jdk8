@@ -3,7 +3,6 @@ package dev.langchain4j.model.audio;
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.audio.Audio;
 import dev.langchain4j.model.ModelProvider;
-
 import static dev.langchain4j.model.ModelProvider.OTHER;
 
 /**
@@ -28,8 +27,7 @@ public interface AudioTranscriptionModel {
      * @return The generated transcription as a plain string
      */
     default String transcribeToText(Audio audio) {
-        AudioTranscriptionRequest request =
-                AudioTranscriptionRequest.builder(audio).build();
+        AudioTranscriptionRequest request = AudioTranscriptionRequest.builder(audio).build();
         AudioTranscriptionResponse response = transcribe(request);
         return response.text();
     }

@@ -2,7 +2,6 @@ package dev.langchain4j.web.search;
 
 import java.util.Map;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -18,7 +17,9 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class WebSearchInformationResult {
 
     private final Long totalResults;
+
     private final Integer pageNumber;
+
     private final Map<String, Object> metadata;
 
     /**
@@ -72,12 +73,12 @@ public class WebSearchInformationResult {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         WebSearchInformationResult that = (WebSearchInformationResult) o;
-        return Objects.equals(totalResults, that.totalResults)
-                && Objects.equals(pageNumber, that.pageNumber)
-                && Objects.equals(metadata, that.metadata);
+        return Objects.equals(totalResults, that.totalResults) && Objects.equals(pageNumber, that.pageNumber) && Objects.equals(metadata, that.metadata);
     }
 
     @Override
@@ -87,11 +88,7 @@ public class WebSearchInformationResult {
 
     @Override
     public String toString() {
-        return "WebSearchInformationResult{" +
-                "totalResults=" + totalResults +
-                ", pageNumber=" + pageNumber +
-                ", metadata=" + metadata +
-                '}';
+        return "WebSearchInformationResult{" + "totalResults=" + totalResults + ", pageNumber=" + pageNumber + ", metadata=" + metadata + '}';
     }
 
     /**

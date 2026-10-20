@@ -5,9 +5,7 @@ import dev.langchain4j.exception.JsonException;
 import dev.langchain4j.exception.JsonReadException;
 import dev.langchain4j.exception.JsonWriteException;
 import dev.langchain4j.spi.json.JsonCodecFactory;
-
 import java.lang.reflect.Type;
-
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
 
 /**

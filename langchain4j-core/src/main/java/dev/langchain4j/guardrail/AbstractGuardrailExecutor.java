@@ -2,7 +2,6 @@ package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.guardrail.GuardrailResult.Failure;
 import dev.langchain4j.guardrail.config.GuardrailsConfig;
@@ -32,22 +31,16 @@ import java.util.concurrent.CompletableFuture;
  *            The type of {@link Failure} to return
  */
 @Internal
-public abstract sealed class AbstractGuardrailExecutor<
-                C extends GuardrailsConfig,
-                P extends GuardrailRequest<P>,
-                R extends GuardrailResult<R>,
-                G extends Guardrail<P, R>,
-                E extends GuardrailExecutedEvent<P, R, G>,
-                F extends Failure>
-        implements GuardrailExecutor<C, P, R, G, E> permits InputGuardrailExecutor, OutputGuardrailExecutor {
+public abstract class AbstractGuardrailExecutor<C extends GuardrailsConfig, P extends GuardrailRequest<P>, R extends GuardrailResult<R>, G extends Guardrail<P, R>, E extends GuardrailExecutedEvent<P, R, G>, F extends Failure> implements GuardrailExecutor<C, P, R, G, E> {
 
     private final C config;
+
     private final List<G> guardrails;
 
     protected AbstractGuardrailExecutor(C config, List<G> guardrails) {
         ensureNotNull(config, "config");
         this.config = config;
-        this.guardrails = Optional.ofNullable(guardrails).orElseGet(List::of);
+        this.guardrails = Optional.ofNullable(guardrails).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
     /**
@@ -102,7 +95,6 @@ public abstract sealed class AbstractGuardrailExecutor<
     protected R validate(P request, G guardrail) {
         ensureNotNull(request, "request");
         ensureNotNull(guardrail, "guardrail");
-
         try {
             return guardrail.validate(request).validatedBy(guardrail.getClass());
         } catch (Exception e) {
@@ -120,48 +112,31 @@ public abstract sealed class AbstractGuardrailExecutor<
         return result;
     }
 
-    protected void fireObservabilityEvent(
-            InvocationContext invocationContext, P request, R result, G guardrail, Duration duration) {
-        request.requestParams()
-                .aiservicelistenerregistrar()
-                .fireEvent(createEmptyObservabilityEventBuilderInstance()
-                        .invocationContext(invocationContext)
-                        .request(request)
-                        .result(result)
-                        .guardrailClass((Class<G>) guardrail.getClass())
-                        .guardrailName(guardrail.name())
-                        .duration(duration)
-                        .build());
+    protected void fireObservabilityEvent(InvocationContext invocationContext, P request, R result, G guardrail, Duration duration) {
+        request.requestParams().aiservicelistenerregistrar().fireEvent(createEmptyObservabilityEventBuilderInstance().invocationContext(invocationContext).request(request).result(result).guardrailClass((Class<G>) guardrail.getClass()).guardrailName(guardrail.name()).duration(duration).build());
     }
 
     protected R executeGuardrails(P request) {
         ensureNotNull(request, "request");
-
-        var accumulatedRequest = request;
-        var accumulatedResult = createSuccess();
-
-        for (var guardrail : this.guardrails) {
+        P accumulatedRequest = request;
+        R accumulatedResult = createSuccess();
+        for (G guardrail : this.guardrails) {
             if (guardrail != null) {
-                var before = System.nanoTime();
-                var result = validate(accumulatedRequest, guardrail);
-                var after = System.nanoTime();
+                long before = System.nanoTime();
+                R result = validate(accumulatedRequest, guardrail);
+                long after = System.nanoTime();
                 Duration duration = Duration.ofNanos(after - before);
-                fireObservabilityEvent(
-                        request.requestParams().invocationContext(), accumulatedRequest, result, guardrail, duration);
-
+                fireObservabilityEvent(request.requestParams().invocationContext(), accumulatedRequest, result, guardrail, duration);
                 if (result.isFatal()) {
                     // Fatal result, so stop right here and don't do any more processing
                     return handleFatalResult(accumulatedResult, result);
                 }
-
                 if (result.hasRewrittenResult()) {
                     accumulatedRequest = accumulatedRequest.withText(result.successfulText());
                 }
-
                 accumulatedResult = composeResult(accumulatedResult, result);
             }
         }
-
         return accumulatedResult;
     }
 
@@ -173,22 +148,21 @@ public abstract sealed class AbstractGuardrailExecutor<
     protected CompletableFuture<R> validateAsync(P request, G guardrail, CancellationChain chain) {
         ensureNotNull(request, "request");
         ensureNotNull(guardrail, "guardrail");
-
         try {
             CompletableFuture<R> inFlight = guardrail.validateAsync(request);
             chain.track(inFlight);
             return inFlight.handle((result, error) -> {
                 if (error != null) {
                     Throwable cause = unwrapCompletionException(error);
-                    if (cause instanceof CancellationException cancellation) {
-                        throw cancellation;
+                    if (cause instanceof CancellationException) {
+                        throw ((CancellationException) cause);
                     }
                     throw createGuardrailException(cause.getMessage(), cause);
                 }
                 return result.validatedBy(guardrail.getClass());
             });
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(createGuardrailException(e.getMessage(), e));
+            return dev.langchain4j.internal.Jdk8.failedFuture(createGuardrailException(e.getMessage(), e));
         }
     }
 
@@ -202,36 +176,24 @@ public abstract sealed class AbstractGuardrailExecutor<
         return executeGuardrailsAsync(request, request, createSuccess(), 0, chain);
     }
 
-    private CompletableFuture<R> executeGuardrailsAsync(
-            P originalRequest, P accumulatedRequest, R accumulatedResult, int index, CancellationChain chain) {
-
+    private CompletableFuture<R> executeGuardrailsAsync(P originalRequest, P accumulatedRequest, R accumulatedResult, int index, CancellationChain chain) {
         if (index >= this.guardrails.size()) {
             return CompletableFuture.completedFuture(accumulatedResult);
         }
-
-        var guardrail = this.guardrails.get(index);
+        G guardrail = this.guardrails.get(index);
         if (guardrail == null) {
             return executeGuardrailsAsync(originalRequest, accumulatedRequest, accumulatedResult, index + 1, chain);
         }
-
-        var before = System.nanoTime();
-        var currentRequest = accumulatedRequest;
+        long before = System.nanoTime();
+        P currentRequest = accumulatedRequest;
         return validateAsync(currentRequest, guardrail, chain).thenCompose(result -> {
-            var after = System.nanoTime();
-            fireObservabilityEvent(
-                    originalRequest.requestParams().invocationContext(),
-                    currentRequest,
-                    result,
-                    guardrail,
-                    Duration.ofNanos(after - before));
-
+            long after = System.nanoTime();
+            fireObservabilityEvent(originalRequest.requestParams().invocationContext(), currentRequest, result, guardrail, Duration.ofNanos(after - before));
             if (result.isFatal()) {
                 return CompletableFuture.completedFuture(handleFatalResult(accumulatedResult, result));
             }
-
-            var nextRequest =
-                    result.hasRewrittenResult() ? currentRequest.withText(result.successfulText()) : currentRequest;
-            var nextResult = composeResult(accumulatedResult, result);
+            P nextRequest = result.hasRewrittenResult() ? currentRequest.withText(result.successfulText()) : currentRequest;
+            R nextResult = composeResult(accumulatedResult, result);
             return executeGuardrailsAsync(originalRequest, nextRequest, nextResult, index + 1, chain);
         });
     }
@@ -249,18 +211,14 @@ public abstract sealed class AbstractGuardrailExecutor<
             // Both succeeded, so a rewrite from the newer result wins, otherwise keep any earlier rewrite
             return (!newResult.hasRewrittenResult() && oldResult.hasRewrittenResult()) ? oldResult : newResult;
         }
-
         if (oldResult.isSuccess()) {
             return newResult;
         }
-
         if (newResult.isSuccess()) {
             return oldResult;
         }
-
-        var failures = new ArrayList<F>(oldResult.failures());
+        java.util.ArrayList<F> failures = new ArrayList<F>(oldResult.failures());
         failures.addAll(newResult.failures());
-
         return createFailure(failures);
     }
 
@@ -284,18 +242,12 @@ public abstract sealed class AbstractGuardrailExecutor<
      * It provides methods to configure and manage the guardrails and their associated configurations,
      * eventually culminating in the construction of a specific {@link GuardrailExecutor}.
      */
-    public abstract static sealed class GuardrailExecutorBuilder<
-                    C extends GuardrailsConfig,
-                    R extends GuardrailResult<R>,
-                    P extends GuardrailRequest<P>,
-                    G extends Guardrail<P, R>,
-                    E extends GuardrailExecutedEvent<P, R, G>,
-                    B extends GuardrailExecutorBuilder<C, R, P, G, E, B>>
-            permits InputGuardrailExecutor.InputGuardrailExecutorBuilder,
-                    OutputGuardrailExecutor.OutputGuardrailExecutorBuilder {
+    public abstract static class GuardrailExecutorBuilder<C extends GuardrailsConfig, R extends GuardrailResult<R>, P extends GuardrailRequest<P>, G extends Guardrail<P, R>, E extends GuardrailExecutedEvent<P, R, G>, B extends GuardrailExecutorBuilder<C, R, P, G, E, B>> {
 
         private final C defaultConfig;
+
         private C config;
+
         private List<G> guardrails = new ArrayList<>();
 
         protected GuardrailExecutorBuilder(C defaultConfig) {
@@ -357,11 +309,9 @@ public abstract sealed class AbstractGuardrailExecutor<
          */
         public B guardrails(List<G> guardrails) {
             this.guardrails.clear();
-
             if (guardrails != null) {
                 this.guardrails.addAll(guardrails);
             }
-
             return (B) this;
         }
 
@@ -376,8 +326,7 @@ public abstract sealed class AbstractGuardrailExecutor<
          * @return The updated instance of the builder, allowing for method chaining.
          */
         public B guardrails(G... guardrails) {
-            Optional.ofNullable(guardrails).map(List::of).ifPresent(this::guardrails);
-
+            Optional.ofNullable(guardrails).map(dev.langchain4j.internal.Jdk8::list).ifPresent(this::guardrails);
             return (B) this;
         }
     }

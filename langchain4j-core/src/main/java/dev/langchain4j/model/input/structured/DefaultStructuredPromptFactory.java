@@ -8,9 +8,7 @@ import dev.langchain4j.Internal;
 import dev.langchain4j.model.input.Prompt;
 import dev.langchain4j.model.input.PromptTemplate;
 import dev.langchain4j.spi.prompt.structured.StructuredPromptFactory;
-
 import java.util.Map;
-
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.ANY;
 import static com.fasterxml.jackson.annotation.PropertyAccessor.FIELD;
 
@@ -20,11 +18,9 @@ import static com.fasterxml.jackson.annotation.PropertyAccessor.FIELD;
 @Internal
 class DefaultStructuredPromptFactory implements StructuredPromptFactory {
 
-    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder()
-            .visibility(FIELD, ANY)
-            .build();
+    private static final ObjectMapper OBJECT_MAPPER = JsonMapper.builder().visibility(FIELD, ANY).build();
 
-    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<>() {
+    private static final TypeReference<Map<String, Object>> MAP_TYPE = new TypeReference<java.util.Map<java.lang.String, java.lang.Object>>() {
     };
 
     /**
@@ -36,12 +32,9 @@ class DefaultStructuredPromptFactory implements StructuredPromptFactory {
     @Override
     public Prompt toPrompt(Object structuredPrompt) {
         StructuredPrompt annotation = StructuredPrompt.Util.validateStructuredPrompt(structuredPrompt);
-
         String promptTemplateString = StructuredPrompt.Util.join(annotation);
         PromptTemplate promptTemplate = PromptTemplate.from(promptTemplateString);
-
         Map<String, Object> variables = extractVariables(structuredPrompt);
-
         return promptTemplate.apply(variables);
     }
 

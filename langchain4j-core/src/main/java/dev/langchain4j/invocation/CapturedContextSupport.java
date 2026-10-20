@@ -14,7 +14,8 @@ import java.util.concurrent.Executor;
 @Internal
 public final class CapturedContextSupport {
 
-    private CapturedContextSupport() {}
+    private CapturedContextSupport() {
+    }
 
     /**
      * Captures the context of the calling thread into the given builder, if an {@link ExecutorProvider} that
@@ -32,12 +33,10 @@ public final class CapturedContextSupport {
      *         given invocation started; the given executor itself if nothing was captured
      */
     public static Executor restoringIn(Executor executor, InvocationContext invocationContext) {
-        if (executor == null
-                || !(invocationContext instanceof DefaultInvocationContext defaultInvocationContext)
-                || defaultInvocationContext.capturedContext() == null) {
+        if (executor == null || !(invocationContext instanceof DefaultInvocationContext) || ((DefaultInvocationContext) invocationContext).capturedContext() == null) {
             return executor;
         }
-        CapturedContext capturedContext = defaultInvocationContext.capturedContext();
+        CapturedContext capturedContext = ((DefaultInvocationContext) invocationContext).capturedContext();
         return task -> executor.execute(capturedContext.wrap(task));
     }
 }

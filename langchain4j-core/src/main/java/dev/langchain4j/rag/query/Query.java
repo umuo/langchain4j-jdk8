@@ -1,9 +1,7 @@
 package dev.langchain4j.rag.query;
 
 import dev.langchain4j.rag.content.Content;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -19,6 +17,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class Query {
 
     private final String text;
+
     private final Metadata metadata;
 
     public Query(String text) {
@@ -41,11 +40,12 @@ public class Query {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Query that = (Query) o;
-        return Objects.equals(this.text, that.text)
-                && Objects.equals(this.metadata, that.metadata);
+        return Objects.equals(this.text, that.text) && Objects.equals(this.metadata, that.metadata);
     }
 
     @Override
@@ -55,10 +55,7 @@ public class Query {
 
     @Override
     public String toString() {
-        return "Query {" +
-                " text = " + quoted(text) +
-                ", metadata = " + metadata +
-                " }";
+        return "Query {" + " text = " + quoted(text) + ", metadata = " + metadata + " }";
     }
 
     public static Query from(String text) {

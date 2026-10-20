@@ -3,9 +3,7 @@ package dev.langchain4j.model.input;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
-
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.AiMessage.aiMessage;
 import static dev.langchain4j.data.message.SystemMessage.systemMessage;
 import static dev.langchain4j.data.message.UserMessage.userMessage;
@@ -71,8 +69,10 @@ public class Prompt {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Prompt that = (Prompt) o;
         return Objects.equals(this.text, that.text);
     }
@@ -84,9 +84,7 @@ public class Prompt {
 
     @Override
     public String toString() {
-        return "Prompt {" +
-                " text = " + quoted(text) +
-                " }";
+        return "Prompt {" + " text = " + quoted(text) + " }";
     }
 
     /**

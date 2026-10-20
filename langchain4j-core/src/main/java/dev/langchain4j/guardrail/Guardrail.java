@@ -39,7 +39,7 @@ public interface Guardrail<P extends GuardrailRequest, R extends GuardrailResult
 
     /**
      * Non-blocking counterpart of {@link #validate(GuardrailRequest)}, invoked by the asynchronous
-     * ({@code CompletableFuture}/{@code CompletionStage}) and reactive ({@code Flow.Publisher}) AI Service modes.
+     * ({@code CompletableFuture}/{@code CompletionStage}) and reactive ({@code Publisher}) AI Service modes.
      * <p>
      * Returns a {@link CompletableFuture} (rather than a plain {@link java.util.concurrent.CompletionStage}) because
      * guardrails sit in the cancellable execution path: the AI Service may cancel an in-flight validation when the
@@ -64,10 +64,6 @@ public interface Guardrail<P extends GuardrailRequest, R extends GuardrailResult
      */
     @Experimental
     default CompletableFuture<R> validateAsync(P request) {
-        return AsyncNotSupported.failedFuture(getClass().getName()
-                + " does not implement validateAsync(). To use this guardrail with an asynchronous"
-                + " (CompletableFuture/CompletionStage) or reactive (Flow.Publisher) AI Service, override"
-                + " validateAsync(). If the guardrail does not perform blocking I/O, return"
-                + " CompletableFuture.completedFuture(validate(request)).");
+        return AsyncNotSupported.failedFuture(getClass().getName() + " does not implement validateAsync(). To use this guardrail with an asynchronous" + " (CompletableFuture/CompletionStage) or reactive (Publisher) AI Service, override" + " validateAsync(). If the guardrail does not perform blocking I/O, return" + " CompletableFuture.completedFuture(validate(request)).");
     }
 }

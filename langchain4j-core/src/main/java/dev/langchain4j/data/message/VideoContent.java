@@ -1,11 +1,9 @@
 package dev.langchain4j.data.message;
 
 import dev.langchain4j.data.video.Video;
-
 import java.net.URI;
 import java.nio.file.Path;
 import java.util.Objects;
-
 import static dev.langchain4j.data.message.ContentType.VIDEO;
 import static dev.langchain4j.internal.ContentUtil.extractBase64Content;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
@@ -26,9 +24,7 @@ public class VideoContent implements Content {
      * @param url the url of the Video.
      */
     public VideoContent(URI url) {
-        this.video = Video.builder()
-                .url(ensureNotNull(url, "url"))
-                .build();
+        this.video = Video.builder().url(ensureNotNull(url, "url")).build();
     }
 
     /**
@@ -47,9 +43,7 @@ public class VideoContent implements Content {
      * @param mimeType   the mime type of the video.
      */
     public VideoContent(String base64Data, String mimeType) {
-        this.video = Video.builder()
-                .base64Data(ensureNotBlank(base64Data, "base64data"))
-                .mimeType(ensureNotBlank(mimeType, "mimeType")).build();
+        this.video = Video.builder().base64Data(ensureNotBlank(base64Data, "base64data")).mimeType(ensureNotBlank(mimeType, "mimeType")).build();
     }
 
     /**
@@ -72,8 +66,10 @@ public class VideoContent implements Content {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         VideoContent that = (VideoContent) o;
         return Objects.equals(this.video, that.video);
     }
@@ -85,9 +81,7 @@ public class VideoContent implements Content {
 
     @Override
     public String toString() {
-        return "VideoContent {" +
-                " video = " + video +
-                " }";
+        return "VideoContent {" + " video = " + video + " }";
     }
 
     /**

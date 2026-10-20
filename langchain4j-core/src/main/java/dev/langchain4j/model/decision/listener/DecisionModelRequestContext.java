@@ -1,7 +1,6 @@
 package dev.langchain4j.model.decision.listener;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.decision.request.DecisionRequest;
@@ -18,13 +17,12 @@ import java.util.Map;
 public class DecisionModelRequestContext {
 
     private final DecisionRequest decisionRequest;
+
     private final ModelProvider modelProvider;
+
     private final Map<Object, Object> attributes;
 
-    public DecisionModelRequestContext(
-            DecisionRequest decisionRequest,
-            ModelProvider modelProvider,
-            Map<Object, Object> attributes) {
+    public DecisionModelRequestContext(DecisionRequest decisionRequest, ModelProvider modelProvider, Map<Object, Object> attributes) {
         this.decisionRequest = ensureNotNull(decisionRequest, "decisionRequest");
         this.modelProvider = ensureNotNull(modelProvider, "modelProvider");
         this.attributes = ensureNotNull(attributes, "attributes");

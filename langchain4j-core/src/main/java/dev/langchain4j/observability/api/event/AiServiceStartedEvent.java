@@ -11,6 +11,7 @@ import org.jspecify.annotations.Nullable;
  * Called when an LLM invocation has started.
  */
 public interface AiServiceStartedEvent extends AiServiceEvent {
+
     /**
      * Retrieves an optional system message associated with the invocation.
      * A system message typically provides instructions regarding the AI's
@@ -46,10 +47,14 @@ public interface AiServiceStartedEvent extends AiServiceEvent {
      * Builder for {@link DefaultAiServiceStartedEvent} instances.
      */
     class AiServiceStartedEventBuilder extends Builder<AiServiceStartedEvent> {
-        private @Nullable SystemMessage systemMessage;
+
+        @Nullable
+        private SystemMessage systemMessage;
+
         private UserMessage userMessage;
 
-        protected AiServiceStartedEventBuilder() {}
+        protected AiServiceStartedEventBuilder() {
+        }
 
         /**
          * Creates a builder initialized from an existing {@link AiServiceStartedEvent}.

@@ -9,6 +9,7 @@ package dev.langchain4j.exception;
  * (potentially with a longer timeout) may succeed.
  */
 public class TimeoutException extends RetriableException {
+
     public TimeoutException(String message) {
         super(message);
     }

@@ -31,7 +31,8 @@ public interface StreamingChatResponseHandler {
      * @param partialResponse A partial textual response, usually a single token.
      * @see #onPartialResponse(PartialResponse, PartialResponseContext)
      */
-    default void onPartialResponse(String partialResponse) {}
+    default void onPartialResponse(String partialResponse) {
+    }
 
     /**
      * Invoked each time the model generates a partial textual response, usually a single token.
@@ -70,7 +71,8 @@ public interface StreamingChatResponseHandler {
      * @since 1.2.0
      */
     @Experimental
-    default void onPartialThinking(PartialThinking partialThinking) {}
+    default void onPartialThinking(PartialThinking partialThinking) {
+    }
 
     /**
      * Invoked each time the model generates a partial thinking/reasoning text, usually a single token.
@@ -129,7 +131,8 @@ public interface StreamingChatResponseHandler {
      * @since 1.2.0
      */
     @Experimental
-    default void onPartialToolCall(PartialToolCall partialToolCall) {}
+    default void onPartialToolCall(PartialToolCall partialToolCall) {
+    }
 
     /**
      * This callback is invoked each time the model generates a partial tool call,
@@ -179,7 +182,8 @@ public interface StreamingChatResponseHandler {
      * @since 1.2.0
      */
     @Experimental
-    default void onCompleteToolCall(CompleteToolCall completeToolCall) {}
+    default void onCompleteToolCall(CompleteToolCall completeToolCall) {
+    }
 
     /**
      * Invoked when a provider emits a raw streaming event that is <b>not</b> already exposed through one of the
@@ -201,7 +205,8 @@ public interface StreamingChatResponseHandler {
      * @since 1.17.0
      */
     @Experimental
-    default void onUnmappedRawEvent(Object rawEvent) {}
+    default void onUnmappedRawEvent(Object rawEvent) {
+    }
 
     /**
      * Invoked when the model has finished streaming a response.

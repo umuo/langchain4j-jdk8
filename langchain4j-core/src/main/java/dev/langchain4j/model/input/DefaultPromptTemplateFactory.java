@@ -3,7 +3,6 @@ package dev.langchain4j.model.input;
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.spi.prompt.PromptTemplateFactory;
 import java.util.HashSet;
@@ -30,10 +29,11 @@ class DefaultPromptTemplateFactory implements PromptTemplateFactory {
          * This pattern is used to match and extract variables from a template string for further processing,
          * such as replacing these placeholders with their corresponding values.
          */
-        @SuppressWarnings({"RegExpRedundantEscape"})
+        @SuppressWarnings({ "RegExpRedundantEscape" })
         private static final Pattern VARIABLE_PATTERN = Pattern.compile("\\{\\{\\s*(.+?)\\s*\\}\\}");
 
         private final String template;
+
         private final Set<String> allVariables;
 
         public DefaultTemplate(String template) {
@@ -52,13 +52,10 @@ class DefaultPromptTemplateFactory implements PromptTemplateFactory {
 
         public String render(Map<String, Object> variables) {
             ensureNotNull(variables, "variables");
-
             if (allVariables.isEmpty()) {
                 return template;
             }
-
             ensureAllVariablesProvided(variables);
-
             Matcher matcher = VARIABLE_PATTERN.matcher(template);
             StringBuffer result = new StringBuffer(template.length());
             while (matcher.find()) {
@@ -70,7 +67,6 @@ class DefaultPromptTemplateFactory implements PromptTemplateFactory {
                 matcher.appendReplacement(result, Matcher.quoteReplacement(value.toString()));
             }
             matcher.appendTail(result);
-
             return result.toString();
         }
 

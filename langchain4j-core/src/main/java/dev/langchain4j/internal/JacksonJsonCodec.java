@@ -8,7 +8,6 @@ import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_DATE_TIME;
 import static java.time.format.DateTimeFormatter.ISO_LOCAL_TIME;
-
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -50,17 +49,16 @@ class JacksonJsonCodec implements Json.JsonCodec {
     private final ObjectMapper objectMapper;
 
     private static ObjectMapper createObjectMapper() {
-
         SimpleModule module = new SimpleModule("langchain4j-module");
+        module.addSerializer(LocalDate.class, new StdSerializer<java.time.LocalDate>(LocalDate.class) {
 
-        module.addSerializer(LocalDate.class, new StdSerializer<>(LocalDate.class) {
             @Override
             public void serialize(LocalDate value, JsonGenerator gen, SerializerProvider provider) throws IOException {
                 gen.writeString(value.format(ISO_LOCAL_DATE));
             }
         });
+        module.addDeserializer(LocalDate.class, new JsonDeserializer<java.time.LocalDate>() {
 
-        module.addDeserializer(LocalDate.class, new JsonDeserializer<>() {
             @Override
             public LocalDate deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 JsonNode node = p.getCodec().readTree(p);
@@ -74,43 +72,38 @@ class JacksonJsonCodec implements Json.JsonCodec {
                 }
             }
         });
+        module.addSerializer(LocalTime.class, new StdSerializer<java.time.LocalTime>(LocalTime.class) {
 
-        module.addSerializer(LocalTime.class, new StdSerializer<>(LocalTime.class) {
             @Override
             public void serialize(LocalTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
                 gen.writeString(value.format(ISO_LOCAL_TIME));
             }
         });
+        module.addDeserializer(LocalTime.class, new JsonDeserializer<java.time.LocalTime>() {
 
-        module.addDeserializer(LocalTime.class, new JsonDeserializer<>() {
             @Override
             public LocalTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 JsonNode node = p.getCodec().readTree(p);
                 if (node.isObject()) {
                     int hour = node.get("hour").asInt();
                     int minute = node.get("minute").asInt();
-                    int second = Optional.ofNullable(node.get("second"))
-                            .map(JsonNode::asInt)
-                            .orElse(0);
-                    int nano = Optional.ofNullable(node.get("nano"))
-                            .map(JsonNode::asInt)
-                            .orElse(0);
+                    int second = Optional.ofNullable(node.get("second")).map(JsonNode::asInt).orElse(0);
+                    int nano = Optional.ofNullable(node.get("nano")).map(JsonNode::asInt).orElse(0);
                     return LocalTime.of(hour, minute, second, nano);
                 } else {
                     return LocalTime.parse(node.asText(), ISO_LOCAL_TIME);
                 }
             }
         });
+        module.addSerializer(LocalDateTime.class, new StdSerializer<java.time.LocalDateTime>(LocalDateTime.class) {
 
-        module.addSerializer(LocalDateTime.class, new StdSerializer<>(LocalDateTime.class) {
             @Override
-            public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider)
-                    throws IOException {
+            public void serialize(LocalDateTime value, JsonGenerator gen, SerializerProvider provider) throws IOException {
                 gen.writeString(value.format(ISO_LOCAL_DATE_TIME));
             }
         });
+        module.addDeserializer(LocalDateTime.class, new JsonDeserializer<java.time.LocalDateTime>() {
 
-        module.addDeserializer(LocalDateTime.class, new JsonDeserializer<>() {
             @Override
             public LocalDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
                 JsonNode node = p.getCodec().readTree(p);
@@ -122,33 +115,21 @@ class JacksonJsonCodec implements Json.JsonCodec {
                     JsonNode time = node.get("time");
                     int hour = time.get("hour").asInt();
                     int minute = time.get("minute").asInt();
-                    int second = Optional.ofNullable(time.get("second"))
-                            .map(JsonNode::asInt)
-                            .orElse(0);
-                    int nano = Optional.ofNullable(time.get("nano"))
-                            .map(JsonNode::asInt)
-                            .orElse(0);
+                    int second = Optional.ofNullable(time.get("second")).map(JsonNode::asInt).orElse(0);
+                    int nano = Optional.ofNullable(time.get("nano")).map(JsonNode::asInt).orElse(0);
                     return LocalDateTime.of(year, month, day, hour, minute, second, nano);
                 } else {
                     return LocalDateTime.parse(node.asText(), ISO_LOCAL_DATE_TIME);
                 }
             }
         });
-
-        ObjectMapper mapper = JsonMapper.builder()
-                .visibility(FIELD, ANY)
-                .disable(INDENT_OUTPUT) // disabled on purpose to save tokens when sending tool results to LLM
-                .enable(FAIL_ON_UNKNOWN_PROPERTIES) // enabled on purpose to prevent issues caused by LLM hallucinations
-                .enable(ACCEPT_CASE_INSENSITIVE_ENUMS)
-                .build()
-                .findAndRegisterModules()
-                .registerModule(module);
-
+        ObjectMapper mapper = JsonMapper.builder().visibility(FIELD, ANY).disable(// disabled on purpose to save tokens when sending tool results to LLM
+        INDENT_OUTPUT).enable(// enabled on purpose to prevent issues caused by LLM hallucinations
+        FAIL_ON_UNKNOWN_PROPERTIES).enable(ACCEPT_CASE_INSENSITIVE_ENUMS).build().findAndRegisterModules().registerModule(module);
         // Make sealed interfaces/classes deserializable as polymorphic types without the user
         // having to add @JsonTypeInfo+@JsonSubTypes. We synthesize equivalent metadata via a
         // custom AnnotationIntrospector consulted ahead of Jackson's default one.
-        mapper.setAnnotationIntrospector(AnnotationIntrospectorPair.pair(
-                new SealedTypePolymorphicIntrospector(), mapper.getDeserializationConfig().getAnnotationIntrospector()));
+        mapper.setAnnotationIntrospector(AnnotationIntrospectorPair.pair(new SealedTypePolymorphicIntrospector(), mapper.getDeserializationConfig().getAnnotationIntrospector()));
         return mapper;
     }
 
@@ -217,17 +198,12 @@ class JacksonJsonCodec implements Json.JsonCodec {
     private static final class SealedTypePolymorphicIntrospector extends NopAnnotationIntrospector {
 
         @Override
-        public TypeResolverBuilder<?> findTypeResolver(
-                MapperConfig<?> config, AnnotatedClass ac, com.fasterxml.jackson.databind.JavaType baseType) {
+        public TypeResolverBuilder<?> findTypeResolver(MapperConfig<?> config, AnnotatedClass ac, com.fasterxml.jackson.databind.JavaType baseType) {
             Class<?> raw = ac.getRawType();
             if (!shouldHandle(raw)) {
                 return null;
             }
-            StdTypeResolverBuilder builder = new StdTypeResolverBuilder()
-                    .init(JsonTypeInfo.Id.NAME, null)
-                    .inclusion(JsonTypeInfo.As.PROPERTY)
-                    .typeProperty(PolymorphicTypes.discriminatorPropertyName(raw))
-                    .typeIdVisibility(false);
+            StdTypeResolverBuilder builder = new StdTypeResolverBuilder().init(JsonTypeInfo.Id.NAME, null).inclusion(JsonTypeInfo.As.PROPERTY).typeProperty(PolymorphicTypes.discriminatorPropertyName(raw)).typeIdVisibility(false);
             return builder;
         }
 
@@ -237,9 +213,7 @@ class JacksonJsonCodec implements Json.JsonCodec {
             if (!shouldHandle(raw)) {
                 return null;
             }
-            return PolymorphicTypes.findConcreteSubtypes(raw).stream()
-                    .map(sub -> new NamedType(sub, PolymorphicTypes.discriminatorValue(raw, sub)))
-                    .toList();
+            return PolymorphicTypes.findConcreteSubtypes(raw).stream().map(sub -> new NamedType(sub, PolymorphicTypes.discriminatorValue(raw, sub))).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
 
         private static boolean shouldHandle(Class<?> raw) {

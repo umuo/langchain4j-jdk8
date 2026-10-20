@@ -1,7 +1,6 @@
 package dev.langchain4j.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.guardrail.InputGuardrailResult.Failure;
 
@@ -17,6 +16,7 @@ import dev.langchain4j.guardrail.InputGuardrailResult.Failure;
  * </p>
  */
 public interface InputGuardrail extends Guardrail<InputGuardrailRequest, InputGuardrailResult> {
+
     /**
      * Validates the {@code user message} that will be sent to the LLM.
      * <p>

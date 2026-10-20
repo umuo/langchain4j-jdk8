@@ -20,7 +20,6 @@ import dev.langchain4j.rag.query.router.DefaultQueryRouter;
 import dev.langchain4j.rag.query.router.QueryRouter;
 import dev.langchain4j.rag.query.transformer.DefaultQueryTransformer;
 import dev.langchain4j.rag.query.transformer.QueryTransformer;
-
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -34,7 +33,6 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
-
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.Exceptions.unwrapCompletionException;
 import static dev.langchain4j.internal.Utils.getOrDefault;
@@ -123,17 +121,18 @@ import static java.util.stream.Collectors.toMap;
 public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
 
     private final QueryTransformer queryTransformer;
+
     private final QueryRouter queryRouter;
+
     private final ContentAggregator contentAggregator;
+
     private final ContentInjector contentInjector;
+
     private final Executor executor;
+
     private final boolean offloadBlocking;
 
-    public DefaultRetrievalAugmentor(QueryTransformer queryTransformer,
-                                     QueryRouter queryRouter,
-                                     ContentAggregator contentAggregator,
-                                     ContentInjector contentInjector,
-                                     Executor executor) {
+    public DefaultRetrievalAugmentor(QueryTransformer queryTransformer, QueryRouter queryRouter, ContentAggregator contentAggregator, ContentInjector contentInjector, Executor executor) {
         this(queryTransformer, queryRouter, contentAggregator, contentInjector, executor, false);
     }
 
@@ -143,12 +142,7 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
      * @since 1.20.0
      */
     @Experimental
-    public DefaultRetrievalAugmentor(QueryTransformer queryTransformer,
-                                     QueryRouter queryRouter,
-                                     ContentAggregator contentAggregator,
-                                     ContentInjector contentInjector,
-                                     Executor executor,
-                                     boolean offloadBlocking) {
+    public DefaultRetrievalAugmentor(QueryTransformer queryTransformer, QueryRouter queryRouter, ContentAggregator contentAggregator, ContentInjector contentInjector, Executor executor, boolean offloadBlocking) {
         this.queryTransformer = getOrDefault(queryTransformer, DefaultQueryTransformer::new);
         this.queryRouter = ensureNotNull(queryRouter, "queryRouter");
         this.contentAggregator = getOrDefault(contentAggregator, DefaultContentAggregator::new);
@@ -158,37 +152,24 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
     }
 
     private static ExecutorService createDefaultExecutor() {
-        return new ThreadPoolExecutor(
-            0, Integer.MAX_VALUE,
-            1, SECONDS,
-            new SynchronousQueue<>()
-        );
+        return new ThreadPoolExecutor(0, Integer.MAX_VALUE, 1, SECONDS, new SynchronousQueue<>());
     }
 
     @Override
     public AugmentationResult augment(AugmentationRequest augmentationRequest) {
-
         ChatMessage chatMessage = augmentationRequest.chatMessage();
         String queryText;
-        if (chatMessage instanceof UserMessage userMessage) {
-            queryText = userMessage.singleText();
+        if (chatMessage instanceof UserMessage) {
+            queryText = ((UserMessage) chatMessage).singleText();
         } else {
             throw new IllegalArgumentException("Unsupported message type: " + chatMessage.type());
         }
         Query originalQuery = Query.from(queryText, augmentationRequest.metadata());
-
         Collection<Query> queries = queryTransformer.transform(originalQuery);
-
         Map<Query, Collection<List<Content>>> queryToContents = process(queries);
-
         List<Content> contents = contentAggregator.aggregate(queryToContents);
-
         ChatMessage augmentedChatMessage = contentInjector.inject(contents, chatMessage);
-
-        return AugmentationResult.builder()
-            .chatMessage(augmentedChatMessage)
-            .contents(contents)
-            .build();
+        return AugmentationResult.builder().chatMessage(augmentedChatMessage).contents(contents).build();
     }
 
     @Override
@@ -197,74 +178,49 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
         CancellationChain chain = new CancellationChain(result);
         try {
             ChatMessage chatMessage = augmentationRequest.chatMessage();
-            if (!(chatMessage instanceof UserMessage userMessage)) {
+            if (!(chatMessage instanceof UserMessage)) {
                 throw new IllegalArgumentException("Unsupported message type: " + chatMessage.type());
             }
-            Query originalQuery = Query.from(userMessage.singleText(), augmentationRequest.metadata());
-
+            Query originalQuery = Query.from(((UserMessage) chatMessage).singleText(), augmentationRequest.metadata());
             // Each stage runs on its component's native async path when available (query transformation, routing,
             // retrieval and aggregation can call an LLM, an embedding model, a vector store, ...); a stage that is not
             // async either offloads to the executor (offloadBlocking) or fails loudly - see nativeOrOffload. The stages
             // are composed, not joined, so the caller thread is never blocked; cancelling the returned future cancels
             // every in-flight stage via the CancellationChain (best-effort - see augmentAsync's javadoc).
-            chain.track(nativeOrOffload(
-                            originalQuery,
-                            () -> queryTransformer.transformAsync(originalQuery),
-                            () -> queryTransformer.transform(originalQuery)))
-                .thenCompose(queries -> processAsync(chain, queries))
-                .thenCompose(queryToContents -> chain.track(nativeOrOffload(
-                        originalQuery,
-                        () -> contentAggregator.aggregateAsync(queryToContents),
-                        () -> contentAggregator.aggregate(queryToContents))))
-                .thenApply(contents -> AugmentationResult.builder()
-                    .chatMessage(contentInjector.inject(contents, chatMessage))
-                    .contents(contents)
-                    .build())
-                .whenComplete((augmentationResult, error) -> {
-                    if (error != null) {
-                        result.completeExceptionally(unwrapCompletionException(error));
-                    } else {
-                        result.complete(augmentationResult);
-                    }
-                });
+            chain.track(nativeOrOffload(originalQuery, () -> queryTransformer.transformAsync(originalQuery), () -> queryTransformer.transform(originalQuery))).thenCompose(queries -> processAsync(chain, queries)).thenCompose(queryToContents -> chain.track(nativeOrOffload(originalQuery, () -> contentAggregator.aggregateAsync(queryToContents), () -> contentAggregator.aggregate(queryToContents)))).thenApply(contents -> AugmentationResult.builder().chatMessage(contentInjector.inject(contents, chatMessage)).contents(contents).build()).whenComplete((augmentationResult, error) -> {
+                if (error != null) {
+                    result.completeExceptionally(unwrapCompletionException(error));
+                } else {
+                    result.complete(augmentationResult);
+                }
+            });
         } catch (Throwable t) {
             result.completeExceptionally(t);
         }
         return result;
     }
 
-    private CompletableFuture<Map<Query, Collection<List<Content>>>> processAsync(
-        CancellationChain chain, Collection<Query> queries) {
+    private CompletableFuture<Map<Query, Collection<List<Content>>>> processAsync(CancellationChain chain, Collection<Query> queries) {
         if (queries.isEmpty()) {
             return completedFuture(emptyMap());
         }
         // Preserve request order (LinkedHashMap) so aggregation sees queries in the same order as the sync path.
         Map<Query, CompletableFuture<Collection<List<Content>>>> queryToFutureContents = new LinkedHashMap<>();
         for (Query query : queries) {
-            CompletableFuture<Collection<List<Content>>> futureContents = chain.track(
-                            nativeOrOffload(query, () -> queryRouter.routeAsync(query), () -> queryRouter.route(query)))
-                    .thenCompose(retrievers -> retrieveFromAllAsync(chain, retrievers, query));
+            CompletableFuture<Collection<List<Content>>> futureContents = chain.track(nativeOrOffload(query, () -> queryRouter.routeAsync(query), () -> queryRouter.route(query))).thenCompose(retrievers -> retrieveFromAllAsync(chain, retrievers, query));
             queryToFutureContents.put(query, futureContents);
         }
-        return chain.track(allOf(queryToFutureContents.values().toArray(new CompletableFuture[0])))
-            .thenApply(ignored -> {
-                Map<Query, Collection<List<Content>>> queryToContents = new LinkedHashMap<>();
-                // join() never blocks here: allOf has already completed all futures.
-                queryToFutureContents.forEach((query, future) -> queryToContents.put(query, future.join()));
-                return queryToContents;
-            });
+        return chain.track(allOf(queryToFutureContents.values().toArray(new CompletableFuture[0]))).thenApply(ignored -> {
+            Map<Query, Collection<List<Content>>> queryToContents = new LinkedHashMap<>();
+            // join() never blocks here: allOf has already completed all futures.
+            queryToFutureContents.forEach((query, future) -> queryToContents.put(query, future.join()));
+            return queryToContents;
+        });
     }
 
-    private CompletableFuture<Collection<List<Content>>> retrieveFromAllAsync(
-        CancellationChain chain, Collection<ContentRetriever> retrievers, Query query) {
-        List<CompletableFuture<List<Content>>> futureContents = retrievers.stream()
-            .map(retriever -> chain.track(retrieveOneAsync(retriever, query)))
-            .collect(Collectors.toList());
-
-        return chain.track(allOf(futureContents.toArray(new CompletableFuture[0])))
-            .thenApply(ignored -> futureContents.stream()
-                .map(CompletableFuture::join)
-                .collect(Collectors.toList()));
+    private CompletableFuture<Collection<List<Content>>> retrieveFromAllAsync(CancellationChain chain, Collection<ContentRetriever> retrievers, Query query) {
+        List<CompletableFuture<List<Content>>> futureContents = retrievers.stream().map(retriever -> chain.track(retrieveOneAsync(retriever, query))).collect(Collectors.toList());
+        return chain.track(allOf(futureContents.toArray(new CompletableFuture[0]))).thenApply(ignored -> futureContents.stream().map(CompletableFuture::join).collect(Collectors.toList()));
     }
 
     private CompletableFuture<List<Content>> retrieveOneAsync(ContentRetriever retriever, Query query) {
@@ -282,29 +238,22 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
      * {@code offloadBlocking}, or fails with an actionable message. Any other error propagates unchanged. No
      * reflection: async availability is discovered by calling it.
      */
-    private <T> CompletableFuture<T> nativeOrOffload(
-            Query query, Supplier<CompletableFuture<T>> asyncCall, Supplier<T> blockingCall) {
+    private <T> CompletableFuture<T> nativeOrOffload(Query query, Supplier<CompletableFuture<T>> asyncCall, Supplier<T> blockingCall) {
         CompletableFuture<T> async;
         try {
             async = asyncCall.get();
         } catch (Throwable t) {
-            async = CompletableFuture.failedFuture(t);
+            async = dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
-        CompletableFuture<T> result = async.exceptionallyCompose(error -> {
+        CompletableFuture<T> result = dev.langchain4j.internal.Jdk8.exceptionallyCompose(async, error -> {
             Throwable cause = unwrapCompletionException(error);
             if (cause instanceof AsyncNotSupportedException) {
                 if (offloadBlocking) {
-                    return supplyAsync(
-                            blockingCall,
-                            CapturedContextSupport.restoringIn(
-                                    DefaultExecutorProvider.getDefaultExecutor(), invocationContextOf(query)));
+                    return supplyAsync(blockingCall, CapturedContextSupport.restoringIn(DefaultExecutorProvider.getDefaultExecutor(), invocationContextOf(query)));
                 }
-                return CompletableFuture.failedFuture(new UnsupportedFeatureException(cause.getMessage()
-                        + " The RAG pipeline is not fully asynchronous. Either use async-capable components, or build"
-                        + " this DefaultRetrievalAugmentor with offloadBlocking(true) to offload the blocking stage to"
-                        + " the configured executor."));
+                return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " The RAG pipeline is not fully asynchronous. Either use async-capable components, or build" + " this DefaultRetrievalAugmentor with offloadBlocking(true) to offload the blocking stage to" + " the configured executor."));
             }
-            return CompletableFuture.failedFuture(error);
+            return dev.langchain4j.internal.Jdk8.failedFuture(error);
         });
         // Cancellation does not flow to the stages a future is derived from, so link the caller-facing derived stage
         // back to the raw in-flight call - otherwise cancelling the pipeline never aborts the leaf I/O.
@@ -329,11 +278,7 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
         } else if (queries.size() > 1) {
             Map<Query, CompletableFuture<Collection<List<Content>>>> queryToFutureContents = new ConcurrentHashMap<>();
             queries.forEach(query -> {
-                CompletableFuture<Collection<List<Content>>> futureContents =
-                        supplyAsync(
-                                        () -> queryRouter.route(query),
-                                        CapturedContextSupport.restoringIn(executor, invocationContextOf(query)))
-                                .thenCompose(retrievers -> retrieveFromAll(retrievers, query));
+                CompletableFuture<Collection<List<Content>>> futureContents = supplyAsync(() -> queryRouter.route(query), CapturedContextSupport.restoringIn(executor, invocationContextOf(query))).thenCompose(retrievers -> retrieveFromAll(retrievers, query));
                 queryToFutureContents.put(query, futureContents);
             });
             return join(queryToFutureContents);
@@ -342,30 +287,13 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
         }
     }
 
-    private CompletableFuture<Collection<List<Content>>> retrieveFromAll(Collection<ContentRetriever> retrievers,
-                                                                         Query query) {
-        List<CompletableFuture<List<Content>>> futureContents = retrievers.stream()
-            .map(retriever -> supplyAsync(
-                    () -> retriever.retrieve(query), CapturedContextSupport.restoringIn(executor, invocationContextOf(query))))
-            .collect(Collectors.toList());
-
-        return allOf(futureContents.toArray(new CompletableFuture[0]))
-            .thenApply(ignored ->
-                futureContents.stream()
-                    .map(CompletableFuture::join)
-                    .collect(Collectors.toList()));
+    private CompletableFuture<Collection<List<Content>>> retrieveFromAll(Collection<ContentRetriever> retrievers, Query query) {
+        List<CompletableFuture<List<Content>>> futureContents = retrievers.stream().map(retriever -> supplyAsync(() -> retriever.retrieve(query), CapturedContextSupport.restoringIn(executor, invocationContextOf(query)))).collect(Collectors.toList());
+        return allOf(futureContents.toArray(new CompletableFuture[0])).thenApply(ignored -> futureContents.stream().map(CompletableFuture::join).collect(Collectors.toList()));
     }
 
-    private static Map<Query, Collection<List<Content>>> join(
-        Map<Query, CompletableFuture<Collection<List<Content>>>> queryToFutureContents) {
-        return allOf(queryToFutureContents.values().toArray(new CompletableFuture[0]))
-            .thenApply(ignored ->
-                queryToFutureContents.entrySet().stream()
-                    .collect(toMap(
-                        Map.Entry::getKey,
-                        entry -> entry.getValue().join()
-                    ))
-            ).join();
+    private static Map<Query, Collection<List<Content>>> join(Map<Query, CompletableFuture<Collection<List<Content>>>> queryToFutureContents) {
+        return allOf(queryToFutureContents.values().toArray(new CompletableFuture[0])).thenApply(ignored -> queryToFutureContents.entrySet().stream().collect(toMap(Map.Entry::getKey, entry -> entry.getValue().join()))).join();
     }
 
     public static DefaultRetrievalAugmentorBuilder builder() {
@@ -375,10 +303,15 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
     public static class DefaultRetrievalAugmentorBuilder {
 
         private QueryTransformer queryTransformer;
+
         private QueryRouter queryRouter;
+
         private ContentAggregator contentAggregator;
+
         private ContentInjector contentInjector;
+
         private Executor executor;
+
         private boolean offloadBlocking;
 
         DefaultRetrievalAugmentorBuilder() {
@@ -433,13 +366,7 @@ public class DefaultRetrievalAugmentor implements RetrievalAugmentor {
         }
 
         public DefaultRetrievalAugmentor build() {
-            return new DefaultRetrievalAugmentor(
-                    this.queryTransformer,
-                    this.queryRouter,
-                    this.contentAggregator,
-                    this.contentInjector,
-                    this.executor,
-                    this.offloadBlocking);
+            return new DefaultRetrievalAugmentor(this.queryTransformer, this.queryRouter, this.contentAggregator, this.contentInjector, this.executor, this.offloadBlocking);
         }
     }
 }

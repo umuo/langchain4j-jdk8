@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.Content;
@@ -51,15 +50,13 @@ import java.util.Objects;
 public final class DecisionRequest {
 
     private final DecisionInput input;
+
     private final Map<String, Question> questions;
+
     private final DecisionRequestParameters parameters;
 
     private DecisionRequest(Builder builder) {
-        this.input = ensureNotNull(
-                builder.input,
-                "%s must be set with input(String), inputFields(Map), inputContents(List), inputMessages(List) "
-                        + "or input(DecisionInput)",
-                "input");
+        this.input = ensureNotNull(builder.input, "%s must be set with input(String), inputFields(Map), inputContents(List), inputMessages(List) " + "or input(DecisionInput)", "input");
         this.questions = copy(ensureNotEmpty(builder.questions, "questions"));
         this.parameters = getOrDefault(builder.parameters, DecisionRequestParameters.EMPTY);
     }
@@ -101,12 +98,12 @@ public final class DecisionRequest {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DecisionRequest that = (DecisionRequest) o;
-        return Objects.equals(input, that.input)
-                && Objects.equals(questions, that.questions)
-                && Objects.equals(parameters, that.parameters);
+        return Objects.equals(input, that.input) && Objects.equals(questions, that.questions) && Objects.equals(parameters, that.parameters);
     }
 
     @Override
@@ -123,7 +120,9 @@ public final class DecisionRequest {
     public static final class Builder {
 
         private DecisionInput input;
+
         private final Map<String, Question> questions = new LinkedHashMap<>();
+
         private DecisionRequestParameters parameters;
 
         /**
@@ -215,7 +214,7 @@ public final class DecisionRequest {
          */
         public Builder question(String name, Question question) {
             if (questions.containsKey(ensureNotBlank(name, "question name"))) {
-                throw new IllegalArgumentException("Question '%s' is already defined".formatted(name));
+                throw new IllegalArgumentException(String.format("Question '%s' is already defined", name));
             }
             questions.put(name, ensureNotNull(question, "question"));
             return this;

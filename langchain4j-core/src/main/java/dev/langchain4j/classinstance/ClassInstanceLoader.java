@@ -14,7 +14,9 @@ import java.util.ServiceLoader;
  * </p>
  */
 public final class ClassInstanceLoader {
-    private ClassInstanceLoader() {}
+
+    private ClassInstanceLoader() {
+    }
 
     /**
      * Retrieves an instance of the specified class type. This method first attempts to obtain the instance
@@ -26,19 +28,13 @@ public final class ClassInstanceLoader {
      * @return an instance of the specified class type
      */
     public static <T> T getClassInstance(Class<T> clazz) {
-        return ServiceLoader.load(ClassInstanceFactory.class)
-                .findFirst()
-                .map(classInstanceFactory -> classInstanceFactory.getInstanceOfClass(clazz))
-                .orElseGet(() -> createNewClassInstance(clazz));
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(ClassInstanceFactory.class)).map(classInstanceFactory -> classInstanceFactory.getInstanceOfClass(clazz)).orElseGet(() -> createNewClassInstance(clazz));
     }
 
     private static <T> T createNewClassInstance(Class<T> clazz) {
         try {
             return clazz.getDeclaredConstructor().newInstance();
-        } catch (InstantiationException
-                | IllegalAccessException
-                | InvocationTargetException
-                | NoSuchMethodException e) {
+        } catch (InstantiationException | IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
             throw new RuntimeException(e);
         }
     }

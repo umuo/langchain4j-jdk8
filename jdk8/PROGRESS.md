@@ -7,3 +7,9 @@
 - 五个目标模块、独立构建入口、独立 Maven 坐标和 BOM。
 - 状态：全部 WIP，尚未声明 Java 8 可用。
 - 临时保留 mutiny-zero 用于原始 Java 17 源码分析，后续替换。
+
+## Core 移植检查点
+- 已完成 Java 8 语法/API 转换，Flow 公共类型改为 Reactive Streams。
+- 添加不可变集合、失败 Future、延迟执行及新 JDK 反射兼容工具。
+- javac 17 `--release 8` 编译 core 通过；独立 Maven core compile 通过。
+- 新增真实 Java 8 验收用例，尚待整体验证运行。状态：WIP。

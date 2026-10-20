@@ -3,7 +3,6 @@ package dev.langchain4j.web.search;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import java.util.Map;
 import java.util.Objects;
 
@@ -31,12 +30,19 @@ import java.util.Objects;
 public class WebSearchRequest {
 
     private final String searchTerms;
+
     private final Integer maxResults;
+
     private final String language;
+
     private final String geoLocation;
+
     private final Integer startPage;
+
     private final Integer startIndex;
+
     private final Boolean safeSearch;
+
     private final Map<String, Object> additionalParams;
 
     private WebSearchRequest(Builder builder) {
@@ -124,19 +130,13 @@ public class WebSearchRequest {
 
     @Override
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof WebSearchRequest wsr && equalTo(wsr);
+        if (this == another)
+            return true;
+        return another instanceof WebSearchRequest && equalTo(((WebSearchRequest) another));
     }
 
     private boolean equalTo(WebSearchRequest another) {
-        return Objects.equals(searchTerms, another.searchTerms)
-                && Objects.equals(maxResults, another.maxResults)
-                && Objects.equals(language, another.language)
-                && Objects.equals(geoLocation, another.geoLocation)
-                && Objects.equals(startPage, another.startPage)
-                && Objects.equals(startIndex, another.startIndex)
-                && Objects.equals(safeSearch, another.safeSearch)
-                && Objects.equals(additionalParams, another.additionalParams);
+        return Objects.equals(searchTerms, another.searchTerms) && Objects.equals(maxResults, another.maxResults) && Objects.equals(language, another.language) && Objects.equals(geoLocation, another.geoLocation) && Objects.equals(startPage, another.startPage) && Objects.equals(startIndex, another.startIndex) && Objects.equals(safeSearch, another.safeSearch) && Objects.equals(additionalParams, another.additionalParams);
     }
 
     @Override
@@ -155,15 +155,7 @@ public class WebSearchRequest {
 
     @Override
     public String toString() {
-        return "WebSearchRequest{" + "searchTerms='"
-                + searchTerms + '\'' + ", maxResults="
-                + maxResults + ", language='"
-                + language + '\'' + ", geoLocation='"
-                + geoLocation + '\'' + ", startPage="
-                + startPage + ", startIndex="
-                + startIndex + ", safeSearch="
-                + safeSearch + ", additionalParams="
-                + additionalParams + '}';
+        return "WebSearchRequest{" + "searchTerms='" + searchTerms + '\'' + ", maxResults=" + maxResults + ", language='" + language + '\'' + ", geoLocation='" + geoLocation + '\'' + ", startPage=" + startPage + ", startIndex=" + startIndex + ", safeSearch=" + safeSearch + ", additionalParams=" + additionalParams + '}';
     }
 
     /**
@@ -178,15 +170,23 @@ public class WebSearchRequest {
     public static final class Builder {
 
         private String searchTerms;
+
         private Integer maxResults;
+
         private String language;
+
         private String geoLocation;
+
         private Integer startPage;
+
         private Integer startIndex;
+
         private Boolean safeSearch;
+
         private Map<String, Object> additionalParams;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         /**
          * Set the search terms.
@@ -304,9 +304,6 @@ public class WebSearchRequest {
      * @return The web search request.
      */
     public static WebSearchRequest from(String searchTerms, Integer maxResults) {
-        return WebSearchRequest.builder()
-                .searchTerms(searchTerms)
-                .maxResults(maxResults)
-                .build();
+        return WebSearchRequest.builder().searchTerms(searchTerms).maxResults(maxResults).build();
     }
 }

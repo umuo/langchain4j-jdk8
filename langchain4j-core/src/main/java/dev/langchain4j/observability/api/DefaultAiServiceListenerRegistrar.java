@@ -1,7 +1,6 @@
 package dev.langchain4j.observability.api;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
@@ -21,9 +20,10 @@ import org.slf4j.LoggerFactory;
  * A default registrar for registering {@link AiServiceListener}s.
  */
 public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegistrar {
+
     private static final Logger LOG = LoggerFactory.getLogger(DefaultAiServiceListenerRegistrar.class);
-    private final Map<Class<? extends AiServiceEvent>, EventListeners<? extends AiServiceEvent>> listeners =
-            new ConcurrentHashMap<>();
+
+    private final Map<Class<? extends AiServiceEvent>, EventListeners<? extends AiServiceEvent>> listeners = new ConcurrentHashMap<>();
 
     // Defaults to false to preserve backwards compatibility
     private final AtomicBoolean shouldThrowExceptionOnEventError = new AtomicBoolean(false);
@@ -34,10 +34,7 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
     @Override
     public <T extends AiServiceEvent> void register(AiServiceListener<T> listener) {
         ensureNotNull(listener, "listener");
-
-        this.listeners.compute(
-                listener.getEventClass(),
-                (eventClass, eventListeners) -> addToExistingOrNewList(eventListeners, listener));
+        this.listeners.compute(listener.getEventClass(), (eventClass, eventListeners) -> addToExistingOrNewList(eventListeners, listener));
     }
 
     /**
@@ -47,9 +44,7 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
     @Override
     public <T extends AiServiceEvent> void unregister(AiServiceListener<T> listener) {
         ensureNotNull(listener, "listener");
-        Optional.ofNullable(this.listeners.get(listener.getEventClass()))
-                .map(l -> (EventListeners<T>) l)
-                .ifPresent(eventListeners -> eventListeners.remove(listener));
+        Optional.ofNullable(this.listeners.get(listener.getEventClass())).map(l -> (EventListeners<T>) l).ifPresent(eventListeners -> eventListeners.remove(listener));
     }
 
     /**
@@ -61,9 +56,7 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
     @Override
     public <T extends AiServiceEvent> void fireEvent(T event) {
         ensureNotNull(event, "event");
-        Optional.ofNullable(this.listeners.get(event.eventClass()))
-                .map(l -> (EventListeners<T>) l)
-                .ifPresent(l -> l.fireEvent(event));
+        Optional.ofNullable(this.listeners.get(event.eventClass())).map(l -> (EventListeners<T>) l).ifPresent(l -> l.fireEvent(event));
     }
 
     @Override
@@ -71,18 +64,16 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
         this.shouldThrowExceptionOnEventError.compareAndSet(!shouldThrowExceptionOnEventError, shouldThrowExceptionOnEventError);
     }
 
-    private <T extends AiServiceEvent> EventListeners<T> addToExistingOrNewList(
-            @Nullable EventListeners<? extends AiServiceEvent> listenersList, AiServiceListener<T> listener) {
-
-        var list = Optional.ofNullable(listenersList)
-                .map(l -> (EventListeners<T>) l)
-                .orElseGet(EventListeners::new);
+    private <T extends AiServiceEvent> EventListeners<T> addToExistingOrNewList(@Nullable EventListeners<? extends AiServiceEvent> listenersList, AiServiceListener<T> listener) {
+        dev.langchain4j.observability.api.DefaultAiServiceListenerRegistrar.EventListeners<T> list = Optional.ofNullable(listenersList).map(l -> (EventListeners<T>) l).orElseGet(EventListeners::new);
         list.add(listener);
         return list;
     }
 
     private class EventListeners<T extends AiServiceEvent> {
+
         private final Set<@NonNull AiServiceListener<T>> listeners = new LinkedHashSet<>();
+
         private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
         private EventListeners() {
@@ -91,9 +82,8 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
 
         private void add(AiServiceListener<T> listener) {
             ensureNotNull(listener, "listener");
-            var writeLock = this.lock.writeLock();
+            java.util.concurrent.locks.Lock writeLock = this.lock.writeLock();
             writeLock.lock();
-
             try {
                 this.listeners.add(listener);
             } finally {
@@ -102,9 +92,8 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
         }
 
         private void remove(AiServiceListener<T> listener) {
-            var writeLock = this.lock.writeLock();
+            java.util.concurrent.locks.Lock writeLock = this.lock.writeLock();
             writeLock.lock();
-
             try {
                 this.listeners.remove(ensureNotNull(listener, "listener"));
             } finally {
@@ -114,22 +103,14 @@ public class DefaultAiServiceListenerRegistrar implements AiServiceListenerRegis
 
         private void fireEvent(T event) {
             ensureNotNull(event, "event");
-            var readLock = this.lock.readLock();
+            java.util.concurrent.locks.Lock readLock = this.lock.readLock();
             readLock.lock();
-
             try {
                 this.listeners.forEach(listener -> {
                     try {
                         listener.onEvent(event);
                     } catch (Exception e) {
-                        LOG.warn(
-                                "An error occurred while firing event (%s) to listener (%s): %s"
-                                        .formatted(
-                                                event.getClass().getName(),
-                                                listener.getClass().getName(),
-                                                e.getMessage()),
-                                e);
-
+                        LOG.warn(String.format("An error occurred while firing event (%s) to listener (%s): %s", event.getClass().getName(), listener.getClass().getName(), e.getMessage()), e);
                         if (shouldThrowExceptionOnEventError.get()) {
                             throw e;
                         }

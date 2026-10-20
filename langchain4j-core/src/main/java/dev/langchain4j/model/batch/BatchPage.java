@@ -5,10 +5,8 @@ import dev.langchain4j.model.chat.BatchChatModel;
 import dev.langchain4j.model.embedding.BatchEmbeddingModel;
 import dev.langchain4j.model.image.BatchImageModel;
 import org.jspecify.annotations.Nullable;
-
 import java.util.List;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 
 /**
@@ -62,7 +60,8 @@ public class BatchPage<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         BatchPage<?> batchPage = (BatchPage<?>) o;
         return Objects.equals(batches, batchPage.batches) && Objects.equals(nextPageToken, batchPage.nextPageToken);
     }
@@ -74,9 +73,6 @@ public class BatchPage<T> {
 
     @Override
     public String toString() {
-        return "BatchPage{" +
-                "batches=" + batches +
-                ", nextPageToken='" + nextPageToken + '\'' +
-                '}';
+        return "BatchPage{" + "batches=" + batches + ", nextPageToken='" + nextPageToken + '\'' + '}';
     }
 }

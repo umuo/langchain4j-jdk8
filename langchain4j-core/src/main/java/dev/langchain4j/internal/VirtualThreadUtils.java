@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.Exceptions.runtime;
-
 import dev.langchain4j.Internal;
 import java.lang.reflect.Method;
 import java.util.concurrent.ExecutorService;

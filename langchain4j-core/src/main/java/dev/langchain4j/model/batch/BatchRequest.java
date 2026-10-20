@@ -2,7 +2,6 @@ package dev.langchain4j.model.batch;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import java.util.List;
 import java.util.Objects;
@@ -37,7 +36,8 @@ public class BatchRequest<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         BatchRequest<?> that = (BatchRequest<?>) o;
         return Objects.equals(requests, that.requests);
     }

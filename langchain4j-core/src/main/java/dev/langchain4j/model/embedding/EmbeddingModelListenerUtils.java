@@ -1,7 +1,6 @@
 package dev.langchain4j.model.embedding;
 
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -25,7 +24,8 @@ public class EmbeddingModelListenerUtils {
 
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddingModelListenerUtils.class);
 
-    private EmbeddingModelListenerUtils() {}
+    private EmbeddingModelListenerUtils() {
+    }
 
     /**
      * Notifies the model's {@link EmbeddingModel#listeners() listeners} around a raw batch embedding
@@ -42,56 +42,21 @@ public class EmbeddingModelListenerUtils {
      * @param operation    the raw embedding call.
      * @return the result of {@code operation}.
      */
-    public static Response<List<Embedding>> withListeners(
-            EmbeddingModel model, List<TextSegment> textSegments, Supplier<Response<List<Embedding>>> operation) {
-
+    public static Response<List<Embedding>> withListeners(EmbeddingModel model, List<TextSegment> textSegments, Supplier<Response<List<Embedding>>> operation) {
         List<EmbeddingModelListener> listeners = model.listeners();
         if (isNullOrEmpty(listeners) || isNullOrEmpty(textSegments)) {
             return operation.get();
         }
-
-        EmbeddingRequest request =
-                EmbeddingRequest.builder().textSegments(textSegments).build();
+        EmbeddingRequest request = EmbeddingRequest.builder().textSegments(textSegments).build();
         Map<Object, Object> attributes = new ConcurrentHashMap<>();
-
-        onRequest(
-                EmbeddingModelRequestContext.builder()
-                        .textSegments(textSegments)
-                        .embeddingRequest(request)
-                        .embeddingModel(model)
-                        .attributes(attributes)
-                        .build(),
-                listeners);
+        onRequest(EmbeddingModelRequestContext.builder().textSegments(textSegments).embeddingRequest(request).embeddingModel(model).attributes(attributes).build(), listeners);
         try {
             Response<List<Embedding>> response = operation.get();
-            EmbeddingResponse embeddingResponse = EmbeddingResponse.builder()
-                    .embeddings(response.content())
-                    .metadata(EmbeddingResponseMetadata.builder()
-                            .modelName(model.modelName())
-                            .tokenUsage(response.tokenUsage())
-                            .build())
-                    .build();
-            onResponse(
-                    EmbeddingModelResponseContext.builder()
-                            .embeddingRequest(request)
-                            .embeddingResponse(embeddingResponse)
-                            .embeddingModel(model)
-                            .attributes(attributes)
-                            .response(response)
-                            .textSegments(textSegments)
-                            .build(),
-                    listeners);
+            EmbeddingResponse embeddingResponse = EmbeddingResponse.builder().embeddings(response.content()).metadata(EmbeddingResponseMetadata.builder().modelName(model.modelName()).tokenUsage(response.tokenUsage()).build()).build();
+            onResponse(EmbeddingModelResponseContext.builder().embeddingRequest(request).embeddingResponse(embeddingResponse).embeddingModel(model).attributes(attributes).response(response).textSegments(textSegments).build(), listeners);
             return response;
         } catch (Exception error) {
-            onError(
-                    EmbeddingModelErrorContext.builder()
-                            .error(error)
-                            .textSegments(textSegments)
-                            .embeddingRequest(request)
-                            .embeddingModel(model)
-                            .attributes(attributes)
-                            .build(),
-                    listeners);
+            onError(EmbeddingModelErrorContext.builder().error(error).textSegments(textSegments).embeddingRequest(request).embeddingModel(model).attributes(attributes).build(), listeners);
             throw error;
         }
     }
@@ -105,12 +70,10 @@ public class EmbeddingModelListenerUtils {
      * @param operation   the raw embedding call.
      * @return the result of {@code operation}.
      */
-    public static Response<Embedding> withListeners(
-            EmbeddingModel model, TextSegment textSegment, Supplier<Response<Embedding>> operation) {
-
-        Response<List<Embedding>> response = withListeners(model, List.of(textSegment), () -> {
+    public static Response<Embedding> withListeners(EmbeddingModel model, TextSegment textSegment, Supplier<Response<Embedding>> operation) {
+        Response<List<Embedding>> response = withListeners(model, dev.langchain4j.internal.Jdk8.list(textSegment), () -> {
             Response<Embedding> single = operation.get();
-            return Response.from(List.of(single.content()), single.tokenUsage());
+            return Response.from(dev.langchain4j.internal.Jdk8.list(single.content()), single.tokenUsage());
         });
         return Response.from(response.content().get(0), response.tokenUsage());
     }
@@ -123,10 +86,7 @@ public class EmbeddingModelListenerUtils {
             try {
                 listener.onRequest(requestContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding model listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -139,10 +99,7 @@ public class EmbeddingModelListenerUtils {
             try {
                 listener.onResponse(responseContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding model listener. " + "This exception has been ignored.", e);
             }
         });
     }
@@ -155,10 +112,7 @@ public class EmbeddingModelListenerUtils {
             try {
                 listener.onError(errorContext);
             } catch (Exception e) {
-                LOG.warn(
-                        "An exception occurred during the invocation of the embedding model listener. "
-                                + "This exception has been ignored.",
-                        e);
+                LOG.warn("An exception occurred during the invocation of the embedding model listener. " + "This exception has been ignored.", e);
             }
         });
     }

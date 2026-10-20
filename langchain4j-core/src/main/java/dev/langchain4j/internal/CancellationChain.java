@@ -1,9 +1,7 @@
 package dev.langchain4j.internal;
 
 import dev.langchain4j.Internal;
-
 import java.util.concurrent.CompletableFuture;
-
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 

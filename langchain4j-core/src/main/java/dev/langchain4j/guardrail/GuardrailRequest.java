@@ -4,8 +4,7 @@ package dev.langchain4j.guardrail;
  * Represents the parameter passed to {@link Guardrail#validate(GuardrailRequest)}} in order to validate an interaction
  * between a user and the LLM.
  */
-public sealed interface GuardrailRequest<P extends GuardrailRequest<P>>
-        permits InputGuardrailRequest, OutputGuardrailRequest {
+public interface GuardrailRequest<P extends GuardrailRequest<P>> {
 
     /**
      * Retrieves the common parameters that are shared across guardrail checks.

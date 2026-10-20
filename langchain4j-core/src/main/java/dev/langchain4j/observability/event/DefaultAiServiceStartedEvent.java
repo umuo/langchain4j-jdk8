@@ -1,7 +1,6 @@
 package dev.langchain4j.observability.event;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.observability.api.event.AiServiceStartedEvent;
@@ -13,7 +12,9 @@ import org.jspecify.annotations.Nullable;
  */
 public class DefaultAiServiceStartedEvent extends AbstractAiServiceEvent implements AiServiceStartedEvent {
 
-    private final @Nullable SystemMessage systemMessage;
+    @Nullable
+    private final SystemMessage systemMessage;
+
     private final UserMessage userMessage;
 
     public DefaultAiServiceStartedEvent(AiServiceStartedEventBuilder builder) {

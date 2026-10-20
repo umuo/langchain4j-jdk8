@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureBetween;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.data.segment.TextSegment;
@@ -17,9 +16,13 @@ import java.util.Objects;
 public class EmbeddingSearchRequest {
 
     private final String query;
+
     private final Embedding queryEmbedding;
+
     private final int maxResults;
+
     private final double minScore;
+
     private final Filter filter;
 
     /**
@@ -76,13 +79,10 @@ public class EmbeddingSearchRequest {
 
     @Override
     public boolean equals(final Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         EmbeddingSearchRequest that = (EmbeddingSearchRequest) o;
-        return maxResults == that.maxResults
-                && Double.compare(minScore, that.minScore) == 0
-                && Objects.equals(query, that.query)
-                && Objects.equals(queryEmbedding, that.queryEmbedding)
-                && Objects.equals(filter, that.filter);
+        return maxResults == that.maxResults && Double.compare(minScore, that.minScore) == 0 && Objects.equals(query, that.query) && Objects.equals(queryEmbedding, that.queryEmbedding) && Objects.equals(filter, that.filter);
     }
 
     @Override
@@ -92,13 +92,7 @@ public class EmbeddingSearchRequest {
 
     @Override
     public String toString() {
-        return "EmbeddingSearchRequest{" +
-                "query='" + query + '\'' +
-                ", queryEmbedding=" + queryEmbedding +
-                ", maxResults=" + maxResults +
-                ", minScore=" + minScore +
-                ", filter=" + filter +
-                '}';
+        return "EmbeddingSearchRequest{" + "query='" + query + '\'' + ", queryEmbedding=" + queryEmbedding + ", maxResults=" + maxResults + ", minScore=" + minScore + ", filter=" + filter + '}';
     }
 
     public static EmbeddingSearchRequestBuilder builder() {
@@ -108,12 +102,17 @@ public class EmbeddingSearchRequest {
     public static class EmbeddingSearchRequestBuilder {
 
         private String query;
+
         private Embedding queryEmbedding;
+
         private Integer maxResults;
+
         private Double minScore;
+
         private Filter filter;
 
-        EmbeddingSearchRequestBuilder() {}
+        EmbeddingSearchRequestBuilder() {
+        }
 
         /**
          * The query used for search.

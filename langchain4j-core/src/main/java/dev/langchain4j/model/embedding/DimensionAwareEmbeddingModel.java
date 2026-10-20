@@ -1,7 +1,6 @@
 package dev.langchain4j.model.embedding;
 
 import dev.langchain4j.data.embedding.Embedding;
-
 import java.util.Optional;
 
 /**
@@ -28,7 +27,6 @@ public abstract class DimensionAwareEmbeddingModel implements EmbeddingModel {
         if (dimension != null) {
             return dimension;
         }
-
         Integer knownDimension = knownDimension();
         this.dimension = Optional.ofNullable(knownDimension).orElseGet(() -> embed("test").content().dimension());
         return this.dimension;

@@ -2,13 +2,14 @@ package dev.langchain4j.data.video;
 
 import java.net.URI;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 public class Video {
 
     private final URI url;
+
     private final String base64Data;
+
     private final String mimeType;
 
     /**
@@ -60,12 +61,12 @@ public class Video {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         Video that = (Video) o;
-        return Objects.equals(this.url, that.url)
-                && Objects.equals(this.base64Data, that.base64Data)
-                && Objects.equals(this.mimeType, that.mimeType);
+        return Objects.equals(this.url, that.url) && Objects.equals(this.base64Data, that.base64Data) && Objects.equals(this.mimeType, that.mimeType);
     }
 
     @Override
@@ -75,11 +76,7 @@ public class Video {
 
     @Override
     public String toString() {
-        return "Video {" +
-                " url = " + quoted(url) +
-                ", base64Data = " + quoted(base64Data) +
-                ", mimeType = " + quoted(mimeType) +
-                " }";
+        return "Video {" + " url = " + quoted(url) + ", base64Data = " + quoted(base64Data) + ", mimeType = " + quoted(mimeType) + " }";
     }
 
     /**
@@ -88,7 +85,9 @@ public class Video {
     public static class Builder {
 
         private URI url;
+
         private String base64Data;
+
         private String mimeType;
 
         /**

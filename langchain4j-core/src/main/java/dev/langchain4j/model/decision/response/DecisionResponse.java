@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.exception.ContentFilteredException;
 import dev.langchain4j.model.output.TokenUsage;
@@ -35,6 +34,7 @@ import java.util.Objects;
 public final class DecisionResponse {
 
     private final Map<String, DecisionAnswer> answers;
+
     private final DecisionResponseMetadata metadata;
 
     private DecisionResponse(Builder builder) {
@@ -105,13 +105,10 @@ public final class DecisionResponse {
     public <A extends DecisionAnswer> A answer(String name, Class<A> type) {
         DecisionAnswer answer = existingAnswer(name);
         if (answer instanceof RefusalAnswer && !type.isInstance(answer)) {
-            throw new ContentFilteredException(
-                    "The decision model refused to answer the question '%s'".formatted(name));
+            throw new ContentFilteredException(String.format("The decision model refused to answer the question '%s'", name));
         }
         if (!type.isInstance(answer)) {
-            throw new IllegalArgumentException("The answer to the question '%s' is a %s, not a %s"
-                    .formatted(
-                            name, answer.getClass().getSimpleName(), type.getSimpleName()));
+            throw new IllegalArgumentException(String.format("The answer to the question '%s' is a %s, not a %s", name, answer.getClass().getSimpleName(), type.getSimpleName()));
         }
         return type.cast(answer);
     }
@@ -131,8 +128,7 @@ public final class DecisionResponse {
     private DecisionAnswer existingAnswer(String name) {
         DecisionAnswer answer = answers.get(name);
         if (answer == null) {
-            throw new IllegalArgumentException("There is no answer to a question named '%s'. Available answers: %s"
-                    .formatted(name, answers.keySet()));
+            throw new IllegalArgumentException(String.format("There is no answer to a question named '%s'. Available answers: %s", name, answers.keySet()));
         }
         return answer;
     }
@@ -161,8 +157,10 @@ public final class DecisionResponse {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         DecisionResponse that = (DecisionResponse) o;
         return Objects.equals(answers, that.answers) && Objects.equals(metadata, that.metadata);
     }
@@ -180,8 +178,11 @@ public final class DecisionResponse {
     public static final class Builder {
 
         private final Map<String, DecisionAnswer> answers = new LinkedHashMap<>();
+
         private DecisionResponseMetadata metadata;
+
         private String modelName;
+
         private TokenUsage tokenUsage;
 
         /**
@@ -225,8 +226,7 @@ public final class DecisionResponse {
 
     private static void validate(Builder builder, String name) {
         if (builder.metadata != null) {
-            throw new IllegalArgumentException(
-                    "Cannot set both 'metadata' and '%s' on DecisionResponse".formatted(name));
+            throw new IllegalArgumentException(String.format("Cannot set both 'metadata' and '%s' on DecisionResponse", name));
         }
     }
 }

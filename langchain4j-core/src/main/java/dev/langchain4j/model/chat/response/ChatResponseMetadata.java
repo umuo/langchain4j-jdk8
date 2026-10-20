@@ -3,7 +3,6 @@ package dev.langchain4j.model.chat.response;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.output.FinishReason;
 import dev.langchain4j.model.output.TokenUsage;
-
 import java.util.Objects;
 
 /**
@@ -14,8 +13,11 @@ import java.util.Objects;
 public class ChatResponseMetadata {
 
     private final String id;
+
     private final String modelName;
+
     private final TokenUsage tokenUsage;
+
     private final FinishReason finishReason;
 
     protected ChatResponseMetadata(Builder<?> builder) {
@@ -46,22 +48,17 @@ public class ChatResponseMetadata {
     }
 
     protected Builder<?> toBuilder(Builder<?> builder) {
-        return builder
-                .id(id)
-                .modelName(modelName)
-                .tokenUsage(tokenUsage)
-                .finishReason(finishReason);
+        return builder.id(id).modelName(modelName).tokenUsage(tokenUsage).finishReason(finishReason);
     }
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ChatResponseMetadata that = (ChatResponseMetadata) o;
-        return Objects.equals(id, that.id)
-                && Objects.equals(modelName, that.modelName)
-                && Objects.equals(tokenUsage, that.tokenUsage)
-                && Objects.equals(finishReason, that.finishReason);
+        return Objects.equals(id, that.id) && Objects.equals(modelName, that.modelName) && Objects.equals(tokenUsage, that.tokenUsage) && Objects.equals(finishReason, that.finishReason);
     }
 
     @Override
@@ -71,12 +68,7 @@ public class ChatResponseMetadata {
 
     @Override
     public String toString() {
-        return "ChatResponseMetadata{" +
-                "id='" + id + '\'' +
-                ", modelName='" + modelName + '\'' +
-                ", tokenUsage=" + tokenUsage +
-                ", finishReason=" + finishReason +
-                '}';
+        return "ChatResponseMetadata{" + "id='" + id + '\'' + ", modelName='" + modelName + '\'' + ", tokenUsage=" + tokenUsage + ", finishReason=" + finishReason + '}';
     }
 
     public static Builder<?> builder() {
@@ -86,8 +78,11 @@ public class ChatResponseMetadata {
     public static class Builder<T extends Builder<T>> {
 
         private String id;
+
         private String modelName;
+
         private TokenUsage tokenUsage;
+
         private FinishReason finishReason;
 
         public T id(String id) {

@@ -1,7 +1,6 @@
 package dev.langchain4j.internal;
 
 import static dev.langchain4j.internal.Utils.getOrDefault;
-
 import dev.langchain4j.Internal;
 import java.util.Objects;
 
@@ -16,9 +15,14 @@ public class ProviderJsonSpec {
      * How Java property names are translated to JSON field names.
      */
     public enum PropertyNaming {
-        /** Property names are used as declared. */
+
+        /**
+         * Property names are used as declared.
+         */
         IDENTITY,
-        /** {@code maxCompletionTokens} becomes {@code max_completion_tokens}. */
+        /**
+         * {@code maxCompletionTokens} becomes {@code max_completion_tokens}.
+         */
         SNAKE_CASE
     }
 
@@ -26,13 +30,14 @@ public class ProviderJsonSpec {
      * Which property values are written.
      */
     public enum Inclusion {
-        ALWAYS,
-        NON_NULL,
-        NON_EMPTY
+
+        ALWAYS, NON_NULL, NON_EMPTY
     }
 
     private final PropertyNaming propertyNaming;
+
     private final Inclusion inclusion;
+
     private final boolean prettyPrint;
 
     public ProviderJsonSpec(Builder builder) {
@@ -55,11 +60,11 @@ public class ProviderJsonSpec {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ProviderJsonSpec that)) return false;
-        return prettyPrint == that.prettyPrint
-                && propertyNaming == that.propertyNaming
-                && inclusion == that.inclusion;
+        if (this == o)
+            return true;
+        if (!(o instanceof ProviderJsonSpec))
+            return false;
+        return prettyPrint == ((ProviderJsonSpec) o).prettyPrint && propertyNaming == ((ProviderJsonSpec) o).propertyNaming && inclusion == ((ProviderJsonSpec) o).inclusion;
     }
 
     @Override
@@ -69,10 +74,7 @@ public class ProviderJsonSpec {
 
     @Override
     public String toString() {
-        return "ProviderJsonSpec{" + "propertyNaming="
-                + propertyNaming + ", inclusion="
-                + inclusion + ", prettyPrint="
-                + prettyPrint + "}";
+        return "ProviderJsonSpec{" + "propertyNaming=" + propertyNaming + ", inclusion=" + inclusion + ", prettyPrint=" + prettyPrint + "}";
     }
 
     public static Builder builder() {
@@ -82,7 +84,9 @@ public class ProviderJsonSpec {
     public static class Builder {
 
         private PropertyNaming propertyNaming;
+
         private Inclusion inclusion;
+
         private Boolean prettyPrint;
 
         public Builder propertyNaming(PropertyNaming propertyNaming) {

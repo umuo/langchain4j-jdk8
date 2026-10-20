@@ -2,7 +2,6 @@ package dev.langchain4j.store.embedding.listener;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.embedding.Embedding;
 import dev.langchain4j.store.embedding.EmbeddingSearchRequest;
@@ -23,6 +22,7 @@ import java.util.Map;
 public abstract class EmbeddingStoreRequestContext<Embedded> {
 
     private final EmbeddingStore<Embedded> embeddingStore;
+
     private final Map<Object, Object> attributes;
 
     protected EmbeddingStoreRequestContext(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes) {
@@ -51,27 +51,20 @@ public abstract class EmbeddingStoreRequestContext<Embedded> {
     public static final class Add<Embedded> extends EmbeddingStoreRequestContext<Embedded> {
 
         private final String id;
+
         private final Embedding embedding;
+
         private final Embedded embedded;
 
         public Add(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes, Embedding embedding) {
             this(embeddingStore, attributes, null, embedding, null);
         }
 
-        public Add(
-                EmbeddingStore<Embedded> embeddingStore,
-                Map<Object, Object> attributes,
-                String id,
-                Embedding embedding) {
+        public Add(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes, String id, Embedding embedding) {
             this(embeddingStore, attributes, id, embedding, null);
         }
 
-        public Add(
-                EmbeddingStore<Embedded> embeddingStore,
-                Map<Object, Object> attributes,
-                String id,
-                Embedding embedding,
-                Embedded embedded) {
+        public Add(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes, String id, Embedding embedding, Embedded embedded) {
             super(embeddingStore, attributes);
             this.id = id;
             this.embedding = embedding;
@@ -109,15 +102,12 @@ public abstract class EmbeddingStoreRequestContext<Embedded> {
     public static final class AddAll<Embedded> extends EmbeddingStoreRequestContext<Embedded> {
 
         private final List<String> ids;
+
         private final List<Embedding> embeddings;
+
         private final List<Embedded> embeddedList;
 
-        public AddAll(
-                EmbeddingStore<Embedded> embeddingStore,
-                Map<Object, Object> attributes,
-                List<String> ids,
-                List<Embedding> embeddings,
-                List<Embedded> embeddedList) {
+        public AddAll(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes, List<String> ids, List<Embedding> embeddings, List<Embedded> embeddedList) {
             super(embeddingStore, attributes);
             this.ids = copy(ids);
             this.embeddings = copy(embeddings);
@@ -156,10 +146,7 @@ public abstract class EmbeddingStoreRequestContext<Embedded> {
 
         private final EmbeddingSearchRequest searchRequest;
 
-        public Search(
-                EmbeddingStore<Embedded> embeddingStore,
-                Map<Object, Object> attributes,
-                EmbeddingSearchRequest searchRequest) {
+        public Search(EmbeddingStore<Embedded> embeddingStore, Map<Object, Object> attributes, EmbeddingSearchRequest searchRequest) {
             super(embeddingStore, attributes);
             this.searchRequest = searchRequest;
         }

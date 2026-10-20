@@ -7,7 +7,6 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.ChatMessageDeserializer;
 import dev.langchain4j.data.message.ChatMessageSerializer;
 import dev.langchain4j.memory.ChatMemory;
-
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -53,7 +52,7 @@ public interface ChatMemoryStore {
     /**
      * Non-blocking counterpart of {@link #getMessages(Object)}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs.
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}: a store backed by blocking I/O is
      * <b>not</b> silently offloaded to a worker thread, because that would hide the fact that it is not truly
@@ -72,7 +71,7 @@ public interface ChatMemoryStore {
     /**
      * Non-blocking counterpart of {@link #updateMessages(Object, List)}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs.
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}; see {@link #getMessagesAsync(Object)}
      * for the rationale.
@@ -91,7 +90,7 @@ public interface ChatMemoryStore {
     /**
      * Non-blocking counterpart of {@link #deleteMessages(Object)}, used by the asynchronous
      * ({@link java.util.concurrent.CompletableFuture}/{@link CompletionStage}) and reactive
-     * ({@link java.util.concurrent.Flow.Publisher}) AI Service APIs.
+     * ({@link org.reactivestreams.Publisher}) AI Service APIs.
      * <p>
      * The default implementation returns a failed future carrying {@link AsyncNotSupportedException}; see {@link #getMessagesAsync(Object)}
      * for the rationale.

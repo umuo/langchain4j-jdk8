@@ -10,6 +10,7 @@ package dev.langchain4j.data.message;
  * @see PdfFileContent
  */
 public interface Content {
+
     /**
      * Returns the type of content.
      *

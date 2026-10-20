@@ -1,12 +1,12 @@
 package dev.langchain4j.model.chat.request.json;
 
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 public class JsonSchema {
 
     private final String name;
+
     private final JsonSchemaElement rootElement;
 
     private JsonSchema(Builder builder) {
@@ -29,6 +29,7 @@ public class JsonSchema {
     public static class Builder {
 
         private String name;
+
         private JsonSchemaElement rootElement;
 
         public Builder name(String name) {
@@ -48,11 +49,12 @@ public class JsonSchema {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         JsonSchema that = (JsonSchema) o;
-        return Objects.equals(this.name, that.name)
-                && Objects.equals(this.rootElement, that.rootElement);
+        return Objects.equals(this.name, that.name) && Objects.equals(this.rootElement, that.rootElement);
     }
 
     @Override
@@ -62,9 +64,6 @@ public class JsonSchema {
 
     @Override
     public String toString() {
-        return "JsonSchema {" +
-                " name = " + quoted(name) +
-                ", rootElement = " + rootElement +
-                " }";
+        return "JsonSchema {" + " name = " + quoted(name) + ", rootElement = " + rootElement + " }";
     }
 }

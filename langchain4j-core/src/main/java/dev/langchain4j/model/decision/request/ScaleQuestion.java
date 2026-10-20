@@ -3,7 +3,6 @@ package dev.langchain4j.model.decision.request;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureTrue;
-
 import dev.langchain4j.Experimental;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -31,7 +30,9 @@ import java.util.Objects;
 public final class ScaleQuestion implements Question {
 
     private final String text;
+
     private final List<String> levels;
+
     private final List<String> levelDescriptions;
 
     private ScaleQuestion(Builder builder) {
@@ -76,11 +77,11 @@ public final class ScaleQuestion implements Question {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ScaleQuestion that)) return false;
-        return Objects.equals(text, that.text)
-                && Objects.equals(levels, that.levels)
-                && Objects.equals(levelDescriptions, that.levelDescriptions);
+        if (this == o)
+            return true;
+        if (!(o instanceof ScaleQuestion))
+            return false;
+        return Objects.equals(text, ((ScaleQuestion) o).text) && Objects.equals(levels, ((ScaleQuestion) o).levels) && Objects.equals(levelDescriptions, ((ScaleQuestion) o).levelDescriptions);
     }
 
     @Override
@@ -96,7 +97,9 @@ public final class ScaleQuestion implements Question {
     public static final class Builder {
 
         private String text;
+
         private final List<String> levels = new ArrayList<>();
+
         private final List<String> levelDescriptions = new ArrayList<>();
 
         public Builder text(String text) {
@@ -133,7 +136,7 @@ public final class ScaleQuestion implements Question {
          */
         public Builder level(String label, String description) {
             levels.add(ensureNotBlank(label, "level"));
-            levelDescriptions.add(ensureNotBlank(description, "description of level '%s'".formatted(label)));
+            levelDescriptions.add(ensureNotBlank(description, String.format("description of level '%s'", label)));
             return this;
         }
 
