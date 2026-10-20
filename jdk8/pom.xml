@@ -18,6 +18,7 @@
         <module>../langchain4j</module>
         <module>bom</module>
         <module>acceptance</module>
+        <module>reactive-tck</module>
     </modules>
     <dependencyManagement>
         <dependencies>

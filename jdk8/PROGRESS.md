@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第四阶段 Embeddings API 与 RAG 传输验收已完成（2026-10-20）
+## 当前状态：第五阶段响应式规范与并发稳定性进行中（WIP，2026-10-20）
 
 - 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m4`；历史标记 `jdk8-m1`、`jdk8-m2`、`jdk8-m3`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
@@ -103,3 +103,10 @@
 - 已复现并修复：响应 index 被忽略；响应数量与索引/向量缺失未校验；底层 HTTP Future 独立取消导致批量结果一直等待。同步/异步共用响应校验，全部无 index 的兼容提供方仍保留 wire 顺序。
 - 新增独立 BOM 的 `HttpRagExample`，使用真实 OpenAI embedding/chat 适配器访问 loopback；显式自定义 OkHttp 时由消费 POM 声明 BOM 管理的 OkHttp 模块。
 - 最新 clean reactor 已通过 89 个 Java 8 / 627 个 JDK 17 用例，0 失败/错误/跳过；随后独立消费项目三个示例及运行审计均已通过，详见上方最终结果和 milestone-4 快照。
+
+## 第五阶段检查点（WIP）
+
+- 从干净的 `jdk8-m4` 恢复；外置盘挂载且约有 69 GiB 可用。
+- 新增独立 `reactive-tck` 测试模块，在真实 Java 8 执行官方 TCK 1.0.4 的 PublisherVerification；生产 Reactive Streams API 仍为 1.0.2，不新增生产依赖。
+- 使用新 TCK 修复旧版测试问题，不覆盖官方规则、不限制 maxElements、不排除 required 测试。官方标为 untested 的跳过项将单独记录，不计为通过。
+- 同步/异步生产、并发 request/cancel/terminal、缓冲及 SSE 资源释放需要完成后续验收；本阶段尚未完成。
