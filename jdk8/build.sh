@@ -21,3 +21,4 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" RuntimeLinkage
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" Example
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" RagExample
+"$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample

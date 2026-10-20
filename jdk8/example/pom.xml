@@ -28,6 +28,10 @@
             <groupId>dev.langchain4j.jdk8</groupId>
             <artifactId>langchain4j</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-http-client-okhttp</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

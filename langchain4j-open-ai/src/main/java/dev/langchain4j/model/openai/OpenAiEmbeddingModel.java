@@ -185,8 +185,7 @@ public class OpenAiEmbeddingModel extends DimensionAwareEmbeddingModel {
     private EmbeddedBatch embedTexts(List<String> texts, EmbeddingRequestParameters parameters) {
         dev.langchain4j.model.openai.internal.embedding.EmbeddingRequest request = dev.langchain4j.model.openai.internal.embedding.EmbeddingRequest.builder().input(texts).model(parameters.modelName()).dimensions(parameters.dimensions()).user(parameters.parameter(OpenAiEmbeddingRequestParameters.USER)).encodingFormat(parameters.parameter(OpenAiEmbeddingRequestParameters.ENCODING_FORMAT)).customParameters(parameters.parameter(OpenAiEmbeddingRequestParameters.CUSTOM_PARAMETERS)).build();
         dev.langchain4j.model.openai.internal.embedding.EmbeddingResponse response = withRetryMappingExceptions(() -> client.embedding(request).execute(), maxRetries);
-        List<Embedding> embeddings = response.data().stream().map(openAiEmbedding -> Embedding.from(openAiEmbedding.embedding())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
-        return new EmbeddedBatch(embeddings, tokenUsageFrom(response.usage()), response.model());
+        return toEmbeddedBatch(response, texts.size());
     }
 
     /**
@@ -221,8 +220,11 @@ public class OpenAiEmbeddingModel extends DimensionAwareEmbeddingModel {
         batchFutures.forEach(batchFuture -> batchFuture.whenComplete((response, error) -> {
             if (error != null) {
                 Throwable cause = unwrapCompletionException(error);
-                if (!(cause instanceof CancellationException) && firstError.compareAndSet(null, cause)) {
-                    result.completeExceptionally(cause);
+                if (firstError.compareAndSet(null, cause)) {
+                    // A transport can cancel independently of the caller. It must still terminate the batch.
+                    // Wrap it as a failure; a caller-cancelled result is already terminal and remains cancelled.
+                    result.completeExceptionally(cause instanceof CancellationException
+                            ? new java.util.concurrent.CompletionException(cause) : cause);
                     batchFutures.forEach(sibling -> sibling.cancel(true));
                 }
             }
@@ -236,11 +238,36 @@ public class OpenAiEmbeddingModel extends DimensionAwareEmbeddingModel {
         CompletableFuture<ParsedAndRawResponse<dev.langchain4j.model.openai.internal.embedding.EmbeddingResponse>> rawFuture = withRetryMappingExceptionsAsync(() -> client.embedding(request).executeRawAsync(), maxRetries);
         CompletableFuture<EmbeddedBatch> result = rawFuture.thenApply(parsedAndRaw -> {
             dev.langchain4j.model.openai.internal.embedding.EmbeddingResponse response = parsedAndRaw.parsedResponse();
-            List<Embedding> embeddings = response.data().stream().map(openAiEmbedding -> Embedding.from(openAiEmbedding.embedding())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
-            return new EmbeddedBatch(embeddings, tokenUsageFrom(response.usage()), response.model());
+            return toEmbeddedBatch(response, texts.size());
         });
         propagateCancellation(result, rawFuture);
         return result;
+    }
+
+    /** Validates each batch before associating vectors with the input text segments. */
+    private EmbeddedBatch toEmbeddedBatch(
+            dev.langchain4j.model.openai.internal.embedding.EmbeddingResponse response, int expectedCount) {
+        List<dev.langchain4j.model.openai.internal.embedding.Embedding> data = response.data();
+        if (data == null || data.size() != expectedCount) {
+            throw new IllegalArgumentException("Invalid embedding response: expected " + expectedCount
+                    + " vectors but received " + (data == null ? "no data" : data.size()));
+        }
+        // Some compatible providers omit indices entirely. Keep their wire order, but reject mixed indices.
+        boolean indexed = data.stream().anyMatch(item -> item != null && item.index() != null);
+        List<Embedding> ordered = new ArrayList<>(java.util.Collections.nCopies(expectedCount, null));
+        for (int position = 0; position < data.size(); position++) {
+            dev.langchain4j.model.openai.internal.embedding.Embedding item = data.get(position);
+            if (item == null || item.embedding() == null || item.embedding().isEmpty()) {
+                throw new IllegalArgumentException("Invalid embedding response: missing or empty vector");
+            }
+            Integer index = indexed ? item.index() : Integer.valueOf(position);
+            if (index == null || index < 0 || index >= expectedCount || ordered.get(index) != null) {
+                throw new IllegalArgumentException("Invalid embedding response: missing, duplicate or out-of-range index");
+            }
+            ordered.set(index, Embedding.from(item.embedding()));
+        }
+        return new EmbeddedBatch(java.util.Collections.unmodifiableList(ordered),
+                tokenUsageFrom(response.usage()), response.model());
     }
 
     public static OpenAiEmbeddingModelBuilder builder() {
