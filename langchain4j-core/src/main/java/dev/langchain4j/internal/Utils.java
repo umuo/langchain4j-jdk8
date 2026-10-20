@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Deque;
 import java.util.HashMap;
 import java.util.HashSet;
-
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -591,19 +590,22 @@ public class Utils {
 
     private final static class MethodSignature {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("name")
         private final String name;
 
         public String name() {
             return name;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("params")
         private final List<Class<?>> params;
 
         public List<Class<?>> params() {
             return params;
         }
 
-        public MethodSignature(String name, List<Class<?>> params) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public MethodSignature(@com.fasterxml.jackson.annotation.JsonProperty("name") String name, @com.fasterxml.jackson.annotation.JsonProperty("params") List<Class<?>> params) {
             this.name = name;
             this.params = params;
         }

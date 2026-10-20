@@ -61,19 +61,22 @@ public final class EmbeddingParameter<T> {
         return name;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("name")
     private final String name;
 
     public String name() {
         return name;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("type")
     private final Class<T> type;
 
     public Class<T> type() {
         return type;
     }
 
-    public EmbeddingParameter(String name, Class<T> type) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public EmbeddingParameter(@com.fasterxml.jackson.annotation.JsonProperty("name") String name, @com.fasterxml.jackson.annotation.JsonProperty("type") Class<T> type) {
         name = ensureNotBlank(name, "name");
         type = ensureNotNull(type, "type");
         this.name = name;

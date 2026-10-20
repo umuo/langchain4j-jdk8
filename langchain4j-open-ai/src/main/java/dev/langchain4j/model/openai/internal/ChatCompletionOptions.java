@@ -5,19 +5,22 @@ import dev.langchain4j.Internal;
 @Internal
 public final class ChatCompletionOptions {
 
+    @com.fasterxml.jackson.annotation.JsonProperty("returnThinking")
     private final boolean returnThinking;
 
     public boolean returnThinking() {
         return returnThinking;
     }
 
+    @com.fasterxml.jackson.annotation.JsonProperty("accumulateToolCallId")
     private final boolean accumulateToolCallId;
 
     public boolean accumulateToolCallId() {
         return accumulateToolCallId;
     }
 
-    public ChatCompletionOptions(boolean returnThinking, boolean accumulateToolCallId) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public ChatCompletionOptions(@com.fasterxml.jackson.annotation.JsonProperty("returnThinking") boolean returnThinking, @com.fasterxml.jackson.annotation.JsonProperty("accumulateToolCallId") boolean accumulateToolCallId) {
         this.returnThinking = returnThinking;
         this.accumulateToolCallId = accumulateToolCallId;
     }

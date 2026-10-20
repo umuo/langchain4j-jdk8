@@ -212,19 +212,22 @@ public class DecisionModelChatModelRouter implements ChatModelRouter {
 
     private final static class RouteOption {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("route")
         private final ChatModelRoute route;
 
         public ChatModelRoute route() {
             return route;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("description")
         private final String description;
 
         public String description() {
             return description;
         }
 
-        public RouteOption(ChatModelRoute route, String description) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public RouteOption(@com.fasterxml.jackson.annotation.JsonProperty("route") ChatModelRoute route, @com.fasterxml.jackson.annotation.JsonProperty("description") String description) {
             this.route = route;
             this.description = description;
         }

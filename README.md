@@ -1,3 +1,5 @@
+> **Java 8 compatibility fork:** build with `./jdk8/build.sh`. See [jdk8/README.md](jdk8/README.md) for supported modules and [jdk8/PROGRESS.md](jdk8/PROGRESS.md) for validated progress. The original root POM is retained for upstream comparison.
+
 # LangChain4j: idiomatic, open-source Java library for building LLM-powered applications on the JVM
 
 [![Build Status](https://img.shields.io/github/actions/workflow/status/langchain4j/langchain4j/main.yaml?branch=main&style=for-the-badge&label=CI%20BUILD&logo=github)](https://github.com/langchain4j/langchain4j/actions/workflows/main.yaml)

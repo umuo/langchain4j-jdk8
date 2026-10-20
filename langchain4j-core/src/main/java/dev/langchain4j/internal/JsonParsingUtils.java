@@ -13,19 +13,22 @@ public class JsonParsingUtils {
 
     public final static class ParsedJson<T> {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("value")
         private final T value;
 
         public T value() {
             return value;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("json")
         private final String json;
 
         public String json() {
             return json;
         }
 
-        public ParsedJson(T value, String json) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public ParsedJson(@com.fasterxml.jackson.annotation.JsonProperty("value") T value, @com.fasterxml.jackson.annotation.JsonProperty("json") String json) {
             this.value = value;
             this.json = json;
         }

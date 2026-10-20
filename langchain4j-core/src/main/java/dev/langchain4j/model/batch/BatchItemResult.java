@@ -69,13 +69,15 @@ public interface BatchItemResult<T> {
             return null;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("response")
         private final T response;
 
         public T response() {
             return response;
         }
 
-        public Success(T response) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public Success(@com.fasterxml.jackson.annotation.JsonProperty("response") T response) {
             ensureNotNull(response, "response");
             this.response = response;
         }
@@ -112,13 +114,15 @@ public interface BatchItemResult<T> {
             return null;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("error")
         private final BatchError error;
 
         public BatchError error() {
             return error;
         }
 
-        public Failure(BatchError error) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public Failure(@com.fasterxml.jackson.annotation.JsonProperty("error") BatchError error) {
             ensureNotNull(error, "error");
             this.error = error;
         }

@@ -130,25 +130,29 @@ public class OpenAiEmbeddingModel extends DimensionAwareEmbeddingModel {
 
     private final static class EmbeddedBatch {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("embeddings")
         private final List<Embedding> embeddings;
 
         public List<Embedding> embeddings() {
             return embeddings;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("tokenUsage")
         private final TokenUsage tokenUsage;
 
         public TokenUsage tokenUsage() {
             return tokenUsage;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("modelName")
         private final String modelName;
 
         public String modelName() {
             return modelName;
         }
 
-        public EmbeddedBatch(List<Embedding> embeddings, TokenUsage tokenUsage, String modelName) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public EmbeddedBatch(@com.fasterxml.jackson.annotation.JsonProperty("embeddings") List<Embedding> embeddings, @com.fasterxml.jackson.annotation.JsonProperty("tokenUsage") TokenUsage tokenUsage, @com.fasterxml.jackson.annotation.JsonProperty("modelName") String modelName) {
             this.embeddings = embeddings;
             this.tokenUsage = tokenUsage;
             this.modelName = modelName;

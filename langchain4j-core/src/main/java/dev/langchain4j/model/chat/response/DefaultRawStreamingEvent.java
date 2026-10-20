@@ -8,13 +8,15 @@ package dev.langchain4j.model.chat.response;
  */
 final class DefaultRawStreamingEvent implements RawStreamingEvent {
 
+    @com.fasterxml.jackson.annotation.JsonProperty("rawEvent")
     private final Object rawEvent;
 
     public Object rawEvent() {
         return rawEvent;
     }
 
-    public DefaultRawStreamingEvent(Object rawEvent) {
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public DefaultRawStreamingEvent(@com.fasterxml.jackson.annotation.JsonProperty("rawEvent") Object rawEvent) {
         this.rawEvent = rawEvent;
     }
 

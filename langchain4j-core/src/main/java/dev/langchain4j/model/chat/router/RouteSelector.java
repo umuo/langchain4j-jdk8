@@ -40,25 +40,29 @@ final class RouteSelector<M> {
 
     final static class Route<M> {
 
+        @com.fasterxml.jackson.annotation.JsonProperty("name")
         private final String name;
 
         public String name() {
             return name;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("model")
         private final M model;
 
         public M model() {
             return model;
         }
 
+        @com.fasterxml.jackson.annotation.JsonProperty("descriptions")
         private final List<String> descriptions;
 
         public List<String> descriptions() {
             return descriptions;
         }
 
-        public Route(String name, M model, List<String> descriptions) {
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public Route(@com.fasterxml.jackson.annotation.JsonProperty("name") String name, @com.fasterxml.jackson.annotation.JsonProperty("model") M model, @com.fasterxml.jackson.annotation.JsonProperty("descriptions") List<String> descriptions) {
             this.name = name;
             this.model = model;
             this.descriptions = descriptions;
