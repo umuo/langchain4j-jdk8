@@ -22,12 +22,10 @@ public class OpenAiEmbeddingRequestParameters extends DefaultEmbeddingRequestPar
 
     public static final EmbeddingParameter<String> USER = new EmbeddingParameter<>("openai.user", String.class);
 
-    public static final EmbeddingParameter<String> ENCODING_FORMAT =
-            new EmbeddingParameter<>("openai.encodingFormat", String.class);
+    public static final EmbeddingParameter<String> ENCODING_FORMAT = new EmbeddingParameter<>("openai.encodingFormat", String.class);
 
     @SuppressWarnings("rawtypes")
-    public static final EmbeddingParameter<Map> CUSTOM_PARAMETERS =
-            new EmbeddingParameter<>("openai.customParameters", Map.class);
+    public static final EmbeddingParameter<Map> CUSTOM_PARAMETERS = new EmbeddingParameter<>("openai.customParameters", Map.class);
 
     protected OpenAiEmbeddingRequestParameters(Builder builder) {
         super(builder);
@@ -51,10 +49,7 @@ public class OpenAiEmbeddingRequestParameters extends DefaultEmbeddingRequestPar
         if (that == null || that.presentParameters().isEmpty()) {
             return this;
         }
-        return OpenAiEmbeddingRequestParameters.builder()
-                .overrideWith(this)
-                .overrideWith(that)
-                .build();
+        return OpenAiEmbeddingRequestParameters.builder().overrideWith(this).overrideWith(that).build();
     }
 
     public static Builder builder() {

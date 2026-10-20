@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.chat;
 
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -67,17 +66,14 @@ public final class Delta {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof Delta && equalTo((Delta) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Delta another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(content, another.content)
-                && Objects.equals(reasoningContent, another.reasoningContent)
-                && Objects.equals(toolCalls, another.toolCalls)
-                && Objects.equals(functionCall, another.functionCall);
+        return Objects.equals(role, another.role) && Objects.equals(content, another.content) && Objects.equals(reasoningContent, another.reasoningContent) && Objects.equals(toolCalls, another.toolCalls) && Objects.equals(functionCall, another.functionCall);
     }
 
     @Override
@@ -95,13 +91,7 @@ public final class Delta {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Delta{"
-                + "role=" + role
-                + ", content=" + content
-                + ", reasoningContent=" + reasoningContent
-                + ", toolCalls=" + toolCalls
-                + ", functionCall=" + functionCall
-                + "}";
+        return "Delta{" + "role=" + role + ", content=" + content + ", reasoningContent=" + reasoningContent + ", toolCalls=" + toolCalls + ", functionCall=" + functionCall + "}";
     }
 
     public static Builder builder() {
@@ -114,9 +104,12 @@ public final class Delta {
     public static final class Builder {
 
         private String role;
+
         private String content;
+
         @JsonAlias("reasoning")
         private String reasoningContent;
+
         private List<ToolCall> toolCalls;
 
         @Deprecated

@@ -61,14 +61,12 @@ public class ImageUsage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        if (another == null || getClass() != another.getClass()) return false;
+        if (this == another)
+            return true;
+        if (another == null || getClass() != another.getClass())
+            return false;
         ImageUsage that = (ImageUsage) another;
-        return Objects.equals(inputTokens, that.inputTokens)
-                && Objects.equals(outputTokens, that.outputTokens)
-                && Objects.equals(totalTokens, that.totalTokens)
-                && Objects.equals(inputTokensDetails, that.inputTokensDetails)
-                && Objects.equals(outputTokensDetails, that.outputTokensDetails);
+        return Objects.equals(inputTokens, that.inputTokens) && Objects.equals(outputTokens, that.outputTokens) && Objects.equals(totalTokens, that.totalTokens) && Objects.equals(inputTokensDetails, that.inputTokensDetails) && Objects.equals(outputTokensDetails, that.outputTokensDetails);
     }
 
     @Override
@@ -80,13 +78,7 @@ public class ImageUsage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ImageUsage{"
-                + "inputTokens=" + inputTokens
-                + ", outputTokens=" + outputTokens
-                + ", totalTokens=" + totalTokens
-                + ", inputTokensDetails=" + inputTokensDetails
-                + ", outputTokensDetails=" + outputTokensDetails
-                + '}';
+        return "ImageUsage{" + "inputTokens=" + inputTokens + ", outputTokens=" + outputTokens + ", totalTokens=" + totalTokens + ", inputTokensDetails=" + inputTokensDetails + ", outputTokensDetails=" + outputTokensDetails + '}';
     }
 
     public static Builder builder() {
@@ -99,9 +91,13 @@ public class ImageUsage {
     public static class Builder {
 
         private Integer inputTokens;
+
         private Integer outputTokens;
+
         private Integer totalTokens;
+
         private TokensDetails inputTokensDetails;
+
         private TokensDetails outputTokensDetails;
 
         public Builder inputTokens(Integer inputTokens) {
@@ -161,8 +157,10 @@ public class ImageUsage {
         @Override
         @JacocoIgnoreCoverageGenerated
         public boolean equals(Object another) {
-            if (this == another) return true;
-            if (another == null || getClass() != another.getClass()) return false;
+            if (this == another)
+                return true;
+            if (another == null || getClass() != another.getClass())
+                return false;
             TokensDetails that = (TokensDetails) another;
             return Objects.equals(imageTokens, that.imageTokens) && Objects.equals(textTokens, that.textTokens);
         }
@@ -189,6 +187,7 @@ public class ImageUsage {
         public static class TokensDetailsBuilder {
 
             private Integer imageTokens;
+
             private Integer textTokens;
 
             public TokensDetailsBuilder imageTokens(Integer imageTokens) {

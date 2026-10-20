@@ -8,7 +8,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_OPENAI_U
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_USER_AGENT;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.audio.Audio;
 import dev.langchain4j.http.client.HttpClientBuilder;
@@ -40,24 +39,15 @@ public class OpenAiTextToSpeechModel implements TextToSpeechModel {
     private static final int MAX_INPUT_TEXT_LENGTH = 4096;
 
     private final OpenAiClient client;
+
     private final int maxRetries;
+
     private final String modelName;
+
     private final String voice;
 
     public OpenAiTextToSpeechModel(Builder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).build();
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
         this.modelName = ensureNotBlank(builder.modelName, "modelName");
         this.voice = getOrDefault(builder.voice, "alloy");
@@ -69,27 +59,16 @@ public class OpenAiTextToSpeechModel implements TextToSpeechModel {
             throw new IllegalArgumentException("Request is required");
         }
         if (audioRequest.text().length() > MAX_INPUT_TEXT_LENGTH) {
-            throw new IllegalArgumentException(
-                    "Input text exceeds the maximum length of " + MAX_INPUT_TEXT_LENGTH + " characters");
+            throw new IllegalArgumentException("Input text exceeds the maximum length of " + MAX_INPUT_TEXT_LENGTH + " characters");
         }
-
         OpenAiTextToSpeechRequest openAiRequest = requestBuilder(audioRequest).build();
-
-        OpenAiTextToSpeechResponse openAiResponse =
-                withRetryMappingExceptions(() -> client.textToSpeech(openAiRequest).execute(), maxRetries);
-
-        Audio audio = Audio.builder()
-                .binaryData(openAiResponse.audio())
-                .mimeType(getOrDefault(openAiResponse.contentType(), "audio/mpeg"))
-                .build();
+        OpenAiTextToSpeechResponse openAiResponse = withRetryMappingExceptions(() -> client.textToSpeech(openAiRequest).execute(), maxRetries);
+        Audio audio = Audio.builder().binaryData(openAiResponse.audio()).mimeType(getOrDefault(openAiResponse.contentType(), "audio/mpeg")).build();
         return TextToSpeechResponse.from(audio);
     }
 
     private OpenAiTextToSpeechRequest.Builder requestBuilder(TextToSpeechRequest request) {
-        return OpenAiTextToSpeechRequest.builder()
-                .model(modelName)
-                .text(request.text())
-                .voice(getOrDefault(request.voice(), voice));
+        return OpenAiTextToSpeechRequest.builder().model(modelName).text(request.text()).voice(getOrDefault(request.voice(), voice));
     }
 
     @Override
@@ -107,17 +86,27 @@ public class OpenAiTextToSpeechModel implements TextToSpeechModel {
     public static class Builder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
+
         private String modelName;
+
         private String voice;
 
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
 
         public Builder() {

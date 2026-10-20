@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.chat;
 
 import static dev.langchain4j.model.openai.internal.chat.Role.SYSTEM;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -67,16 +66,14 @@ public final class SystemMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof SystemMessage && equalTo((SystemMessage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(SystemMessage another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(content, another.content)
-                && Objects.equals(contents, another.contents)
-                && Objects.equals(name, another.name);
+        return Objects.equals(role, another.role) && Objects.equals(content, another.content) && Objects.equals(contents, another.contents) && Objects.equals(name, another.name);
     }
 
     @Override
@@ -110,7 +107,9 @@ public final class SystemMessage implements Message {
     public static final class Builder {
 
         private String stringContent;
+
         private List<Content> contents;
+
         private String name;
 
         public Builder content(String content) {

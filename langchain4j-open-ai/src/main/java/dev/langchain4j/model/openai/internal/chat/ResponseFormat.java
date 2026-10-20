@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = ResponseFormat.Builder.class)
@@ -17,6 +16,7 @@ public class ResponseFormat {
 
     @JsonProperty
     private final ResponseFormatType type;
+
     @JsonProperty
     private final JsonSchema jsonSchema;
 
@@ -37,15 +37,14 @@ public class ResponseFormat {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ResponseFormat
-                && equalTo((ResponseFormat) another);
+        if (this == another)
+            return true;
+        return another instanceof ResponseFormat && equalTo((ResponseFormat) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ResponseFormat another) {
-        return Objects.equals(type, another.type)
-                && Objects.equals(jsonSchema, another.jsonSchema);
+        return Objects.equals(type, another.type) && Objects.equals(jsonSchema, another.jsonSchema);
     }
 
     @Override
@@ -60,10 +59,7 @@ public class ResponseFormat {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ResponseFormat{" +
-                "type=" + type +
-                ", jsonSchema=" + jsonSchema +
-                "}";
+        return "ResponseFormat{" + "type=" + type + ", jsonSchema=" + jsonSchema + "}";
     }
 
     public static Builder builder() {
@@ -76,6 +72,7 @@ public class ResponseFormat {
     public static class Builder {
 
         private ResponseFormatType type;
+
         private JsonSchema jsonSchema;
 
         public Builder type(ResponseFormatType type) {

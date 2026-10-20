@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = Categories.Builder.class)
@@ -79,20 +78,14 @@ public final class Categories {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof Categories
-                && equalTo((Categories) another);
+        if (this == another)
+            return true;
+        return another instanceof Categories && equalTo((Categories) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Categories another) {
-        return Objects.equals(hate, another.hate)
-                && Objects.equals(hateThreatening, another.hateThreatening)
-                && Objects.equals(selfHarm, another.selfHarm)
-                && Objects.equals(sexual, another.sexual)
-                && Objects.equals(sexualMinors, another.sexualMinors)
-                && Objects.equals(violence, another.violence)
-                && Objects.equals(violenceGraphic, another.violenceGraphic);
+        return Objects.equals(hate, another.hate) && Objects.equals(hateThreatening, another.hateThreatening) && Objects.equals(selfHarm, another.selfHarm) && Objects.equals(sexual, another.sexual) && Objects.equals(sexualMinors, another.sexualMinors) && Objects.equals(violence, another.violence) && Objects.equals(violenceGraphic, another.violenceGraphic);
     }
 
     @Override
@@ -112,15 +105,7 @@ public final class Categories {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Categories{"
-                + "hate=" + hate
-                + ", hateThreatening=" + hateThreatening
-                + ", selfHarm=" + selfHarm
-                + ", sexual=" + sexual
-                + ", sexualMinors=" + sexualMinors
-                + ", violence=" + violence
-                + ", violenceGraphic=" + violenceGraphic
-                + "}";
+        return "Categories{" + "hate=" + hate + ", hateThreatening=" + hateThreatening + ", selfHarm=" + selfHarm + ", sexual=" + sexual + ", sexualMinors=" + sexualMinors + ", violence=" + violence + ", violenceGraphic=" + violenceGraphic + "}";
     }
 
     public static Builder builder() {
@@ -133,11 +118,17 @@ public final class Categories {
     public static final class Builder {
 
         private Boolean hate;
+
         private Boolean hateThreatening;
+
         private Boolean selfHarm;
+
         private Boolean sexual;
+
         private Boolean sexualMinors;
+
         private Boolean violence;
+
         private Boolean violenceGraphic;
 
         public Builder hate(Boolean hate) {

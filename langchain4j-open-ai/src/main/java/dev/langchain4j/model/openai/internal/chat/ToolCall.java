@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.chat;
 
 import static dev.langchain4j.internal.Utils.isNotNullOrBlank;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -56,16 +55,14 @@ public class ToolCall {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof ToolCall && equalTo((ToolCall) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ToolCall another) {
-        return Objects.equals(id, another.id)
-                && Objects.equals(index, another.index)
-                && Objects.equals(type, another.type)
-                && Objects.equals(function, another.function);
+        return Objects.equals(id, another.id) && Objects.equals(index, another.index) && Objects.equals(type, another.type) && Objects.equals(function, another.function);
     }
 
     @Override
@@ -95,8 +92,11 @@ public class ToolCall {
     public static final class Builder {
 
         private String id;
+
         private Integer index;
+
         private ToolType type;
+
         private FunctionCall function;
 
         private static Integer normalizeIndex(Integer index) {

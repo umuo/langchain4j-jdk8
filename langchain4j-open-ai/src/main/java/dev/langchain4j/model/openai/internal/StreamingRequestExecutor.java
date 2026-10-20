@@ -9,16 +9,16 @@ import dev.langchain4j.http.client.sse.ServerSentEventContext;
 import dev.langchain4j.http.client.sse.ServerSentEventListener;
 import dev.langchain4j.http.client.sse.CancellationUnsupportedHandle;
 import dev.langchain4j.model.chat.response.StreamingHandle;
-
 import java.util.function.Consumer;
-
 import static dev.langchain4j.http.client.sse.ServerSentEventParsingHandleUtils.toStreamingHandle;
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.NO_CHOICES_ERROR_MESSAGE;
 
 class StreamingRequestExecutor<Response> {
 
     private final HttpClient httpClient;
+
     private final HttpRequest streamingHttpRequest;
+
     private final Class<Response> responseClass;
 
     StreamingRequestExecutor(HttpClient httpClient, HttpRequest streamingHttpRequest, Class<Response> responseClass) {
@@ -28,7 +28,6 @@ class StreamingRequestExecutor<Response> {
     }
 
     StreamingResponseHandling onPartialResponse(Consumer<ParsedAndRawResponse<Response>> partialResponseHandler) {
-
         return new StreamingResponseHandling() {
 
             @Override
@@ -67,12 +66,9 @@ class StreamingRequestExecutor<Response> {
 
                     @Override
                     public ResponseHandle execute() {
-                        return stream(
-                                partialResponseHandler,
-                                () -> {
-                                    // intentionally ignoring because user did not provide callback
-                                },
-                                errorHandler);
+                        return stream(partialResponseHandler, () -> {
+                            // intentionally ignoring because user did not provide callback
+                        }, errorHandler);
                     }
                 };
             }
@@ -83,29 +79,24 @@ class StreamingRequestExecutor<Response> {
 
                     @Override
                     public ResponseHandle execute() {
-                        return stream(
-                                partialResponseHandler,
-                                () -> {
-                                    // intentionally ignoring because user did not provide callback
-                                },
-                                (e) -> {
-                                    // intentionally ignoring because user called ignoreErrors()
-                                });
+                        return stream(partialResponseHandler, () -> {
+                            // intentionally ignoring because user did not provide callback
+                        }, (e) -> {
+                            // intentionally ignoring because user called ignoreErrors()
+                        });
                     }
                 };
             }
         };
     }
 
-    private ResponseHandle stream(
-            Consumer<ParsedAndRawResponse<Response>> partialResponseHandler,
-            Runnable streamingCompletionCallback,
-            Consumer<Throwable> errorHandler) {
-
+    private ResponseHandle stream(Consumer<ParsedAndRawResponse<Response>> partialResponseHandler, Runnable streamingCompletionCallback, Consumer<Throwable> errorHandler) {
         ServerSentEventListener listener = new ServerSentEventListener() {
 
             volatile SuccessfulHttpResponse response;
+
             volatile StreamingHandle streamingHandle;
+
             volatile boolean eventReceived;
 
             @Override
@@ -124,7 +115,6 @@ class StreamingRequestExecutor<Response> {
                     streamingHandle = toStreamingHandle(context.parsingHandle());
                 }
                 eventReceived = true;
-
                 if ("[DONE]".equals(event.data())) {
                     return;
                 }
@@ -135,13 +125,9 @@ class StreamingRequestExecutor<Response> {
                     }
                     Response parsedResponse = Json.fromJson(event.data(), responseClass);
                     if (parsedResponse != null) {
-                        ParsedAndRawResponse parsedAndRawResponse = ParsedAndRawResponse.builder()
-                                .parsedResponse(parsedResponse)
-                                .rawHttpResponse(response)
-                                .rawServerSentEvent(event)
-                                .streamingHandle(streamingHandle)
-                                .build();
-                        partialResponseHandler.accept(parsedAndRawResponse); // do not handle exception, fail-fast
+                        ParsedAndRawResponse parsedAndRawResponse = ParsedAndRawResponse.builder().parsedResponse(parsedResponse).rawHttpResponse(response).rawServerSentEvent(event).streamingHandle(streamingHandle).build();
+                        // do not handle exception, fail-fast
+                        partialResponseHandler.accept(parsedAndRawResponse);
                     }
                 } catch (Exception e) {
                     errorHandler.accept(e);
@@ -162,9 +148,7 @@ class StreamingRequestExecutor<Response> {
                 errorHandler.accept(t);
             }
         };
-
         httpClient.execute(streamingHttpRequest, listener);
-
         return new ResponseHandle();
     }
 }

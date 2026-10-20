@@ -9,8 +9,11 @@ import dev.langchain4j.model.chat.response.StreamingHandle;
 public class ParsedAndRawResponse<R> {
 
     private final R parsedResponse;
+
     private final SuccessfulHttpResponse rawHttpResponse;
+
     private final ServerSentEvent rawServerSentEvent;
+
     private final StreamingHandle streamingHandle;
 
     /**
@@ -37,9 +40,7 @@ public class ParsedAndRawResponse<R> {
         this.streamingHandle = null;
     }
 
-    protected ParsedAndRawResponse(R parsedResponse,
-                                   SuccessfulHttpResponse rawHttpResponse,
-                                   ServerSentEvent rawServerSentEvent) {
+    protected ParsedAndRawResponse(R parsedResponse, SuccessfulHttpResponse rawHttpResponse, ServerSentEvent rawServerSentEvent) {
         this.parsedResponse = parsedResponse;
         this.rawHttpResponse = rawHttpResponse;
         this.rawServerSentEvent = rawServerSentEvent;
@@ -78,8 +79,11 @@ public class ParsedAndRawResponse<R> {
     public static class Builder<R> {
 
         private R parsedResponse;
+
         private SuccessfulHttpResponse rawHttpResponse;
+
         private ServerSentEvent rawServerSentEvent;
+
         private StreamingHandle streamingHandle;
 
         public Builder<R> parsedResponse(R parsedResponse) {

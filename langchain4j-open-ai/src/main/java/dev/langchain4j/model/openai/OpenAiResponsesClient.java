@@ -7,7 +7,6 @@ import static dev.langchain4j.internal.JsonSchemaElementUtils.toMap;
 import static dev.langchain4j.internal.ToolSpecificationUtils.isEffectivelyStrict;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
-
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.image.Image;
@@ -64,9 +63,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Flow.Publisher;
+import org.reactivestreams.Publisher;
 import java.util.function.Supplier;
-import mutiny.zero.Tube;
+import dev.langchain4j.internal.reactive.Tube;
 
 class OpenAiResponsesClient {
 
@@ -74,132 +73,235 @@ class OpenAiResponsesClient {
      * Serialization goes through the pluggable wire codec, so the JSON library can be swapped.
      * Pretty-printing is kept because that is what this client has always sent.
      */
-    private static final Json.JsonCodec CODEC =
-            ProviderJson.codec(ProviderJsonSpec.builder().prettyPrint(true).build());
+    private static final Json.JsonCodec CODEC = ProviderJson.codec(ProviderJsonSpec.builder().prettyPrint(true).build());
 
     private static final String DEFAULT_BASE_URL = "https://api.openai.com/v1";
+
     private static final String OPENAI_ORGANIZATION_HEADER = "OpenAI-Organization";
+
     private static final String STREAM_DONE_MARKER = "[DONE]";
 
     private static final String EVENT_OUTPUT_TEXT_DELTA = "response.output_text.delta";
+
     private static final String EVENT_OUTPUT_ITEM_ADDED = "response.output_item.added";
+
     private static final String EVENT_FUNCTION_CALL_ARGUMENTS_DELTA = "response.function_call_arguments.delta";
+
     private static final String EVENT_FUNCTION_CALL_ARGUMENTS_DONE = "response.function_call_arguments.done";
+
     private static final String EVENT_OUTPUT_ITEM_DONE = "response.output_item.done";
+
     private static final String EVENT_REASONING_TEXT_DELTA = "response.reasoning_text.delta";
+
     private static final String EVENT_REASONING_SUMMARY_TEXT_DELTA = "response.reasoning_summary_text.delta";
+
     private static final String EVENT_RESPONSE_COMPLETED = "response.completed";
+
     private static final String EVENT_RESPONSE_INCOMPLETE = "response.incomplete";
+
     private static final String EVENT_RESPONSE_FAILED = "response.failed";
+
     private static final String EVENT_RESPONSE_ERROR = "response.error";
 
     private static final String FIELD_TYPE = "type";
+
     private static final String FIELD_ROLE = "role";
+
     private static final String FIELD_CONTENT = "content";
+
     private static final String FIELD_NAME = "name";
+
     private static final String FIELD_DESCRIPTION = "description";
+
     private static final String FIELD_PARAMETERS = "parameters";
+
     private static final String FIELD_PROPERTIES = "properties";
+
     private static final String FIELD_REQUIRED = "required";
+
     private static final String FIELD_ARGUMENTS = "arguments";
+
     private static final String FIELD_DELTA = "delta";
+
     private static final String FIELD_TEXT = "text";
+
     private static final String FIELD_IMAGE_URL = "image_url";
+
     private static final String FIELD_FILE_URL = "file_url";
+
     private static final String FIELD_FILE_DATA = "file_data";
+
     private static final String FIELD_FILENAME = "filename";
+
     private static final String FIELD_DETAIL = "detail";
+
     private static final String FIELD_ITEM = "item";
+
     private static final String FIELD_ID = "id";
+
     private static final String FIELD_CALL_ID = "call_id";
+
     private static final String FIELD_ITEM_ID = "item_id";
+
     private static final String FIELD_OUTPUT_INDEX = "output_index";
+
     private static final String FIELD_RESPONSE = "response";
+
     private static final String FIELD_ERROR = "error";
+
     private static final String FIELD_MESSAGE = "message";
+
     private static final String FIELD_OUTPUT = "output";
+
     private static final String FIELD_USAGE = "usage";
+
     private static final String FIELD_INPUT_TOKENS = "input_tokens";
+
     private static final String FIELD_OUTPUT_TOKENS = "output_tokens";
+
     private static final String FIELD_TOTAL_TOKENS = "total_tokens";
+
     private static final String FIELD_INPUT_TOKENS_DETAILS = "input_tokens_details";
+
     private static final String FIELD_CACHED_TOKENS = "cached_tokens";
+
     private static final String FIELD_CACHE_WRITE_TOKENS = "cache_write_tokens";
+
     private static final String FIELD_OUTPUT_TOKENS_DETAILS = "output_tokens_details";
+
     private static final String FIELD_REASONING_TOKENS = "reasoning_tokens";
+
     private static final String FIELD_MODEL = "model";
+
     private static final String FIELD_INPUT = "input";
+
     private static final String FIELD_STREAM = "stream";
+
     private static final String FIELD_STORE = "store";
+
     private static final String FIELD_TEMPERATURE = "temperature";
+
     private static final String FIELD_TOP_P = "top_p";
+
     private static final String FIELD_MAX_OUTPUT_TOKENS = "max_output_tokens";
+
     private static final String FIELD_MAX_TOOL_CALLS = "max_tool_calls";
+
     private static final String FIELD_PARALLEL_TOOL_CALLS = "parallel_tool_calls";
+
     private static final String FIELD_PREVIOUS_RESPONSE_ID = "previous_response_id";
+
     private static final String FIELD_TOP_LOGPROBS = "top_logprobs";
+
     private static final String FIELD_TOOLS = "tools";
+
     private static final String FIELD_TOOL_CHOICE = "tool_choice";
+
     private static final String FIELD_TRUNCATION = "truncation";
+
     private static final String FIELD_INCLUDE = "include";
+
     private static final String FIELD_SERVICE_TIER = "service_tier";
+
     private static final String FIELD_SAFETY_IDENTIFIER = "safety_identifier";
+
     private static final String FIELD_PROMPT_CACHE_KEY = "prompt_cache_key";
+
     private static final String FIELD_PROMPT_CACHE_RETENTION = "prompt_cache_retention";
+
     private static final String FIELD_PROMPT_CACHE_OPTIONS = "prompt_cache_options";
+
     private static final String FIELD_MODE = "mode";
+
     private static final String FIELD_TTL = "ttl";
+
     private static final String FIELD_PROMPT_CACHE_BREAKPOINT = "prompt_cache_breakpoint";
+
     private static final String FIELD_REASONING = "reasoning";
+
     private static final String FIELD_EFFORT = "effort";
+
     private static final String FIELD_SUMMARY = "summary";
+
     private static final String FIELD_SUMMARY_TEXT = "summary_text";
+
     private static final String FIELD_ENCRYPTED_CONTENT = "encrypted_content";
+
     private static final String FIELD_STRICT = "strict";
+
     private static final String FIELD_STREAM_OPTIONS = "stream_options";
+
     private static final String FIELD_INCLUDE_OBFUSCATION = "include_obfuscation";
+
     private static final String FIELD_TEXT_VERBOSITY = "verbosity";
+
     private static final String FIELD_FORMAT = "format";
+
     private static final String FIELD_SCHEMA = "schema";
+
     private static final String FIELD_ADDITIONAL_PROPERTIES = "additionalProperties";
+
     private static final String FIELD_STATUS = "status";
+
     private static final String FIELD_INCOMPLETE_DETAILS = "incomplete_details";
+
     private static final String FIELD_REASON = "reason";
+
     private static final String FIELD_CREATED_AT = "created_at";
+
     private static final String FIELD_COMPLETED_AT = "completed_at";
+
     private static final String DEFAULT_IMAGE_MIME_TYPE = "image/jpeg";
+
     private static final String DEFAULT_PDF_FILENAME = "pdf_file";
 
     private static final String ROLE_SYSTEM = "system";
+
     private static final String ROLE_USER = "user";
+
     private static final String ROLE_ASSISTANT = "assistant";
 
-    static final String ENCRYPTED_REASONING_KEY =
-            "encrypted_reasoning"; // do not change, will break backward compatibility!
+    static final String ENCRYPTED_REASONING_KEY = // do not change, will break backward compatibility!
+    "encrypted_reasoning";
 
     private static final String TYPE_FUNCTION = "function";
+
     private static final String TYPE_FUNCTION_CALL = "function_call";
+
     private static final String TYPE_MESSAGE = "message";
+
     private static final String TYPE_REASONING = "reasoning";
+
     private static final String TYPE_OUTPUT_TEXT = "output_text";
+
     private static final String TYPE_OBJECT = "object";
+
     private static final String TYPE_INPUT_TEXT = "input_text";
+
     private static final String TYPE_INPUT_IMAGE = "input_image";
+
     private static final String TYPE_INPUT_FILE = "input_file";
+
     private static final String TYPE_FUNCTION_CALL_OUTPUT = "function_call_output";
+
     private static final String TYPE_JSON_OBJECT = "json_object";
+
     private static final String TYPE_JSON_SCHEMA = "json_schema";
 
     private final HttpClient httpClient;
+
     private final String baseUrl;
+
     private final String apiKey;
+
     private final String organizationId;
+
     private final int streamingBufferSize;
+
     private final Supplier<Map<String, String>> customHeadersSupplier;
 
     OpenAiResponsesClient(Builder builder) {
-        HttpClientBuilder httpClientBuilder =
-                getOrDefault(builder.httpClientBuilder, HttpClientBuilderLoader::loadHttpClientBuilder);
+        HttpClientBuilder httpClientBuilder = getOrDefault(builder.httpClientBuilder, HttpClientBuilderLoader::loadHttpClientBuilder);
         HttpClient httpClient = httpClientBuilder.build();
         if (builder.logRequests || builder.logResponses) {
             this.httpClient = new LoggingHttpClient(httpClient, builder.logRequests, builder.logResponses);
@@ -209,10 +311,8 @@ class OpenAiResponsesClient {
         this.baseUrl = getOrDefault(builder.baseUrl, DEFAULT_BASE_URL);
         this.apiKey = builder.apiKey;
         this.organizationId = builder.organizationId;
-        this.streamingBufferSize = ensureGreaterThanZero(
-                getOrDefault(builder.streamingBufferSize, OpenAiClient.DEFAULT_STREAMING_BUFFER_SIZE),
-                "streamingBufferSize");
-        this.customHeadersSupplier = getOrDefault(builder.customHeadersSupplier, () -> Map::of);
+        this.streamingBufferSize = ensureGreaterThanZero(getOrDefault(builder.streamingBufferSize, OpenAiClient.DEFAULT_STREAMING_BUFFER_SIZE), "streamingBufferSize");
+        this.customHeadersSupplier = getOrDefault(builder.customHeadersSupplier, () -> dev.langchain4j.internal.Jdk8::map);
     }
 
     static Builder builder() {
@@ -235,17 +335,14 @@ class OpenAiResponsesClient {
      * blocking one it does not retry - the Responses models expose no {@code maxRetries} - so the only difference
      * is that no thread waits for the response.
      */
-    CompletableFuture<ChatResponse> chatAsync(
-            ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters) {
-
+    CompletableFuture<ChatResponse> chatAsync(ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters) {
         CompletableFuture<SuccessfulHttpResponse> httpFuture;
         try {
             Map<String, Object> payload = buildRequestPayload(chatRequest, parameters, false);
             httpFuture = httpClient.executeAsync(buildHttpRequest(payload, false));
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(ExceptionMapper.DEFAULT.mapException(e));
+            return dev.langchain4j.internal.Jdk8.failedFuture(ExceptionMapper.DEFAULT.mapException(e));
         }
-
         CompletableFuture<ChatResponse> result = httpFuture.thenApply(rawHttpResponse -> {
             try {
                 return parseChatResponse(rawHttpResponse);
@@ -257,40 +354,31 @@ class OpenAiResponsesClient {
         return result;
     }
 
-    void streamingChat(
-            ChatRequest chatRequest,
-            OpenAiResponsesChatRequestParameters parameters,
-            StreamingChatResponseHandler handler) {
+    void streamingChat(ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters, StreamingChatResponseHandler handler) {
         try {
             Map<String, Object> payload = buildRequestPayload(chatRequest, parameters, true);
             HttpRequest request = buildHttpRequest(payload, true);
-
             httpClient.execute(request, new DefaultServerSentEventParser(), new ResponsesApiEventListener(handler));
-
         } catch (Exception e) {
             withLoggingExceptions(() -> handler.onError(ExceptionMapper.DEFAULT.mapException(e)));
         }
     }
 
-    Publisher<ChatModelStreamingEvent> streamingChatPublisher(
-            ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters) {
-
-        return HttpStreamingChatPublisher.create(
-                streamingBufferSize,
-                () -> {
-                    try {
-                        Map<String, Object> payload = buildRequestPayload(chatRequest, parameters, true);
-                        return httpClient.stream(buildHttpRequest(payload, true));
-                    } catch (Exception e) {
-                        throw ExceptionMapper.DEFAULT.mapException(e);
-                    }
-                },
-                ResponsesEventSink::new);
+    Publisher<ChatModelStreamingEvent> streamingChatPublisher(ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters) {
+        return HttpStreamingChatPublisher.create(streamingBufferSize, () -> {
+            try {
+                Map<String, Object> payload = buildRequestPayload(chatRequest, parameters, true);
+                return httpClient.stream(buildHttpRequest(payload, true));
+            } catch (Exception e) {
+                throw ExceptionMapper.DEFAULT.mapException(e);
+            }
+        }, ResponsesEventSink::new);
     }
 
     private static final class ResponsesEventSink implements HttpStreamingChatPublisher.Sink {
 
         private final Tube<ChatModelStreamingEvent> tube;
+
         private final ResponsesApiEventListener listener;
 
         ResponsesEventSink(Tube<ChatModelStreamingEvent> tube) {
@@ -304,10 +392,10 @@ class OpenAiResponsesClient {
                 return;
             }
             try {
-                if (item instanceof HttpResponseReceived responseReceived) {
-                    listener.onOpen(responseReceived.response());
-                } else if (item instanceof ServerSentEvent sse) {
-                    listener.onEvent(sse);
+                if (item instanceof HttpResponseReceived) {
+                    listener.onOpen(((HttpResponseReceived) item).response());
+                } else if (item instanceof ServerSentEvent) {
+                    listener.onEvent(((ServerSentEvent) item));
                 }
             } catch (Exception e) {
                 if (!tube.cancelled()) {
@@ -331,71 +419,55 @@ class OpenAiResponsesClient {
         }
     }
 
-    private Map<String, Object> buildRequestPayload(
-            ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters, boolean stream) {
+    private Map<String, Object> buildRequestPayload(ChatRequest chatRequest, OpenAiResponsesChatRequestParameters parameters, boolean stream) {
         List<Map<String, Object>> input = new ArrayList<>();
         for (ChatMessage message : chatRequest.messages()) {
             input.addAll(toResponsesMessages(message));
         }
-
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put(FIELD_MODEL, parameters.modelName());
         payload.put(FIELD_INPUT, input);
         payload.put(FIELD_STREAM, stream);
         payload.put(FIELD_STORE, parameters.store());
-
         if (parameters.temperature() != null) {
             payload.put(FIELD_TEMPERATURE, parameters.temperature());
         }
-
         if (parameters.topP() != null) {
             payload.put(FIELD_TOP_P, parameters.topP());
         }
-
         if (parameters.maxOutputTokens() != null) {
             payload.put(FIELD_MAX_OUTPUT_TOKENS, parameters.maxOutputTokens());
         }
-
         if (parameters.maxToolCalls() != null) {
             payload.put(FIELD_MAX_TOOL_CALLS, parameters.maxToolCalls());
         }
-
         if (parameters.parallelToolCalls() != null) {
             payload.put(FIELD_PARALLEL_TOOL_CALLS, parameters.parallelToolCalls());
         }
-
         if (parameters.previousResponseId() != null) {
             payload.put(FIELD_PREVIOUS_RESPONSE_ID, parameters.previousResponseId());
         }
-
         if (parameters.topLogprobs() != null) {
             payload.put(FIELD_TOP_LOGPROBS, parameters.topLogprobs());
         }
-
         if (parameters.truncation() != null && !parameters.truncation().isEmpty()) {
             payload.put(FIELD_TRUNCATION, parameters.truncation());
         }
-
         if (parameters.include() != null && !parameters.include().isEmpty()) {
             payload.put(FIELD_INCLUDE, parameters.include());
         }
-
         if (parameters.serviceTier() != null) {
             payload.put(FIELD_SERVICE_TIER, parameters.serviceTier());
         }
-
         if (parameters.safetyIdentifier() != null) {
             payload.put(FIELD_SAFETY_IDENTIFIER, parameters.safetyIdentifier());
         }
-
         if (parameters.promptCacheKey() != null) {
             payload.put(FIELD_PROMPT_CACHE_KEY, parameters.promptCacheKey());
         }
-
         if (parameters.promptCacheRetention() != null) {
             payload.put(FIELD_PROMPT_CACHE_RETENTION, parameters.promptCacheRetention());
         }
-
         OpenAiPromptCacheOptions promptCacheOptions = parameters.promptCacheOptions();
         if (promptCacheOptions != null) {
             Map<String, Object> promptCacheOptionsPayload = new LinkedHashMap<>();
@@ -409,7 +481,6 @@ class OpenAiResponsesClient {
                 payload.put(FIELD_PROMPT_CACHE_OPTIONS, promptCacheOptionsPayload);
             }
         }
-
         if (parameters.reasoningEffort() != null || parameters.reasoningSummary() != null) {
             Map<String, Object> reasoning = new LinkedHashMap<>();
             if (parameters.reasoningEffort() != null) {
@@ -420,44 +491,38 @@ class OpenAiResponsesClient {
             }
             payload.put(FIELD_REASONING, reasoning);
         }
-
         if (stream && parameters.streamIncludeObfuscation() != null) {
             Map<String, Object> streamOptions = new LinkedHashMap<>();
             streamOptions.put(FIELD_INCLUDE_OBFUSCATION, parameters.streamIncludeObfuscation());
             payload.put(FIELD_STREAM_OPTIONS, streamOptions);
         }
-
         boolean strictTools = Boolean.TRUE.equals(parameters.strictTools());
         List<Map<String, Object>> tools = new ArrayList<>();
         List<ToolSpecification> toolSpecifications = parameters.toolSpecifications();
         if (toolSpecifications != null && !toolSpecifications.isEmpty()) {
             for (ToolSpecification toolSpec : toolSpecifications) {
                 boolean effectiveStrict = isEffectivelyStrict(toolSpec, strictTools);
-
                 Map<String, Object> tool = new LinkedHashMap<>();
                 tool.put(FIELD_TYPE, TYPE_FUNCTION);
                 tool.put(FIELD_NAME, toolSpec.name());
                 if (toolSpec.description() != null) {
                     tool.put(FIELD_DESCRIPTION, toolSpec.description());
                 }
-
                 Map<String, Object> functionParameters;
                 if (toolSpec.parameters() != null) {
                     functionParameters = toMap(toolSpec.parameters(), effectiveStrict);
                 } else {
                     functionParameters = new LinkedHashMap<>();
                     functionParameters.put(FIELD_TYPE, TYPE_OBJECT);
-                    functionParameters.put(FIELD_PROPERTIES, Map.of());
-                    functionParameters.put(FIELD_REQUIRED, List.of());
+                    functionParameters.put(FIELD_PROPERTIES, dev.langchain4j.internal.Jdk8.map());
+                    functionParameters.put(FIELD_REQUIRED, dev.langchain4j.internal.Jdk8.list());
                     if (effectiveStrict) {
                         functionParameters.put(FIELD_ADDITIONAL_PROPERTIES, false);
                     }
                 }
-
                 tool.put(FIELD_PARAMETERS, functionParameters);
                 // "strict" must be sent explicitly: unlike Chat Completions, the Responses API defaults it to true
                 tool.put(FIELD_STRICT, effectiveStrict);
-
                 tools.add(tool);
             }
         }
@@ -466,12 +531,10 @@ class OpenAiResponsesClient {
         }
         if (!tools.isEmpty()) {
             payload.put(FIELD_TOOLS, tools);
-
             if (parameters.toolChoice() != null) {
                 payload.put(FIELD_TOOL_CHOICE, toToolChoiceString(parameters.toolChoice()));
             }
         }
-
         boolean strictJsonSchema = Boolean.TRUE.equals(parameters.strictJsonSchema());
         Map<String, Object> textConfig = toResponseTextConfig(parameters.responseFormat(), strictJsonSchema);
         if (parameters.textVerbosity() != null) {
@@ -483,57 +546,56 @@ class OpenAiResponsesClient {
         if (textConfig != null) {
             payload.put(FIELD_TEXT, textConfig);
         }
-
         return payload;
     }
 
     private HttpRequest buildHttpRequest(Map<String, Object> payload, boolean stream) throws Exception {
         String requestBody = CODEC.toJson(payload);
-
-        HttpRequest.Builder requestBuilder = HttpRequest.builder()
-                .url(baseUrl + "/responses")
-                .method(HttpMethod.POST)
-                .addHeader("Content-Type", "application/json")
-                .addHeader("Accept", stream ? "text/event-stream" : "application/json");
-
-        if (apiKey != null && !apiKey.isBlank()) {
+        HttpRequest.Builder requestBuilder = HttpRequest.builder().url(baseUrl + "/responses").method(HttpMethod.POST).addHeader("Content-Type", "application/json").addHeader("Accept", stream ? "text/event-stream" : "application/json");
+        if (apiKey != null && !dev.langchain4j.internal.Jdk8.isBlank(apiKey)) {
             requestBuilder.addHeader("Authorization", "Bearer " + apiKey);
         }
-
         if (organizationId != null) {
             requestBuilder.addHeader(OPENAI_ORGANIZATION_HEADER, organizationId);
         }
-
         requestBuilder.addHeaders(customHeadersSupplier.get());
-
         return requestBuilder.body(requestBody).build();
     }
 
     // --- JSON accessors over the plain JDK values (Map/List/String/Number/Boolean) a parsed response is made of ---
-
-    /** Mirrors {@code node.path(field)}: an absent field yields null rather than an exception. */
+    /**
+     * Mirrors {@code node.path(field)}: an absent field yields null rather than an exception.
+     */
     private static Object at(Object node, String field) {
-        return node instanceof Map<?, ?> map ? map.get(field) : null;
+        return node instanceof Map<?, ?> ? ((Map<?, ?>) node).get(field) : null;
     }
 
-    /** Mirrors {@code node.path(field)} for an object-valued field. */
+    /**
+     * Mirrors {@code node.path(field)} for an object-valued field.
+     */
     @SuppressWarnings("unchecked")
     private static Map<String, Object> obj(Object value) {
-        return value instanceof Map ? (Map<String, Object>) value : Map.of();
+        return value instanceof Map ? (Map<String, Object>) value : dev.langchain4j.internal.Jdk8.map();
     }
 
-    /** Mirrors {@code isArray()} plus iteration: anything that is not an array yields nothing. */
+    /**
+     * Mirrors {@code isArray()} plus iteration: anything that is not an array yields nothing.
+     */
     @SuppressWarnings("unchecked")
     private static List<Object> arr(Object value) {
-        return value instanceof List ? (List<Object>) value : List.of();
+        return value instanceof List ? (List<Object>) value : dev.langchain4j.internal.Jdk8.list();
     }
 
-    /** Mirrors {@code asText()}: "" for an absent value, a null, or a container. */
+    /**
+     * Mirrors {@code asText()}: "" for an absent value, a null, or a container.
+     */
     private static String str(Object value) {
         return str(value, "");
     }
 
-    /** Mirrors {@code asText(defaultValue)}, which also returns the default for a container. */
+    /**
+     * Mirrors {@code asText(defaultValue)}, which also returns the default for a container.
+     */
     private static String str(Object value, String defaultValue) {
         if (value == null || value instanceof Map || value instanceof List) {
             return defaultValue;
@@ -541,19 +603,23 @@ class OpenAiResponsesClient {
         return String.valueOf(value);
     }
 
-    /** Mirrors {@code asInt()}, which coerces a numeric string and yields 0 otherwise. */
+    /**
+     * Mirrors {@code asInt()}, which coerces a numeric string and yields 0 otherwise.
+     */
     private static int intOf(Object value) {
         return (int) longOf(value);
     }
 
-    /** Mirrors {@code asLong()}, which coerces a numeric string and yields 0 otherwise. */
+    /**
+     * Mirrors {@code asLong()}, which coerces a numeric string and yields 0 otherwise.
+     */
     private static long longOf(Object value) {
-        if (value instanceof Number number) {
-            return number.longValue();
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
         }
-        if (value instanceof String text) {
+        if (value instanceof String) {
             try {
-                return (long) Double.parseDouble(text.trim());
+                return (long) Double.parseDouble(((String) value).trim());
             } catch (NumberFormatException ignored) {
                 return 0L;
             }
@@ -561,7 +627,9 @@ class OpenAiResponsesClient {
         return 0L;
     }
 
-    /** Mirrors {@code hasNonNull(field)}. */
+    /**
+     * Mirrors {@code hasNonNull(field)}.
+     */
     private static boolean hasNonNull(Object node, String field) {
         return at(node, field) != null;
     }
@@ -577,7 +645,7 @@ class OpenAiResponsesClient {
                 }
             }
         }
-        return textBuilder.isEmpty() ? null : textBuilder.toString();
+        return textBuilder.length() == 0 ? null : textBuilder.toString();
     }
 
     private static String extractReasoningSummary(Object output) {
@@ -591,7 +659,7 @@ class OpenAiResponsesClient {
                 }
             }
         }
-        return summaryBuilder.isEmpty() ? null : summaryBuilder.toString();
+        return summaryBuilder.length() == 0 ? null : summaryBuilder.toString();
     }
 
     private static String extractReasoningEncryptedContent(Object output) {
@@ -612,17 +680,11 @@ class OpenAiResponsesClient {
             if (!TYPE_FUNCTION_CALL.equals(str(at(item, FIELD_TYPE)))) {
                 continue;
             }
-
             String id = str(at(item, FIELD_CALL_ID), null);
-            if (id == null || id.isBlank()) {
+            if (id == null || dev.langchain4j.internal.Jdk8.isBlank(id)) {
                 id = str(at(item, FIELD_ID), null);
             }
-
-            ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder()
-                    .id(id)
-                    .name(str(at(item, FIELD_NAME)))
-                    .arguments(str(at(item, FIELD_ARGUMENTS), "{}"))
-                    .build();
+            ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder().id(id).name(str(at(item, FIELD_NAME))).arguments(str(at(item, FIELD_ARGUMENTS), "{}")).build();
             toolExecutionRequests.add(toolExecutionRequest);
         }
         return toolExecutionRequests;
@@ -632,48 +694,38 @@ class OpenAiResponsesClient {
         if (usageNode == null) {
             return null;
         }
-
-        OpenAiTokenUsage.Builder usageBuilder = OpenAiTokenUsage.builder()
-                .inputTokenCount(intOf(at(usageNode, FIELD_INPUT_TOKENS)))
-                .outputTokenCount(intOf(at(usageNode, FIELD_OUTPUT_TOKENS)))
-                .totalTokenCount(intOf(at(usageNode, FIELD_TOTAL_TOKENS)));
-
+        OpenAiTokenUsage.Builder usageBuilder = OpenAiTokenUsage.builder().inputTokenCount(intOf(at(usageNode, FIELD_INPUT_TOKENS))).outputTokenCount(intOf(at(usageNode, FIELD_OUTPUT_TOKENS))).totalTokenCount(intOf(at(usageNode, FIELD_TOTAL_TOKENS)));
         Object inputDetailsNode = at(usageNode, FIELD_INPUT_TOKENS_DETAILS);
         if (inputDetailsNode != null) {
-            OpenAiTokenUsage.InputTokensDetails.Builder inputTokensDetailsBuilder =
-                    OpenAiTokenUsage.InputTokensDetails.builder()
-                            .cachedTokens(intOf(at(inputDetailsNode, FIELD_CACHED_TOKENS)));
-
+            OpenAiTokenUsage.InputTokensDetails.Builder inputTokensDetailsBuilder = OpenAiTokenUsage.InputTokensDetails.builder().cachedTokens(intOf(at(inputDetailsNode, FIELD_CACHED_TOKENS)));
             // Keep cache_write_tokens null when it is not reported.
             Object cacheWriteTokens = at(inputDetailsNode, FIELD_CACHE_WRITE_TOKENS);
             if (cacheWriteTokens != null) {
                 inputTokensDetailsBuilder.cacheWriteTokens(intOf(cacheWriteTokens));
             }
-
             usageBuilder.inputTokensDetails(inputTokensDetailsBuilder.build());
         }
-
         Object outputDetailsNode = at(usageNode, FIELD_OUTPUT_TOKENS_DETAILS);
         if (outputDetailsNode != null) {
-            usageBuilder.outputTokensDetails(OpenAiTokenUsage.OutputTokensDetails.builder()
-                    .reasoningTokens(intOf(at(outputDetailsNode, FIELD_REASONING_TOKENS)))
-                    .build());
+            usageBuilder.outputTokensDetails(OpenAiTokenUsage.OutputTokensDetails.builder().reasoningTokens(intOf(at(outputDetailsNode, FIELD_REASONING_TOKENS))).build());
         }
-
         return usageBuilder.build();
     }
 
     private static FinishReason finishReasonFromStatus(String status, String incompleteReason, boolean hasToolCalls) {
-        if (status == null || status.isBlank()) {
+        if (status == null || dev.langchain4j.internal.Jdk8.isBlank(status)) {
             return null;
         }
-        return switch (status) {
-            case "completed" -> hasToolCalls ? FinishReason.TOOL_EXECUTION : FinishReason.STOP;
-            case "incomplete" ->
-                "content_filter".equals(incompleteReason) ? FinishReason.CONTENT_FILTER : FinishReason.LENGTH;
-            case "failed" -> FinishReason.OTHER;
-            default -> FinishReason.OTHER;
-        };
+        switch(status) {
+            case "completed":
+                return hasToolCalls ? FinishReason.TOOL_EXECUTION : FinishReason.STOP;
+            case "incomplete":
+                return "content_filter".equals(incompleteReason) ? FinishReason.CONTENT_FILTER : FinishReason.LENGTH;
+            case "failed":
+                return FinishReason.OTHER;
+            default:
+                return FinishReason.OTHER;
+        }
     }
 
     private static String incompleteReasonFrom(Object responseNode) {
@@ -682,120 +734,92 @@ class OpenAiResponsesClient {
 
     private ChatResponse parseChatResponse(SuccessfulHttpResponse rawHttpResponse) throws Exception {
         Map<String, Object> responseNode = CODEC.fromJson(rawHttpResponse.body(), Map.class);
-
         Object outputNode = at(responseNode, FIELD_OUTPUT);
         String text = extractText(outputNode);
         String thinking = extractReasoningSummary(outputNode);
         String encryptedContent = extractReasoningEncryptedContent(outputNode);
         List<ToolExecutionRequest> toolExecutionRequests = extractToolExecutionRequests(outputNode);
-
-        AiMessage.Builder aiMessageBuilder =
-                AiMessage.builder().text(text).thinking(thinking).toolExecutionRequests(toolExecutionRequests);
+        AiMessage.Builder aiMessageBuilder = AiMessage.builder().text(text).thinking(thinking).toolExecutionRequests(toolExecutionRequests);
         if (encryptedContent != null) {
-            aiMessageBuilder.attributes(Map.of(ENCRYPTED_REASONING_KEY, encryptedContent));
+            aiMessageBuilder.attributes(dev.langchain4j.internal.Jdk8.map(ENCRYPTED_REASONING_KEY, encryptedContent));
         }
         AiMessage aiMessage = aiMessageBuilder.build();
-
-        OpenAiResponsesChatResponseMetadata.Builder metadataBuilder = OpenAiResponsesChatResponseMetadata.builder()
-                .id(str(at(responseNode, FIELD_ID), null))
-                .modelName(str(at(responseNode, FIELD_MODEL), null));
-
+        OpenAiResponsesChatResponseMetadata.Builder metadataBuilder = OpenAiResponsesChatResponseMetadata.builder().id(str(at(responseNode, FIELD_ID), null)).modelName(str(at(responseNode, FIELD_MODEL), null));
         OpenAiTokenUsage tokenUsage = parseTokenUsage(at(responseNode, FIELD_USAGE));
         if (tokenUsage != null) {
             metadataBuilder.tokenUsage(tokenUsage);
         }
-
-        FinishReason finishReason = finishReasonFromStatus(
-                str(at(responseNode, FIELD_STATUS), null),
-                incompleteReasonFrom(responseNode),
-                !toolExecutionRequests.isEmpty());
+        FinishReason finishReason = finishReasonFromStatus(str(at(responseNode, FIELD_STATUS), null), incompleteReasonFrom(responseNode), !toolExecutionRequests.isEmpty());
         if (finishReason != null) {
             metadataBuilder.finishReason(finishReason);
         }
-
         if (hasNonNull(responseNode, FIELD_CREATED_AT)) {
             metadataBuilder.createdAt(longOf(at(responseNode, FIELD_CREATED_AT)));
         }
-
         if (hasNonNull(responseNode, FIELD_COMPLETED_AT)) {
             metadataBuilder.completedAt(longOf(at(responseNode, FIELD_COMPLETED_AT)));
         }
-
         if (hasNonNull(responseNode, FIELD_SERVICE_TIER)) {
             metadataBuilder.serviceTier(str(at(responseNode, FIELD_SERVICE_TIER)));
         }
-
         metadataBuilder.rawHttpResponse(rawHttpResponse);
-
-        return ChatResponse.builder()
-                .aiMessage(aiMessage)
-                .metadata(metadataBuilder.build())
-                .build();
+        return ChatResponse.builder().aiMessage(aiMessage).metadata(metadataBuilder.build()).build();
     }
 
     private static List<Map<String, Object>> toResponsesMessages(ChatMessage msg) {
-        if (msg instanceof SystemMessage systemMessage) {
-            Map<String, Object> content = createInputTextContent(systemMessage.text());
-            if (OpenAiPromptCacheBreakpoint.isMarked(systemMessage.attributes())) {
+        if (msg instanceof SystemMessage) {
+            Map<String, Object> content = createInputTextContent(((SystemMessage) msg).text());
+            if (OpenAiPromptCacheBreakpoint.isMarked(((SystemMessage) msg).attributes())) {
                 addPromptCacheBreakpoint(content);
             }
-            return List.of(createMessageEntry(ROLE_SYSTEM, List.of(content)));
-        } else if (msg instanceof UserMessage userMessage) {
+            return dev.langchain4j.internal.Jdk8.list(createMessageEntry(ROLE_SYSTEM, dev.langchain4j.internal.Jdk8.list(content)));
+        } else if (msg instanceof UserMessage) {
             List<Map<String, Object>> contentEntries = new ArrayList<>();
-            for (Content content : userMessage.contents()) {
-                if (content instanceof TextContent textContent) {
-                    contentEntries.add(createInputTextContent(textContent.text()));
-                } else if (content instanceof ImageContent imageContent) {
-                    contentEntries.add(createInputImageContent(imageContent.image(), imageContent.detailLevel()));
-                } else if (content instanceof PdfFileContent pdfFileContent) {
-                    contentEntries.add(createInputPdfContent(pdfFileContent));
+            for (Content content : ((UserMessage) msg).contents()) {
+                if (content instanceof TextContent) {
+                    contentEntries.add(createInputTextContent(((TextContent) content).text()));
+                } else if (content instanceof ImageContent) {
+                    contentEntries.add(createInputImageContent(((ImageContent) content).image(), ((ImageContent) content).detailLevel()));
+                } else if (content instanceof PdfFileContent) {
+                    contentEntries.add(createInputPdfContent(((PdfFileContent) content)));
                 } else {
-                    throw new UnsupportedFeatureException("Unsupported content type: "
-                            + content.getClass().getName()
-                            + ". Only TextContent, ImageContent, and PdfFileContent are supported.");
+                    throw new UnsupportedFeatureException("Unsupported content type: " + content.getClass().getName() + ". Only TextContent, ImageContent, and PdfFileContent are supported.");
                 }
             }
-            if (OpenAiPromptCacheBreakpoint.isMarked(userMessage.attributes())) {
+            if (OpenAiPromptCacheBreakpoint.isMarked(((UserMessage) msg).attributes())) {
                 addPromptCacheBreakpointToLast(contentEntries);
             }
-            return List.of(createMessageEntry(ROLE_USER, contentEntries));
-        } else if (msg instanceof AiMessage aiMessage) {
-            if (OpenAiPromptCacheBreakpoint.isMarked(aiMessage.attributes())) {
-                throw new UnsupportedFeatureException("OpenAI does not support a \""
-                        + OpenAiPromptCacheBreakpoint.ATTRIBUTE_KEY
-                        + "\" on an AiMessage. Mark a SystemMessage, a UserMessage "
-                        + "or a ToolExecutionResultMessage instead.");
+            return dev.langchain4j.internal.Jdk8.list(createMessageEntry(ROLE_USER, contentEntries));
+        } else if (msg instanceof AiMessage) {
+            if (OpenAiPromptCacheBreakpoint.isMarked(((AiMessage) msg).attributes())) {
+                throw new UnsupportedFeatureException("OpenAI does not support a \"" + OpenAiPromptCacheBreakpoint.ATTRIBUTE_KEY + "\" on an AiMessage. Mark a SystemMessage, a UserMessage " + "or a ToolExecutionResultMessage instead.");
             }
-
             List<Map<String, Object>> items = new ArrayList<>();
-
-            String encryptedContent = aiMessage.attribute(ENCRYPTED_REASONING_KEY, String.class);
+            String encryptedContent = ((AiMessage) msg).attribute(ENCRYPTED_REASONING_KEY, String.class);
             if (encryptedContent != null) {
-                var reasoningItem = new LinkedHashMap<String, Object>();
+                java.util.LinkedHashMap<java.lang.String, java.lang.Object> reasoningItem = new LinkedHashMap<String, Object>();
                 reasoningItem.put(FIELD_TYPE, TYPE_REASONING);
                 reasoningItem.put(FIELD_ENCRYPTED_CONTENT, encryptedContent);
                 List<Map<String, Object>> summaryItems = new ArrayList<>();
-                if (aiMessage.thinking() != null && !aiMessage.thinking().isEmpty()) {
-                    var summaryTextItem = new LinkedHashMap<String, Object>();
+                if (((AiMessage) msg).thinking() != null && !((AiMessage) msg).thinking().isEmpty()) {
+                    java.util.LinkedHashMap<java.lang.String, java.lang.Object> summaryTextItem = new LinkedHashMap<String, Object>();
                     summaryTextItem.put(FIELD_TYPE, FIELD_SUMMARY_TEXT);
-                    summaryTextItem.put(FIELD_TEXT, aiMessage.thinking());
+                    summaryTextItem.put(FIELD_TEXT, ((AiMessage) msg).thinking());
                     summaryItems.add(summaryTextItem);
                 }
                 reasoningItem.put(FIELD_SUMMARY, summaryItems);
                 items.add(reasoningItem);
             }
-
-            var text = aiMessage.text();
+            java.lang.String text = ((AiMessage) msg).text();
             if (text != null && !text.isEmpty()) {
-                items.add(createMessageEntry(ROLE_ASSISTANT, List.of(createOutputTextContent(text))));
+                items.add(createMessageEntry(ROLE_ASSISTANT, dev.langchain4j.internal.Jdk8.list(createOutputTextContent(text))));
             }
-
-            if (aiMessage.hasToolExecutionRequests()) {
-                for (ToolExecutionRequest toolRequest : aiMessage.toolExecutionRequests()) {
+            if (((AiMessage) msg).hasToolExecutionRequests()) {
+                for (ToolExecutionRequest toolRequest : ((AiMessage) msg).toolExecutionRequests()) {
                     String callId = requireNonBlank(toolRequest.id(), "ToolExecutionRequest.id");
                     String name = requireNonBlank(toolRequest.name(), "ToolExecutionRequest.name");
                     String arguments = requireNonBlank(toolRequest.arguments(), "ToolExecutionRequest.arguments");
-                    var functionCall = new LinkedHashMap<String, Object>();
+                    java.util.LinkedHashMap<java.lang.String, java.lang.Object> functionCall = new LinkedHashMap<String, Object>();
                     functionCall.put(FIELD_TYPE, TYPE_FUNCTION_CALL);
                     functionCall.put(FIELD_CALL_ID, callId);
                     functionCall.put(FIELD_NAME, name);
@@ -803,29 +827,23 @@ class OpenAiResponsesClient {
                     items.add(functionCall);
                 }
             }
-
             return items;
-        } else if (msg instanceof ToolExecutionResultMessage toolExecutionResultMessage) {
-            var outputEntry = new LinkedHashMap<String, Object>();
+        } else if (msg instanceof ToolExecutionResultMessage) {
+            java.util.LinkedHashMap<java.lang.String, java.lang.Object> outputEntry = new LinkedHashMap<String, Object>();
             outputEntry.put(FIELD_TYPE, TYPE_FUNCTION_CALL_OUTPUT);
-            outputEntry.put(FIELD_CALL_ID, toolExecutionResultMessage.id());
-
-            boolean promptCacheBreakpoint =
-                    OpenAiPromptCacheBreakpoint.isMarked(toolExecutionResultMessage.attributes());
-
-            if (toolExecutionResultMessage.hasSingleText() && !promptCacheBreakpoint) {
-                outputEntry.put(FIELD_OUTPUT, toolExecutionResultMessage.text());
+            outputEntry.put(FIELD_CALL_ID, ((ToolExecutionResultMessage) msg).id());
+            boolean promptCacheBreakpoint = OpenAiPromptCacheBreakpoint.isMarked(((ToolExecutionResultMessage) msg).attributes());
+            if (((ToolExecutionResultMessage) msg).hasSingleText() && !promptCacheBreakpoint) {
+                outputEntry.put(FIELD_OUTPUT, ((ToolExecutionResultMessage) msg).text());
             } else {
                 List<Map<String, Object>> outputContents = new ArrayList<>();
-                for (Content content : toolExecutionResultMessage.contents()) {
-                    if (content instanceof TextContent textContent) {
-                        outputContents.add(createInputTextContent(textContent.text()));
-                    } else if (content instanceof ImageContent imageContent) {
-                        outputContents.add(createInputImageContent(imageContent.image(), imageContent.detailLevel()));
+                for (Content content : ((ToolExecutionResultMessage) msg).contents()) {
+                    if (content instanceof TextContent) {
+                        outputContents.add(createInputTextContent(((TextContent) content).text()));
+                    } else if (content instanceof ImageContent) {
+                        outputContents.add(createInputImageContent(((ImageContent) content).image(), ((ImageContent) content).detailLevel()));
                     } else {
-                        throw new UnsupportedFeatureException("Unsupported content type in tool result: "
-                                + content.getClass().getName()
-                                + ". Only TextContent and ImageContent are supported.");
+                        throw new UnsupportedFeatureException("Unsupported content type in tool result: " + content.getClass().getName() + ". Only TextContent and ImageContent are supported.");
                     }
                 }
                 if (promptCacheBreakpoint) {
@@ -835,17 +853,14 @@ class OpenAiResponsesClient {
                 }
                 outputEntry.put(FIELD_OUTPUT, outputContents);
             }
-
-            return List.of(outputEntry);
+            return dev.langchain4j.internal.Jdk8.list(outputEntry);
         } else {
-            throw new UnsupportedFeatureException(
-                    "Unsupported message type: " + msg.getClass().getName()
-                            + ". Only SystemMessage, UserMessage, AiMessage, and ToolExecutionResultMessage are supported.");
+            throw new UnsupportedFeatureException("Unsupported message type: " + msg.getClass().getName() + ". Only SystemMessage, UserMessage, AiMessage, and ToolExecutionResultMessage are supported.");
         }
     }
 
     private static Map<String, Object> createMessageEntry(String role, List<Map<String, Object>> contentEntries) {
-        var entry = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> entry = new LinkedHashMap<String, Object>();
         entry.put(FIELD_TYPE, TYPE_MESSAGE);
         entry.put(FIELD_ROLE, role);
         entry.put(FIELD_CONTENT, contentEntries);
@@ -856,17 +871,14 @@ class OpenAiResponsesClient {
      * Content block types that OpenAI accepts a {@code prompt_cache_breakpoint} on
      * in the Responses API.
      */
-    private static final Set<String> PROMPT_CACHE_BREAKPOINT_TYPES =
-            Set.of(TYPE_INPUT_TEXT, TYPE_INPUT_IMAGE, TYPE_INPUT_FILE);
+    private static final Set<String> PROMPT_CACHE_BREAKPOINT_TYPES = dev.langchain4j.internal.Jdk8.set(TYPE_INPUT_TEXT, TYPE_INPUT_IMAGE, TYPE_INPUT_FILE);
 
     private static void addPromptCacheBreakpoint(Map<String, Object> content) {
         Object type = content.get(FIELD_TYPE);
         if (!PROMPT_CACHE_BREAKPOINT_TYPES.contains(type)) {
-            throw new UnsupportedFeatureException("OpenAI does not support a \""
-                    + OpenAiPromptCacheBreakpoint.ATTRIBUTE_KEY + "\" on a \"" + type
-                    + "\" content block. Supported content blocks: " + PROMPT_CACHE_BREAKPOINT_TYPES + ".");
+            throw new UnsupportedFeatureException("OpenAI does not support a \"" + OpenAiPromptCacheBreakpoint.ATTRIBUTE_KEY + "\" on a \"" + type + "\" content block. Supported content blocks: " + PROMPT_CACHE_BREAKPOINT_TYPES + ".");
         }
-        content.put(FIELD_PROMPT_CACHE_BREAKPOINT, Map.of(FIELD_MODE, OpenAiPromptCacheBreakpoint.MODE_EXPLICIT));
+        content.put(FIELD_PROMPT_CACHE_BREAKPOINT, dev.langchain4j.internal.Jdk8.map(FIELD_MODE, OpenAiPromptCacheBreakpoint.MODE_EXPLICIT));
     }
 
     /**
@@ -878,21 +890,21 @@ class OpenAiResponsesClient {
     }
 
     private static Map<String, Object> createInputTextContent(String text) {
-        var content = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> content = new LinkedHashMap<String, Object>();
         content.put(FIELD_TYPE, TYPE_INPUT_TEXT);
         content.put(FIELD_TEXT, text);
         return content;
     }
 
     private static Map<String, Object> createOutputTextContent(String text) {
-        var content = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> content = new LinkedHashMap<String, Object>();
         content.put(FIELD_TYPE, TYPE_OUTPUT_TEXT);
         content.put(FIELD_TEXT, text);
         return content;
     }
 
     private static Map<String, Object> createInputImageContent(Image image, ImageContent.DetailLevel detailLevel) {
-        var content = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> content = new LinkedHashMap<String, Object>();
         content.put(FIELD_TYPE, TYPE_INPUT_IMAGE);
         content.put(FIELD_IMAGE_URL, buildImageUrl(image));
         content.put(FIELD_DETAIL, toDetailString(detailLevel));
@@ -900,7 +912,7 @@ class OpenAiResponsesClient {
     }
 
     private static Map<String, Object> createInputPdfContent(PdfFileContent pdfFileContent) {
-        var content = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> content = new LinkedHashMap<String, Object>();
         content.put(FIELD_TYPE, TYPE_INPUT_FILE);
         if (pdfFileContent.pdfFile().url() != null) {
             content.put(FIELD_FILE_URL, pdfFileContent.pdfFile().url().toString());
@@ -914,14 +926,16 @@ class OpenAiResponsesClient {
     }
 
     private static String toDetailString(ImageContent.DetailLevel detailLevel) {
-        return switch (detailLevel) {
-            case LOW -> "low";
-            case HIGH -> "high";
-            case AUTO -> "auto";
-            default ->
-                throw new UnsupportedFeatureException("DetailLevel " + detailLevel
-                        + " is not supported by OpenAI Responses API. Supported values: LOW, HIGH, AUTO");
-        };
+        switch(detailLevel) {
+            case LOW:
+                return "low";
+            case HIGH:
+                return "high";
+            case AUTO:
+                return "auto";
+            default:
+                throw new UnsupportedFeatureException("DetailLevel " + detailLevel + " is not supported by OpenAI Responses API. Supported values: LOW, HIGH, AUTO");
+        }
     }
 
     private static String buildImageUrl(Image image) {
@@ -937,8 +951,7 @@ class OpenAiResponsesClient {
 
     private static String buildPdfFileData(PdfFileContent pdfFileContent) {
         if (pdfFileContent.pdfFile().base64Data() != null) {
-            return "data:" + pdfFileContent.pdfFile().mimeType() + ";base64,"
-                    + pdfFileContent.pdfFile().base64Data();
+            return "data:" + pdfFileContent.pdfFile().mimeType() + ";base64," + pdfFileContent.pdfFile().base64Data();
         } else {
             throw new IllegalArgumentException("PDF must have base64Data");
         }
@@ -948,15 +961,20 @@ class OpenAiResponsesClient {
         if (toolChoice == null) {
             return null;
         }
-        return switch (toolChoice) {
-            case AUTO -> "auto";
-            case REQUIRED -> "required";
-            case NONE -> "none";
-        };
+        switch(toolChoice) {
+            case AUTO:
+                return "auto";
+            case REQUIRED:
+                return "required";
+            case NONE:
+                return "none";
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
     private static String requireNonBlank(String value, String fieldName) {
-        if (value == null || value.isBlank()) {
+        if (value == null || dev.langchain4j.internal.Jdk8.isBlank(value)) {
             throw new IllegalArgumentException(fieldName + " must be provided");
         }
         return value;
@@ -966,45 +984,44 @@ class OpenAiResponsesClient {
         if (responseFormat == null || responseFormat.type() == ResponseFormatType.TEXT) {
             return null;
         }
-
-        var textConfig = new LinkedHashMap<String, Object>();
+        java.util.LinkedHashMap<java.lang.String, java.lang.Object> textConfig = new LinkedHashMap<String, Object>();
         JsonSchema jsonSchema = responseFormat.jsonSchema();
-
         if (jsonSchema == null) {
-            var format = new LinkedHashMap<String, Object>();
+            java.util.LinkedHashMap<java.lang.String, java.lang.Object> format = new LinkedHashMap<String, Object>();
             format.put(FIELD_TYPE, TYPE_JSON_OBJECT);
             textConfig.put(FIELD_FORMAT, format);
         } else {
-            if (!(jsonSchema.rootElement() instanceof JsonObjectSchema
-                    || jsonSchema.rootElement() instanceof JsonRawSchema)) {
-                throw new IllegalArgumentException(
-                        "For OpenAI, the root element of the JSON Schema must be either a JsonObjectSchema or a JsonRawSchema, but it was: "
-                                + jsonSchema.rootElement().getClass());
+            if (!(jsonSchema.rootElement() instanceof JsonObjectSchema || jsonSchema.rootElement() instanceof JsonRawSchema)) {
+                throw new IllegalArgumentException("For OpenAI, the root element of the JSON Schema must be either a JsonObjectSchema or a JsonRawSchema, but it was: " + jsonSchema.rootElement().getClass());
             }
-
-            var format = new LinkedHashMap<String, Object>();
+            java.util.LinkedHashMap<java.lang.String, java.lang.Object> format = new LinkedHashMap<String, Object>();
             format.put(FIELD_TYPE, TYPE_JSON_SCHEMA);
             format.put(FIELD_STRICT, strict);
             if (jsonSchema.name() != null) {
                 format.put(FIELD_NAME, jsonSchema.name());
             }
             format.put(FIELD_SCHEMA, toMap(jsonSchema.rootElement(), strict));
-
             textConfig.put(FIELD_FORMAT, format);
         }
-
         return textConfig;
     }
 
     static class Builder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private boolean logRequests;
+
         private boolean logResponses;
+
         private Integer streamingBufferSize;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
 
         Builder httpClientBuilder(HttpClientBuilder httpClientBuilder) {
@@ -1059,12 +1076,19 @@ class OpenAiResponsesClient {
     private static class ResponsesApiEventListener implements ServerSentEventListener {
 
         private final MappingTrackingStreamingChatResponseHandler handler;
+
         private volatile StreamingHandle streamingHandle;
+
         private final Map<String, ToolExecutionRequest.Builder> toolCallBuilders = new LinkedHashMap<>();
+
         private final Map<String, Integer> toolCallIndices = new LinkedHashMap<>();
+
         private final List<ToolExecutionRequest> completedToolCalls = new ArrayList<>();
+
         private final Set<String> completedToolCallItemIds = new HashSet<>();
+
         private final List<ServerSentEvent> rawServerSentEvents = new ArrayList<>();
+
         private SuccessfulHttpResponse rawHttpResponse;
 
         ResponsesApiEventListener(StreamingChatResponseHandler handler) {
@@ -1094,23 +1118,17 @@ class OpenAiResponsesClient {
             if (streamingHandle == null) {
                 streamingHandle = toStreamingHandle(context.parsingHandle());
             }
-
             if (isCancelled()) {
                 return;
             }
-
             rawServerSentEvents.add(event);
-
             String data = event.data();
-
-            if (data == null || data.isEmpty()) {
+            if (data == null || data.length() == 0) {
                 return;
             }
-
             if (STREAM_DONE_MARKER.equals(data)) {
                 return;
             }
-
             handler.resetMappingTracking();
             handleDelta(data);
             if (!handler.wasMapped()) {
@@ -1127,55 +1145,43 @@ class OpenAiResponsesClient {
             if (data == null || (!data.trim().startsWith("{") && !data.trim().startsWith("["))) {
                 return;
             }
-
             try {
                 Map<String, Object> node = CODEC.fromJson(data, Map.class);
-                var type = str(at(node, FIELD_TYPE));
-
+                java.lang.String type = str(at(node, FIELD_TYPE));
                 if (EVENT_OUTPUT_TEXT_DELTA.equals(type)) {
-                    var text = str(at(node, FIELD_DELTA));
+                    java.lang.String text = str(at(node, FIELD_DELTA));
                     if (!text.isEmpty()) {
                         onPartialResponse(handler, text, streamingHandle);
                     }
                 } else if (EVENT_REASONING_TEXT_DELTA.equals(type) || EVENT_REASONING_SUMMARY_TEXT_DELTA.equals(type)) {
-                    var thinking = str(at(node, FIELD_DELTA));
+                    java.lang.String thinking = str(at(node, FIELD_DELTA));
                     if (!thinking.isEmpty()) {
                         onPartialThinking(handler, thinking, streamingHandle);
                     }
                 } else if (EVENT_OUTPUT_ITEM_ADDED.equals(type)) {
-                    var item = at(node, FIELD_ITEM);
+                    java.lang.Object item = at(node, FIELD_ITEM);
                     if (TYPE_FUNCTION_CALL.equals(str(at(item, FIELD_TYPE)))) {
-                        var itemId = str(at(item, FIELD_ID));
+                        java.lang.String itemId = str(at(item, FIELD_ID));
                         int outputIndex = intOf(at(node, FIELD_OUTPUT_INDEX));
-                        toolCallBuilders.put(
-                                itemId,
-                                ToolExecutionRequest.builder()
-                                        .id(str(at(item, FIELD_CALL_ID)))
-                                        .name(str(at(item, FIELD_NAME)))
-                                        .arguments(""));
+                        toolCallBuilders.put(itemId, ToolExecutionRequest.builder().id(str(at(item, FIELD_CALL_ID))).name(str(at(item, FIELD_NAME))).arguments(""));
                         assignIndexIfAbsent(itemId, outputIndex);
                     }
                 } else if (EVENT_FUNCTION_CALL_ARGUMENTS_DELTA.equals(type)) {
-                    var itemId = str(at(node, FIELD_ITEM_ID));
-                    var builder = toolCallBuilders.get(itemId);
+                    java.lang.String itemId = str(at(node, FIELD_ITEM_ID));
+                    dev.langchain4j.agent.tool.ToolExecutionRequest.Builder builder = toolCallBuilders.get(itemId);
                     if (builder != null) {
-                        var currentArgs = builder.build().arguments();
+                        java.lang.String currentArgs = builder.build().arguments();
                         String delta = str(at(node, FIELD_DELTA));
                         builder.arguments(currentArgs + delta);
                         Integer index = toolCallIndices.get(itemId);
                         if (index != null && !delta.isEmpty()) {
-                            PartialToolCall partialToolCall = PartialToolCall.builder()
-                                    .index(index)
-                                    .id(builder.build().id())
-                                    .name(builder.build().name())
-                                    .partialArguments(delta)
-                                    .build();
+                            PartialToolCall partialToolCall = PartialToolCall.builder().index(index).id(builder.build().id()).name(builder.build().name()).partialArguments(delta).build();
                             onPartialToolCall(handler, partialToolCall, streamingHandle);
                         }
                     }
                 } else if (EVENT_FUNCTION_CALL_ARGUMENTS_DONE.equals(type)) {
-                    var itemId = str(at(node, FIELD_ITEM_ID));
-                    var builder = toolCallBuilders.get(itemId);
+                    java.lang.String itemId = str(at(node, FIELD_ITEM_ID));
+                    dev.langchain4j.agent.tool.ToolExecutionRequest.Builder builder = toolCallBuilders.get(itemId);
                     if (builder != null) {
                         builder.arguments(str(at(node, FIELD_ARGUMENTS)));
                         completeToolCall(itemId, builder);
@@ -1193,63 +1199,49 @@ class OpenAiResponsesClient {
         }
 
         private boolean handleOutputItemDone(Object node) {
-            var item = at(node, FIELD_ITEM);
+            java.lang.Object item = at(node, FIELD_ITEM);
             if (!TYPE_FUNCTION_CALL.equals(str(at(item, FIELD_TYPE)))) {
                 return false;
             }
-            var itemId = str(at(item, FIELD_ID));
+            java.lang.String itemId = str(at(item, FIELD_ID));
             int outputIndex = intOf(at(node, FIELD_OUTPUT_INDEX));
-            var builder = toolCallBuilders.computeIfAbsent(itemId, ignored -> ToolExecutionRequest.builder());
+            dev.langchain4j.agent.tool.ToolExecutionRequest.Builder builder = toolCallBuilders.computeIfAbsent(itemId, ignored -> ToolExecutionRequest.builder());
             assignIndexIfAbsent(itemId, outputIndex);
-
-            var callIdNode = at(item, FIELD_CALL_ID);
+            java.lang.Object callIdNode = at(item, FIELD_CALL_ID);
             if (callIdNode != null) {
                 builder.id(str(callIdNode));
             }
-            var nameNode = at(item, FIELD_NAME);
+            java.lang.Object nameNode = at(item, FIELD_NAME);
             if (nameNode != null) {
                 builder.name(str(nameNode));
             }
-            var argumentsNode = at(item, FIELD_ARGUMENTS);
+            java.lang.Object argumentsNode = at(item, FIELD_ARGUMENTS);
             if (argumentsNode != null) {
                 builder.arguments(str(argumentsNode));
             }
-
             return completeToolCall(itemId, builder);
         }
 
         private void handleResponseCompleted(Object node) {
-            var responseNode = at(node, FIELD_RESPONSE);
-
+            java.lang.Object responseNode = at(node, FIELD_RESPONSE);
             Object outputNode = at(responseNode, FIELD_OUTPUT);
             String text = extractText(outputNode);
             String thinking = extractReasoningSummary(outputNode);
             String encryptedContent = extractReasoningEncryptedContent(outputNode);
-
-            AiMessage.Builder aiMessageBuilder =
-                    AiMessage.builder().text(text).thinking(thinking).toolExecutionRequests(completedToolCalls);
+            AiMessage.Builder aiMessageBuilder = AiMessage.builder().text(text).thinking(thinking).toolExecutionRequests(completedToolCalls);
             if (encryptedContent != null) {
-                aiMessageBuilder.attributes(Map.of(ENCRYPTED_REASONING_KEY, encryptedContent));
+                aiMessageBuilder.attributes(dev.langchain4j.internal.Jdk8.map(ENCRYPTED_REASONING_KEY, encryptedContent));
             }
-            var aiMessage = aiMessageBuilder.build();
-
-            OpenAiResponsesChatResponseMetadata.Builder metadataBuilder = OpenAiResponsesChatResponseMetadata.builder()
-                    .id(str(at(responseNode, FIELD_ID), null))
-                    .modelName(str(at(responseNode, FIELD_MODEL), null));
-
+            dev.langchain4j.data.message.AiMessage aiMessage = aiMessageBuilder.build();
+            OpenAiResponsesChatResponseMetadata.Builder metadataBuilder = OpenAiResponsesChatResponseMetadata.builder().id(str(at(responseNode, FIELD_ID), null)).modelName(str(at(responseNode, FIELD_MODEL), null));
             OpenAiTokenUsage tokenUsage = parseTokenUsage(at(responseNode, FIELD_USAGE));
             if (tokenUsage != null) {
                 metadataBuilder.tokenUsage(tokenUsage);
             }
-
-            FinishReason finishReason = finishReasonFromStatus(
-                    str(at(responseNode, FIELD_STATUS), null),
-                    incompleteReasonFrom(responseNode),
-                    !completedToolCalls.isEmpty());
+            FinishReason finishReason = finishReasonFromStatus(str(at(responseNode, FIELD_STATUS), null), incompleteReasonFrom(responseNode), !completedToolCalls.isEmpty());
             if (finishReason != null) {
                 metadataBuilder.finishReason(finishReason);
             }
-
             if (hasNonNull(responseNode, FIELD_CREATED_AT)) {
                 metadataBuilder.createdAt(longOf(at(responseNode, FIELD_CREATED_AT)));
             }
@@ -1265,9 +1257,7 @@ class OpenAiResponsesClient {
             if (!rawServerSentEvents.isEmpty()) {
                 metadataBuilder.rawServerSentEvents(new ArrayList<>(rawServerSentEvents));
             }
-
-            var responseBuilder = ChatResponse.builder().aiMessage(aiMessage).metadata(metadataBuilder.build());
-
+            dev.langchain4j.model.chat.response.ChatResponse.Builder responseBuilder = ChatResponse.builder().aiMessage(aiMessage).metadata(metadataBuilder.build());
             if (!isCancelled()) {
                 try {
                     handler.onCompleteResponse(responseBuilder.build());
@@ -1291,13 +1281,15 @@ class OpenAiResponsesClient {
                 return "Response failed";
             }
             String message = str(at(errorNode, FIELD_MESSAGE), null);
-            if (message == null || message.isBlank()) {
+            if (message == null || dev.langchain4j.internal.Jdk8.isBlank(message)) {
                 message = CODEC.toJson(errorNode);
             }
             return "Response failed: " + message;
         }
 
-        /** @return whether a {@code CompleteToolCall} typed event was emitted. */
+        /**
+         * @return whether a {@code CompleteToolCall} typed event was emitted.
+         */
         private boolean completeToolCall(String itemId, ToolExecutionRequest.Builder builder) {
             if (builder == null || completedToolCallItemIds.contains(itemId)) {
                 return false;

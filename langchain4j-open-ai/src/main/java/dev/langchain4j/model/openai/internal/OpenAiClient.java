@@ -1,6 +1,5 @@
 package dev.langchain4j.model.openai.internal;
 
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
@@ -27,8 +26,7 @@ import dev.langchain4j.model.openai.internal.spi.ServiceHelper;
 import dev.langchain4j.reactive.streaming.ReactiveStreamingDefaults;
 import java.time.Duration;
 import java.util.Map;
-import java.util.concurrent.Flow.Publisher;
-
+import org.reactivestreams.Publisher;
 import java.util.function.Supplier;
 import org.slf4j.Logger;
 
@@ -49,8 +47,7 @@ public abstract class OpenAiClient {
      * @since 1.20.0
      */
     @Experimental
-    public Publisher<ChatModelStreamingEvent> chatCompletionPublisher(
-            ChatCompletionRequest request, ChatCompletionOptions options) {
+    public Publisher<ChatModelStreamingEvent> chatCompletionPublisher(ChatCompletionRequest request, ChatCompletionOptions options) {
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -93,18 +90,31 @@ public abstract class OpenAiClient {
     public abstract static class Builder<T extends OpenAiClient, B extends Builder<T, B>> {
 
         public HttpClientBuilder httpClientBuilder;
+
         public String baseUrl;
+
         public String organizationId;
+
         public String projectId;
+
         public String apiKey;
+
         public Duration connectTimeout;
+
         public Duration readTimeout;
+
         public String userAgent;
+
         public boolean logRequests;
+
         public boolean logResponses;
+
         public Logger logger;
+
         public Supplier<Map<String, String>> customHeadersSupplier;
+
         public Map<String, String> customQueryParams;
+
         public Integer streamingBufferSize;
 
         public abstract T build();

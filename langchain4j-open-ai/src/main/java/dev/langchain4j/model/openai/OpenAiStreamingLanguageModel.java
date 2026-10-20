@@ -6,7 +6,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_OPENAI_U
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_USER_AGENT;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.internal.ExceptionMapper;
 import dev.langchain4j.model.StreamingResponseHandler;
@@ -32,25 +31,13 @@ import org.slf4j.Logger;
 public class OpenAiStreamingLanguageModel implements StreamingLanguageModel {
 
     private final OpenAiClient client;
+
     private final String modelName;
+
     private final Double temperature;
 
     public OpenAiStreamingLanguageModel(OpenAiStreamingLanguageModelBuilder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams).build();
         this.modelName = builder.modelName;
         this.temperature = builder.temperature;
     }
@@ -61,42 +48,26 @@ public class OpenAiStreamingLanguageModel implements StreamingLanguageModel {
 
     @Override
     public void generate(String prompt, StreamingResponseHandler<String> handler) {
-
-        CompletionRequest request = CompletionRequest.builder().stream(true)
-                .streamOptions(StreamOptions.builder().includeUsage(true).build())
-                .model(modelName)
-                .prompt(prompt)
-                .temperature(temperature)
-                .build();
-
+        CompletionRequest request = CompletionRequest.builder().stream(true).streamOptions(StreamOptions.builder().includeUsage(true).build()).model(modelName).prompt(prompt).temperature(temperature).build();
         OpenAiStreamingResponseBuilder responseBuilder = new OpenAiStreamingResponseBuilder();
-
-        client.completion(request)
-                .onPartialResponse(partialResponse -> {
-                    responseBuilder.append(partialResponse);
-                    for (CompletionChoice choice : partialResponse.choices()) {
-                        String token = choice.text();
-                        if (isNotNullOrEmpty(token)) {
-                            handler.onNext(token);
-                        }
-                    }
-                })
-                .onComplete(() -> {
-                    ChatResponse chatResponse = responseBuilder.build();
-                    handler.onComplete(Response.from(
-                            chatResponse.aiMessage().text(),
-                            chatResponse.metadata().tokenUsage(),
-                            chatResponse.metadata().finishReason()));
-                })
-                .onError(throwable -> {
-                    handler.onError(ExceptionMapper.DEFAULT.mapException(throwable));
-                })
-                .execute();
+        client.completion(request).onPartialResponse(partialResponse -> {
+            responseBuilder.append(partialResponse);
+            for (CompletionChoice choice : partialResponse.choices()) {
+                String token = choice.text();
+                if (isNotNullOrEmpty(token)) {
+                    handler.onNext(token);
+                }
+            }
+        }).onComplete(() -> {
+            ChatResponse chatResponse = responseBuilder.build();
+            handler.onComplete(Response.from(chatResponse.aiMessage().text(), chatResponse.metadata().tokenUsage(), chatResponse.metadata().finishReason()));
+        }).onError(throwable -> {
+            handler.onError(ExceptionMapper.DEFAULT.mapException(throwable));
+        }).execute();
     }
 
     public static OpenAiStreamingLanguageModelBuilder builder() {
-        for (OpenAiStreamingLanguageModelBuilderFactory factory :
-                loadFactories(OpenAiStreamingLanguageModelBuilderFactory.class)) {
+        for (OpenAiStreamingLanguageModelBuilderFactory factory : loadFactories(OpenAiStreamingLanguageModelBuilderFactory.class)) {
             return factory.get();
         }
         return new OpenAiStreamingLanguageModelBuilder();
@@ -105,18 +76,29 @@ public class OpenAiStreamingLanguageModel implements StreamingLanguageModel {
     public static class OpenAiStreamingLanguageModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
 
         private String modelName;
+
         private Double temperature;
+
         private Duration timeout;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
 
         public OpenAiStreamingLanguageModelBuilder() {

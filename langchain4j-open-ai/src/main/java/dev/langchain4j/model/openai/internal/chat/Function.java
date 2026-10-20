@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -19,10 +18,13 @@ public class Function {
 
     @JsonProperty
     private final String name;
+
     @JsonProperty
     private final String description;
+
     @JsonProperty
     private final Boolean strict;
+
     @JsonProperty
     private final Map<String, Object> parameters;
 
@@ -53,17 +55,14 @@ public class Function {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof Function
-                && equalTo((Function) another);
+        if (this == another)
+            return true;
+        return another instanceof Function && equalTo((Function) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Function another) {
-        return Objects.equals(name, another.name)
-                && Objects.equals(description, another.description)
-                && Objects.equals(strict, another.strict)
-                && Objects.equals(parameters, another.parameters);
+        return Objects.equals(name, another.name) && Objects.equals(description, another.description) && Objects.equals(strict, another.strict) && Objects.equals(parameters, another.parameters);
     }
 
     @Override
@@ -80,12 +79,7 @@ public class Function {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Function{"
-                + "name=" + name
-                + ", description=" + description
-                + ", strict=" + strict
-                + ", parameters=" + parameters
-                + "}";
+        return "Function{" + "name=" + name + ", description=" + description + ", strict=" + strict + ", parameters=" + parameters + "}";
     }
 
     public static Builder builder() {
@@ -98,8 +92,11 @@ public class Function {
     public static final class Builder {
 
         private String name;
+
         private String description;
+
         private Boolean strict;
+
         private Map<String, Object> parameters = new HashMap<>();
 
         public Builder name(String name) {

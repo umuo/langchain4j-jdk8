@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.image;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.image.Image;
 import java.util.Base64;
 
@@ -32,12 +31,9 @@ public class ImageFile {
                 throw new IllegalArgumentException("Invalid base64 image data provided", e);
             }
         }
-
         if (image.url() != null) {
-            throw new IllegalArgumentException(
-                    "URL-based image is not supported by OpenAI image editing. Please provide the image as base64 encoded data.");
+            throw new IllegalArgumentException("URL-based image is not supported by OpenAI image editing. Please provide the image as base64 encoded data.");
         }
-
         throw new IllegalArgumentException("No image data found. Image must contain base64 data");
     }
 
@@ -49,12 +45,16 @@ public class ImageFile {
         if (mimeType == null) {
             return ".png";
         }
-
-        return switch (mimeType) {
-            case "image/png" -> ".png";
-            case "image/jpeg", "image/jpg" -> ".jpg";
-            case "image/webp" -> ".webp";
-            default -> ".png";
-        };
+        switch(mimeType) {
+            case "image/png":
+                return ".png";
+            case "image/jpeg":
+            case "image/jpg":
+                return ".jpg";
+            case "image/webp":
+                return ".webp";
+            default:
+                return ".png";
+        }
     }
 }

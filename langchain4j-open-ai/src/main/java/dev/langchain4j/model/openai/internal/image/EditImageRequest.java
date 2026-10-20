@@ -7,15 +7,25 @@ package dev.langchain4j.model.openai.internal.image;
 public class EditImageRequest {
 
     private final ImageFile image;
+
     private final ImageFile mask;
+
     private final String model;
+
     private final String prompt;
+
     private final int n;
+
     private final String size;
+
     private final String quality;
+
     private final String user;
+
     private final String background;
+
     private final String outputFormat;
+
     private final Integer outputCompression;
 
     public EditImageRequest(Builder builder) {
@@ -83,15 +93,25 @@ public class EditImageRequest {
     public static class Builder {
 
         private ImageFile image;
+
         private ImageFile mask;
+
         private String model;
+
         private String prompt;
+
         private int n = 1;
+
         private String size;
+
         private String quality;
+
         private String user;
+
         private String background;
+
         private String outputFormat;
+
         private Integer outputCompression;
 
         public Builder image(ImageFile image) {

@@ -35,9 +35,13 @@ public class DecisionCreateRequest {
     public static class Question {
 
         public String type;
+
         public String name;
+
         public String instructions;
+
         public List<Choice> choices;
+
         public List<Level> levels;
     }
 
@@ -45,6 +49,7 @@ public class DecisionCreateRequest {
     public static class Choice {
 
         public String value;
+
         public String description;
     }
 
@@ -52,6 +57,7 @@ public class DecisionCreateRequest {
     public static class Level {
 
         public String label;
+
         public String description;
     }
 
@@ -59,7 +65,9 @@ public class DecisionCreateRequest {
     public static class InputMessage {
 
         public String type = "message";
+
         public String role = "user";
+
         public List<InputPart> content;
     }
 
@@ -67,8 +75,11 @@ public class DecisionCreateRequest {
     public static class InputPart {
 
         public String type;
+
         public String text;
+
         public String imageUrl;
+
         public String detail;
     }
 }

@@ -9,7 +9,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_OPENAI_U
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_USER_AGENT;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.ModelProvider;
@@ -58,49 +57,32 @@ import org.slf4j.Logger;
 public class OpenAiDecisionModel implements DecisionModel {
 
     private final OpenAiClient client;
+
     private final Integer maxRetries;
+
     private final OpenAiDecisionRequestParameters defaultRequestParameters;
+
     private final List<DecisionModelListener> listeners;
 
     public OpenAiDecisionModel(OpenAiDecisionModelBuilder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams).build();
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
-        this.defaultRequestParameters = OpenAiDecisionRequestParameters.builder()
-                .modelName(builder.modelName)
-                .customParameters(builder.customParameters)
-                .build();
+        this.defaultRequestParameters = OpenAiDecisionRequestParameters.builder().modelName(builder.modelName).customParameters(builder.customParameters).build();
         this.listeners = copy(builder.listeners);
     }
 
     @Override
     public DecisionResponse doDecide(DecisionRequest request) {
         DecisionCreateRequest openAiRequest = DecisionMapper.toOpenAiRequest(request);
-        DecisionCreateResponse response =
-                withRetryMappingExceptions(() -> client.decision(openAiRequest).execute(), maxRetries);
+        DecisionCreateResponse response = withRetryMappingExceptions(() -> client.decision(openAiRequest).execute(), maxRetries);
         return DecisionMapper.toDecisionResponse(response, request);
     }
 
     @Override
     public CompletableFuture<DecisionResponse> doDecideAsync(DecisionRequest request) {
         DecisionCreateRequest openAiRequest = DecisionMapper.toOpenAiRequest(request);
-        CompletableFuture<ParsedAndRawResponse<DecisionCreateResponse>> responseFuture =
-                withRetryMappingExceptionsAsync(() -> client.decision(openAiRequest).executeRawAsync(), maxRetries);
-        CompletableFuture<DecisionResponse> result = responseFuture.thenApply(
-                response -> DecisionMapper.toDecisionResponse(response.parsedResponse(), request));
+        CompletableFuture<ParsedAndRawResponse<DecisionCreateResponse>> responseFuture = withRetryMappingExceptionsAsync(() -> client.decision(openAiRequest).executeRawAsync(), maxRetries);
+        CompletableFuture<DecisionResponse> result = responseFuture.thenApply(response -> DecisionMapper.toDecisionResponse(response.parsedResponse(), request));
         propagateCancellation(result, responseFuture);
         return result;
     }
@@ -130,19 +112,33 @@ public class OpenAiDecisionModel implements DecisionModel {
     public static class OpenAiDecisionModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
+
         private String modelName;
+
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
+
         private Map<String, Object> customParameters;
+
         private List<DecisionModelListener> listeners;
 
         public OpenAiDecisionModelBuilder() {
@@ -282,7 +278,7 @@ public class OpenAiDecisionModel implements DecisionModel {
         }
 
         public OpenAiDecisionModelBuilder listeners(DecisionModelListener... listeners) {
-            return listeners(List.of(listeners));
+            return listeners(dev.langchain4j.internal.Jdk8.list(listeners));
         }
 
         public OpenAiDecisionModel build() {

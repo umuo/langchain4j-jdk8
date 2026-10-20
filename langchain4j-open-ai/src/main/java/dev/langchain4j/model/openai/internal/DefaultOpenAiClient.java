@@ -11,7 +11,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.model.openai.internal.ChatCompletionEventDispatcher.handle;
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.NO_CHOICES_ERROR_MESSAGE;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.exception.InternalServerException;
 import dev.langchain4j.http.client.HttpClient;
 import dev.langchain4j.http.client.HttpClientBuilder;
@@ -49,44 +48,35 @@ import dev.langchain4j.model.openai.internal.image.ImageFile;
 import dev.langchain4j.model.openai.internal.models.ModelsListResponse;
 import dev.langchain4j.model.openai.internal.moderation.ModerationRequest;
 import dev.langchain4j.model.openai.internal.moderation.ModerationResponse;
-import mutiny.zero.Tube;
-
+import dev.langchain4j.internal.reactive.Tube;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.Flow.Publisher;
-
+import org.reactivestreams.Publisher;
 import java.util.function.Supplier;
 
 public class DefaultOpenAiClient extends OpenAiClient {
 
     private final HttpClient httpClient;
+
     private final String baseUrl;
+
     private final Map<String, String> defaultHeaders;
+
     private final Supplier<Map<String, String>> customHeadersSupplier;
+
     private final Map<String, String> customQueryParams;
+
     private final int streamingBufferSize;
 
     public DefaultOpenAiClient(Builder builder) {
-
-        HttpClientBuilder httpClientBuilder =
-                getOrDefault(builder.httpClientBuilder, HttpClientBuilderLoader::loadHttpClientBuilder);
-
-        HttpClient httpClient = httpClientBuilder
-                .connectTimeout(getOrDefault(
-                        getOrDefault(builder.connectTimeout, httpClientBuilder.connectTimeout()), ofSeconds(15)))
-                .readTimeout(
-                        getOrDefault(getOrDefault(builder.readTimeout, httpClientBuilder.readTimeout()), ofSeconds(60)))
-                .build();
-
+        HttpClientBuilder httpClientBuilder = getOrDefault(builder.httpClientBuilder, HttpClientBuilderLoader::loadHttpClientBuilder);
+        HttpClient httpClient = httpClientBuilder.connectTimeout(getOrDefault(getOrDefault(builder.connectTimeout, httpClientBuilder.connectTimeout()), ofSeconds(15))).readTimeout(getOrDefault(getOrDefault(builder.readTimeout, httpClientBuilder.readTimeout()), ofSeconds(60))).build();
         if (builder.logRequests || builder.logResponses) {
-            this.httpClient =
-                    new LoggingHttpClient(httpClient, builder.logRequests, builder.logResponses, builder.logger);
+            this.httpClient = new LoggingHttpClient(httpClient, builder.logRequests, builder.logResponses, builder.logger);
         } else {
             this.httpClient = httpClient;
         }
-
         this.baseUrl = ensureNotBlank(builder.baseUrl, "baseUrl");
-
         Map<String, String> defaultHeaders = new HashMap<>();
         if (builder.apiKey != null) {
             defaultHeaders.put("Authorization", "Bearer " + builder.apiKey);
@@ -101,10 +91,9 @@ public class DefaultOpenAiClient extends OpenAiClient {
             defaultHeaders.put("User-Agent", builder.userAgent);
         }
         this.defaultHeaders = defaultHeaders;
-        this.customHeadersSupplier = getOrDefault(builder.customHeadersSupplier, () -> Map::of);
+        this.customHeadersSupplier = getOrDefault(builder.customHeadersSupplier, () -> dev.langchain4j.internal.Jdk8::map);
         this.customQueryParams = builder.customQueryParams;
-        this.streamingBufferSize = ensureGreaterThanZero(
-                getOrDefault(builder.streamingBufferSize, DEFAULT_STREAMING_BUFFER_SIZE), "streamingBufferSize");
+        this.streamingBufferSize = ensureGreaterThanZero(getOrDefault(builder.streamingBufferSize, DEFAULT_STREAMING_BUFFER_SIZE), "streamingBufferSize");
     }
 
     public static Builder builder() {
@@ -123,7 +112,6 @@ public class DefaultOpenAiClient extends OpenAiClient {
         if (isNullOrEmpty(dynamicHeaders)) {
             return defaultHeaders;
         }
-
         Map<String, String> headers = new HashMap<>(defaultHeaders);
         headers.putAll(dynamicHeaders);
         return headers;
@@ -131,73 +119,22 @@ public class DefaultOpenAiClient extends OpenAiClient {
 
     @Override
     public SyncOrAsyncOrStreaming<CompletionResponse> completion(CompletionRequest request) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "completions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(
-                        CompletionRequest.builder().from(request).stream(false).build()))
-                .build();
-
-        HttpRequest streamingHttpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "completions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(
-                        CompletionRequest.builder().from(request).stream(true).build()))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "completions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(CompletionRequest.builder().from(request).stream(false).build())).build();
+        HttpRequest streamingHttpRequest = HttpRequest.builder().method(POST).url(baseUrl, "completions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(CompletionRequest.builder().from(request).stream(true).build())).build();
         return new RequestExecutor<>(httpClient, httpRequest, streamingHttpRequest, CompletionResponse.class);
     }
 
     @Override
     public SyncOrAsyncOrStreaming<ChatCompletionResponse> chatCompletion(ChatCompletionRequest request) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "chat/completions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(ChatCompletionRequest.builder().from(request).stream(false)
-                        .build()))
-                .build();
-
-        HttpRequest streamingHttpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "chat/completions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(ChatCompletionRequest.builder().from(request).stream(true)
-                        .build()))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "chat/completions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(ChatCompletionRequest.builder().from(request).stream(false).build())).build();
+        HttpRequest streamingHttpRequest = HttpRequest.builder().method(POST).url(baseUrl, "chat/completions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(ChatCompletionRequest.builder().from(request).stream(true).build())).build();
         return new RequestExecutor<>(httpClient, httpRequest, streamingHttpRequest, ChatCompletionResponse.class);
     }
 
     @Override
-    public Publisher<ChatModelStreamingEvent> chatCompletionPublisher(
-            ChatCompletionRequest request, ChatCompletionOptions options) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "chat/completions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
-        return HttpStreamingChatPublisher.create(
-                streamingBufferSize,
-                () -> httpClient.stream(httpRequest),
-                tube -> new ChatCompletionEventSink(tube, options));
+    public Publisher<ChatModelStreamingEvent> chatCompletionPublisher(ChatCompletionRequest request, ChatCompletionOptions options) {
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "chat/completions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
+        return HttpStreamingChatPublisher.create(streamingBufferSize, () -> httpClient.stream(httpRequest), tube -> new ChatCompletionEventSink(tube, options));
     }
 
     private static final class ChatCompletionEventSink implements HttpStreamingChatPublisher.Sink {
@@ -205,12 +142,19 @@ public class DefaultOpenAiClient extends OpenAiClient {
         private static final String DONE_MARKER = "[DONE]";
 
         private final Tube<ChatModelStreamingEvent> tube;
+
         private final TubeBackedStreamingChatResponseHandler tubeHandler;
+
         private final MappingTrackingStreamingChatResponseHandler handler;
+
         private final ChatCompletionOptions options;
+
         private final ToolCallBuilder toolCallBuilder = new ToolCallBuilder();
+
         private final OpenAiStreamingResponseBuilder responseBuilder;
+
         private SuccessfulHttpResponse rawHttpResponse;
+
         private boolean eventReceived;
 
         ChatCompletionEventSink(Tube<ChatModelStreamingEvent> tube, ChatCompletionOptions options) {
@@ -226,31 +170,25 @@ public class DefaultOpenAiClient extends OpenAiClient {
             if (tube.cancelled()) {
                 return;
             }
-            if (item instanceof HttpResponseReceived responseReceived) {
-                this.rawHttpResponse = responseReceived.response();
+            if (item instanceof HttpResponseReceived) {
+                this.rawHttpResponse = ((HttpResponseReceived) item).response();
                 return;
             }
-            if (!(item instanceof ServerSentEvent sse)) {
+            if (!(item instanceof ServerSentEvent)) {
                 return;
             }
             eventReceived = true;
-            if (DONE_MARKER.equals(sse.data())) {
+            if (DONE_MARKER.equals(((ServerSentEvent) item).data())) {
                 return;
             }
             try {
-                ChatCompletionResponse parsed = Json.fromJson(sse.data(), ChatCompletionResponse.class);
-                ParsedAndRawResponse<ChatCompletionResponse> parsedAndRaw = ParsedAndRawResponse.builder()
-                                .parsedResponse(parsed)
-                                .rawHttpResponse(rawHttpResponse)
-                                .rawServerSentEvent(sse)
-                                .streamingHandle(tubeHandler.streamingHandle())
-                                .build();
+                ChatCompletionResponse parsed = Json.fromJson(((ServerSentEvent) item).data(), ChatCompletionResponse.class);
+                ParsedAndRawResponse<ChatCompletionResponse> parsedAndRaw = ParsedAndRawResponse.builder().parsedResponse(parsed).rawHttpResponse(rawHttpResponse).rawServerSentEvent(((ServerSentEvent) item)).streamingHandle(tubeHandler.streamingHandle()).build();
                 responseBuilder.append(parsedAndRaw);
-
                 handler.resetMappingTracking();
                 handle(parsedAndRaw, toolCallBuilder, handler, options.returnThinking());
                 if (!handler.wasMapped()) {
-                    onUnmappedRawEvent(handler, sse);
+                    onUnmappedRawEvent(handler, ((ServerSentEvent) item));
                 }
             } catch (Exception e) {
                 tube.fail(e);
@@ -289,169 +227,90 @@ public class DefaultOpenAiClient extends OpenAiClient {
 
     @Override
     public SyncOrAsync<EmbeddingResponse> embedding(EmbeddingRequest request) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "embeddings")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "embeddings").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
         return new RequestExecutor<>(httpClient, httpRequest, EmbeddingResponse.class);
     }
 
     @Override
     public SyncOrAsync<ModerationResponse> moderation(ModerationRequest request) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "moderations")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "moderations").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
         return new RequestExecutor<>(httpClient, httpRequest, ModerationResponse.class);
     }
 
     @Override
     public SyncOrAsync<DecisionCreateResponse> decision(DecisionCreateRequest request) {
-
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "decisions")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "decisions").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
         return new RequestExecutor<>(httpClient, httpRequest, DecisionCreateResponse.class);
     }
 
     @Override
     public SyncOrAsync<GenerateImagesResponse> imagesGeneration(GenerateImagesRequest request) {
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "images/generations")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "images/generations").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
         return new RequestExecutor<>(httpClient, httpRequest, GenerateImagesResponse.class);
     }
 
     @Override
     public SyncOrAsync<GenerateImagesResponse> imagesEdit(EditImageRequest request) {
-        HttpRequest.Builder httpRequestBuilder = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "images/edits")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "multipart/form-data; boundary=----LangChain4j")
-                .addHeaders(buildRequestHeaders());
-
+        HttpRequest.Builder httpRequestBuilder = HttpRequest.builder().method(POST).url(baseUrl, "images/edits").addQueryParams(customQueryParams).addHeader("Content-Type", "multipart/form-data; boundary=----LangChain4j").addHeaders(buildRequestHeaders());
         ImageFile image = request.image();
         httpRequestBuilder.addFormDataFile("image", image.fileName(), image.mimeType(), image.content());
-
         httpRequestBuilder.addFormDataField("prompt", request.prompt());
-
         if (request.mask() != null) {
             ImageFile mask = request.mask();
             httpRequestBuilder.addFormDataFile("mask", mask.fileName(), mask.mimeType(), mask.content());
         }
-
         if (request.model() != null) {
             httpRequestBuilder.addFormDataField("model", request.model());
         }
-
         httpRequestBuilder.addFormDataField("n", Integer.toString(request.n()));
-
         if (request.size() != null) {
             httpRequestBuilder.addFormDataField("size", request.size());
         }
-
         if (request.quality() != null) {
             httpRequestBuilder.addFormDataField("quality", request.quality());
         }
-
         if (request.user() != null) {
             httpRequestBuilder.addFormDataField("user", request.user());
         }
-
         if (request.background() != null) {
             httpRequestBuilder.addFormDataField("background", request.background());
         }
-
         if (request.outputFormat() != null) {
             httpRequestBuilder.addFormDataField("output_format", request.outputFormat());
         }
-
         if (request.outputCompression() != null) {
             httpRequestBuilder.addFormDataField("output_compression", Integer.toString(request.outputCompression()));
         }
-
         return new RequestExecutor<>(httpClient, httpRequestBuilder.build(), GenerateImagesResponse.class);
     }
 
     @Override
     public SyncOrAsync<OpenAiAudioTranscriptionResponse> audioTranscription(OpenAiAudioTranscriptionRequest request) {
-        HttpRequest.Builder httpRequestBuilder = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "audio/transcriptions")
-                .addHeader("Content-Type", "multipart/form-data; boundary=----LangChain4j")
-                .addHeaders(buildRequestHeaders());
-
+        HttpRequest.Builder httpRequestBuilder = HttpRequest.builder().method(POST).url(baseUrl, "audio/transcriptions").addHeader("Content-Type", "multipart/form-data; boundary=----LangChain4j").addHeaders(buildRequestHeaders());
         httpRequestBuilder.addFormDataField("model", request.model());
-
         AudioFile file = request.file();
         httpRequestBuilder.addFormDataFile("file", file.fileName(), file.mimeType(), file.content());
-
         if (request.language() != null) {
             httpRequestBuilder.addFormDataField("language", request.language());
         }
-
         if (request.prompt() != null) {
             httpRequestBuilder.addFormDataField("prompt", request.prompt());
         }
-
         if (request.temperature() != null) {
             httpRequestBuilder.addFormDataField("temperature", Double.toString(request.temperature()));
         }
-
         return new RequestExecutor<>(httpClient, httpRequestBuilder.build(), OpenAiAudioTranscriptionResponse.class);
     }
 
     @Override
     public SyncOrAsync<OpenAiTextToSpeechResponse> textToSpeech(OpenAiTextToSpeechRequest request) {
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(POST)
-                .url(baseUrl, "audio/speech")
-                .addQueryParams(customQueryParams)
-                .addHeader("Content-Type", "application/json")
-                .addHeaders(buildRequestHeaders())
-                .body(Json.toJson(request))
-                .build();
-
-        return new RequestExecutor<>(
-                httpClient,
-                httpRequest,
-                response -> OpenAiTextToSpeechResponse.from(response.bodyBytes(), response.contentType()));
+        HttpRequest httpRequest = HttpRequest.builder().method(POST).url(baseUrl, "audio/speech").addQueryParams(customQueryParams).addHeader("Content-Type", "application/json").addHeaders(buildRequestHeaders()).body(Json.toJson(request)).build();
+        return new RequestExecutor<>(httpClient, httpRequest, response -> OpenAiTextToSpeechResponse.from(response.bodyBytes(), response.contentType()));
     }
 
     @Override
     public SyncOrAsync<ModelsListResponse> listModels() {
-        HttpRequest httpRequest = HttpRequest.builder()
-                .method(GET)
-                .url(baseUrl, "models")
-                .addQueryParams(customQueryParams)
-                .addHeaders(buildRequestHeaders())
-                .build();
-
+        HttpRequest httpRequest = HttpRequest.builder().method(GET).url(baseUrl, "models").addQueryParams(customQueryParams).addHeaders(buildRequestHeaders()).build();
         return new RequestExecutor<>(httpClient, httpRequest, ModelsListResponse.class);
     }
 }

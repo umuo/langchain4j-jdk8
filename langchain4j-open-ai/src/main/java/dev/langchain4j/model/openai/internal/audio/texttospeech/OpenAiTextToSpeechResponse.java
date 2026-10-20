@@ -8,6 +8,7 @@ package dev.langchain4j.model.openai.internal.audio.texttospeech;
 public class OpenAiTextToSpeechResponse {
 
     private final byte[] audio;
+
     private final String contentType;
 
     public OpenAiTextToSpeechResponse(byte[] audio, String contentType) {

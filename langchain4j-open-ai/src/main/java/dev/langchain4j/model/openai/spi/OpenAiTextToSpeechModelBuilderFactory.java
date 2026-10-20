@@ -8,4 +8,5 @@ import java.util.function.Supplier;
  * A factory for building {@link OpenAiTextToSpeechModel.Builder} instances.
  */
 @Internal
-public interface OpenAiTextToSpeechModelBuilderFactory extends Supplier<OpenAiTextToSpeechModel.Builder> {}
+public interface OpenAiTextToSpeechModelBuilderFactory extends Supplier<OpenAiTextToSpeechModel.Builder> {
+}

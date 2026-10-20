@@ -9,10 +9,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.openai.internal.shared.Usage;
-
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 
 @JsonDeserialize(builder = CompletionResponse.Builder.class)
@@ -21,12 +19,16 @@ public final class CompletionResponse {
 
     @JsonProperty
     private final String id;
+
     @JsonProperty
     private final Integer created;
+
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final List<CompletionChoice> choices;
+
     @JsonProperty
     private final Usage usage;
 
@@ -69,18 +71,14 @@ public final class CompletionResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof CompletionResponse
-                && equalTo((CompletionResponse) another);
+        if (this == another)
+            return true;
+        return another instanceof CompletionResponse && equalTo((CompletionResponse) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(CompletionResponse another) {
-        return Objects.equals(id, another.id)
-                && Objects.equals(created, another.created)
-                && Objects.equals(model, another.model)
-                && Objects.equals(choices, another.choices)
-                && Objects.equals(usage, another.usage);
+        return Objects.equals(id, another.id) && Objects.equals(created, another.created) && Objects.equals(model, another.model) && Objects.equals(choices, another.choices) && Objects.equals(usage, another.usage);
     }
 
     @Override
@@ -98,13 +96,7 @@ public final class CompletionResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "CompletionResponse{"
-                + "id=" + id
-                + ", created=" + created
-                + ", model=" + model
-                + ", choices=" + choices
-                + ", usage=" + usage
-                + "}";
+        return "CompletionResponse{" + "id=" + id + ", created=" + created + ", model=" + model + ", choices=" + choices + ", usage=" + usage + "}";
     }
 
     public static Builder builder() {
@@ -117,9 +109,13 @@ public final class CompletionResponse {
     public static final class Builder {
 
         private String id;
+
         private Integer created;
+
         private String model;
+
         private List<CompletionChoice> choices;
+
         private Usage usage;
 
         public Builder id(String id) {

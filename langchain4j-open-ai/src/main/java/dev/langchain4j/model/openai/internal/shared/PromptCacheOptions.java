@@ -37,7 +37,8 @@ public final class PromptCacheOptions {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof PromptCacheOptions && equalTo((PromptCacheOptions) another);
     }
 
@@ -71,6 +72,7 @@ public final class PromptCacheOptions {
     public static class Builder {
 
         private String mode;
+
         private String ttl;
 
         public Builder mode(String mode) {

@@ -3,7 +3,6 @@ package dev.langchain4j.model.openai.internal.chat;
 import static dev.langchain4j.model.openai.internal.chat.ContentType.*;
 import static dev.langchain4j.model.openai.internal.chat.Role.USER;
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -12,7 +11,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -32,9 +30,7 @@ public final class UserMessage implements Message {
 
     @JsonCreator
     public UserMessage(Builder builder) {
-        this.content = builder.stringContent != null
-                ? builder.stringContent
-                : (builder.content == null ? null : unmodifiableList(builder.content));
+        this.content = builder.stringContent != null ? builder.stringContent : (builder.content == null ? null : unmodifiableList(builder.content));
         this.name = builder.name;
     }
 
@@ -53,15 +49,14 @@ public final class UserMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof UserMessage && equalTo((UserMessage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(UserMessage another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(content, another.content)
-                && Objects.equals(name, another.name);
+        return Objects.equals(role, another.role) && Objects.equals(content, another.content) && Objects.equals(name, another.name);
     }
 
     @Override
@@ -97,8 +92,11 @@ public final class UserMessage implements Message {
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
     public static final class Builder {
 
-        private String stringContent; // keeping it for compatibility with other OpenAI-like APIs
+        // keeping it for compatibility with other OpenAI-like APIs
+        private String stringContent;
+
         private List<Content> content;
+
         private String name;
 
         public Builder addText(String text) {
@@ -114,11 +112,7 @@ public final class UserMessage implements Message {
 
         public Builder addImageUrl(String imageUrl, ImageDetail imageDetail) {
             initializeContent();
-            Content content = Content.builder()
-                    .type(IMAGE_URL)
-                    .imageUrl(
-                            ImageUrl.builder().url(imageUrl).detail(imageDetail).build())
-                    .build();
+            Content content = Content.builder().type(IMAGE_URL).imageUrl(ImageUrl.builder().url(imageUrl).detail(imageDetail).build()).build();
             this.content.add(content);
             return this;
         }
@@ -132,10 +126,7 @@ public final class UserMessage implements Message {
 
         public Builder addVideoUrl(String videoUrl) {
             initializeContent();
-            Content content = Content.builder()
-                    .type(VIDEO_URL)
-                    .videoUrl(VideoUrl.builder().url(videoUrl).build())
-                    .build();
+            Content content = Content.builder().type(VIDEO_URL).videoUrl(VideoUrl.builder().url(videoUrl).build()).build();
             this.content.add(content);
             return this;
         }
@@ -149,16 +140,13 @@ public final class UserMessage implements Message {
 
         public Builder addInputAudio(InputAudio inputAudio) {
             initializeContent();
-            this.content.add(
-                    Content.builder().type(AUDIO).inputAudio(inputAudio).build());
-
+            this.content.add(Content.builder().type(AUDIO).inputAudio(inputAudio).build());
             return this;
         }
 
         public Builder addPdfFile(PdfFile pdfFile) {
             initializeContent();
             this.content.add(Content.builder().type(FILE).file(pdfFile).build());
-
             return this;
         }
 

@@ -2,7 +2,6 @@ package dev.langchain4j.model.openai.internal.decision;
 
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.data.message.ChatMessage;
@@ -45,42 +44,43 @@ public final class DecisionMapper {
 
     private static final double PROBABILITY_TOLERANCE = 1e-6;
 
-    private DecisionMapper() {}
+    private DecisionMapper() {
+    }
 
     public static DecisionCreateRequest toOpenAiRequest(DecisionRequest request) {
         if (isNullOrBlank(request.modelName())) {
-            throw new IllegalArgumentException("The model name must be set, either on the decision model builder "
-                    + "with modelName(...) or on the request with DecisionRequestParameters.builder().modelName(...)");
+            throw new IllegalArgumentException("The model name must be set, either on the decision model builder " + "with modelName(...) or on the request with DecisionRequestParameters.builder().modelName(...)");
         }
         DecisionCreateRequest openAiRequest = new DecisionCreateRequest();
         openAiRequest.model = request.modelName();
         openAiRequest.input = toInput(request.input());
         openAiRequest.questions = new ArrayList<>();
         request.questions().forEach((name, question) -> openAiRequest.questions.add(toQuestion(name, question)));
-        if (request.parameters() instanceof OpenAiDecisionRequestParameters parameters
-                && !isNullOrEmpty(parameters.customParameters())) {
-            Map<String, Object> customParameters = parameters.customParameters();
+        if (request.parameters() instanceof OpenAiDecisionRequestParameters && !isNullOrEmpty(((OpenAiDecisionRequestParameters) request.parameters()).customParameters())) {
+            Map<String, Object> customParameters = ((OpenAiDecisionRequestParameters) request.parameters()).customParameters();
             openAiRequest.customParameters = customParameters;
             // a custom parameter replaces the field of the same name, which is then omitted (not sent twice)
-            if (customParameters.containsKey("model")) openAiRequest.model = null;
-            if (customParameters.containsKey("input")) openAiRequest.input = null;
-            if (customParameters.containsKey("questions")) openAiRequest.questions = null;
+            if (customParameters.containsKey("model"))
+                openAiRequest.model = null;
+            if (customParameters.containsKey("input"))
+                openAiRequest.input = null;
+            if (customParameters.containsKey("questions"))
+                openAiRequest.questions = null;
         }
         return openAiRequest;
     }
 
     private static Object toInput(DecisionInput input) {
-        if (input instanceof TextInput text) {
-            return text.text();
-        } else if (input instanceof FieldsInput fields) {
-            return List.of(message("user", toLabeledParts(fields.fields())));
-        } else if (input instanceof ContentsInput contents) {
-            return List.of(message("user", toInputParts(contents.contents())));
-        } else if (input instanceof MessagesInput messages) {
-            return List.of(message("user", toTranscriptParts(messages.messages())));
+        if (input instanceof TextInput) {
+            return ((TextInput) input).text();
+        } else if (input instanceof FieldsInput) {
+            return dev.langchain4j.internal.Jdk8.list(message("user", toLabeledParts(((FieldsInput) input).fields())));
+        } else if (input instanceof ContentsInput) {
+            return dev.langchain4j.internal.Jdk8.list(message("user", toInputParts(((ContentsInput) input).contents())));
+        } else if (input instanceof MessagesInput) {
+            return dev.langchain4j.internal.Jdk8.list(message("user", toTranscriptParts(((MessagesInput) input).messages())));
         }
-        throw new UnsupportedFeatureException(
-                "The OpenAI Decisions API does not support " + input.getClass().getName() + " as input");
+        throw new UnsupportedFeatureException("The OpenAI Decisions API does not support " + input.getClass().getName() + " as input");
     }
 
     /**
@@ -89,9 +89,9 @@ public final class DecisionMapper {
     private static List<DecisionCreateRequest.InputPart> toLabeledParts(Map<String, Object> fields) {
         List<DecisionCreateRequest.InputPart> parts = new ArrayList<>();
         fields.forEach((name, value) -> {
-            if (value instanceof Content content) {
+            if (value instanceof Content) {
                 parts.add(textPart(name + ":"));
-                parts.add(toInputPart(content));
+                parts.add(toInputPart(((Content) value)));
             } else if (isContents(value)) {
                 parts.add(textPart(name + ":"));
                 ((List<?>) value).forEach(content -> parts.add(toInputPart((Content) content)));
@@ -116,8 +116,7 @@ public final class DecisionMapper {
         return parts;
     }
 
-    private static DecisionCreateRequest.InputMessage message(
-            String role, List<DecisionCreateRequest.InputPart> content) {
+    private static DecisionCreateRequest.InputMessage message(String role, List<DecisionCreateRequest.InputPart> content) {
         DecisionCreateRequest.InputMessage message = new DecisionCreateRequest.InputMessage();
         message.role = role;
         message.content = content;
@@ -131,7 +130,7 @@ public final class DecisionMapper {
     }
 
     private static boolean isContents(Object value) {
-        return value instanceof List<?> list && !list.isEmpty() && list.get(0) instanceof Content;
+        return value instanceof List<?> && !((List<?>) value).isEmpty() && ((List<?>) value).get(0) instanceof Content;
     }
 
     private static DecisionCreateRequest.InputPart textPart(String text) {
@@ -143,17 +142,15 @@ public final class DecisionMapper {
 
     private static DecisionCreateRequest.InputPart toInputPart(Content content) {
         DecisionCreateRequest.InputPart part = new DecisionCreateRequest.InputPart();
-        if (content instanceof TextContent text) {
+        if (content instanceof TextContent) {
             part.type = "input_text";
-            part.text = text.text();
-        } else if (content instanceof ImageContent image) {
+            part.text = ((TextContent) content).text();
+        } else if (content instanceof ImageContent) {
             part.type = "input_image";
-            part.imageUrl = toImageUrl(image.image());
-            part.detail = toDetail(image.detailLevel());
+            part.imageUrl = toImageUrl(((ImageContent) content).image());
+            part.detail = toDetail(((ImageContent) content).detailLevel());
         } else {
-            throw new UnsupportedFeatureException(
-                    "The OpenAI Decisions API supports only text and image input, but the input contains "
-                            + content.type());
+            throw new UnsupportedFeatureException("The OpenAI Decisions API supports only text and image input, but the input contains " + content.type());
         }
         return part;
     }
@@ -169,44 +166,49 @@ public final class DecisionMapper {
     }
 
     private static String toDetail(ImageContent.DetailLevel detailLevel) {
-        return switch (detailLevel) {
-            case LOW -> "low";
-            case HIGH -> "high";
-            case AUTO -> "auto";
-            case MEDIUM, ULTRA_HIGH -> throw new UnsupportedFeatureException("DetailLevel " + detailLevel
-                    + " is not supported by the OpenAI Decisions API. Supported values: LOW, HIGH, AUTO");
-        };
+        switch(detailLevel) {
+            case LOW:
+                return "low";
+            case HIGH:
+                return "high";
+            case AUTO:
+                return "auto";
+            case MEDIUM:
+            case ULTRA_HIGH:
+                throw new UnsupportedFeatureException("DetailLevel " + detailLevel + " is not supported by the OpenAI Decisions API. Supported values: LOW, HIGH, AUTO");
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
     private static DecisionCreateRequest.Question toQuestion(String name, Question question) {
         DecisionCreateRequest.Question result = new DecisionCreateRequest.Question();
         result.name = name;
-        if (question instanceof YesNoQuestion yesNo) {
+        if (question instanceof YesNoQuestion) {
             result.type = "predicate";
-            result.instructions = instructions(yesNo);
-        } else if (question instanceof ChoiceQuestion choice) {
+            result.instructions = instructions(((YesNoQuestion) question));
+        } else if (question instanceof ChoiceQuestion) {
             result.type = "choice";
-            result.instructions = choice.text();
+            result.instructions = ((ChoiceQuestion) question).text();
             result.choices = new ArrayList<>();
-            choice.options().forEach((value, description) -> {
+            ((ChoiceQuestion) question).options().forEach((value, description) -> {
                 DecisionCreateRequest.Choice option = new DecisionCreateRequest.Choice();
                 option.value = value;
                 option.description = description;
                 result.choices.add(option);
             });
-        } else if (question instanceof ScaleQuestion scale) {
+        } else if (question instanceof ScaleQuestion) {
             result.type = "score";
-            result.instructions = scale.text();
+            result.instructions = ((ScaleQuestion) question).text();
             result.levels = new ArrayList<>();
-            for (int i = 0; i < scale.levels().size(); i++) {
+            for (int i = 0; i < ((ScaleQuestion) question).levels().size(); i++) {
                 DecisionCreateRequest.Level level = new DecisionCreateRequest.Level();
-                level.label = scale.levels().get(i);
-                level.description = scale.levelDescriptions().get(i);
+                level.label = ((ScaleQuestion) question).levels().get(i);
+                level.description = ((ScaleQuestion) question).levelDescriptions().get(i);
                 result.levels.add(level);
             }
         } else {
-            throw new UnsupportedFeatureException(
-                    "The OpenAI Decisions API does not support " + question.getClass().getName() + " questions");
+            throw new UnsupportedFeatureException("The OpenAI Decisions API does not support " + question.getClass().getName() + " questions");
         }
         return result;
     }
@@ -224,7 +226,7 @@ public final class DecisionMapper {
 
     public static DecisionResponse toDecisionResponse(DecisionCreateResponse response, DecisionRequest request) {
         List<String> questionNames = new ArrayList<>(request.questions().keySet());
-        List<DecisionCreateResponse.Answer> answers = response.answers == null ? List.of() : response.answers;
+        List<DecisionCreateResponse.Answer> answers = response.answers == null ? dev.langchain4j.internal.Jdk8.list() : response.answers;
         DecisionResponse.Builder builder = DecisionResponse.builder().modelName(response.model);
         for (int i = 0; i < answers.size(); i++) {
             DecisionCreateResponse.Answer answer = answers.get(i);
@@ -243,49 +245,41 @@ public final class DecisionMapper {
 
     private static DecisionAnswer toAnswer(String name, DecisionCreateResponse.Answer answer, Question question) {
         if (answer.type == null) {
-            throw new InvalidDecisionResponseException("The answer to question '%s' has no type".formatted(name));
+            throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has no type", name));
         }
-        return switch (answer.type) {
-            case "predicate" -> YesNoAnswer.of(probability(name, answer.probability, "probability"));
-            case "choice" -> toChoiceAnswer(name, answer);
-            case "score" -> toScaleAnswer(name, answer, question);
-            case "refusal" -> RefusalAnswer.of();
-            default ->
-                throw new InvalidDecisionResponseException(
-                        "The answer to question '%s' has the unknown type '%s'".formatted(name, answer.type));
-        };
+        switch(answer.type) {
+            case "predicate":
+                return YesNoAnswer.of(probability(name, answer.probability, "probability"));
+            case "choice":
+                return toChoiceAnswer(name, answer);
+            case "score":
+                return toScaleAnswer(name, answer, question);
+            case "refusal":
+                return RefusalAnswer.of();
+            default:
+                throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has the unknown type '%s'", name, answer.type));
+        }
     }
 
     private static ChoiceAnswer toChoiceAnswer(String name, DecisionCreateResponse.Answer answer) {
-        ChoiceAnswer.Builder builder = ChoiceAnswer.builder()
-                .value(String.valueOf(required(name, answer.choice, "choice")))
-                .confidence(confidence(name, answer.confidence));
+        ChoiceAnswer.Builder builder = ChoiceAnswer.builder().value(String.valueOf(required(name, answer.choice, "choice"))).confidence(confidence(name, answer.confidence));
         if (answer.probabilities != null) {
-            answer.probabilities.forEach(probability -> builder.probability(
-                    String.valueOf(probability.value), probability(name, probability.probability, "probability")));
+            answer.probabilities.forEach(probability -> builder.probability(String.valueOf(probability.value), probability(name, probability.probability, "probability")));
         }
         return builder.build();
     }
 
     private static ScaleAnswer toScaleAnswer(String name, DecisionCreateResponse.Answer answer, Question question) {
         double score = required(name, answer.score, "score");
-        ScaleAnswer.Builder builder = ScaleAnswer.builder()
-                .mean(question instanceof ScaleQuestion scale ? level(name, score, scale.levels().size()) : score)
-                .confidence(confidence(name, answer.confidence));
-        if (answer.probabilities != null
-                && !answer.probabilities.isEmpty()
-                && question instanceof ScaleQuestion scale) {
+        ScaleAnswer.Builder builder = ScaleAnswer.builder().mean(question instanceof ScaleQuestion ? level(name, score, ((ScaleQuestion) question).levels().size()) : score).confidence(confidence(name, answer.confidence));
+        if (answer.probabilities != null && !answer.probabilities.isEmpty() && question instanceof ScaleQuestion) {
             // the value of a level probability is the index of the level, starting at 0
-            Double[] probabilities = new Double[scale.levels().size()];
+            Double[] probabilities = new Double[((ScaleQuestion) question).levels().size()];
             Arrays.fill(probabilities, 0.0);
             for (DecisionCreateResponse.Probability probability : answer.probabilities) {
-                int index = probability.value instanceof Integer || probability.value instanceof Long
-                        ? ((Number) probability.value).intValue()
-                        : -1;
+                int index = probability.value instanceof Integer || probability.value instanceof Long ? ((Number) probability.value).intValue() : -1;
                 if (index < 0 || index >= probabilities.length) {
-                    throw new InvalidDecisionResponseException(
-                            "The answer to question '%s' has a probability for the level %s, but the levels are 0 to %s"
-                                    .formatted(name, probability.value, probabilities.length - 1));
+                    throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has a probability for the level %s, but the levels are 0 to %s", name, probability.value, probabilities.length - 1));
                 }
                 probabilities[index] = probability(name, probability.probability, "probability");
             }
@@ -300,43 +294,33 @@ public final class DecisionMapper {
 
     private static double probability(String name, Double value, String field) {
         if (value == null || value.isNaN() || value < -PROBABILITY_TOLERANCE || value > 1 + PROBABILITY_TOLERANCE) {
-            throw new InvalidDecisionResponseException(
-                    "The answer to question '%s' has an invalid %s: %s".formatted(name, field, value));
+            throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has an invalid %s: %s", name, field, value));
         }
-        return Math.min(1.0, Math.max(0.0, value)); // absorbs rounding errors such as 1.0000000002
+        // absorbs rounding errors such as 1.0000000002
+        return Math.min(1.0, Math.max(0.0, value));
     }
 
     private static double level(String name, double value, int levels) {
         if (Double.isNaN(value) || value < -PROBABILITY_TOLERANCE || value > levels - 1 + PROBABILITY_TOLERANCE) {
-            throw new InvalidDecisionResponseException("The answer to question '%s' has an invalid score: %s, but the levels are 0 to %s"
-                    .formatted(name, value, levels - 1));
+            throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has an invalid score: %s, but the levels are 0 to %s", name, value, levels - 1));
         }
         return Math.min(levels - 1, Math.max(0.0, value));
     }
 
     private static <T> T required(String name, T value, String field) {
         if (value == null) {
-            throw new InvalidDecisionResponseException(
-                    "The answer to question '%s' has no %s".formatted(name, field));
+            throw new InvalidDecisionResponseException(String.format("The answer to question '%s' has no %s", name, field));
         }
         return value;
     }
 
     private static OpenAiTokenUsage toTokenUsage(DecisionCreateResponse.Usage usage) {
-        OpenAiTokenUsage.Builder builder = OpenAiTokenUsage.builder()
-                .inputTokenCount(usage.inputTokens)
-                .outputTokenCount(usage.outputTokens)
-                .totalTokenCount(usage.totalTokens);
+        OpenAiTokenUsage.Builder builder = OpenAiTokenUsage.builder().inputTokenCount(usage.inputTokens).outputTokenCount(usage.outputTokens).totalTokenCount(usage.totalTokens);
         if (usage.inputTokensDetails != null) {
-            builder.inputTokensDetails(OpenAiTokenUsage.InputTokensDetails.builder()
-                    .cachedTokens(usage.inputTokensDetails.cachedTokens)
-                    .cacheWriteTokens(usage.inputTokensDetails.cacheWriteTokens)
-                    .build());
+            builder.inputTokensDetails(OpenAiTokenUsage.InputTokensDetails.builder().cachedTokens(usage.inputTokensDetails.cachedTokens).cacheWriteTokens(usage.inputTokensDetails.cacheWriteTokens).build());
         }
         if (usage.outputTokensDetails != null) {
-            builder.outputTokensDetails(OpenAiTokenUsage.OutputTokensDetails.builder()
-                    .reasoningTokens(usage.outputTokensDetails.reasoningTokens)
-                    .build());
+            builder.outputTokensDetails(OpenAiTokenUsage.OutputTokensDetails.builder().reasoningTokens(usage.outputTokensDetails.reasoningTokens).build());
         }
         return builder.build();
     }

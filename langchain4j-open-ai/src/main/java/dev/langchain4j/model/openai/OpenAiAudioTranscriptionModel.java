@@ -13,9 +13,7 @@ import dev.langchain4j.model.openai.internal.audio.transcription.OpenAiAudioTran
 import dev.langchain4j.model.openai.internal.audio.transcription.AudioFile;
 import dev.langchain4j.model.openai.spi.OpenAiAudioTranscriptionModelBuilderFactory;
 import org.slf4j.Logger;
-
 import java.time.Duration;
-
 import static dev.langchain4j.internal.RetryUtils.withRetryMappingExceptions;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.model.ModelProvider.OPEN_AI;
@@ -37,23 +35,13 @@ import static java.time.Duration.ofSeconds;
 public class OpenAiAudioTranscriptionModel implements AudioTranscriptionModel {
 
     private final OpenAiClient client;
+
     private final int maxRetries;
+
     private final String modelName;
 
     public OpenAiAudioTranscriptionModel(Builder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).build();
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
         this.modelName = builder.modelName;
     }
@@ -63,24 +51,14 @@ public class OpenAiAudioTranscriptionModel implements AudioTranscriptionModel {
         if (audioRequest == null || audioRequest.audio() == null) {
             throw new IllegalArgumentException("Request and audio are required");
         }
-
         OpenAiAudioTranscriptionRequest openAiRequest = requestBuilder(audioRequest).build();
-
-        ParsedAndRawResponse<OpenAiAudioTranscriptionResponse> parsedAndRawResponse = withRetryMappingExceptions(
-                () -> client.audioTranscription(openAiRequest).executeRaw(), maxRetries);
-
+        ParsedAndRawResponse<OpenAiAudioTranscriptionResponse> parsedAndRawResponse = withRetryMappingExceptions(() -> client.audioTranscription(openAiRequest).executeRaw(), maxRetries);
         OpenAiAudioTranscriptionResponse openAiResponse = parsedAndRawResponse.parsedResponse();
-
         return AudioTranscriptionResponse.from(openAiResponse.text());
     }
 
     private OpenAiAudioTranscriptionRequest.Builder requestBuilder(AudioTranscriptionRequest request) {
-        return OpenAiAudioTranscriptionRequest.builder()
-                .model(modelName)
-                .file(AudioFile.from(request.audio()))
-                .language(request.language())
-                .prompt(request.prompt())
-                .temperature(request.temperature());
+        return OpenAiAudioTranscriptionRequest.builder().model(modelName).file(AudioFile.from(request.audio())).language(request.language()).prompt(request.prompt()).temperature(request.temperature());
     }
 
     @Override
@@ -98,16 +76,25 @@ public class OpenAiAudioTranscriptionModel implements AudioTranscriptionModel {
     public static class Builder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
+
         private String modelName;
 
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
 
         public Builder() {

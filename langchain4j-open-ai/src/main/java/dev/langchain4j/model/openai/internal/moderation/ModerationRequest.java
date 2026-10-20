@@ -8,10 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.Collections.singletonList;
 import static java.util.Collections.unmodifiableList;
 
@@ -21,6 +19,7 @@ public class ModerationRequest {
 
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final List<String> input;
 
@@ -41,15 +40,14 @@ public class ModerationRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ModerationRequest
-                && equalTo((ModerationRequest) another);
+        if (this == another)
+            return true;
+        return another instanceof ModerationRequest && equalTo((ModerationRequest) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ModerationRequest another) {
-        return Objects.equals(model, another.model)
-                && Objects.equals(input, another.input);
+        return Objects.equals(model, another.model) && Objects.equals(input, another.input);
     }
 
     @Override
@@ -64,10 +62,7 @@ public class ModerationRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ModerationRequest{"
-                + "model=" + model
-                + ", input=" + input
-                + "}";
+        return "ModerationRequest{" + "model=" + model + ", input=" + input + "}";
     }
 
     public static Builder builder() {
@@ -80,6 +75,7 @@ public class ModerationRequest {
     public static final class Builder {
 
         private String model;
+
         private List<String> input;
 
         public Builder model(String model) {

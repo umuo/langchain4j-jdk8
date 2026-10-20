@@ -8,4 +8,5 @@ import java.util.function.Supplier;
  * A factory for building {@link OpenAiDecisionModel.OpenAiDecisionModelBuilder} instances.
  */
 @Internal
-public interface OpenAiDecisionModelBuilderFactory extends Supplier<OpenAiDecisionModel.OpenAiDecisionModelBuilder> {}
+public interface OpenAiDecisionModelBuilderFactory extends Supplier<OpenAiDecisionModel.OpenAiDecisionModelBuilder> {
+}

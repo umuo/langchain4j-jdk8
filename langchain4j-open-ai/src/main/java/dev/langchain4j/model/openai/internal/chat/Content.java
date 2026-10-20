@@ -85,20 +85,14 @@ public final class Content {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof Content && equalTo((Content) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Content another) {
-        return Objects.equals(type, another.type)
-                && Objects.equals(text, another.text)
-                && Objects.equals(imageUrl, another.imageUrl)
-                && Objects.equals(inputImageUrl, another.inputImageUrl)
-                && Objects.equals(videoUrl, another.videoUrl)
-                && Objects.equals(inputAudio, another.inputAudio)
-                && Objects.equals(file, another.file)
-                && Objects.equals(promptCacheBreakpoint, another.promptCacheBreakpoint);
+        return Objects.equals(type, another.type) && Objects.equals(text, another.text) && Objects.equals(imageUrl, another.imageUrl) && Objects.equals(inputImageUrl, another.inputImageUrl) && Objects.equals(videoUrl, another.videoUrl) && Objects.equals(inputAudio, another.inputAudio) && Objects.equals(file, another.file) && Objects.equals(promptCacheBreakpoint, another.promptCacheBreakpoint);
     }
 
     @Override
@@ -119,15 +113,7 @@ public final class Content {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Content{" + "type="
-                + type + ", text="
-                + text + ", imageUrl="
-                + imageUrl + ", inputImageUrl="
-                + inputImageUrl + ", videoUrl="
-                + videoUrl + ", inputAudio="
-                + inputAudio + ", file="
-                + file + ", promptCacheBreakpoint="
-                + promptCacheBreakpoint + "}";
+        return "Content{" + "type=" + type + ", text=" + text + ", imageUrl=" + imageUrl + ", inputImageUrl=" + inputImageUrl + ", videoUrl=" + videoUrl + ", inputAudio=" + inputAudio + ", file=" + file + ", promptCacheBreakpoint=" + promptCacheBreakpoint + "}";
     }
 
     public static Builder builder() {
@@ -135,13 +121,7 @@ public final class Content {
     }
 
     public Builder toBuilder() {
-        Builder builder = builder()
-                .type(type)
-                .text(text)
-                .videoUrl(videoUrl)
-                .inputAudio(inputAudio)
-                .file(file)
-                .promptCacheBreakpoint(promptCacheBreakpoint);
+        Builder builder = builder().type(type).text(text).videoUrl(videoUrl).inputAudio(inputAudio).file(file).promptCacheBreakpoint(promptCacheBreakpoint);
         if (imageUrl != null) {
             builder.imageUrl(imageUrl);
         } else if (inputImageUrl != null) {
@@ -161,12 +141,19 @@ public final class Content {
     public static final class Builder {
 
         private ContentType type;
+
         private String text;
+
         private ImageUrl imageUrl;
+
         private String inputImageUrl;
+
         private VideoUrl videoUrl;
+
         private InputAudio inputAudio;
+
         private PdfFile file;
+
         private PromptCacheBreakpoint promptCacheBreakpoint;
 
         public Builder type(ContentType type) {
@@ -190,22 +177,15 @@ public final class Content {
             if (imageUrl == null) {
                 return this;
             }
-
-            if (imageUrl instanceof String url) {
-                return inputImageUrl(url);
+            if (imageUrl instanceof String) {
+                return inputImageUrl(((String) imageUrl));
             }
-
-            if (imageUrl instanceof ImageUrl url) {
-                return imageUrl(url);
+            if (imageUrl instanceof ImageUrl) {
+                return imageUrl(((ImageUrl) imageUrl));
             }
-
-            if (imageUrl instanceof Map<?, ?> map) {
-                return imageUrl(ImageUrl.builder()
-                        .url(textValue(map.get("url")))
-                        .detail(imageDetail(map.get("detail")))
-                        .build());
+            if (imageUrl instanceof Map<?, ?>) {
+                return imageUrl(ImageUrl.builder().url(textValue(((Map<?, ?>) imageUrl).get("url"))).detail(imageDetail(((Map<?, ?>) imageUrl).get("detail"))).build());
             }
-
             return this;
         }
 
@@ -247,7 +227,6 @@ public final class Content {
             if (value == null) {
                 return null;
             }
-
             return ImageDetail.valueOf(String.valueOf(value).toUpperCase(Locale.ROOT));
         }
     }

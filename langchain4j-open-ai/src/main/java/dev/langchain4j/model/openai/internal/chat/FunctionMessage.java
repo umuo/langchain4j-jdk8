@@ -8,9 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
-
 import static dev.langchain4j.model.openai.internal.chat.Role.FUNCTION;
 
 @JsonDeserialize(builder = FunctionMessage.Builder.class)
@@ -20,8 +18,10 @@ public final class FunctionMessage implements Message {
 
     @JsonProperty
     private final Role role = FUNCTION;
+
     @JsonProperty
     private final String name;
+
     @JsonProperty
     private final String content;
 
@@ -46,16 +46,14 @@ public final class FunctionMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof FunctionMessage
-                && equalTo((FunctionMessage) another);
+        if (this == another)
+            return true;
+        return another instanceof FunctionMessage && equalTo((FunctionMessage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(FunctionMessage another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(name, another.name)
-                && Objects.equals(content, another.content);
+        return Objects.equals(role, another.role) && Objects.equals(name, another.name) && Objects.equals(content, another.content);
     }
 
     @Override
@@ -71,19 +69,12 @@ public final class FunctionMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "FunctionMessage{"
-                + "role=" + role
-                + ", name=" + name
-                + ", content=" + content
-                + "}";
+        return "FunctionMessage{" + "role=" + role + ", name=" + name + ", content=" + content + "}";
     }
 
     @Deprecated
     public static FunctionMessage from(String name, String content) {
-        return FunctionMessage.builder()
-                .name(name)
-                .content(content)
-                .build();
+        return FunctionMessage.builder().name(name).content(content).build();
     }
 
     @Deprecated
@@ -97,6 +88,7 @@ public final class FunctionMessage implements Message {
     public static final class Builder {
 
         private String name;
+
         private String content;
 
         public Builder name(String name) {

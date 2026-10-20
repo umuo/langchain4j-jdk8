@@ -60,11 +60,12 @@ public class OpenAiTextToSpeechRequest {
     }
 
     @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-
     public static class Builder {
 
         private String text;
+
         private String model;
+
         private String voice;
 
         public Builder text(String text) {

@@ -9,10 +9,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.openai.internal.shared.Usage;
-
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 
 @JsonDeserialize(builder = EmbeddingResponse.Builder.class)
@@ -21,8 +19,10 @@ public final class EmbeddingResponse {
 
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final List<Embedding> data;
+
     @JsonProperty
     private final Usage usage;
 
@@ -55,16 +55,14 @@ public final class EmbeddingResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof EmbeddingResponse
-                && equalTo((EmbeddingResponse) another);
+        if (this == another)
+            return true;
+        return another instanceof EmbeddingResponse && equalTo((EmbeddingResponse) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(EmbeddingResponse another) {
-        return Objects.equals(model, another.model)
-                && Objects.equals(data, another.data)
-                && Objects.equals(usage, another.usage);
+        return Objects.equals(model, another.model) && Objects.equals(data, another.data) && Objects.equals(usage, another.usage);
     }
 
     @Override
@@ -80,11 +78,7 @@ public final class EmbeddingResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "EmbeddingResponse{"
-                + "model=" + model
-                + ", data=" + data
-                + ", usage=" + usage
-                + "}";
+        return "EmbeddingResponse{" + "model=" + model + ", data=" + data + ", usage=" + usage + "}";
     }
 
     public static Builder builder() {
@@ -97,7 +91,9 @@ public final class EmbeddingResponse {
     public static final class Builder {
 
         private String model;
+
         private List<Embedding> data;
+
         private Usage usage;
 
         public Builder model(String model) {

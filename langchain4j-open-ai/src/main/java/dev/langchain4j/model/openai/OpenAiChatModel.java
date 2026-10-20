@@ -21,7 +21,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.validate;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.exception.InternalServerException;
 import dev.langchain4j.http.client.HttpClientBuilder;
@@ -55,38 +54,32 @@ import org.slf4j.Logger;
 public class OpenAiChatModel implements ChatModel {
 
     private final OpenAiClient client;
+
     private final Integer maxRetries;
 
     private final OpenAiChatRequestParameters defaultRequestParameters;
+
     private final String responseFormatString;
+
     private final Set<Capability> supportedCapabilities;
+
     private final boolean strictJsonSchema;
+
     private final boolean strictTools;
+
     private final boolean returnThinking;
+
     private final boolean sendThinking;
+
     private final String thinkingFieldName;
+
     private final boolean useInputImageFormat;
+
     private final List<ChatModelListener> listeners;
 
     public OpenAiChatModel(OpenAiChatModelBuilder builder) {
-
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams).build();
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
-
         ChatRequestParameters commonParameters;
         if (builder.defaultRequestParameters != null) {
             validate(builder.defaultRequestParameters);
@@ -94,40 +87,10 @@ public class OpenAiChatModel implements ChatModel {
         } else {
             commonParameters = DefaultChatRequestParameters.EMPTY;
         }
-
-        OpenAiChatRequestParameters openAiParameters =
-                builder.defaultRequestParameters instanceof OpenAiChatRequestParameters openAiChatRequestParameters
-                        ? openAiChatRequestParameters
-                        : OpenAiChatRequestParameters.EMPTY;
-
-        this.defaultRequestParameters = OpenAiChatRequestParameters.builder()
-                // common parameters
-                .modelName(getOrDefault(builder.modelName, commonParameters.modelName()))
-                .temperature(getOrDefault(builder.temperature, commonParameters.temperature()))
-                .topP(getOrDefault(builder.topP, commonParameters.topP()))
-                .frequencyPenalty(getOrDefault(builder.frequencyPenalty, commonParameters.frequencyPenalty()))
-                .presencePenalty(getOrDefault(builder.presencePenalty, commonParameters.presencePenalty()))
-                .maxOutputTokens(getOrDefault(builder.maxTokens, commonParameters.maxOutputTokens()))
-                .stopSequences(getOrDefault(builder.stop, commonParameters.stopSequences()))
-                .toolSpecifications(commonParameters.toolSpecifications())
-                .toolChoice(commonParameters.toolChoice())
-                .responseFormat(getOrDefault(builder.responseFormat, commonParameters.responseFormat()))
-                // OpenAI-specific parameters
-                .maxCompletionTokens(getOrDefault(builder.maxCompletionTokens, openAiParameters.maxCompletionTokens()))
-                .logitBias(getOrDefault(builder.logitBias, openAiParameters.logitBias()))
-                .parallelToolCalls(getOrDefault(builder.parallelToolCalls, openAiParameters.parallelToolCalls()))
-                .seed(getOrDefault(builder.seed, openAiParameters.seed()))
-                .user(getOrDefault(builder.user, openAiParameters.user()))
-                .store(getOrDefault(builder.store, openAiParameters.store()))
-                .metadata(getOrDefault(builder.metadata, openAiParameters.metadata()))
-                .serviceTier(getOrDefault(builder.serviceTier, openAiParameters.serviceTier()))
-                .promptCacheKey(getOrDefault(builder.promptCacheKey, openAiParameters.promptCacheKey()))
-                .promptCacheOptions(getOrDefault(builder.promptCacheOptions, openAiParameters.promptCacheOptions()))
-                .reasoningEffort(getOrDefault(builder.reasoningEffort, openAiParameters.reasoningEffort()))
-                .logprobs(getOrDefault(builder.logprobs, openAiParameters.logprobs()))
-                .topLogprobs(getOrDefault(builder.topLogprobs, openAiParameters.topLogprobs()))
-                .customParameters(getOrDefault(builder.customParameters, openAiParameters.customParameters()))
-                .build();
+        OpenAiChatRequestParameters openAiParameters = builder.defaultRequestParameters instanceof OpenAiChatRequestParameters ? ((OpenAiChatRequestParameters) builder.defaultRequestParameters) : OpenAiChatRequestParameters.EMPTY;
+        this.defaultRequestParameters = OpenAiChatRequestParameters.builder().// common parameters
+        modelName(getOrDefault(builder.modelName, commonParameters.modelName())).temperature(getOrDefault(builder.temperature, commonParameters.temperature())).topP(getOrDefault(builder.topP, commonParameters.topP())).frequencyPenalty(getOrDefault(builder.frequencyPenalty, commonParameters.frequencyPenalty())).presencePenalty(getOrDefault(builder.presencePenalty, commonParameters.presencePenalty())).maxOutputTokens(getOrDefault(builder.maxTokens, commonParameters.maxOutputTokens())).stopSequences(getOrDefault(builder.stop, commonParameters.stopSequences())).toolSpecifications(commonParameters.toolSpecifications()).toolChoice(commonParameters.toolChoice()).responseFormat(getOrDefault(builder.responseFormat, commonParameters.responseFormat())).// OpenAI-specific parameters
+        maxCompletionTokens(getOrDefault(builder.maxCompletionTokens, openAiParameters.maxCompletionTokens())).logitBias(getOrDefault(builder.logitBias, openAiParameters.logitBias())).parallelToolCalls(getOrDefault(builder.parallelToolCalls, openAiParameters.parallelToolCalls())).seed(getOrDefault(builder.seed, openAiParameters.seed())).user(getOrDefault(builder.user, openAiParameters.user())).store(getOrDefault(builder.store, openAiParameters.store())).metadata(getOrDefault(builder.metadata, openAiParameters.metadata())).serviceTier(getOrDefault(builder.serviceTier, openAiParameters.serviceTier())).promptCacheKey(getOrDefault(builder.promptCacheKey, openAiParameters.promptCacheKey())).promptCacheOptions(getOrDefault(builder.promptCacheOptions, openAiParameters.promptCacheOptions())).reasoningEffort(getOrDefault(builder.reasoningEffort, openAiParameters.reasoningEffort())).logprobs(getOrDefault(builder.logprobs, openAiParameters.logprobs())).topLogprobs(getOrDefault(builder.topLogprobs, openAiParameters.topLogprobs())).customParameters(getOrDefault(builder.customParameters, openAiParameters.customParameters())).build();
         this.responseFormatString = builder.responseFormatString;
         this.supportedCapabilities = copy(builder.supportedCapabilities);
         this.strictJsonSchema = getOrDefault(builder.strictJsonSchema, false);
@@ -155,69 +118,31 @@ public class OpenAiChatModel implements ChatModel {
 
     @Override
     public ChatResponse doChat(ChatRequest chatRequest) {
-
         OpenAiChatRequestParameters parameters = (OpenAiChatRequestParameters) chatRequest.parameters();
         validate(parameters);
-
-        ChatCompletionRequest openAiRequest = toOpenAiChatRequest(
-                        chatRequest,
-                        parameters,
-                        sendThinking,
-                        thinkingFieldName,
-                        strictTools,
-                        strictJsonSchema,
-                        useInputImageFormat)
-                .build();
-
-        ParsedAndRawResponse<ChatCompletionResponse> parsedAndRawResponse = withRetryMappingExceptions(
-                () -> client.chatCompletion(openAiRequest).executeRaw(), maxRetries);
-
+        ChatCompletionRequest openAiRequest = toOpenAiChatRequest(chatRequest, parameters, sendThinking, thinkingFieldName, strictTools, strictJsonSchema, useInputImageFormat).build();
+        ParsedAndRawResponse<ChatCompletionResponse> parsedAndRawResponse = withRetryMappingExceptions(() -> client.chatCompletion(openAiRequest).executeRaw(), maxRetries);
         return toChatResponse(parsedAndRawResponse);
     }
 
     @Override
     public CompletableFuture<ChatResponse> doChatAsync(ChatRequest chatRequest) {
-
         OpenAiChatRequestParameters parameters = (OpenAiChatRequestParameters) chatRequest.parameters();
         validate(parameters);
-
-        ChatCompletionRequest openAiRequest = toOpenAiChatRequest(
-                        chatRequest, parameters, sendThinking, thinkingFieldName, strictTools, strictJsonSchema)
-                .build();
-
-        CompletableFuture<ParsedAndRawResponse<ChatCompletionResponse>> rawFuture = withRetryMappingExceptionsAsync(
-                () -> client.chatCompletion(openAiRequest).executeRawAsync(), maxRetries);
-
+        ChatCompletionRequest openAiRequest = toOpenAiChatRequest(chatRequest, parameters, sendThinking, thinkingFieldName, strictTools, strictJsonSchema).build();
+        CompletableFuture<ParsedAndRawResponse<ChatCompletionResponse>> rawFuture = withRetryMappingExceptionsAsync(() -> client.chatCompletion(openAiRequest).executeRawAsync(), maxRetries);
         CompletableFuture<ChatResponse> result = rawFuture.thenApply(this::toChatResponse);
-
         propagateCancellation(result, rawFuture);
         return result;
     }
 
     private ChatResponse toChatResponse(ParsedAndRawResponse<ChatCompletionResponse> parsedAndRawResponse) {
-
         ChatCompletionResponse openAiResponse = parsedAndRawResponse.parsedResponse();
-
         if (isNullOrEmpty(openAiResponse.choices())) {
             throw new InternalServerException(noChoicesErrorMessage(parsedAndRawResponse.rawHttpResponse()));
         }
-
-        OpenAiChatResponseMetadata responseMetadata = OpenAiChatResponseMetadata.builder()
-                .id(openAiResponse.id())
-                .modelName(openAiResponse.model())
-                .tokenUsage(tokenUsageFrom(openAiResponse.usage()))
-                .finishReason(finishReasonFrom(openAiResponse.choices().get(0).finishReason()))
-                .created(openAiResponse.created())
-                .serviceTier(openAiResponse.serviceTier())
-                .systemFingerprint(openAiResponse.systemFingerprint())
-                .rawHttpResponse(parsedAndRawResponse.rawHttpResponse())
-                .logProbs(logProbsFrom(openAiResponse.choices().get(0).logprobs()))
-                .build();
-
-        return ChatResponse.builder()
-                .aiMessage(aiMessageFrom(openAiResponse, returnThinking))
-                .metadata(responseMetadata)
-                .build();
+        OpenAiChatResponseMetadata responseMetadata = OpenAiChatResponseMetadata.builder().id(openAiResponse.id()).modelName(openAiResponse.model()).tokenUsage(tokenUsageFrom(openAiResponse.usage())).finishReason(finishReasonFrom(openAiResponse.choices().get(0).finishReason())).created(openAiResponse.created()).serviceTier(openAiResponse.serviceTier()).systemFingerprint(openAiResponse.systemFingerprint()).rawHttpResponse(parsedAndRawResponse.rawHttpResponse()).logProbs(logProbsFrom(openAiResponse.choices().get(0).logprobs())).build();
+        return ChatResponse.builder().aiMessage(aiMessageFrom(openAiResponse, returnThinking)).metadata(responseMetadata).build();
     }
 
     @Override
@@ -240,49 +165,91 @@ public class OpenAiChatModel implements ChatModel {
     public static class OpenAiChatModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
 
         private ChatRequestParameters defaultRequestParameters;
+
         private String modelName;
+
         private Double temperature;
+
         private Double topP;
+
         private List<String> stop;
+
         private Integer maxTokens;
+
         private Integer maxCompletionTokens;
+
         private Double presencePenalty;
+
         private Double frequencyPenalty;
+
         private Map<String, Integer> logitBias;
+
         private Set<Capability> supportedCapabilities;
+
         private ResponseFormat responseFormat;
+
         private String responseFormatString;
+
         private Boolean strictJsonSchema;
+
         private Integer seed;
+
         private String user;
+
         private Boolean strictTools;
+
         private Boolean parallelToolCalls;
+
         private Boolean store;
+
         private Map<String, String> metadata;
+
         private String serviceTier;
+
         private String promptCacheKey;
+
         private OpenAiPromptCacheOptions promptCacheOptions;
+
         private String reasoningEffort;
+
         private Boolean returnThinking;
+
         private Boolean sendThinking;
+
         private String thinkingFieldName;
+
         private Boolean useInputImageFormat;
+
         private Boolean logprobs;
+
         private Integer topLogprobs;
+
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
+
         private Map<String, Object> customParameters;
+
         private List<ChatModelListener> listeners;
 
         public OpenAiChatModelBuilder() {

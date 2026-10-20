@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = AudioTokenDetailsUsage.Builder.class)
@@ -38,8 +37,9 @@ public class AudioTokenDetailsUsage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof AudioTokenDetailsUsage audioTokenDetailsUsage && equalTo(audioTokenDetailsUsage);
+        if (this == another)
+            return true;
+        return another instanceof AudioTokenDetailsUsage && equalTo(((AudioTokenDetailsUsage) another));
     }
 
     @JacocoIgnoreCoverageGenerated
@@ -72,6 +72,7 @@ public class AudioTokenDetailsUsage {
     public static class Builder {
 
         private Integer textTokens;
+
         private Integer audioTokens;
 
         public AudioTokenDetailsUsage.Builder textTokens(Integer textTokens) {

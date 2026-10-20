@@ -82,27 +82,7 @@ public class GenerateImagesRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return ("GenerateImagesRequest{" + "model="
-                + model
-                + ", prompt="
-                + prompt
-                + ", n="
-                + n
-                + ", size="
-                + size
-                + ", quality="
-                + quality
-                + ", user="
-                + user
-                + ", background="
-                + background
-                + ", outputFormat="
-                + outputFormat
-                + ", outputCompression="
-                + outputCompression
-                + ", moderation="
-                + moderation
-                + '}');
+        return ("GenerateImagesRequest{" + "model=" + model + ", prompt=" + prompt + ", n=" + n + ", size=" + size + ", quality=" + quality + ", user=" + user + ", background=" + background + ", outputFormat=" + outputFormat + ", outputCompression=" + outputCompression + ", moderation=" + moderation + '}');
     }
 
     public static Builder builder() {
@@ -115,14 +95,23 @@ public class GenerateImagesRequest {
     public static class Builder {
 
         private String model;
+
         private String prompt;
+
         private int n = 1;
+
         private String size;
+
         private String quality;
+
         private String user;
+
         private String background;
+
         private String outputFormat;
+
         private Integer outputCompression;
+
         private String moderation;
 
         public Builder model(String model) {

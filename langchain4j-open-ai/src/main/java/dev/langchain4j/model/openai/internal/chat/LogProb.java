@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.chat;
 
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -56,16 +55,14 @@ public final class LogProb {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof LogProb && equalTo((LogProb) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(LogProb another) {
-        return Objects.equals(token, another.token)
-                && Objects.equals(logprob, another.logprob)
-                && Objects.equals(bytes, another.bytes)
-                && Objects.equals(topLogprobs, another.topLogprobs);
+        return Objects.equals(token, another.token) && Objects.equals(logprob, another.logprob) && Objects.equals(bytes, another.bytes) && Objects.equals(topLogprobs, another.topLogprobs);
     }
 
     @Override
@@ -82,12 +79,7 @@ public final class LogProb {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "LogProb{"
-                + "token=" + token
-                + ", logprob=" + logprob
-                + ", bytes=" + bytes
-                + ", topLogprobs=" + topLogprobs
-                + "}";
+        return "LogProb{" + "token=" + token + ", logprob=" + logprob + ", bytes=" + bytes + ", topLogprobs=" + topLogprobs + "}";
     }
 
     public static Builder builder() {
@@ -100,8 +92,11 @@ public final class LogProb {
     public static final class Builder {
 
         private String token;
+
         private Double logprob;
+
         private List<Integer> bytes;
+
         private List<LogProb> topLogprobs;
 
         public Builder token(String token) {

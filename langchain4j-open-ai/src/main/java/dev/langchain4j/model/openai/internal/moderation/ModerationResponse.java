@@ -8,10 +8,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 
 @JsonDeserialize(builder = ModerationResponse.Builder.class)
@@ -20,8 +18,10 @@ public final class ModerationResponse {
 
     @JsonProperty
     private final String id;
+
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final List<ModerationResult> results;
 
@@ -47,16 +47,14 @@ public final class ModerationResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ModerationResponse
-                && equalTo((ModerationResponse) another);
+        if (this == another)
+            return true;
+        return another instanceof ModerationResponse && equalTo((ModerationResponse) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ModerationResponse another) {
-        return Objects.equals(id, another.id)
-                && Objects.equals(model, another.model)
-                && Objects.equals(results, another.results);
+        return Objects.equals(id, another.id) && Objects.equals(model, another.model) && Objects.equals(results, another.results);
     }
 
     @Override
@@ -72,11 +70,7 @@ public final class ModerationResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ModerationResponse{"
-                + "id=" + id
-                + ", model=" + model
-                + ", results=" + results
-                + "}";
+        return "ModerationResponse{" + "id=" + id + ", model=" + model + ", results=" + results + "}";
     }
 
     public static Builder builder() {
@@ -89,7 +83,9 @@ public final class ModerationResponse {
     public static final class Builder {
 
         public String id;
+
         public String model;
+
         public List<ModerationResult> results;
 
         public Builder id(String id) {

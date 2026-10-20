@@ -8,7 +8,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.finishReasonFrom
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.tokenUsageFrom;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.language.LanguageModel;
 import dev.langchain4j.model.openai.internal.OpenAiClient;
@@ -30,26 +29,15 @@ import org.slf4j.Logger;
 public class OpenAiLanguageModel implements LanguageModel {
 
     private final OpenAiClient client;
+
     private final String modelName;
+
     private final Double temperature;
+
     private final Integer maxRetries;
 
     public OpenAiLanguageModel(OpenAiLanguageModelBuilder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams).build();
         this.modelName = builder.modelName;
         this.temperature = builder.temperature;
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
@@ -61,21 +49,10 @@ public class OpenAiLanguageModel implements LanguageModel {
 
     @Override
     public Response<String> generate(String prompt) {
-
-        CompletionRequest request = CompletionRequest.builder()
-                .model(modelName)
-                .prompt(prompt)
-                .temperature(temperature)
-                .build();
-
-        CompletionResponse response =
-                withRetryMappingExceptions(() -> client.completion(request).execute(), maxRetries);
-
+        CompletionRequest request = CompletionRequest.builder().model(modelName).prompt(prompt).temperature(temperature).build();
+        CompletionResponse response = withRetryMappingExceptions(() -> client.completion(request).execute(), maxRetries);
         CompletionChoice completionChoice = response.choices().get(0);
-        return Response.from(
-                completionChoice.text(),
-                tokenUsageFrom(response.usage()),
-                finishReasonFrom(completionChoice.finishReason()));
+        return Response.from(completionChoice.text(), tokenUsageFrom(response.usage()), finishReasonFrom(completionChoice.finishReason()));
     }
 
     public static OpenAiLanguageModelBuilder builder() {
@@ -92,19 +69,31 @@ public class OpenAiLanguageModel implements LanguageModel {
     public static class OpenAiLanguageModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
 
         private String modelName;
+
         private Double temperature;
+
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
 
         public OpenAiLanguageModelBuilder() {

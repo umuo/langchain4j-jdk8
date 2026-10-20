@@ -7,7 +7,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_OPENAI_U
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_USER_AGENT;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.ModelProvider;
 import dev.langchain4j.model.moderation.Moderation;
@@ -30,27 +29,15 @@ import org.slf4j.Logger;
 public class OpenAiModerationModel implements ModerationModel {
 
     private final OpenAiClient client;
+
     private final String modelName;
+
     private final Integer maxRetries;
+
     private final List<ModerationModelListener> listeners;
 
     public OpenAiModerationModel(OpenAiModerationModelBuilder builder) {
-
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams).build();
         this.modelName = builder.modelName;
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
         this.listeners = copy(builder.listeners);
@@ -73,22 +60,12 @@ public class OpenAiModerationModel implements ModerationModel {
 
     @Override
     public ModerationResponse doModerate(ModerationRequest moderationRequest) {
-        dev.langchain4j.model.openai.internal.moderation.ModerationRequest request =
-                dev.langchain4j.model.openai.internal.moderation.ModerationRequest.builder()
-                        .model(moderationRequest.modelName())
-                        .input(moderationRequest.texts())
-                        .build();
-
-        dev.langchain4j.model.openai.internal.moderation.ModerationResponse response =
-                withRetryMappingExceptions(() -> client.moderation(request).execute(), maxRetries);
-
+        dev.langchain4j.model.openai.internal.moderation.ModerationRequest request = dev.langchain4j.model.openai.internal.moderation.ModerationRequest.builder().model(moderationRequest.modelName()).input(moderationRequest.texts()).build();
+        dev.langchain4j.model.openai.internal.moderation.ModerationResponse response = withRetryMappingExceptions(() -> client.moderation(request).execute(), maxRetries);
         List<String> texts = moderationRequest.texts();
         List<ModerationResult> results = response.results();
         int flaggedIndex = findFirstFlaggedIndex(results);
-
-        Moderation moderation =
-                flaggedIndex >= 0 ? Moderation.flagged(texts.get(flaggedIndex)) : Moderation.notFlagged();
-
+        Moderation moderation = flaggedIndex >= 0 ? Moderation.flagged(texts.get(flaggedIndex)) : Moderation.notFlagged();
         return ModerationResponse.builder().moderation(moderation).build();
     }
 
@@ -111,19 +88,31 @@ public class OpenAiModerationModel implements ModerationModel {
     public static class OpenAiModerationModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
 
         private String modelName;
+
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
+
         private List<ModerationModelListener> listeners;
 
         public OpenAiModerationModelBuilder() {

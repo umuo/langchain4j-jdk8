@@ -7,7 +7,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.logProbsFrom;
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.providerErrorMessageFrom;
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.tokenUsageFrom;
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
@@ -46,28 +45,43 @@ import java.util.concurrent.atomic.AtomicReference;
 public class OpenAiStreamingResponseBuilder {
 
     private final StringBuffer contentBuilder = new StringBuffer();
+
     private final StringBuffer reasoningContentBuilder;
 
-    private final StringBuffer toolNameBuilder = new StringBuffer(); // legacy
-    private final StringBuffer toolArgumentsBuilder = new StringBuffer(); // legacy
+    // legacy
+    private final StringBuffer toolNameBuilder = new StringBuffer();
 
-    private final Map<Integer, ToolExecutionRequestBuilder> indexToToolExecutionRequestBuilder =
-            new ConcurrentHashMap<>();
+    // legacy
+    private final StringBuffer toolArgumentsBuilder = new StringBuffer();
+
+    private final Map<Integer, ToolExecutionRequestBuilder> indexToToolExecutionRequestBuilder = new ConcurrentHashMap<>();
+
     private final AtomicInteger fallbackToolCallIndex = new AtomicInteger(0);
 
     private final AtomicReference<String> id = new AtomicReference<>();
+
     private final AtomicReference<Long> created = new AtomicReference<>();
+
     private final AtomicReference<String> model = new AtomicReference<>();
+
     private final AtomicReference<String> serviceTier = new AtomicReference<>();
+
     private final AtomicReference<String> systemFingerprint = new AtomicReference<>();
+
     private final AtomicReference<TokenUsage> tokenUsage = new AtomicReference<>();
+
     private final AtomicReference<FinishReason> finishReason = new AtomicReference<>();
+
     private final AtomicReference<SuccessfulHttpResponse> rawHttpResponse = new AtomicReference<>();
+
     private final Queue<ServerSentEvent> rawServerSentEvents = new ConcurrentLinkedQueue<>();
+
     private final List<LogProb> logProbs = new CopyOnWriteArrayList<>();
+
     private final AtomicReference<String> providerErrorMessage = new AtomicReference<>();
 
     private final boolean returnThinking;
+
     private final boolean accumulateToolCallId;
 
     public OpenAiStreamingResponseBuilder() {
@@ -104,7 +118,6 @@ public class OpenAiStreamingResponseBuilder {
                     }
                 }
             }
-
             append(parsedAndRawResponse.parsedResponse());
         }
     }
@@ -113,7 +126,6 @@ public class OpenAiStreamingResponseBuilder {
         if (partialResponse == null) {
             return;
         }
-
         if (!isNullOrBlank(partialResponse.id())) {
             this.id.set(partialResponse.id());
         }
@@ -129,80 +141,59 @@ public class OpenAiStreamingResponseBuilder {
         if (!isNullOrBlank(partialResponse.systemFingerprint())) {
             this.systemFingerprint.set(partialResponse.systemFingerprint());
         }
-
         Usage usage = partialResponse.usage();
         if (usage != null) {
             this.tokenUsage.set(tokenUsageFrom(usage));
         }
-
         List<ChatCompletionChoice> choices = partialResponse.choices();
         if (isNullOrEmpty(choices)) {
             return;
         }
-
         ChatCompletionChoice chatCompletionChoice = choices.get(0);
         if (chatCompletionChoice == null) {
             return;
         }
-
         String finishReason = chatCompletionChoice.finishReason();
         if (finishReason != null) {
             this.finishReason.set(finishReasonFrom(finishReason));
         }
-
         LogProbs logProbs = chatCompletionChoice.logprobs();
         if (logProbs != null && logProbs.content() != null) {
             this.logProbs.addAll(logProbs.content());
         }
-
         Delta delta = chatCompletionChoice.delta();
         if (delta == null) {
             return;
         }
-
         String content = delta.content();
         if (!isNullOrEmpty(content)) {
             this.contentBuilder.append(content);
         }
-
         String reasoningContent = delta.reasoningContent();
         if (returnThinking && !isNullOrEmpty(reasoningContent)) {
             this.reasoningContentBuilder.append(reasoningContent);
         }
-
         if (delta.functionCall() != null) {
             FunctionCall functionCall = delta.functionCall();
-
             if (functionCall.name() != null) {
                 this.toolNameBuilder.append(functionCall.name());
             }
-
             if (functionCall.arguments() != null) {
                 this.toolArgumentsBuilder.append(functionCall.arguments());
             }
         }
-
         if (delta.toolCalls() != null) {
             for (ToolCall toolCall : delta.toolCalls()) {
                 if (isSentinel(toolCall)) {
                     continue;
                 }
-
                 int toolCallIndex = toolCall.index() != null ? toolCall.index() : fallbackToolCallIndex.get();
-
-                ToolExecutionRequestBuilder builder = this.indexToToolExecutionRequestBuilder.computeIfAbsent(
-                        toolCallIndex, idx -> new ToolExecutionRequestBuilder());
-
+                ToolExecutionRequestBuilder builder = this.indexToToolExecutionRequestBuilder.computeIfAbsent(toolCallIndex, idx -> new ToolExecutionRequestBuilder());
                 // When index is null and a different tool call id appears, increment the fallback index
-                if (toolCall.index() == null
-                        && toolCall.id() != null
-                        && !builder.idBuilder.isEmpty()
-                        && !builder.idBuilder.toString().equals(toolCall.id())) {
+                if (toolCall.index() == null && toolCall.id() != null && builder.idBuilder.length() != 0 && !builder.idBuilder.toString().equals(toolCall.id())) {
                     toolCallIndex = fallbackToolCallIndex.incrementAndGet();
-                    builder = this.indexToToolExecutionRequestBuilder.computeIfAbsent(
-                            toolCallIndex, idx -> new ToolExecutionRequestBuilder());
+                    builder = this.indexToToolExecutionRequestBuilder.computeIfAbsent(toolCallIndex, idx -> new ToolExecutionRequestBuilder());
                 }
-
                 if (toolCall.id() != null) {
                     if (accumulateToolCallId) {
                         builder.idBuilder.append(toolCall.id());
@@ -211,7 +202,6 @@ public class OpenAiStreamingResponseBuilder {
                         builder.idBuilder.append(toolCall.id());
                     }
                 }
-
                 FunctionCall functionCall = toolCall.function();
                 if (functionCall != null) {
                     if (functionCall.name() != null) {
@@ -229,27 +219,22 @@ public class OpenAiStreamingResponseBuilder {
         if (partialResponse == null) {
             return;
         }
-
         Usage usage = partialResponse.usage();
         if (usage != null) {
             this.tokenUsage.set(tokenUsageFrom(usage));
         }
-
         List<CompletionChoice> choices = partialResponse.choices();
         if (isNullOrEmpty(choices)) {
             return;
         }
-
         CompletionChoice completionChoice = choices.get(0);
         if (completionChoice == null) {
             return;
         }
-
         String finishReason = completionChoice.finishReason();
         if (finishReason != null) {
             this.finishReason.set(finishReasonFrom(finishReason));
         }
-
         String token = completionChoice.text();
         if (token != null) {
             this.contentBuilder.append(token);
@@ -266,72 +251,35 @@ public class OpenAiStreamingResponseBuilder {
     }
 
     public ChatResponse build() {
-        return ChatResponse.builder()
-                .aiMessage(buildAiMessage())
-                .metadata(buildMetadata())
-                .build();
+        return ChatResponse.builder().aiMessage(buildAiMessage()).metadata(buildMetadata()).build();
     }
 
     private AiMessage buildAiMessage() {
         String text = contentBuilder.toString();
-
         String thinking = null;
         if (returnThinking) {
             thinking = reasoningContentBuilder.toString();
         }
-
-        return AiMessage.builder()
-                .text(isNullOrEmpty(text) ? null : text)
-                .thinking(isNullOrEmpty(thinking) ? null : thinking)
-                .toolExecutionRequests(buildToolExecutionRequests())
-                .build();
+        return AiMessage.builder().text(isNullOrEmpty(text) ? null : text).thinking(isNullOrEmpty(thinking) ? null : thinking).toolExecutionRequests(buildToolExecutionRequests()).build();
     }
 
     private List<ToolExecutionRequest> buildToolExecutionRequests() {
         List<ToolExecutionRequest> toolExecutionRequests = new ArrayList<>();
-
         // legacy
         String toolName = toolNameBuilder.toString();
         if (!toolName.isEmpty()) {
-            ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder()
-                    .name(toolName)
-                    .arguments(toolArgumentsBuilder.toString())
-                    .build();
+            ToolExecutionRequest toolExecutionRequest = ToolExecutionRequest.builder().name(toolName).arguments(toolArgumentsBuilder.toString()).build();
             toolExecutionRequests.add(toolExecutionRequest);
         }
-
         if (!indexToToolExecutionRequestBuilder.isEmpty()) {
-            List<ToolExecutionRequest> toolRequests = indexToToolExecutionRequestBuilder.values().stream()
-                    .map(it -> ToolExecutionRequest.builder()
-                            .id(it.idBuilder.toString())
-                            .name(it.nameBuilder.toString())
-                            .arguments(it.argumentsBuilder.toString())
-                            .build())
-                    .collect(toList());
+            List<ToolExecutionRequest> toolRequests = indexToToolExecutionRequestBuilder.values().stream().map(it -> ToolExecutionRequest.builder().id(it.idBuilder.toString()).name(it.nameBuilder.toString()).arguments(it.argumentsBuilder.toString()).build()).collect(java.util.stream.Collectors.toList());
             toolExecutionRequests.addAll(toolRequests);
         }
-
         return toolExecutionRequests;
     }
 
     private OpenAiChatResponseMetadata buildMetadata() {
-        return OpenAiChatResponseMetadata.builder()
-                .id(id.get())
-                .modelName(model.get())
-                .tokenUsage(tokenUsage.get())
-                .finishReason(finishReason.get())
-                .created(created.get())
-                .serviceTier(serviceTier.get())
-                .systemFingerprint(systemFingerprint.get())
-                .rawHttpResponse(rawHttpResponse.get())
-                .rawServerSentEvents(new ArrayList<>(rawServerSentEvents))
-                .logProbs(
-                        logProbs.isEmpty()
-                                ? null
-                                : logProbsFrom(LogProbs.builder()
-                                        .content(new ArrayList<>(logProbs))
-                                        .build()))
-                .build();
+        return OpenAiChatResponseMetadata.builder().id(id.get()).modelName(model.get()).tokenUsage(tokenUsage.get()).finishReason(finishReason.get()).created(created.get()).serviceTier(serviceTier.get()).systemFingerprint(systemFingerprint.get()).rawHttpResponse(rawHttpResponse.get()).rawServerSentEvents(new ArrayList<>(rawServerSentEvents)).logProbs(logProbs.isEmpty() ? null : logProbsFrom(LogProbs.builder().content(new ArrayList<>(logProbs)).build())).build();
     }
 
     private static boolean isSentinel(ToolCall toolCall) {
@@ -348,7 +296,9 @@ public class OpenAiStreamingResponseBuilder {
     private static class ToolExecutionRequestBuilder {
 
         private final StringBuffer idBuilder = new StringBuffer();
+
         private final StringBuffer nameBuilder = new StringBuffer();
+
         private final StringBuffer argumentsBuilder = new StringBuffer();
     }
 }

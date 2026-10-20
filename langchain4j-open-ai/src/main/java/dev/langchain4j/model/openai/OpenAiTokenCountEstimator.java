@@ -14,11 +14,9 @@ import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.internal.Json;
 import dev.langchain4j.model.TokenCountEstimator;
-
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-
 import static com.knuddels.jtokkit.api.EncodingType.O200K_BASE;
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
@@ -34,6 +32,7 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
     private static final EncodingRegistry ENCODING_REGISTRY = Encodings.newDefaultEncodingRegistry();
 
     private final String modelName;
+
     private final Encoding encoding;
 
     /**
@@ -76,9 +75,10 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
 
     @Override
     public int estimateTokenCountInMessage(ChatMessage message) {
-        int tokenCount = 1; // 1 token for role
-        tokenCount += 3; // extra tokens per each message
-
+        // 1 token for role
+        int tokenCount = 1;
+        // extra tokens per each message
+        tokenCount += 3;
         if (message instanceof SystemMessage) {
             tokenCount += estimateTokenCountIn((SystemMessage) message);
         } else if (message instanceof UserMessage) {
@@ -90,7 +90,6 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
         } else {
             throw new IllegalArgumentException("Unknown message type: " + message);
         }
-
         return tokenCount;
     }
 
@@ -100,7 +99,6 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
 
     private int estimateTokenCountIn(UserMessage userMessage) {
         int tokenCount = 0;
-
         for (Content content : userMessage.contents()) {
             if (content instanceof TextContent) {
                 tokenCount += estimateTokenCountInText(((TextContent) content).text());
@@ -108,22 +106,19 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
                 throw illegalArgument("Unknown content type: " + content);
             }
         }
-
         if (userMessage.name() != null) {
-            tokenCount += 1; // extra tokens per name
+            // extra tokens per name
+            tokenCount += 1;
             tokenCount += estimateTokenCountInText(userMessage.name());
         }
-
         return tokenCount;
     }
 
     private int estimateTokenCountIn(AiMessage aiMessage) {
         int tokenCount = 0;
-
         if (aiMessage.text() != null) {
             tokenCount += estimateTokenCountInText(aiMessage.text());
         }
-
         if (aiMessage.hasToolExecutionRequests()) {
             tokenCount += 6;
             if (aiMessage.toolExecutionRequests().size() == 1) {
@@ -136,11 +131,9 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
                 for (ToolExecutionRequest toolExecutionRequest : aiMessage.toolExecutionRequests()) {
                     tokenCount += 7;
                     tokenCount += estimateTokenCountInText(toolExecutionRequest.name());
-
                     if (isNullOrBlank(toolExecutionRequest.arguments())) {
                         continue;
                     }
-
                     Map<?, ?> arguments = Json.fromJson(toolExecutionRequest.arguments(), Map.class);
                     for (Map.Entry<?, ?> argument : arguments.entrySet()) {
                         tokenCount += 2;
@@ -150,11 +143,9 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
                 }
             }
         }
-
         if (modelName.startsWith("o4")) {
             tokenCount += 2;
         }
-
         return tokenCount;
     }
 
@@ -165,12 +156,12 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
     @Override
     public int estimateTokenCountInMessages(Iterable<ChatMessage> messages) {
         // see https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
-
-        int tokenCount = 3; // every reply is primed with <|start|>assistant<|message|>
+        // every reply is primed with <|start|>assistant<|message|>
+        int tokenCount = 3;
         for (ChatMessage message : messages) {
             tokenCount += estimateTokenCountInMessage(message);
         }
-        if (modelName.startsWith("o") ) {
+        if (modelName.startsWith("o")) {
             tokenCount -= 1;
         }
         return tokenCount;
@@ -185,12 +176,10 @@ public class OpenAiTokenCountEstimator implements TokenCountEstimator {
     }
 
     public String decode(List<Integer> tokens) {
-
         IntArrayList intArrayList = new IntArrayList();
         for (Integer token : tokens) {
             intArrayList.add(token);
         }
-
         return encoding.decode(intArrayList);
     }
 

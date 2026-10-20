@@ -8,9 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.quoted;
 
 @JsonDeserialize(builder = AudioTokenUsage.Builder.class)
@@ -64,17 +62,14 @@ public class AudioTokenUsage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof AudioTokenUsage audioTokenUsage && equalTo(audioTokenUsage);
+        if (this == another)
+            return true;
+        return another instanceof AudioTokenUsage && equalTo(((AudioTokenUsage) another));
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(AudioTokenUsage another) {
-        return Objects.equals(type, another.type)
-                && Objects.equals(totalTokens, another.totalTokens)
-                && Objects.equals(inputTokens, another.inputTokens)
-                && Objects.equals(inputTokenDetails, another.inputTokenDetails)
-                && Objects.equals(outputTokens, another.outputTokens);
+        return Objects.equals(type, another.type) && Objects.equals(totalTokens, another.totalTokens) && Objects.equals(inputTokens, another.inputTokens) && Objects.equals(inputTokenDetails, another.inputTokenDetails) && Objects.equals(outputTokens, another.outputTokens);
     }
 
     @Override
@@ -92,13 +87,7 @@ public class AudioTokenUsage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "AudioTokenUsage{"
-                + " type = " + quoted(type)
-                + ", totalTokens = " + totalTokens
-                + " inputTokens = " + inputTokens
-                + ", inputTokenDetails = " + inputTokenDetails
-                + " outputTokens = " + outputTokens
-                + "}";
+        return "AudioTokenUsage{" + " type = " + quoted(type) + ", totalTokens = " + totalTokens + " inputTokens = " + inputTokens + ", inputTokenDetails = " + inputTokenDetails + " outputTokens = " + outputTokens + "}";
     }
 
     public static AudioTokenUsage.Builder builder() {
@@ -111,9 +100,13 @@ public class AudioTokenUsage {
     public static class Builder {
 
         private String type;
+
         private Integer totalTokens;
+
         private Integer inputTokens;
+
         private AudioTokenDetailsUsage inputTokenDetails;
+
         private Integer outputTokens;
 
         public AudioTokenUsage.Builder type(String type) {

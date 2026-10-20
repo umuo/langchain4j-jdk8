@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = ModerationResult.Builder.class)
@@ -17,8 +16,10 @@ public final class ModerationResult {
 
     @JsonProperty
     private final Categories categories;
+
     @JsonProperty
     private final CategoryScores categoryScores;
+
     @JsonProperty
     private final Boolean flagged;
 
@@ -44,16 +45,14 @@ public final class ModerationResult {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ModerationResult
-                && equalTo((ModerationResult) another);
+        if (this == another)
+            return true;
+        return another instanceof ModerationResult && equalTo((ModerationResult) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ModerationResult another) {
-        return Objects.equals(categories, another.categories)
-                && Objects.equals(categoryScores, another.categoryScores)
-                && Objects.equals(flagged, another.flagged);
+        return Objects.equals(categories, another.categories) && Objects.equals(categoryScores, another.categoryScores) && Objects.equals(flagged, another.flagged);
     }
 
     @Override
@@ -69,11 +68,7 @@ public final class ModerationResult {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ModerationResult{"
-                + "categories=" + categories
-                + ", categoryScores=" + categoryScores
-                + ", flagged=" + flagged
-                + "}";
+        return "ModerationResult{" + "categories=" + categories + ", categoryScores=" + categoryScores + ", flagged=" + flagged + "}";
     }
 
     public static Builder builder() {
@@ -86,7 +81,9 @@ public final class ModerationResult {
     public static final class Builder {
 
         private Categories categories;
+
         private CategoryScores categoryScores;
+
         private Boolean flagged;
 
         public Builder categories(Categories categories) {

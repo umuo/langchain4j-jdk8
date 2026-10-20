@@ -9,13 +9,11 @@ import dev.langchain4j.model.openai.internal.OpenAiClient;
 import dev.langchain4j.model.openai.internal.models.ModelsListResponse;
 import dev.langchain4j.model.openai.internal.models.OpenAiModelInfo;
 import org.slf4j.Logger;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import static dev.langchain4j.model.ModelProvider.OPEN_AI;
 
 /**
@@ -35,21 +33,7 @@ public class OpenAiModelCatalog implements ModelCatalog {
     private final OpenAiClient client;
 
     private OpenAiModelCatalog(Builder builder) {
-        this.client = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(Utils.getOrDefault(builder.baseUrl, "https://api.openai.com/v1/"))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(builder.connectTimeout)
-                .readTimeout(builder.readTimeout)
-                .userAgent(builder.userAgent)
-                .logRequests(builder.logRequests)
-                .logResponses(builder.logResponses)
-                .logger(builder.logger)
-                .customHeaders(builder.customHeaders)
-                .customQueryParams(builder.customQueryParams)
-                .build();
+        this.client = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(Utils.getOrDefault(builder.baseUrl, "https://api.openai.com/v1/")).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(builder.connectTimeout).readTimeout(builder.readTimeout).userAgent(builder.userAgent).logRequests(builder.logRequests).logResponses(builder.logResponses).logger(builder.logger).customHeaders(builder.customHeaders).customQueryParams(builder.customQueryParams).build();
     }
 
     public static Builder builder() {
@@ -59,9 +43,7 @@ public class OpenAiModelCatalog implements ModelCatalog {
     @Override
     public List<ModelDescription> listModels() {
         ModelsListResponse response = client.listModels().execute();
-        List<ModelDescription> models =
-                response.getData().stream().map(this::mapToModelDescription).collect(Collectors.toList());
-
+        List<ModelDescription> models = response.getData().stream().map(this::mapToModelDescription).collect(Collectors.toList());
         return models;
     }
 
@@ -71,28 +53,35 @@ public class OpenAiModelCatalog implements ModelCatalog {
     }
 
     private ModelDescription mapToModelDescription(OpenAiModelInfo modelInfo) {
-        return ModelDescription.builder()
-                .name(modelInfo.id())
-                .provider(OPEN_AI)
-                .owner(modelInfo.ownedBy())
-                .createdAt(modelInfo.created() != null ? Instant.ofEpochSecond(modelInfo.created()) : null)
-                .build();
+        return ModelDescription.builder().name(modelInfo.id()).provider(OPEN_AI).owner(modelInfo.ownedBy()).createdAt(modelInfo.created() != null ? Instant.ofEpochSecond(modelInfo.created()) : null).build();
     }
 
     public static class Builder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
+
         private Duration connectTimeout;
+
         private Duration readTimeout;
+
         private String userAgent;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Map<String, String> customHeaders;
+
         private Map<String, String> customQueryParams;
 
         public Builder httpClientBuilder(HttpClientBuilder httpClientBuilder) {

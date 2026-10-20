@@ -3,7 +3,6 @@ package dev.langchain4j.model.openai.internal.chat;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
-
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -276,42 +275,14 @@ public final class ChatCompletionRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof ChatCompletionRequest && equalTo((ChatCompletionRequest) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ChatCompletionRequest another) {
-        return Objects.equals(model, another.model)
-                && Objects.equals(messages, another.messages)
-                && Objects.equals(temperature, another.temperature)
-                && Objects.equals(topP, another.topP)
-                && Objects.equals(n, another.n)
-                && Objects.equals(stream, another.stream)
-                && Objects.equals(streamOptions, another.streamOptions)
-                && Objects.equals(stop, another.stop)
-                && Objects.equals(maxTokens, another.maxTokens)
-                && Objects.equals(maxCompletionTokens, another.maxCompletionTokens)
-                && Objects.equals(presencePenalty, another.presencePenalty)
-                && Objects.equals(frequencyPenalty, another.frequencyPenalty)
-                && Objects.equals(logitBias, another.logitBias)
-                && Objects.equals(user, another.user)
-                && Objects.equals(responseFormat, another.responseFormat)
-                && Objects.equals(seed, another.seed)
-                && Objects.equals(tools, another.tools)
-                && Objects.equals(toolChoice, another.toolChoice)
-                && Objects.equals(parallelToolCalls, another.parallelToolCalls)
-                && Objects.equals(store, another.store)
-                && Objects.equals(metadata, another.metadata)
-                && Objects.equals(reasoningEffort, another.reasoningEffort)
-                && Objects.equals(serviceTier, another.serviceTier)
-                && Objects.equals(promptCacheKey, another.promptCacheKey)
-                && Objects.equals(promptCacheOptions, another.promptCacheOptions)
-                && Objects.equals(logprobs, another.logprobs)
-                && Objects.equals(topLogprobs, another.topLogprobs)
-                && Objects.equals(functions, another.functions)
-                && Objects.equals(functionCall, another.functionCall)
-                && Objects.equals(customParameters, another.customParameters);
+        return Objects.equals(model, another.model) && Objects.equals(messages, another.messages) && Objects.equals(temperature, another.temperature) && Objects.equals(topP, another.topP) && Objects.equals(n, another.n) && Objects.equals(stream, another.stream) && Objects.equals(streamOptions, another.streamOptions) && Objects.equals(stop, another.stop) && Objects.equals(maxTokens, another.maxTokens) && Objects.equals(maxCompletionTokens, another.maxCompletionTokens) && Objects.equals(presencePenalty, another.presencePenalty) && Objects.equals(frequencyPenalty, another.frequencyPenalty) && Objects.equals(logitBias, another.logitBias) && Objects.equals(user, another.user) && Objects.equals(responseFormat, another.responseFormat) && Objects.equals(seed, another.seed) && Objects.equals(tools, another.tools) && Objects.equals(toolChoice, another.toolChoice) && Objects.equals(parallelToolCalls, another.parallelToolCalls) && Objects.equals(store, another.store) && Objects.equals(metadata, another.metadata) && Objects.equals(reasoningEffort, another.reasoningEffort) && Objects.equals(serviceTier, another.serviceTier) && Objects.equals(promptCacheKey, another.promptCacheKey) && Objects.equals(promptCacheOptions, another.promptCacheOptions) && Objects.equals(logprobs, another.logprobs) && Objects.equals(topLogprobs, another.topLogprobs) && Objects.equals(functions, another.functions) && Objects.equals(functionCall, another.functionCall) && Objects.equals(customParameters, another.customParameters);
     }
 
     @Override
@@ -354,38 +325,7 @@ public final class ChatCompletionRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ChatCompletionRequest{"
-                + "model=" + model
-                + ", messages=" + messages
-                + ", temperature=" + temperature
-                + ", topP=" + topP
-                + ", n=" + n
-                + ", stream=" + stream
-                + ", streamOptions=" + streamOptions
-                + ", stop=" + stop
-                + ", maxTokens=" + maxTokens
-                + ", maxCompletionTokens=" + maxCompletionTokens
-                + ", presencePenalty=" + presencePenalty
-                + ", frequencyPenalty=" + frequencyPenalty
-                + ", logitBias=" + logitBias
-                + ", user=" + user
-                + ", responseFormat=" + responseFormat
-                + ", seed=" + seed
-                + ", tools=" + tools
-                + ", toolChoice=" + toolChoice
-                + ", parallelToolCalls=" + parallelToolCalls
-                + ", store=" + store
-                + ", metadata=" + metadata
-                + ", reasoningEffort=" + reasoningEffort
-                + ", serviceTier=" + serviceTier
-                + ", promptCacheKey=" + promptCacheKey
-                + ", promptCacheOptions=" + promptCacheOptions
-                + ", logprobs=" + logprobs
-                + ", topLogprobs=" + topLogprobs
-                + ", functions=" + functions
-                + ", functionCall=" + functionCall
-                + ", customParameters=" + customParameters
-                + "}";
+        return "ChatCompletionRequest{" + "model=" + model + ", messages=" + messages + ", temperature=" + temperature + ", topP=" + topP + ", n=" + n + ", stream=" + stream + ", streamOptions=" + streamOptions + ", stop=" + stop + ", maxTokens=" + maxTokens + ", maxCompletionTokens=" + maxCompletionTokens + ", presencePenalty=" + presencePenalty + ", frequencyPenalty=" + frequencyPenalty + ", logitBias=" + logitBias + ", user=" + user + ", responseFormat=" + responseFormat + ", seed=" + seed + ", tools=" + tools + ", toolChoice=" + toolChoice + ", parallelToolCalls=" + parallelToolCalls + ", store=" + store + ", metadata=" + metadata + ", reasoningEffort=" + reasoningEffort + ", serviceTier=" + serviceTier + ", promptCacheKey=" + promptCacheKey + ", promptCacheOptions=" + promptCacheOptions + ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", functions=" + functions + ", functionCall=" + functionCall + ", customParameters=" + customParameters + "}";
     }
 
     public static Builder builder() {
@@ -398,31 +338,57 @@ public final class ChatCompletionRequest {
     public static final class Builder {
 
         private String model;
+
         private List<Message> messages;
+
         private Double temperature;
+
         private Double topP;
+
         private Integer n;
+
         private Boolean stream;
+
         private StreamOptions streamOptions;
+
         private List<String> stop;
+
         private Integer maxTokens;
+
         private Integer maxCompletionTokens;
+
         private Double presencePenalty;
+
         private Double frequencyPenalty;
+
         private Map<String, Integer> logitBias;
+
         private String user;
+
         private ResponseFormat responseFormat;
+
         private Integer seed;
+
         private List<Tool> tools;
+
         private Object toolChoice;
+
         private Boolean parallelToolCalls;
+
         private Boolean store;
+
         private Map<String, String> metadata;
+
         private String reasoningEffort;
+
         private String serviceTier;
+
         private String promptCacheKey;
+
         private PromptCacheOptions promptCacheOptions;
+
         private Boolean logprobs;
+
         private Integer topLogprobs;
 
         @Deprecated
@@ -587,8 +553,7 @@ public final class ChatCompletionRequest {
 
         public Builder responseFormat(ResponseFormatType responseFormatType) {
             if (responseFormatType != null) {
-                responseFormat =
-                        ResponseFormat.builder().type(responseFormatType).build();
+                responseFormat = ResponseFormat.builder().type(responseFormatType).build();
             }
             return this;
         }

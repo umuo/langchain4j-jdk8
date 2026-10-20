@@ -6,6 +6,7 @@ import java.util.Objects;
 public class OpenAiTokenUsage extends TokenUsage {
 
     private final InputTokensDetails inputTokensDetails;
+
     private final OutputTokensDetails outputTokensDetails;
 
     private OpenAiTokenUsage(Builder builder) {
@@ -27,31 +28,17 @@ public class OpenAiTokenUsage extends TokenUsage {
         if (that == null) {
             return this;
         }
-
-        return OpenAiTokenUsage.builder()
-                .inputTokenCount(sum(this.inputTokenCount(), that.inputTokenCount()))
-                .inputTokensDetails(addInputTokenDetails(that))
-                .outputTokenCount(sum(this.outputTokenCount(), that.outputTokenCount()))
-                .outputTokensDetails(addOutputTokensDetails(that))
-                .totalTokenCount(sum(this.totalTokenCount(), that.totalTokenCount()))
-                .build();
+        return OpenAiTokenUsage.builder().inputTokenCount(sum(this.inputTokenCount(), that.inputTokenCount())).inputTokensDetails(addInputTokenDetails(that)).outputTokenCount(sum(this.outputTokenCount(), that.outputTokenCount())).outputTokensDetails(addOutputTokensDetails(that)).totalTokenCount(sum(this.totalTokenCount(), that.totalTokenCount())).build();
     }
 
     private InputTokensDetails addInputTokenDetails(TokenUsage that) {
-        if (that instanceof OpenAiTokenUsage thatOpenAiTokenUsage) {
+        if (that instanceof OpenAiTokenUsage) {
             if (this.inputTokensDetails == null) {
-                return thatOpenAiTokenUsage.inputTokensDetails;
-            } else if (thatOpenAiTokenUsage.inputTokensDetails == null) {
+                return ((OpenAiTokenUsage) that).inputTokensDetails;
+            } else if (((OpenAiTokenUsage) that).inputTokensDetails == null) {
                 return this.inputTokensDetails;
             } else {
-                return InputTokensDetails.builder()
-                        .cachedTokens(sum(
-                                this.inputTokensDetails.cachedTokens,
-                                thatOpenAiTokenUsage.inputTokensDetails.cachedTokens))
-                        .cacheWriteTokens(sum(
-                                this.inputTokensDetails.cacheWriteTokens,
-                                thatOpenAiTokenUsage.inputTokensDetails.cacheWriteTokens))
-                        .build();
+                return InputTokensDetails.builder().cachedTokens(sum(this.inputTokensDetails.cachedTokens, ((OpenAiTokenUsage) that).inputTokensDetails.cachedTokens)).cacheWriteTokens(sum(this.inputTokensDetails.cacheWriteTokens, ((OpenAiTokenUsage) that).inputTokensDetails.cacheWriteTokens)).build();
             }
         } else {
             return this.inputTokensDetails;
@@ -59,17 +46,13 @@ public class OpenAiTokenUsage extends TokenUsage {
     }
 
     private OutputTokensDetails addOutputTokensDetails(TokenUsage that) {
-        if (that instanceof OpenAiTokenUsage thatOpenAiTokenUsage) {
+        if (that instanceof OpenAiTokenUsage) {
             if (this.outputTokensDetails == null) {
-                return thatOpenAiTokenUsage.outputTokensDetails;
-            } else if (thatOpenAiTokenUsage.outputTokensDetails == null) {
+                return ((OpenAiTokenUsage) that).outputTokensDetails;
+            } else if (((OpenAiTokenUsage) that).outputTokensDetails == null) {
                 return this.outputTokensDetails;
             } else {
-                return OutputTokensDetails.builder()
-                        .reasoningTokens(sum(
-                                this.outputTokensDetails.reasoningTokens,
-                                thatOpenAiTokenUsage.outputTokensDetails.reasoningTokens))
-                        .build();
+                return OutputTokensDetails.builder().reasoningTokens(sum(this.outputTokensDetails.reasoningTokens, ((OpenAiTokenUsage) that).outputTokensDetails.reasoningTokens)).build();
             }
         } else {
             return this.outputTokensDetails;
@@ -78,12 +61,14 @@ public class OpenAiTokenUsage extends TokenUsage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiTokenUsage that = (OpenAiTokenUsage) o;
-        return Objects.equals(inputTokensDetails, that.inputTokensDetails)
-                && Objects.equals(outputTokensDetails, that.outputTokensDetails);
+        return Objects.equals(inputTokensDetails, that.inputTokensDetails) && Objects.equals(outputTokensDetails, that.outputTokensDetails);
     }
 
     @Override
@@ -93,12 +78,7 @@ public class OpenAiTokenUsage extends TokenUsage {
 
     @Override
     public String toString() {
-        return "OpenAiTokenUsage {" + " inputTokenCount = "
-                + inputTokenCount() + ", inputTokensDetails = "
-                + inputTokensDetails + ", outputTokenCount = "
-                + outputTokenCount() + ", outputTokensDetails = "
-                + outputTokensDetails + ", totalTokenCount = "
-                + totalTokenCount() + " }";
+        return "OpenAiTokenUsage {" + " inputTokenCount = " + inputTokenCount() + ", inputTokensDetails = " + inputTokensDetails + ", outputTokenCount = " + outputTokenCount() + ", outputTokensDetails = " + outputTokensDetails + ", totalTokenCount = " + totalTokenCount() + " }";
     }
 
     public static Builder builder() {
@@ -108,9 +88,13 @@ public class OpenAiTokenUsage extends TokenUsage {
     public static class Builder {
 
         private Integer inputTokenCount;
+
         private InputTokensDetails inputTokensDetails;
+
         private Integer outputTokenCount;
+
         private OutputTokensDetails outputTokensDetails;
+
         private Integer totalTokenCount;
 
         public Builder inputTokenCount(Integer inputTokenCount) {
@@ -146,6 +130,7 @@ public class OpenAiTokenUsage extends TokenUsage {
     public static class InputTokensDetails {
 
         private final Integer cachedTokens;
+
         private final Integer cacheWriteTokens;
 
         public InputTokensDetails(Builder builder) {
@@ -178,6 +163,7 @@ public class OpenAiTokenUsage extends TokenUsage {
         public static class Builder {
 
             private Integer cachedTokens;
+
             private Integer cacheWriteTokens;
 
             public Builder cachedTokens(Integer cachedTokens) {
@@ -200,11 +186,12 @@ public class OpenAiTokenUsage extends TokenUsage {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == this) return true;
-            if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (InputTokensDetails) obj;
-            return Objects.equals(this.cachedTokens, that.cachedTokens)
-                    && Objects.equals(this.cacheWriteTokens, that.cacheWriteTokens);
+            if (obj == this)
+                return true;
+            if (obj == null || obj.getClass() != this.getClass())
+                return false;
+            dev.langchain4j.model.openai.OpenAiTokenUsage.InputTokensDetails that = (InputTokensDetails) obj;
+            return Objects.equals(this.cachedTokens, that.cachedTokens) && Objects.equals(this.cacheWriteTokens, that.cacheWriteTokens);
         }
 
         @Override
@@ -214,9 +201,7 @@ public class OpenAiTokenUsage extends TokenUsage {
 
         @Override
         public String toString() {
-            return "OpenAiTokenUsage.InputTokensDetails {" + " cachedTokens = "
-                    + cachedTokens + ", cacheWriteTokens = "
-                    + cacheWriteTokens + " }";
+            return "OpenAiTokenUsage.InputTokensDetails {" + " cachedTokens = " + cachedTokens + ", cacheWriteTokens = " + cacheWriteTokens + " }";
         }
     }
 
@@ -252,9 +237,11 @@ public class OpenAiTokenUsage extends TokenUsage {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == this) return true;
-            if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (OutputTokensDetails) obj;
+            if (obj == this)
+                return true;
+            if (obj == null || obj.getClass() != this.getClass())
+                return false;
+            dev.langchain4j.model.openai.OpenAiTokenUsage.OutputTokensDetails that = (OutputTokensDetails) obj;
             return Objects.equals(this.reasoningTokens, that.reasoningTokens);
         }
 

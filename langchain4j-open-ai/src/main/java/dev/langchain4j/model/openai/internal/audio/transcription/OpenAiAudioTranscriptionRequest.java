@@ -21,7 +21,9 @@ public class OpenAiAudioTranscriptionRequest {
     private final String model;
 
     private final String language;
+
     private final String prompt;
+
     private final Double temperature;
 
     public OpenAiAudioTranscriptionRequest(Builder builder) {
@@ -59,9 +61,13 @@ public class OpenAiAudioTranscriptionRequest {
     public static class Builder {
 
         private AudioFile file;
+
         private String model;
+
         private String language;
+
         private String prompt;
+
         private Double temperature;
 
         public Builder file(AudioFile file) {

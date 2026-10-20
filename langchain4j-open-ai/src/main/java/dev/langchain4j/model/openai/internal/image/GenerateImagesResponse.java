@@ -86,30 +86,18 @@ public class GenerateImagesResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "GenerateImagesResponse{"
-                + "created=" + created
-                + ", data=" + data
-                + ", background=" + background
-                + ", outputFormat=" + outputFormat
-                + ", quality=" + quality
-                + ", size=" + size
-                + ", usage=" + usage
-                + '}';
+        return "GenerateImagesResponse{" + "created=" + created + ", data=" + data + ", background=" + background + ", outputFormat=" + outputFormat + ", quality=" + quality + ", size=" + size + ", usage=" + usage + '}';
     }
 
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        if (another == null || getClass() != another.getClass()) return false;
+        if (this == another)
+            return true;
+        if (another == null || getClass() != another.getClass())
+            return false;
         GenerateImagesResponse that = (GenerateImagesResponse) another;
-        return Objects.equals(created, that.created)
-                && Objects.equals(data, that.data)
-                && Objects.equals(background, that.background)
-                && Objects.equals(outputFormat, that.outputFormat)
-                && Objects.equals(quality, that.quality)
-                && Objects.equals(size, that.size)
-                && Objects.equals(usage, that.usage);
+        return Objects.equals(created, that.created) && Objects.equals(data, that.data) && Objects.equals(background, that.background) && Objects.equals(outputFormat, that.outputFormat) && Objects.equals(quality, that.quality) && Objects.equals(size, that.size) && Objects.equals(usage, that.usage);
     }
 
     @Override
@@ -124,11 +112,17 @@ public class GenerateImagesResponse {
     public static class Builder {
 
         private Long created;
+
         private List<ImageData> data;
+
         private String background;
+
         private String outputFormat;
+
         private String quality;
+
         private String size;
+
         private ImageUsage usage;
 
         public Builder created(Long created) {

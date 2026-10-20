@@ -3,7 +3,6 @@ package dev.langchain4j.model.openai;
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.Utils.quoted;
-
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
 import dev.langchain4j.model.chat.request.DefaultChatRequestParameters;
 import java.util.Map;
@@ -11,22 +10,34 @@ import java.util.Objects;
 
 public class OpenAiChatRequestParameters extends DefaultChatRequestParameters {
 
-    public static final OpenAiChatRequestParameters EMPTY =
-            OpenAiChatRequestParameters.builder().build();
+    public static final OpenAiChatRequestParameters EMPTY = OpenAiChatRequestParameters.builder().build();
 
     private final Integer maxCompletionTokens;
+
     private final Map<String, Integer> logitBias;
+
     private final Boolean parallelToolCalls;
+
     private final Integer seed;
+
     private final String user;
+
     private final Boolean store;
+
     private final Map<String, String> metadata;
+
     private final String serviceTier;
+
     private final String promptCacheKey;
+
     private final OpenAiPromptCacheOptions promptCacheOptions;
+
     private final String reasoningEffort;
+
     private final Boolean logprobs;
+
     private final Integer topLogprobs;
+
     private final Map<String, Object> customParameters;
 
     private OpenAiChatRequestParameters(Builder builder) {
@@ -116,90 +127,34 @@ public class OpenAiChatRequestParameters extends DefaultChatRequestParameters {
 
     @Override
     public OpenAiChatRequestParameters overrideWith(ChatRequestParameters that) {
-        return OpenAiChatRequestParameters.builder()
-                .overrideWith(this)
-                .overrideWith(that)
-                .build();
+        return OpenAiChatRequestParameters.builder().overrideWith(this).overrideWith(that).build();
     }
 
     @Override
     public OpenAiChatRequestParameters defaultedBy(ChatRequestParameters that) {
-        return OpenAiChatRequestParameters.builder()
-                .overrideWith(that)
-                .overrideWith(this)
-                .build();
+        return OpenAiChatRequestParameters.builder().overrideWith(that).overrideWith(this).build();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiChatRequestParameters that = (OpenAiChatRequestParameters) o;
-        return Objects.equals(maxCompletionTokens, that.maxCompletionTokens)
-                && Objects.equals(logitBias, that.logitBias)
-                && Objects.equals(parallelToolCalls, that.parallelToolCalls)
-                && Objects.equals(seed, that.seed)
-                && Objects.equals(user, that.user)
-                && Objects.equals(store, that.store)
-                && Objects.equals(metadata, that.metadata)
-                && Objects.equals(serviceTier, that.serviceTier)
-                && Objects.equals(promptCacheKey, that.promptCacheKey)
-                && Objects.equals(promptCacheOptions, that.promptCacheOptions)
-                && Objects.equals(reasoningEffort, that.reasoningEffort)
-                && Objects.equals(logprobs, that.logprobs)
-                && Objects.equals(topLogprobs, that.topLogprobs)
-                && Objects.equals(customParameters, that.customParameters);
+        return Objects.equals(maxCompletionTokens, that.maxCompletionTokens) && Objects.equals(logitBias, that.logitBias) && Objects.equals(parallelToolCalls, that.parallelToolCalls) && Objects.equals(seed, that.seed) && Objects.equals(user, that.user) && Objects.equals(store, that.store) && Objects.equals(metadata, that.metadata) && Objects.equals(serviceTier, that.serviceTier) && Objects.equals(promptCacheKey, that.promptCacheKey) && Objects.equals(promptCacheOptions, that.promptCacheOptions) && Objects.equals(reasoningEffort, that.reasoningEffort) && Objects.equals(logprobs, that.logprobs) && Objects.equals(topLogprobs, that.topLogprobs) && Objects.equals(customParameters, that.customParameters);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                super.hashCode(),
-                maxCompletionTokens,
-                logitBias,
-                parallelToolCalls,
-                seed,
-                user,
-                store,
-                metadata,
-                serviceTier,
-                promptCacheKey,
-                promptCacheOptions,
-                reasoningEffort,
-                logprobs,
-                topLogprobs,
-                customParameters);
+        return Objects.hash(super.hashCode(), maxCompletionTokens, logitBias, parallelToolCalls, seed, user, store, metadata, serviceTier, promptCacheKey, promptCacheOptions, reasoningEffort, logprobs, topLogprobs, customParameters);
     }
 
     @Override
     public String toString() {
-        return "OpenAiChatRequestParameters{" + "modelName="
-                + quoted(modelName()) + ", temperature="
-                + temperature() + ", topP="
-                + topP() + ", topK="
-                + topK() + ", frequencyPenalty="
-                + frequencyPenalty() + ", presencePenalty="
-                + presencePenalty() + ", maxOutputTokens="
-                + maxOutputTokens() + ", stopSequences="
-                + stopSequences() + ", toolSpecifications="
-                + toolSpecifications() + ", toolChoice="
-                + toolChoice() + ", responseFormat="
-                + responseFormat() + ", maxCompletionTokens="
-                + maxCompletionTokens + ", logitBias="
-                + logitBias + ", parallelToolCalls="
-                + parallelToolCalls + ", seed="
-                + seed + ", user="
-                + quoted(user) + ", store="
-                + store + ", metadata="
-                + metadata + ", serviceTier="
-                + quoted(serviceTier) + ", promptCacheKey="
-                + quoted(promptCacheKey) + ", promptCacheOptions="
-                + promptCacheOptions + ", reasoningEffort="
-                + quoted(reasoningEffort) + ", logprobs="
-                + logprobs + ", topLogprobs="
-                + topLogprobs + ", customParameters="
-                + customParameters + '}';
+        return "OpenAiChatRequestParameters{" + "modelName=" + quoted(modelName()) + ", temperature=" + temperature() + ", topP=" + topP() + ", topK=" + topK() + ", frequencyPenalty=" + frequencyPenalty() + ", presencePenalty=" + presencePenalty() + ", maxOutputTokens=" + maxOutputTokens() + ", stopSequences=" + stopSequences() + ", toolSpecifications=" + toolSpecifications() + ", toolChoice=" + toolChoice() + ", responseFormat=" + responseFormat() + ", maxCompletionTokens=" + maxCompletionTokens + ", logitBias=" + logitBias + ", parallelToolCalls=" + parallelToolCalls + ", seed=" + seed + ", user=" + quoted(user) + ", store=" + store + ", metadata=" + metadata + ", serviceTier=" + quoted(serviceTier) + ", promptCacheKey=" + quoted(promptCacheKey) + ", promptCacheOptions=" + promptCacheOptions + ", reasoningEffort=" + quoted(reasoningEffort) + ", logprobs=" + logprobs + ", topLogprobs=" + topLogprobs + ", customParameters=" + customParameters + '}';
     }
 
     public static Builder builder() {
@@ -209,38 +164,51 @@ public class OpenAiChatRequestParameters extends DefaultChatRequestParameters {
     public static class Builder extends DefaultChatRequestParameters.Builder<Builder> {
 
         private Integer maxCompletionTokens;
+
         private Map<String, Integer> logitBias;
+
         private Boolean parallelToolCalls;
+
         private Integer seed;
+
         private String user;
+
         private Boolean store;
+
         private Map<String, String> metadata;
+
         private String serviceTier;
+
         private String promptCacheKey;
+
         private OpenAiPromptCacheOptions promptCacheOptions;
+
         private String reasoningEffort;
+
         private Boolean logprobs;
+
         private Integer topLogprobs;
+
         private Map<String, Object> customParameters;
 
         @Override
         public Builder overrideWith(ChatRequestParameters parameters) {
             super.overrideWith(parameters);
-            if (parameters instanceof OpenAiChatRequestParameters openAiParameters) {
-                maxCompletionTokens(getOrDefault(openAiParameters.maxCompletionTokens(), maxCompletionTokens));
-                logitBias(getOrDefault(openAiParameters.logitBias(), logitBias));
-                parallelToolCalls(getOrDefault(openAiParameters.parallelToolCalls(), parallelToolCalls));
-                seed(getOrDefault(openAiParameters.seed(), seed));
-                user(getOrDefault(openAiParameters.user(), user));
-                store(getOrDefault(openAiParameters.store(), store));
-                metadata(getOrDefault(openAiParameters.metadata(), metadata));
-                serviceTier(getOrDefault(openAiParameters.serviceTier(), serviceTier));
-                promptCacheKey(getOrDefault(openAiParameters.promptCacheKey(), promptCacheKey));
-                promptCacheOptions(getOrDefault(openAiParameters.promptCacheOptions(), promptCacheOptions));
-                reasoningEffort(getOrDefault(openAiParameters.reasoningEffort(), reasoningEffort));
-                logprobs(getOrDefault(openAiParameters.logprobs(), logprobs));
-                topLogprobs(getOrDefault(openAiParameters.topLogprobs(), topLogprobs));
-                customParameters(getOrDefault(openAiParameters.customParameters(), customParameters));
+            if (parameters instanceof OpenAiChatRequestParameters) {
+                maxCompletionTokens(getOrDefault(((OpenAiChatRequestParameters) parameters).maxCompletionTokens(), maxCompletionTokens));
+                logitBias(getOrDefault(((OpenAiChatRequestParameters) parameters).logitBias(), logitBias));
+                parallelToolCalls(getOrDefault(((OpenAiChatRequestParameters) parameters).parallelToolCalls(), parallelToolCalls));
+                seed(getOrDefault(((OpenAiChatRequestParameters) parameters).seed(), seed));
+                user(getOrDefault(((OpenAiChatRequestParameters) parameters).user(), user));
+                store(getOrDefault(((OpenAiChatRequestParameters) parameters).store(), store));
+                metadata(getOrDefault(((OpenAiChatRequestParameters) parameters).metadata(), metadata));
+                serviceTier(getOrDefault(((OpenAiChatRequestParameters) parameters).serviceTier(), serviceTier));
+                promptCacheKey(getOrDefault(((OpenAiChatRequestParameters) parameters).promptCacheKey(), promptCacheKey));
+                promptCacheOptions(getOrDefault(((OpenAiChatRequestParameters) parameters).promptCacheOptions(), promptCacheOptions));
+                reasoningEffort(getOrDefault(((OpenAiChatRequestParameters) parameters).reasoningEffort(), reasoningEffort));
+                logprobs(getOrDefault(((OpenAiChatRequestParameters) parameters).logprobs(), logprobs));
+                topLogprobs(getOrDefault(((OpenAiChatRequestParameters) parameters).topLogprobs(), topLogprobs));
+                customParameters(getOrDefault(((OpenAiChatRequestParameters) parameters).customParameters(), customParameters));
             }
             return this;
         }

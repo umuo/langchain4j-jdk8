@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = CompletionChoice.Builder.class)
@@ -17,10 +16,13 @@ public final class CompletionChoice {
 
     @JsonProperty
     private final String text;
+
     @JsonProperty
     private final Integer index;
+
     @JsonProperty
     private final Logprobs logprobs;
+
     @JsonProperty
     private final String finishReason;
 
@@ -51,17 +53,14 @@ public final class CompletionChoice {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof CompletionChoice
-                && equalTo((CompletionChoice) another);
+        if (this == another)
+            return true;
+        return another instanceof CompletionChoice && equalTo((CompletionChoice) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(CompletionChoice another) {
-        return Objects.equals(text, another.text)
-                && Objects.equals(index, another.index)
-                && Objects.equals(logprobs, another.logprobs)
-                && Objects.equals(finishReason, another.finishReason);
+        return Objects.equals(text, another.text) && Objects.equals(index, another.index) && Objects.equals(logprobs, another.logprobs) && Objects.equals(finishReason, another.finishReason);
     }
 
     @Override
@@ -78,12 +77,7 @@ public final class CompletionChoice {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "CompletionChoice{"
-                + "text=" + text
-                + ", index=" + index
-                + ", logprobs=" + logprobs
-                + ", finishReason=" + finishReason
-                + "}";
+        return "CompletionChoice{" + "text=" + text + ", index=" + index + ", logprobs=" + logprobs + ", finishReason=" + finishReason + "}";
     }
 
     public static Builder builder() {
@@ -97,10 +91,13 @@ public final class CompletionChoice {
 
         @JsonProperty
         private String text;
+
         @JsonProperty
         private Integer index;
+
         @JsonProperty
         private Logprobs logprobs;
+
         @JsonProperty
         private String finishReason;
 

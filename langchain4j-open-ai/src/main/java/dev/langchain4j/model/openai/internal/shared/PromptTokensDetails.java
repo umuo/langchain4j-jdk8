@@ -37,14 +37,14 @@ public final class PromptTokensDetails {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof PromptTokensDetails && equalTo((PromptTokensDetails) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(PromptTokensDetails another) {
-        return Objects.equals(cachedTokens, another.cachedTokens)
-                && Objects.equals(cacheWriteTokens, another.cacheWriteTokens);
+        return Objects.equals(cachedTokens, another.cachedTokens) && Objects.equals(cacheWriteTokens, another.cacheWriteTokens);
     }
 
     @Override
@@ -72,6 +72,7 @@ public final class PromptTokensDetails {
     public static final class Builder {
 
         private Integer cachedTokens;
+
         private Integer cacheWriteTokens;
 
         public Builder cachedTokens(Integer cachedTokens) {

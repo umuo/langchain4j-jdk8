@@ -6,7 +6,6 @@ import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_OPENAI_U
 import static dev.langchain4j.model.openai.internal.OpenAiUtils.DEFAULT_USER_AGENT;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
 import static java.time.Duration.ofSeconds;
-
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.http.client.HttpClientBuilder;
 import dev.langchain4j.model.image.ImageModel;
@@ -33,12 +32,19 @@ import org.slf4j.Logger;
 public class OpenAiImageModel implements ImageModel {
 
     private final String modelName;
+
     private final String size;
+
     private final String quality;
+
     private final String user;
+
     private final String background;
+
     private final String outputFormat;
+
     private final Integer outputCompression;
+
     private final String moderation;
 
     private final OpenAiClient client;
@@ -46,23 +52,8 @@ public class OpenAiImageModel implements ImageModel {
     private final Integer maxRetries;
 
     public OpenAiImageModel(OpenAiImageModelBuilder builder) {
-        OpenAiClient.Builder cBuilder = OpenAiClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL))
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .projectId(builder.projectId)
-                .connectTimeout(getOrDefault(builder.timeout, ofSeconds(15)))
-                .readTimeout(getOrDefault(builder.timeout, ofSeconds(60)))
-                .logRequests(getOrDefault(builder.logRequests, false))
-                .logResponses(getOrDefault(builder.logResponses, false))
-                .logger(builder.logger)
-                .userAgent(DEFAULT_USER_AGENT)
-                .customHeaders(builder.customHeadersSupplier)
-                .customQueryParams(builder.customQueryParams);
-
+        OpenAiClient.Builder cBuilder = OpenAiClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(getOrDefault(builder.baseUrl, DEFAULT_OPENAI_URL)).apiKey(builder.apiKey).organizationId(builder.organizationId).projectId(builder.projectId).connectTimeout(getOrDefault(builder.timeout, ofSeconds(15))).readTimeout(getOrDefault(builder.timeout, ofSeconds(60))).logRequests(getOrDefault(builder.logRequests, false)).logResponses(getOrDefault(builder.logResponses, false)).logger(builder.logger).userAgent(DEFAULT_USER_AGENT).customHeaders(builder.customHeadersSupplier).customQueryParams(builder.customQueryParams);
         this.client = cBuilder.build();
-
         this.maxRetries = getOrDefault(builder.maxRetries, 2);
         this.modelName = builder.modelName;
         this.size = builder.size;
@@ -81,50 +72,30 @@ public class OpenAiImageModel implements ImageModel {
     @Override
     public Response<Image> generate(String prompt) {
         GenerateImagesRequest request = requestBuilder(prompt).build();
-
-        GenerateImagesResponse response =
-                withRetryMappingExceptions(() -> client.imagesGeneration(request).execute(), maxRetries);
-
-        return Response.from(
-                fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
+        GenerateImagesResponse response = withRetryMappingExceptions(() -> client.imagesGeneration(request).execute(), maxRetries);
+        return Response.from(fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
     }
 
     @Override
     public Response<List<Image>> generate(String prompt, int n) {
         GenerateImagesRequest request = requestBuilder(prompt).n(n).build();
-
-        GenerateImagesResponse response =
-                withRetryMappingExceptions(() -> client.imagesGeneration(request).execute(), maxRetries);
-
+        GenerateImagesResponse response = withRetryMappingExceptions(() -> client.imagesGeneration(request).execute(), maxRetries);
         String responseOutputFormat = response.outputFormat();
-        return Response.from(
-                response.data().stream()
-                        .map(data -> fromImageData(data, responseOutputFormat))
-                        .collect(Collectors.toList()),
-                tokenUsageFrom(response.usage()));
+        return Response.from(response.data().stream().map(data -> fromImageData(data, responseOutputFormat)).collect(Collectors.toList()), tokenUsageFrom(response.usage()));
     }
 
     @Override
     public Response<Image> edit(Image image, String prompt) {
         EditImageRequest request = editRequestBuilder(image, prompt).build();
-
-        GenerateImagesResponse response =
-                withRetryMappingExceptions(() -> client.imagesEdit(request).execute(), maxRetries);
-
-        return Response.from(
-                fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
+        GenerateImagesResponse response = withRetryMappingExceptions(() -> client.imagesEdit(request).execute(), maxRetries);
+        return Response.from(fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
     }
 
     @Override
     public Response<Image> edit(Image image, Image mask, String prompt) {
-        EditImageRequest request =
-                editRequestBuilder(image, prompt).mask(ImageFile.from(mask)).build();
-
-        GenerateImagesResponse response =
-                withRetryMappingExceptions(() -> client.imagesEdit(request).execute(), maxRetries);
-
-        return Response.from(
-                fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
+        EditImageRequest request = editRequestBuilder(image, prompt).mask(ImageFile.from(mask)).build();
+        GenerateImagesResponse response = withRetryMappingExceptions(() -> client.imagesEdit(request).execute(), maxRetries);
+        return Response.from(fromImageData(response.data().get(0), response.outputFormat()), tokenUsageFrom(response.usage()));
     }
 
     public static OpenAiImageModelBuilder builder() {
@@ -137,25 +108,43 @@ public class OpenAiImageModel implements ImageModel {
     public static class OpenAiImageModelBuilder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String projectId;
 
         private String modelName;
+
         private String size;
+
         private String quality;
+
         private String user;
+
         private String background;
+
         private String outputFormat;
+
         private Integer outputCompression;
+
         private String moderation;
+
         private Duration timeout;
+
         private Integer maxRetries;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private Logger logger;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
+
         private Map<String, String> customQueryParams;
 
         public OpenAiImageModelBuilder() {
@@ -290,13 +279,10 @@ public class OpenAiImageModel implements ImageModel {
     }
 
     private static Image fromImageData(ImageData data, String outputFormat) {
-        Image.Builder imageBuilder =
-                Image.builder().url(data.url()).base64Data(data.b64Json()).revisedPrompt(data.revisedPrompt());
-
+        Image.Builder imageBuilder = Image.builder().url(data.url()).base64Data(data.b64Json()).revisedPrompt(data.revisedPrompt());
         if (outputFormat != null) {
             imageBuilder.mimeType("image/" + outputFormat);
         }
-
         return imageBuilder.build();
     }
 
@@ -304,48 +290,21 @@ public class OpenAiImageModel implements ImageModel {
         if (usage == null) {
             return null;
         }
-        return OpenAiImageTokenUsage.builder()
-                .inputTokenCount(usage.inputTokens())
-                .inputTokensDetails(tokensDetailsFrom(usage.inputTokensDetails()))
-                .outputTokenCount(usage.outputTokens())
-                .outputTokensDetails(tokensDetailsFrom(usage.outputTokensDetails()))
-                .totalTokenCount(usage.totalTokens())
-                .build();
+        return OpenAiImageTokenUsage.builder().inputTokenCount(usage.inputTokens()).inputTokensDetails(tokensDetailsFrom(usage.inputTokensDetails())).outputTokenCount(usage.outputTokens()).outputTokensDetails(tokensDetailsFrom(usage.outputTokensDetails())).totalTokenCount(usage.totalTokens()).build();
     }
 
     private static OpenAiImageTokenUsage.TokensDetails tokensDetailsFrom(ImageUsage.TokensDetails details) {
         if (details == null) {
             return null;
         }
-        return OpenAiImageTokenUsage.TokensDetails.builder()
-                .imageTokens(details.imageTokens())
-                .textTokens(details.textTokens())
-                .build();
+        return OpenAiImageTokenUsage.TokensDetails.builder().imageTokens(details.imageTokens()).textTokens(details.textTokens()).build();
     }
 
     private GenerateImagesRequest.Builder requestBuilder(String prompt) {
-        return GenerateImagesRequest.builder()
-                .model(modelName)
-                .prompt(prompt)
-                .size(size)
-                .quality(quality)
-                .user(user)
-                .background(background)
-                .outputFormat(outputFormat)
-                .outputCompression(outputCompression)
-                .moderation(moderation);
+        return GenerateImagesRequest.builder().model(modelName).prompt(prompt).size(size).quality(quality).user(user).background(background).outputFormat(outputFormat).outputCompression(outputCompression).moderation(moderation);
     }
 
     private EditImageRequest.Builder editRequestBuilder(Image image, String prompt) {
-        return EditImageRequest.builder()
-                .image(ImageFile.from(image))
-                .model(modelName)
-                .prompt(prompt)
-                .size(size)
-                .quality(quality)
-                .user(user)
-                .background(background)
-                .outputFormat(outputFormat)
-                .outputCompression(outputCompression);
+        return EditImageRequest.builder().image(ImageFile.from(image)).model(modelName).prompt(prompt).size(size).quality(quality).user(user).background(background).outputFormat(outputFormat).outputCompression(outputCompression);
     }
 }

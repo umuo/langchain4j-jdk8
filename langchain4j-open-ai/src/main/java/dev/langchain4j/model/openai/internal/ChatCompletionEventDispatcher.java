@@ -9,9 +9,7 @@ import dev.langchain4j.model.openai.internal.chat.ChatCompletionResponse;
 import dev.langchain4j.model.openai.internal.chat.Delta;
 import dev.langchain4j.model.openai.internal.chat.FunctionCall;
 import dev.langchain4j.model.openai.internal.chat.ToolCall;
-
 import java.util.List;
-
 import static dev.langchain4j.internal.InternalStreamingChatResponseHandlerUtils.onCompleteToolCall;
 import static dev.langchain4j.internal.InternalStreamingChatResponseHandlerUtils.onPartialResponse;
 import static dev.langchain4j.internal.InternalStreamingChatResponseHandlerUtils.onPartialThinking;
@@ -22,7 +20,8 @@ import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 @Internal
 public final class ChatCompletionEventDispatcher {
 
-    private ChatCompletionEventDispatcher() {}
+    private ChatCompletionEventDispatcher() {
+    }
 
     /**
      * Dispatches the typed events contained in a single streaming chunk to {@code handler}. It does not surface
@@ -31,55 +30,41 @@ public final class ChatCompletionEventDispatcher {
      * emit the raw event themselves (see
      * {@link dev.langchain4j.internal.InternalStreamingChatResponseHandlerUtils#onUnmappedRawEvent}).
      */
-    public static void handle(
-            ParsedAndRawResponse<ChatCompletionResponse> parsedAndRawResponse,
-            ToolCallBuilder toolCallBuilder,
-            StreamingChatResponseHandler handler,
-            boolean returnThinking) {
-
+    public static void handle(ParsedAndRawResponse<ChatCompletionResponse> parsedAndRawResponse, ToolCallBuilder toolCallBuilder, StreamingChatResponseHandler handler, boolean returnThinking) {
         ChatCompletionResponse partialResponse = parsedAndRawResponse.parsedResponse();
         if (partialResponse == null) {
             return;
         }
-
         List<ChatCompletionChoice> choices = partialResponse.choices();
         if (isNullOrEmpty(choices)) {
             return;
         }
-
         ChatCompletionChoice chatCompletionChoice = choices.get(0);
         if (chatCompletionChoice == null) {
             return;
         }
-
         Delta delta = chatCompletionChoice.delta();
         if (delta == null) {
             return;
         }
-
         String content = delta.content();
         if (!isNullOrEmpty(content)) {
             onPartialResponse(handler, content, parsedAndRawResponse.streamingHandle());
         }
-
         String reasoningContent = delta.reasoningContent();
         if (returnThinking && !isNullOrEmpty(reasoningContent)) {
             onPartialThinking(handler, reasoningContent, parsedAndRawResponse.streamingHandle());
         }
-
         List<ToolCall> toolCalls = delta.toolCalls();
         if (toolCalls != null) {
             for (ToolCall toolCall : toolCalls) {
-
                 int index;
                 if (toolCall.index() != null) {
                     index = toolCall.index();
                 } else {
                     index = toolCallBuilder.index();
                     // When index is null and a different tool call id appears, increment the index
-                    if (toolCall.id() != null
-                            && toolCallBuilder.id() != null
-                            && !toolCallBuilder.id().equals(toolCall.id())) {
+                    if (toolCall.id() != null && toolCallBuilder.id() != null && !toolCallBuilder.id().equals(toolCall.id())) {
                         index = toolCallBuilder.index() + 1;
                     }
                 }
@@ -87,21 +72,13 @@ public final class ChatCompletionEventDispatcher {
                     onCompleteToolCall(handler, toolCallBuilder.buildAndReset());
                     toolCallBuilder.updateIndex(index);
                 }
-
                 String id = toolCallBuilder.updateId(toolCall.id());
                 FunctionCall functionCall = toolCall.function();
                 String name = toolCallBuilder.updateName(functionCall == null ? null : functionCall.name());
-
                 String partialArguments = functionCall == null ? null : functionCall.arguments();
                 if (isNotNullOrEmpty(partialArguments)) {
                     toolCallBuilder.appendArguments(partialArguments);
-
-                    PartialToolCall partialToolRequest = PartialToolCall.builder()
-                            .index(index)
-                            .id(id)
-                            .name(name)
-                            .partialArguments(partialArguments)
-                            .build();
+                    PartialToolCall partialToolRequest = PartialToolCall.builder().index(index).id(id).name(name).partialArguments(partialArguments).build();
                     onPartialToolCall(handler, partialToolRequest, parsedAndRawResponse.streamingHandle());
                 }
             }

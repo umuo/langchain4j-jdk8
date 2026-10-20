@@ -1,6 +1,5 @@
 package dev.langchain4j.model.openai.internal.completion;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -9,12 +8,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
@@ -24,10 +21,13 @@ public final class Logprobs {
 
     @JsonProperty
     private final List<String> tokens;
+
     @JsonProperty
     private final List<Double> tokenLogprobs;
+
     @JsonProperty
     private final List<Map<String, Double>> topLogprobs;
+
     @JsonProperty
     private final List<Integer> textOffset;
 
@@ -58,17 +58,14 @@ public final class Logprobs {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof Logprobs
-                && equalTo((Logprobs) another);
+        if (this == another)
+            return true;
+        return another instanceof Logprobs && equalTo((Logprobs) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Logprobs another) {
-        return Objects.equals(tokens, another.tokens)
-                && Objects.equals(tokenLogprobs, another.tokenLogprobs)
-                && Objects.equals(topLogprobs, another.topLogprobs)
-                && Objects.equals(textOffset, another.textOffset);
+        return Objects.equals(tokens, another.tokens) && Objects.equals(tokenLogprobs, another.tokenLogprobs) && Objects.equals(topLogprobs, another.topLogprobs) && Objects.equals(textOffset, another.textOffset);
     }
 
     @Override
@@ -85,12 +82,7 @@ public final class Logprobs {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Logprobs{"
-                + "tokens=" + tokens
-                + ", tokenLogprobs=" + tokenLogprobs
-                + ", topLogprobs=" + topLogprobs
-                + ", textOffset=" + textOffset
-                + "}";
+        return "Logprobs{" + "tokens=" + tokens + ", tokenLogprobs=" + tokenLogprobs + ", topLogprobs=" + topLogprobs + ", textOffset=" + textOffset + "}";
     }
 
     public static Builder builder() {
@@ -103,8 +95,11 @@ public final class Logprobs {
     public static final class Builder {
 
         private List<String> tokens;
+
         private List<Double> tokenLogprobs;
+
         private List<Map<String, Double>> topLogprobs;
+
         private List<Integer> textOffset;
 
         public Builder tokens(List<String> tokens) {
@@ -129,7 +124,6 @@ public final class Logprobs {
                 }
                 this.topLogprobs = topLogprobsCopy;
             }
-
             return this;
         }
 

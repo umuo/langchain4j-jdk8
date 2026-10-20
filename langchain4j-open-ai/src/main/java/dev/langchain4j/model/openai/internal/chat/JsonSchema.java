@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Map;
 import java.util.Objects;
 
@@ -18,8 +17,10 @@ public class JsonSchema {
 
     @JsonProperty
     private final String name;
+
     @JsonProperty
     private final Boolean strict;
+
     @JsonProperty
     private final Map<String, Object> schema;
 
@@ -33,16 +34,14 @@ public class JsonSchema {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof JsonSchema
-                && equalTo((JsonSchema) another);
+        if (this == another)
+            return true;
+        return another instanceof JsonSchema && equalTo((JsonSchema) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(JsonSchema another) {
-        return Objects.equals(name, another.name)
-                && Objects.equals(strict, another.strict)
-                && Objects.equals(schema, another.schema);
+        return Objects.equals(name, another.name) && Objects.equals(strict, another.strict) && Objects.equals(schema, another.schema);
     }
 
     @Override
@@ -58,11 +57,7 @@ public class JsonSchema {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "JsonSchema{" +
-                "name=" + name +
-                ", strict=" + strict +
-                ", schema=" + schema +
-                "}";
+        return "JsonSchema{" + "name=" + name + ", strict=" + strict + ", schema=" + schema + "}";
     }
 
     public static Builder builder() {
@@ -75,7 +70,9 @@ public class JsonSchema {
     public static class Builder {
 
         private String name;
+
         private Boolean strict;
+
         private Map<String, Object> schema;
 
         public Builder name(String name) {

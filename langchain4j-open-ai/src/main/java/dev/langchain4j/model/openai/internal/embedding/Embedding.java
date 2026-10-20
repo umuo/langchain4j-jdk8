@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.embedding;
 
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -44,7 +43,8 @@ public final class Embedding {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof Embedding && equalTo((Embedding) another);
     }
 
@@ -78,6 +78,7 @@ public final class Embedding {
     public static final class Builder {
 
         private List<Float> embedding;
+
         private Integer index;
 
         public Builder embedding(List<Float> embedding) {
@@ -98,16 +99,16 @@ public final class Embedding {
             if (embedding == null) {
                 return this;
             }
-            if (embedding instanceof String base64) {
-                return embedding(decodeBase64(base64));
+            if (embedding instanceof String) {
+                return embedding(decodeBase64(((String) embedding)));
             }
-            if (embedding instanceof List<?> values) {
-                List<Float> floats = new ArrayList<>(values.size());
-                for (Object value : values) {
-                    if (!(value instanceof Number number)) {
+            if (embedding instanceof List<?>) {
+                List<Float> floats = new ArrayList<>(((List<?>) embedding).size());
+                for (Object value : ((List<?>) embedding)) {
+                    if (!(value instanceof Number)) {
                         throw new IllegalArgumentException("Illegal embedding: " + value);
                     }
-                    floats.add(number.floatValue());
+                    floats.add(((Number) value).floatValue());
                 }
                 return embedding(floats);
             }

@@ -9,7 +9,6 @@ import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = CategoryScores.Builder.class)
@@ -79,20 +78,14 @@ public final class CategoryScores {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof CategoryScores
-                && equalTo((CategoryScores) another);
+        if (this == another)
+            return true;
+        return another instanceof CategoryScores && equalTo((CategoryScores) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(CategoryScores another) {
-        return Objects.equals(hate, another.hate)
-                && Objects.equals(hateThreatening, another.hateThreatening)
-                && Objects.equals(selfHarm, another.selfHarm)
-                && Objects.equals(sexual, another.sexual)
-                && Objects.equals(sexualMinors, another.sexualMinors)
-                && Objects.equals(violence, another.violence)
-                && Objects.equals(violenceGraphic, another.violenceGraphic);
+        return Objects.equals(hate, another.hate) && Objects.equals(hateThreatening, another.hateThreatening) && Objects.equals(selfHarm, another.selfHarm) && Objects.equals(sexual, another.sexual) && Objects.equals(sexualMinors, another.sexualMinors) && Objects.equals(violence, another.violence) && Objects.equals(violenceGraphic, another.violenceGraphic);
     }
 
     @Override
@@ -112,15 +105,7 @@ public final class CategoryScores {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "CategoryScores{"
-                + "hate=" + hate
-                + ", hateThreatening=" + hateThreatening
-                + ", selfHarm=" + selfHarm
-                + ", sexual=" + sexual
-                + ", sexualMinors=" + sexualMinors
-                + ", violence=" + violence
-                + ", violenceGraphic=" + violenceGraphic
-                + "}";
+        return "CategoryScores{" + "hate=" + hate + ", hateThreatening=" + hateThreatening + ", selfHarm=" + selfHarm + ", sexual=" + sexual + ", sexualMinors=" + sexualMinors + ", violence=" + violence + ", violenceGraphic=" + violenceGraphic + "}";
     }
 
     public static Builder builder() {
@@ -133,11 +118,17 @@ public final class CategoryScores {
     public static final class Builder {
 
         private Double hate;
+
         private Double hateThreatening;
+
         private Double selfHarm;
+
         private Double sexual;
+
         private Double sexualMinors;
+
         private Double violence;
+
         private Double violenceGraphic;
 
         public Builder hate(Double hate) {

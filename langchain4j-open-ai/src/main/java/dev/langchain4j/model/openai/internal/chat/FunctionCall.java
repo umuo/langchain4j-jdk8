@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = FunctionCall.Builder.class)
@@ -17,6 +16,7 @@ public class FunctionCall {
 
     @JsonProperty
     private final String name;
+
     @JsonProperty
     private final String arguments;
 
@@ -37,15 +37,14 @@ public class FunctionCall {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof FunctionCall
-                && equalTo((FunctionCall) another);
+        if (this == another)
+            return true;
+        return another instanceof FunctionCall && equalTo((FunctionCall) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(FunctionCall another) {
-        return Objects.equals(name, another.name)
-                && Objects.equals(arguments, another.arguments);
+        return Objects.equals(name, another.name) && Objects.equals(arguments, another.arguments);
     }
 
     @Override
@@ -60,10 +59,7 @@ public class FunctionCall {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "FunctionCall{"
-                + "name=" + name
-                + ", arguments=" + arguments
-                + "}";
+        return "FunctionCall{" + "name=" + name + ", arguments=" + arguments + "}";
     }
 
     public static Builder builder() {
@@ -76,6 +72,7 @@ public class FunctionCall {
     public static final class Builder {
 
         private String name;
+
         private String arguments;
 
         public Builder name(String name) {

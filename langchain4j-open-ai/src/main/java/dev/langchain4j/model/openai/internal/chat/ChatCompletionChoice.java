@@ -61,17 +61,14 @@ public final class ChatCompletionChoice {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof ChatCompletionChoice && equalTo((ChatCompletionChoice) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ChatCompletionChoice another) {
-        return Objects.equals(index, another.index)
-                && Objects.equals(message, another.message)
-                && Objects.equals(delta, another.delta)
-                && Objects.equals(finishReason, another.finishReason)
-                && Objects.equals(logprobs, another.logprobs);
+        return Objects.equals(index, another.index) && Objects.equals(message, another.message) && Objects.equals(delta, another.delta) && Objects.equals(finishReason, another.finishReason) && Objects.equals(logprobs, another.logprobs);
     }
 
     @Override
@@ -89,13 +86,7 @@ public final class ChatCompletionChoice {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ChatCompletionChoice{"
-                + "index=" + index
-                + ", message=" + message
-                + ", delta=" + delta
-                + ", finishReason=" + finishReason
-                + ", logprobs=" + logprobs
-                + "}";
+        return "ChatCompletionChoice{" + "index=" + index + ", message=" + message + ", delta=" + delta + ", finishReason=" + finishReason + ", logprobs=" + logprobs + "}";
     }
 
     public static Builder builder() {
@@ -108,9 +99,13 @@ public final class ChatCompletionChoice {
     public static final class Builder {
 
         private Integer index;
+
         private AssistantMessage message;
+
         private Delta delta;
+
         private String finishReason;
+
         private LogProbs logprobs;
 
         public Builder index(Integer index) {

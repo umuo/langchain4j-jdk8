@@ -2,7 +2,6 @@ package dev.langchain4j.model.openai;
 
 import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
@@ -55,7 +54,8 @@ public class OpenAiPromptCacheBreakpoint {
      */
     public static final String MODE_EXPLICIT = "explicit";
 
-    private OpenAiPromptCacheBreakpoint() {}
+    private OpenAiPromptCacheBreakpoint() {
+    }
 
     /**
      * Returns a copy of the given message marked as a prompt cache breakpoint, so that everything up to
@@ -73,31 +73,16 @@ public class OpenAiPromptCacheBreakpoint {
     @SuppressWarnings("unchecked")
     public static <T extends ChatMessage> T mark(T message) {
         ensureNotNull(message, "message");
-
-        if (message instanceof SystemMessage systemMessage) {
-            return (T) systemMessage
-                    .toBuilder()
-                    .attributes(marked(systemMessage.attributes()))
-                    .build();
+        if (message instanceof SystemMessage) {
+            return (T) ((SystemMessage) message).toBuilder().attributes(marked(((SystemMessage) message).attributes())).build();
         }
-
-        if (message instanceof UserMessage userMessage) {
-            return (T) userMessage
-                    .toBuilder()
-                    .attributes(marked(userMessage.attributes()))
-                    .build();
+        if (message instanceof UserMessage) {
+            return (T) ((UserMessage) message).toBuilder().attributes(marked(((UserMessage) message).attributes())).build();
         }
-
-        if (message instanceof ToolExecutionResultMessage toolExecutionResultMessage) {
-            return (T) toolExecutionResultMessage
-                    .toBuilder()
-                    .attributes(marked(toolExecutionResultMessage.attributes()))
-                    .build();
+        if (message instanceof ToolExecutionResultMessage) {
+            return (T) ((ToolExecutionResultMessage) message).toBuilder().attributes(marked(((ToolExecutionResultMessage) message).attributes())).build();
         }
-
-        throw new UnsupportedFeatureException("OpenAI does not support a \"" + ATTRIBUTE_KEY + "\" on "
-                + message.getClass().getSimpleName() + ". Mark a SystemMessage, a UserMessage "
-                + "or a ToolExecutionResultMessage instead.");
+        throw new UnsupportedFeatureException("OpenAI does not support a \"" + ATTRIBUTE_KEY + "\" on " + message.getClass().getSimpleName() + ". Mark a SystemMessage, a UserMessage " + "or a ToolExecutionResultMessage instead.");
     }
 
     private static Map<String, Object> marked(Map<String, Object> attributes) {
@@ -118,18 +103,13 @@ public class OpenAiPromptCacheBreakpoint {
         if (attributes == null) {
             return false;
         }
-
         Object mode = attributes.get(ATTRIBUTE_KEY);
         if (mode == null) {
             return false;
         }
-
         if (!MODE_EXPLICIT.equals(mode)) {
-            throw illegalArgument(
-                    "Unsupported value for the \"%s\" attribute: %s. The only supported value is \"%s\".",
-                    ATTRIBUTE_KEY, mode, MODE_EXPLICIT);
+            throw illegalArgument("Unsupported value for the \"%s\" attribute: %s. The only supported value is \"%s\".", ATTRIBUTE_KEY, mode, MODE_EXPLICIT);
         }
-
         return true;
     }
 }

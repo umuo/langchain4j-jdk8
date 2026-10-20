@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai;
 
 import static dev.langchain4j.internal.Utils.quoted;
-
 import java.util.Objects;
 
 /**
@@ -42,6 +41,7 @@ public class OpenAiPromptCacheOptions {
     public static final String TTL_30M = "30m";
 
     private final String mode;
+
     private final String ttl;
 
     private OpenAiPromptCacheOptions(Builder builder) {
@@ -79,8 +79,10 @@ public class OpenAiPromptCacheOptions {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
         OpenAiPromptCacheOptions that = (OpenAiPromptCacheOptions) o;
         return Objects.equals(mode, that.mode) && Objects.equals(ttl, that.ttl);
     }
@@ -102,6 +104,7 @@ public class OpenAiPromptCacheOptions {
     public static class Builder {
 
         private String mode;
+
         private String ttl;
 
         /**

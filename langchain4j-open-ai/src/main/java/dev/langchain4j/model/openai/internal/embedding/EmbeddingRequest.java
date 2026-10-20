@@ -2,7 +2,6 @@ package dev.langchain4j.model.openai.internal.embedding;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonAnyGetter;
@@ -75,18 +74,14 @@ public final class EmbeddingRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof EmbeddingRequest && equalTo((EmbeddingRequest) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(EmbeddingRequest another) {
-        return Objects.equals(model, another.model)
-                && Objects.equals(input, another.input)
-                && Objects.equals(dimensions, another.dimensions)
-                && Objects.equals(user, another.user)
-                && Objects.equals(encodingFormat, another.encodingFormat)
-                && Objects.equals(customParameters, another.customParameters);
+        return Objects.equals(model, another.model) && Objects.equals(input, another.input) && Objects.equals(dimensions, another.dimensions) && Objects.equals(user, another.user) && Objects.equals(encodingFormat, another.encodingFormat) && Objects.equals(customParameters, another.customParameters);
     }
 
     @Override
@@ -105,14 +100,7 @@ public final class EmbeddingRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "EmbeddingRequest{"
-                + "model=" + model
-                + ", input=" + input
-                + ", dimensions=" + dimensions
-                + ", user=" + user
-                + ", encodingFormat=" + encodingFormat
-                + ", customParameters=" + customParameters
-                + "}";
+        return "EmbeddingRequest{" + "model=" + model + ", input=" + input + ", dimensions=" + dimensions + ", user=" + user + ", encodingFormat=" + encodingFormat + ", customParameters=" + customParameters + "}";
     }
 
     public static Builder builder() {
@@ -125,10 +113,15 @@ public final class EmbeddingRequest {
     public static final class Builder {
 
         private String model;
+
         private List<String> input;
+
         private Integer dimensions;
+
         private String user;
+
         private String encodingFormat;
+
         private Map<String, Object> customParameters;
 
         public Builder model(String model) {

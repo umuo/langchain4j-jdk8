@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = StreamOptions.Builder.class)
@@ -30,9 +29,9 @@ public final class StreamOptions {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof StreamOptions
-                && equalTo((StreamOptions) another);
+        if (this == another)
+            return true;
+        return another instanceof StreamOptions && equalTo((StreamOptions) another);
     }
 
     @JacocoIgnoreCoverageGenerated
@@ -51,9 +50,7 @@ public final class StreamOptions {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "StreamOptions{" +
-                "includeUsage=" + includeUsage +
-                "}";
+        return "StreamOptions{" + "includeUsage=" + includeUsage + "}";
     }
 
     public static Builder builder() {

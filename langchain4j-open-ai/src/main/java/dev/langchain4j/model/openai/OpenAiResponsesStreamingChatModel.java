@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.exception.UnsupportedFeatureException;
@@ -23,28 +22,20 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Flow.Publisher;
+import org.reactivestreams.Publisher;
 import java.util.function.Supplier;
 
 @Experimental
 public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
 
     private final OpenAiResponsesClient client;
+
     private final OpenAiResponsesChatRequestParameters defaultRequestParameters;
+
     private final List<ChatModelListener> listeners;
 
     private OpenAiResponsesStreamingChatModel(Builder builder) {
-        this.client = OpenAiResponsesClient.builder()
-                .httpClientBuilder(builder.httpClientBuilder)
-                .baseUrl(builder.baseUrl)
-                .apiKey(builder.apiKey)
-                .organizationId(builder.organizationId)
-                .logRequests(builder.logRequests)
-                .logResponses(builder.logResponses)
-                .streamingBufferSize(builder.streamingBufferSize)
-                .customHeaders(builder.customHeadersSupplier)
-                .build();
-
+        this.client = OpenAiResponsesClient.builder().httpClientBuilder(builder.httpClientBuilder).baseUrl(builder.baseUrl).apiKey(builder.apiKey).organizationId(builder.organizationId).logRequests(builder.logRequests).logResponses(builder.logResponses).streamingBufferSize(builder.streamingBufferSize).customHeaders(builder.customHeadersSupplier).build();
         ChatRequestParameters commonParameters;
         if (builder.defaultRequestParameters != null) {
             validate(builder.defaultRequestParameters);
@@ -52,43 +43,8 @@ public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
         } else {
             commonParameters = DefaultChatRequestParameters.EMPTY;
         }
-
-        OpenAiResponsesChatRequestParameters responsesParameters =
-                commonParameters instanceof OpenAiResponsesChatRequestParameters openAiResponsesParameters
-                        ? openAiResponsesParameters
-                        : OpenAiResponsesChatRequestParameters.EMPTY;
-
-        this.defaultRequestParameters = OpenAiResponsesChatRequestParameters.builder()
-                .modelName(ensureNotNull(getOrDefault(builder.modelName, commonParameters.modelName()), "modelName"))
-                .temperature(getOrDefault(builder.temperature, commonParameters.temperature()))
-                .topP(getOrDefault(builder.topP, commonParameters.topP()))
-                .maxOutputTokens(getOrDefault(builder.maxOutputTokens, commonParameters.maxOutputTokens()))
-                .toolSpecifications(getOrDefault(builder.toolSpecifications, commonParameters.toolSpecifications()))
-                .toolChoice(getOrDefault(builder.toolChoice, commonParameters.toolChoice()))
-                .responseFormat(getOrDefault(builder.responseFormat, commonParameters.responseFormat()))
-                .previousResponseId(getOrDefault(builder.previousResponseId, responsesParameters.previousResponseId()))
-                .maxToolCalls(getOrDefault(builder.maxToolCalls, responsesParameters.maxToolCalls()))
-                .parallelToolCalls(getOrDefault(builder.parallelToolCalls, responsesParameters.parallelToolCalls()))
-                .topLogprobs(getOrDefault(builder.topLogprobs, responsesParameters.topLogprobs()))
-                .truncation(getOrDefault(builder.truncation, responsesParameters.truncation()))
-                .include(getOrDefault(builder.include, responsesParameters.include()))
-                .serviceTier(getOrDefault(builder.serviceTier, responsesParameters.serviceTier()))
-                .safetyIdentifier(getOrDefault(builder.safetyIdentifier, responsesParameters.safetyIdentifier()))
-                .promptCacheKey(getOrDefault(builder.promptCacheKey, responsesParameters.promptCacheKey()))
-                .promptCacheRetention(
-                        getOrDefault(builder.promptCacheRetention, responsesParameters.promptCacheRetention()))
-                .promptCacheOptions(getOrDefault(builder.promptCacheOptions, responsesParameters.promptCacheOptions()))
-                .reasoningEffort(getOrDefault(builder.reasoningEffort, responsesParameters.reasoningEffort()))
-                .reasoningSummary(getOrDefault(builder.reasoningSummary, responsesParameters.reasoningSummary()))
-                .textVerbosity(getOrDefault(builder.textVerbosity, responsesParameters.textVerbosity()))
-                .streamIncludeObfuscation(
-                        getOrDefault(builder.streamIncludeObfuscation, responsesParameters.streamIncludeObfuscation()))
-                .store(getOrDefault(builder.store, getOrDefault(responsesParameters.store(), false)))
-                .strictTools(getOrDefault(builder.strictTools, responsesParameters.strictTools()))
-                .strictJsonSchema(getOrDefault(builder.strictJsonSchema, responsesParameters.strictJsonSchema()))
-                .serverTools(getOrDefault(builder.serverTools, responsesParameters.serverTools()))
-                .build();
-
+        OpenAiResponsesChatRequestParameters responsesParameters = commonParameters instanceof OpenAiResponsesChatRequestParameters ? ((OpenAiResponsesChatRequestParameters) commonParameters) : OpenAiResponsesChatRequestParameters.EMPTY;
+        this.defaultRequestParameters = OpenAiResponsesChatRequestParameters.builder().modelName(ensureNotNull(getOrDefault(builder.modelName, commonParameters.modelName()), "modelName")).temperature(getOrDefault(builder.temperature, commonParameters.temperature())).topP(getOrDefault(builder.topP, commonParameters.topP())).maxOutputTokens(getOrDefault(builder.maxOutputTokens, commonParameters.maxOutputTokens())).toolSpecifications(getOrDefault(builder.toolSpecifications, commonParameters.toolSpecifications())).toolChoice(getOrDefault(builder.toolChoice, commonParameters.toolChoice())).responseFormat(getOrDefault(builder.responseFormat, commonParameters.responseFormat())).previousResponseId(getOrDefault(builder.previousResponseId, responsesParameters.previousResponseId())).maxToolCalls(getOrDefault(builder.maxToolCalls, responsesParameters.maxToolCalls())).parallelToolCalls(getOrDefault(builder.parallelToolCalls, responsesParameters.parallelToolCalls())).topLogprobs(getOrDefault(builder.topLogprobs, responsesParameters.topLogprobs())).truncation(getOrDefault(builder.truncation, responsesParameters.truncation())).include(getOrDefault(builder.include, responsesParameters.include())).serviceTier(getOrDefault(builder.serviceTier, responsesParameters.serviceTier())).safetyIdentifier(getOrDefault(builder.safetyIdentifier, responsesParameters.safetyIdentifier())).promptCacheKey(getOrDefault(builder.promptCacheKey, responsesParameters.promptCacheKey())).promptCacheRetention(getOrDefault(builder.promptCacheRetention, responsesParameters.promptCacheRetention())).promptCacheOptions(getOrDefault(builder.promptCacheOptions, responsesParameters.promptCacheOptions())).reasoningEffort(getOrDefault(builder.reasoningEffort, responsesParameters.reasoningEffort())).reasoningSummary(getOrDefault(builder.reasoningSummary, responsesParameters.reasoningSummary())).textVerbosity(getOrDefault(builder.textVerbosity, responsesParameters.textVerbosity())).streamIncludeObfuscation(getOrDefault(builder.streamIncludeObfuscation, responsesParameters.streamIncludeObfuscation())).store(getOrDefault(builder.store, getOrDefault(responsesParameters.store(), false))).strictTools(getOrDefault(builder.strictTools, responsesParameters.strictTools())).strictJsonSchema(getOrDefault(builder.strictJsonSchema, responsesParameters.strictJsonSchema())).serverTools(getOrDefault(builder.serverTools, responsesParameters.serverTools())).build();
         this.listeners = copy(builder.listeners);
     }
 
@@ -99,16 +55,14 @@ public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
     @Override
     public void doChat(ChatRequest chatRequest, StreamingChatResponseHandler handler) {
         validate(chatRequest.parameters());
-        OpenAiResponsesChatRequestParameters parameters =
-                (OpenAiResponsesChatRequestParameters) chatRequest.parameters();
+        OpenAiResponsesChatRequestParameters parameters = (OpenAiResponsesChatRequestParameters) chatRequest.parameters();
         client.streamingChat(chatRequest, parameters, handler);
     }
 
     @Override
     public Publisher<ChatModelStreamingEvent> doChat(ChatRequest chatRequest) {
         validate(chatRequest.parameters());
-        OpenAiResponsesChatRequestParameters parameters =
-                (OpenAiResponsesChatRequestParameters) chatRequest.parameters();
+        OpenAiResponsesChatRequestParameters parameters = (OpenAiResponsesChatRequestParameters) chatRequest.parameters();
         return client.streamingChatPublisher(chatRequest, parameters);
     }
 
@@ -117,12 +71,10 @@ public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
             throw new UnsupportedFeatureException("'topK' parameter is not supported by OpenAI Responses API");
         }
         if (parameters.frequencyPenalty() != null) {
-            throw new UnsupportedFeatureException(
-                    "'frequencyPenalty' parameter is not supported by OpenAI Responses API");
+            throw new UnsupportedFeatureException("'frequencyPenalty' parameter is not supported by OpenAI Responses API");
         }
         if (parameters.presencePenalty() != null) {
-            throw new UnsupportedFeatureException(
-                    "'presencePenalty' parameter is not supported by OpenAI Responses API");
+            throw new UnsupportedFeatureException("'presencePenalty' parameter is not supported by OpenAI Responses API");
         }
         if (parameters.stopSequences() != null && !parameters.stopSequences().isEmpty()) {
             throw new UnsupportedFeatureException("'stopSequences' parameter is not supported by OpenAI Responses API");
@@ -146,46 +98,81 @@ public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
 
     @Override
     public Set<Capability> supportedCapabilities() {
-        return Set.of(Capability.RESPONSE_FORMAT_JSON_SCHEMA);
+        return dev.langchain4j.internal.Jdk8.set(Capability.RESPONSE_FORMAT_JSON_SCHEMA);
     }
 
     public static class Builder {
 
         private HttpClientBuilder httpClientBuilder;
+
         private String baseUrl;
+
         private String apiKey;
+
         private String organizationId;
+
         private String modelName;
+
         private Double temperature;
+
         private Double topP;
+
         private Integer maxOutputTokens;
+
         private Integer maxToolCalls;
+
         private Boolean parallelToolCalls;
+
         private String previousResponseId;
+
         private Integer topLogprobs;
+
         private String truncation;
+
         private List<String> include;
+
         private String serviceTier;
+
         private String safetyIdentifier;
+
         private String promptCacheKey;
+
         private String promptCacheRetention;
+
         private OpenAiPromptCacheOptions promptCacheOptions;
+
         private String reasoningEffort;
+
         private String reasoningSummary;
+
         private String textVerbosity;
+
         private Boolean streamIncludeObfuscation;
+
         private Boolean store;
+
         private Boolean strictTools;
+
         private Boolean strictJsonSchema;
+
         private ResponseFormat responseFormat;
+
         private List<ToolSpecification> toolSpecifications;
+
         private List<Map<String, Object>> serverTools;
+
         private ToolChoice toolChoice;
+
         private Boolean logRequests;
+
         private Boolean logResponses;
+
         private List<ChatModelListener> listeners;
+
         private ChatRequestParameters defaultRequestParameters;
+
         private Integer streamingBufferSize;
+
         private Supplier<Map<String, String>> customHeadersSupplier;
 
         public Builder httpClientBuilder(HttpClientBuilder httpClientBuilder) {
@@ -325,7 +312,7 @@ public class OpenAiResponsesStreamingChatModel implements StreamingChatModel {
         /**
          * @deprecated use {@link #strictTools(Boolean)} and {@link #strictJsonSchema(Boolean)} instead
          */
-        @Deprecated(since = "1.13.0")
+        @Deprecated
         public Builder strict(Boolean strict) {
             this.strictTools = strict;
             this.strictJsonSchema = strict;

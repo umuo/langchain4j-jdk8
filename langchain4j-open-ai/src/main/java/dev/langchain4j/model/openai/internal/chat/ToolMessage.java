@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai.internal.chat;
 
 import static dev.langchain4j.model.openai.internal.chat.Role.TOOL;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -67,16 +66,14 @@ public final class ToolMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof ToolMessage && equalTo((ToolMessage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ToolMessage another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(toolCallId, another.toolCallId)
-                && Objects.equals(content, another.content)
-                && Objects.equals(contents, another.contents);
+        return Objects.equals(role, another.role) && Objects.equals(toolCallId, another.toolCallId) && Objects.equals(content, another.content) && Objects.equals(contents, another.contents);
     }
 
     @Override
@@ -93,8 +90,7 @@ public final class ToolMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ToolMessage{" + "role=" + role + ", toolCallId=" + toolCallId + ", content=" + contentForSerialization()
-                + "}";
+        return "ToolMessage{" + "role=" + role + ", toolCallId=" + toolCallId + ", content=" + contentForSerialization() + "}";
     }
 
     public static ToolMessage from(String toolCallId, String content) {
@@ -111,7 +107,9 @@ public final class ToolMessage implements Message {
     public static final class Builder {
 
         private String toolCallId;
+
         private String stringContent;
+
         private List<Content> contents;
 
         public Builder toolCallId(String toolCallId) {

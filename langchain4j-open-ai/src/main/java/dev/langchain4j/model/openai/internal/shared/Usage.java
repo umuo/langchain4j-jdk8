@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.util.Objects;
 
 @JsonDeserialize(builder = Usage.Builder.class)
@@ -17,12 +16,16 @@ public final class Usage {
 
     @JsonProperty
     private final Integer totalTokens;
+
     @JsonProperty
     private final Integer promptTokens;
+
     @JsonProperty
     private final PromptTokensDetails promptTokensDetails;
+
     @JsonProperty
     private final Integer completionTokens;
+
     @JsonProperty
     private final CompletionTokensDetails completionTokensDetails;
 
@@ -58,18 +61,14 @@ public final class Usage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof Usage
-                && equalTo((Usage) another);
+        if (this == another)
+            return true;
+        return another instanceof Usage && equalTo((Usage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(Usage another) {
-        return Objects.equals(totalTokens, another.totalTokens)
-                && Objects.equals(promptTokens, another.promptTokens)
-                && Objects.equals(promptTokensDetails, another.promptTokensDetails)
-                && Objects.equals(completionTokens, another.completionTokens)
-                && Objects.equals(completionTokensDetails, another.completionTokensDetails);
+        return Objects.equals(totalTokens, another.totalTokens) && Objects.equals(promptTokens, another.promptTokens) && Objects.equals(promptTokensDetails, another.promptTokensDetails) && Objects.equals(completionTokens, another.completionTokens) && Objects.equals(completionTokensDetails, another.completionTokensDetails);
     }
 
     @Override
@@ -87,13 +86,7 @@ public final class Usage {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "Usage{"
-                + "totalTokens=" + totalTokens
-                + ", promptTokens=" + promptTokens
-                + ", promptTokensDetails=" + promptTokensDetails
-                + ", completionTokens=" + completionTokens
-                + ", completionTokensDetails=" + completionTokensDetails
-                + "}";
+        return "Usage{" + "totalTokens=" + totalTokens + ", promptTokens=" + promptTokens + ", promptTokensDetails=" + promptTokensDetails + ", completionTokens=" + completionTokens + ", completionTokensDetails=" + completionTokensDetails + "}";
     }
 
     public static Builder builder() {
@@ -106,9 +99,13 @@ public final class Usage {
     public static final class Builder {
 
         private Integer totalTokens;
+
         private Integer promptTokens;
+
         private PromptTokensDetails promptTokensDetails;
+
         private Integer completionTokens;
+
         private CompletionTokensDetails completionTokensDetails;
 
         public Builder totalTokens(Integer totalTokens) {

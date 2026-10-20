@@ -4,18 +4,20 @@ import dev.langchain4j.http.client.SuccessfulHttpResponse;
 import dev.langchain4j.http.client.sse.ServerSentEvent;
 import dev.langchain4j.model.chat.response.ChatResponseMetadata;
 import dev.langchain4j.model.output.TokenUsage;
-
 import java.util.List;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 
 public class OpenAiResponsesChatResponseMetadata extends ChatResponseMetadata {
 
     private final Long createdAt;
+
     private final Long completedAt;
+
     private final String serviceTier;
+
     private final SuccessfulHttpResponse rawHttpResponse;
+
     private final List<ServerSentEvent> rawServerSentEvents;
 
     private OpenAiResponsesChatResponseMetadata(Builder builder) {
@@ -33,14 +35,10 @@ public class OpenAiResponsesChatResponseMetadata extends ChatResponseMetadata {
         if (base == null) {
             return null;
         }
-        if (base instanceof OpenAiTokenUsage openAiTokenUsage) {
-            return openAiTokenUsage;
+        if (base instanceof OpenAiTokenUsage) {
+            return ((OpenAiTokenUsage) base);
         }
-        return OpenAiTokenUsage.builder()
-                .inputTokenCount(base.inputTokenCount())
-                .outputTokenCount(base.outputTokenCount())
-                .totalTokenCount(base.totalTokenCount())
-                .build();
+        return OpenAiTokenUsage.builder().inputTokenCount(base.inputTokenCount()).outputTokenCount(base.outputTokenCount()).totalTokenCount(base.totalTokenCount()).build();
     }
 
     public Long createdAt() {
@@ -65,50 +63,29 @@ public class OpenAiResponsesChatResponseMetadata extends ChatResponseMetadata {
 
     @Override
     public Builder toBuilder() {
-        return ((Builder) super.toBuilder(builder()))
-                .createdAt(createdAt)
-                .completedAt(completedAt)
-                .serviceTier(serviceTier)
-                .rawHttpResponse(rawHttpResponse)
-                .rawServerSentEvents(rawServerSentEvents);
+        return ((Builder) super.toBuilder(builder())).createdAt(createdAt).completedAt(completedAt).serviceTier(serviceTier).rawHttpResponse(rawHttpResponse).rawServerSentEvents(rawServerSentEvents);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiResponsesChatResponseMetadata that = (OpenAiResponsesChatResponseMetadata) o;
-        return Objects.equals(createdAt, that.createdAt)
-                && Objects.equals(completedAt, that.completedAt)
-                && Objects.equals(serviceTier, that.serviceTier)
-                && Objects.equals(rawHttpResponse, that.rawHttpResponse)
-                && Objects.equals(rawServerSentEvents, that.rawServerSentEvents);
+        return Objects.equals(createdAt, that.createdAt) && Objects.equals(completedAt, that.completedAt) && Objects.equals(serviceTier, that.serviceTier) && Objects.equals(rawHttpResponse, that.rawHttpResponse) && Objects.equals(rawServerSentEvents, that.rawServerSentEvents);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                super.hashCode(),
-                createdAt,
-                completedAt,
-                serviceTier,
-                rawHttpResponse,
-                rawServerSentEvents);
+        return Objects.hash(super.hashCode(), createdAt, completedAt, serviceTier, rawHttpResponse, rawServerSentEvents);
     }
 
     @Override
     public String toString() {
-        return "OpenAiResponsesChatResponseMetadata{" + "id='"
-                + id() + '\'' + ", modelName='"
-                + modelName() + '\'' + ", tokenUsage="
-                + tokenUsage() + ", finishReason="
-                + finishReason() + ", createdAt="
-                + createdAt + ", completedAt="
-                + completedAt + ", serviceTier='"
-                + serviceTier + '\'' + ", rawHttpResponse="
-                + rawHttpResponse + ", rawServerSentEvents="
-                + rawServerSentEvents + '}';
+        return "OpenAiResponsesChatResponseMetadata{" + "id='" + id() + '\'' + ", modelName='" + modelName() + '\'' + ", tokenUsage=" + tokenUsage() + ", finishReason=" + finishReason() + ", createdAt=" + createdAt + ", completedAt=" + completedAt + ", serviceTier='" + serviceTier + '\'' + ", rawHttpResponse=" + rawHttpResponse + ", rawServerSentEvents=" + rawServerSentEvents + '}';
     }
 
     public static Builder builder() {
@@ -118,9 +95,13 @@ public class OpenAiResponsesChatResponseMetadata extends ChatResponseMetadata {
     public static class Builder extends ChatResponseMetadata.Builder<Builder> {
 
         private Long createdAt;
+
         private Long completedAt;
+
         private String serviceTier;
+
         private SuccessfulHttpResponse rawHttpResponse;
+
         private List<ServerSentEvent> rawServerSentEvents;
 
         public Builder createdAt(Long createdAt) {

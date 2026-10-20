@@ -9,11 +9,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.openai.internal.shared.StreamOptions;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
 
@@ -23,36 +21,52 @@ public final class CompletionRequest {
 
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final String prompt;
+
     @JsonProperty
     private final String suffix;
+
     @JsonProperty
     private final Integer maxTokens;
+
     @JsonProperty
     private final Double temperature;
+
     @JsonProperty
     private final Double topP;
+
     @JsonProperty
     private final Integer n;
+
     @JsonProperty
     private final Boolean stream;
+
     @JsonProperty
     private final StreamOptions streamOptions;
+
     @JsonProperty
     private final Integer logprobs;
+
     @JsonProperty
     private final Boolean echo;
+
     @JsonProperty
     private final List<String> stop;
+
     @JsonProperty
     private final Double presencePenalty;
+
     @JsonProperty
     private final Double frequencyPenalty;
+
     @JsonProperty
     private final Integer bestOf;
+
     @JsonProperty
     private final Map<String, Integer> logitBias;
+
     @JsonProperty
     private final String user;
 
@@ -148,30 +162,14 @@ public final class CompletionRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof CompletionRequest
-                && equalTo((CompletionRequest) another);
+        if (this == another)
+            return true;
+        return another instanceof CompletionRequest && equalTo((CompletionRequest) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(CompletionRequest another) {
-        return Objects.equals(model, another.model)
-                && Objects.equals(prompt, another.prompt)
-                && Objects.equals(suffix, another.suffix)
-                && Objects.equals(maxTokens, another.maxTokens)
-                && Objects.equals(temperature, another.temperature)
-                && Objects.equals(topP, another.topP)
-                && Objects.equals(n, another.n)
-                && Objects.equals(stream, another.stream)
-                && Objects.equals(streamOptions, another.streamOptions)
-                && Objects.equals(logprobs, another.logprobs)
-                && Objects.equals(echo, another.echo)
-                && Objects.equals(stop, another.stop)
-                && Objects.equals(presencePenalty, another.presencePenalty)
-                && Objects.equals(frequencyPenalty, another.frequencyPenalty)
-                && Objects.equals(bestOf, another.bestOf)
-                && Objects.equals(logitBias, another.logitBias)
-                && Objects.equals(user, another.user);
+        return Objects.equals(model, another.model) && Objects.equals(prompt, another.prompt) && Objects.equals(suffix, another.suffix) && Objects.equals(maxTokens, another.maxTokens) && Objects.equals(temperature, another.temperature) && Objects.equals(topP, another.topP) && Objects.equals(n, another.n) && Objects.equals(stream, another.stream) && Objects.equals(streamOptions, another.streamOptions) && Objects.equals(logprobs, another.logprobs) && Objects.equals(echo, another.echo) && Objects.equals(stop, another.stop) && Objects.equals(presencePenalty, another.presencePenalty) && Objects.equals(frequencyPenalty, another.frequencyPenalty) && Objects.equals(bestOf, another.bestOf) && Objects.equals(logitBias, another.logitBias) && Objects.equals(user, another.user);
     }
 
     @Override
@@ -201,25 +199,7 @@ public final class CompletionRequest {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "CompletionRequest{"
-                + "model=" + model
-                + ", prompt=" + prompt
-                + ", suffix=" + suffix
-                + ", maxTokens=" + maxTokens
-                + ", temperature=" + temperature
-                + ", topP=" + topP
-                + ", n=" + n
-                + ", stream=" + stream
-                + ", streamOptions=" + streamOptions
-                + ", logprobs=" + logprobs
-                + ", echo=" + echo
-                + ", stop=" + stop
-                + ", presencePenalty=" + presencePenalty
-                + ", frequencyPenalty=" + frequencyPenalty
-                + ", bestOf=" + bestOf
-                + ", logitBias=" + logitBias
-                + ", user=" + user
-                + "}";
+        return "CompletionRequest{" + "model=" + model + ", prompt=" + prompt + ", suffix=" + suffix + ", maxTokens=" + maxTokens + ", temperature=" + temperature + ", topP=" + topP + ", n=" + n + ", stream=" + stream + ", streamOptions=" + streamOptions + ", logprobs=" + logprobs + ", echo=" + echo + ", stop=" + stop + ", presencePenalty=" + presencePenalty + ", frequencyPenalty=" + frequencyPenalty + ", bestOf=" + bestOf + ", logitBias=" + logitBias + ", user=" + user + "}";
     }
 
     public static Builder builder() {
@@ -232,21 +212,37 @@ public final class CompletionRequest {
     public static final class Builder {
 
         private String model;
+
         private String prompt;
+
         private String suffix;
+
         private Integer maxTokens;
+
         private Double temperature;
+
         private Double topP;
+
         private Integer n;
+
         private Boolean stream;
+
         private StreamOptions streamOptions;
+
         private Integer logprobs;
+
         private Boolean echo;
+
         private List<String> stop;
+
         private Double presencePenalty;
+
         private Double frequencyPenalty;
+
         private Integer bestOf;
+
         private Map<String, Integer> logitBias;
+
         private String user;
 
         public Builder from(CompletionRequest request) {

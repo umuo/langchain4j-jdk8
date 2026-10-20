@@ -3,7 +3,6 @@ package dev.langchain4j.model.openai.internal.chat;
 import static dev.langchain4j.model.openai.internal.chat.Role.ASSISTANT;
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonAlias;
@@ -99,20 +98,14 @@ public final class AssistantMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof AssistantMessage && equalTo((AssistantMessage) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(AssistantMessage another) {
-        return Objects.equals(role, another.role)
-                && Objects.equals(content, another.content)
-                && Objects.equals(reasoningContent, another.reasoningContent)
-                && Objects.equals(name, another.name)
-                && Objects.equals(toolCalls, another.toolCalls)
-                && Objects.equals(refusal, another.refusal)
-                && Objects.equals(functionCall, another.functionCall)
-                && Objects.equals(customParameters, another.customParameters);
+        return Objects.equals(role, another.role) && Objects.equals(content, another.content) && Objects.equals(reasoningContent, another.reasoningContent) && Objects.equals(name, another.name) && Objects.equals(toolCalls, another.toolCalls) && Objects.equals(refusal, another.refusal) && Objects.equals(functionCall, another.functionCall) && Objects.equals(customParameters, another.customParameters);
     }
 
     @Override
@@ -133,16 +126,7 @@ public final class AssistantMessage implements Message {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "AssistantMessage{"
-                + "role=" + role
-                + ", content=" + content
-                + ", reasoningContent=" + reasoningContent
-                + ", name=" + name
-                + ", toolCalls=" + toolCalls
-                + ", refusal=" + refusal
-                + ", functionCall=" + functionCall
-                + ", customParameters=" + customParameters
-                + "}";
+        return "AssistantMessage{" + "role=" + role + ", content=" + content + ", reasoningContent=" + reasoningContent + ", name=" + name + ", toolCalls=" + toolCalls + ", refusal=" + refusal + ", functionCall=" + functionCall + ", customParameters=" + customParameters + "}";
     }
 
     public static AssistantMessage from(String content) {
@@ -159,10 +143,14 @@ public final class AssistantMessage implements Message {
     public static final class Builder {
 
         private String content;
+
         @JsonAlias("reasoning")
         private String reasoningContent;
+
         private String name;
+
         private List<ToolCall> toolCalls;
+
         private String refusal;
 
         @Deprecated

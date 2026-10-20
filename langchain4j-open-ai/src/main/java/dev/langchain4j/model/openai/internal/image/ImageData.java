@@ -8,7 +8,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
-
 import java.net.URI;
 import java.util.Objects;
 
@@ -18,8 +17,10 @@ public class ImageData {
 
     @JsonProperty
     private URI url;
+
     @JsonProperty
     private final String b64Json;
+
     @JsonProperty
     private final String revisedPrompt;
 
@@ -49,14 +50,12 @@ public class ImageData {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        if (another == null || getClass() != another.getClass()) return false;
+        if (this == another)
+            return true;
+        if (another == null || getClass() != another.getClass())
+            return false;
         ImageData anotherImageData = (ImageData) another;
-        return (
-                Objects.equals(url, anotherImageData.url) &&
-                        Objects.equals(b64Json, anotherImageData.b64Json) &&
-                        Objects.equals(revisedPrompt, anotherImageData.revisedPrompt)
-        );
+        return (Objects.equals(url, anotherImageData.url) && Objects.equals(b64Json, anotherImageData.b64Json) && Objects.equals(revisedPrompt, anotherImageData.revisedPrompt));
     }
 
     @Override
@@ -68,19 +67,7 @@ public class ImageData {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return (
-                "ImageData{" +
-                        "url='" +
-                        url +
-                        '\'' +
-                        ", b64Json='" +
-                        b64Json +
-                        '\'' +
-                        ", revisedPrompt='" +
-                        revisedPrompt +
-                        '\'' +
-                        '}'
-        );
+        return ("ImageData{" + "url='" + url + '\'' + ", b64Json='" + b64Json + '\'' + ", revisedPrompt='" + revisedPrompt + '\'' + '}');
     }
 
     public static Builder builder() {
@@ -93,7 +80,9 @@ public class ImageData {
     public static class Builder {
 
         private URI url;
+
         private String b64Json;
+
         private String revisedPrompt;
 
         public Builder url(URI url) {
@@ -116,4 +105,3 @@ public class ImageData {
         }
     }
 }
-

@@ -9,10 +9,8 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import dev.langchain4j.internal.JacocoIgnoreCoverageGenerated;
 import dev.langchain4j.model.openai.internal.shared.Usage;
-
 import java.util.List;
 import java.util.Objects;
-
 import static java.util.Collections.unmodifiableList;
 
 @JsonDeserialize(builder = ChatCompletionResponse.Builder.class)
@@ -21,16 +19,22 @@ public final class ChatCompletionResponse {
 
     @JsonProperty
     private final String id;
+
     @JsonProperty
     private final Long created;
+
     @JsonProperty
     private final String model;
+
     @JsonProperty
     private final List<ChatCompletionChoice> choices;
+
     @JsonProperty
     private final Usage usage;
+
     @JsonProperty
     private final String systemFingerprint;
+
     @JsonProperty
     private final String serviceTier;
 
@@ -83,20 +87,14 @@ public final class ChatCompletionResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
-        return another instanceof ChatCompletionResponse
-                && equalTo((ChatCompletionResponse) another);
+        if (this == another)
+            return true;
+        return another instanceof ChatCompletionResponse && equalTo((ChatCompletionResponse) another);
     }
 
     @JacocoIgnoreCoverageGenerated
     private boolean equalTo(ChatCompletionResponse another) {
-        return Objects.equals(id, another.id)
-                && Objects.equals(created, another.created)
-                && Objects.equals(model, another.model)
-                && Objects.equals(choices, another.choices)
-                && Objects.equals(usage, another.usage)
-                && Objects.equals(systemFingerprint, another.systemFingerprint)
-                && Objects.equals(serviceTier, another.serviceTier);
+        return Objects.equals(id, another.id) && Objects.equals(created, another.created) && Objects.equals(model, another.model) && Objects.equals(choices, another.choices) && Objects.equals(usage, another.usage) && Objects.equals(systemFingerprint, another.systemFingerprint) && Objects.equals(serviceTier, another.serviceTier);
     }
 
     @Override
@@ -116,15 +114,7 @@ public final class ChatCompletionResponse {
     @Override
     @JacocoIgnoreCoverageGenerated
     public String toString() {
-        return "ChatCompletionResponse{"
-                + "id=" + id
-                + ", created=" + created
-                + ", model=" + model
-                + ", choices=" + choices
-                + ", usage=" + usage
-                + ", systemFingerprint=" + systemFingerprint
-                + ", serviceTier=" + serviceTier
-                + "}";
+        return "ChatCompletionResponse{" + "id=" + id + ", created=" + created + ", model=" + model + ", choices=" + choices + ", usage=" + usage + ", systemFingerprint=" + systemFingerprint + ", serviceTier=" + serviceTier + "}";
     }
 
     public static Builder builder() {
@@ -137,11 +127,17 @@ public final class ChatCompletionResponse {
     public static final class Builder {
 
         private String id;
+
         private Long created;
+
         private String model;
+
         private List<ChatCompletionChoice> choices;
+
         private Usage usage;
+
         private String systemFingerprint;
+
         private String serviceTier;
 
         public Builder id(String id) {

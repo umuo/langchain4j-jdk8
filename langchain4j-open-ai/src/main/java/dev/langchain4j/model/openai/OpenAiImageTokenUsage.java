@@ -19,6 +19,7 @@ import java.util.Objects;
 public class OpenAiImageTokenUsage extends TokenUsage {
 
     private final TokensDetails inputTokensDetails;
+
     private final TokensDetails outputTokensDetails;
 
     private OpenAiImageTokenUsage(Builder builder) {
@@ -48,31 +49,25 @@ public class OpenAiImageTokenUsage extends TokenUsage {
         if (that == null) {
             return this;
         }
-
         TokensDetails thatInputTokensDetails = null;
         TokensDetails thatOutputTokensDetails = null;
-        if (that instanceof OpenAiImageTokenUsage thatImageTokenUsage) {
-            thatInputTokensDetails = thatImageTokenUsage.inputTokensDetails;
-            thatOutputTokensDetails = thatImageTokenUsage.outputTokensDetails;
+        if (that instanceof OpenAiImageTokenUsage) {
+            thatInputTokensDetails = ((OpenAiImageTokenUsage) that).inputTokensDetails;
+            thatOutputTokensDetails = ((OpenAiImageTokenUsage) that).outputTokensDetails;
         }
-
-        return OpenAiImageTokenUsage.builder()
-                .inputTokenCount(sum(this.inputTokenCount(), that.inputTokenCount()))
-                .inputTokensDetails(TokensDetails.sum(this.inputTokensDetails, thatInputTokensDetails))
-                .outputTokenCount(sum(this.outputTokenCount(), that.outputTokenCount()))
-                .outputTokensDetails(TokensDetails.sum(this.outputTokensDetails, thatOutputTokensDetails))
-                .totalTokenCount(sum(this.totalTokenCount(), that.totalTokenCount()))
-                .build();
+        return OpenAiImageTokenUsage.builder().inputTokenCount(sum(this.inputTokenCount(), that.inputTokenCount())).inputTokensDetails(TokensDetails.sum(this.inputTokensDetails, thatInputTokensDetails)).outputTokenCount(sum(this.outputTokenCount(), that.outputTokenCount())).outputTokensDetails(TokensDetails.sum(this.outputTokensDetails, thatOutputTokensDetails)).totalTokenCount(sum(this.totalTokenCount(), that.totalTokenCount())).build();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiImageTokenUsage that = (OpenAiImageTokenUsage) o;
-        return Objects.equals(inputTokensDetails, that.inputTokensDetails)
-                && Objects.equals(outputTokensDetails, that.outputTokensDetails);
+        return Objects.equals(inputTokensDetails, that.inputTokensDetails) && Objects.equals(outputTokensDetails, that.outputTokensDetails);
     }
 
     @Override
@@ -82,12 +77,7 @@ public class OpenAiImageTokenUsage extends TokenUsage {
 
     @Override
     public String toString() {
-        return "OpenAiImageTokenUsage {" + " inputTokenCount = "
-                + inputTokenCount() + ", inputTokensDetails = "
-                + inputTokensDetails + ", outputTokenCount = "
-                + outputTokenCount() + ", outputTokensDetails = "
-                + outputTokensDetails + ", totalTokenCount = "
-                + totalTokenCount() + " }";
+        return "OpenAiImageTokenUsage {" + " inputTokenCount = " + inputTokenCount() + ", inputTokensDetails = " + inputTokensDetails + ", outputTokenCount = " + outputTokenCount() + ", outputTokensDetails = " + outputTokensDetails + ", totalTokenCount = " + totalTokenCount() + " }";
     }
 
     public static Builder builder() {
@@ -97,9 +87,13 @@ public class OpenAiImageTokenUsage extends TokenUsage {
     public static class Builder {
 
         private Integer inputTokenCount;
+
         private TokensDetails inputTokensDetails;
+
         private Integer outputTokenCount;
+
         private TokensDetails outputTokensDetails;
+
         private Integer totalTokenCount;
 
         public Builder inputTokenCount(Integer inputTokenCount) {
@@ -138,6 +132,7 @@ public class OpenAiImageTokenUsage extends TokenUsage {
     public static class TokensDetails {
 
         private final Integer imageTokens;
+
         private final Integer textTokens;
 
         public TokensDetails(Builder builder) {
@@ -166,10 +161,7 @@ public class OpenAiImageTokenUsage extends TokenUsage {
             if (second == null) {
                 return first;
             }
-            return builder()
-                    .imageTokens(TokenUsage.sum(first.imageTokens, second.imageTokens))
-                    .textTokens(TokenUsage.sum(first.textTokens, second.textTokens))
-                    .build();
+            return builder().imageTokens(TokenUsage.sum(first.imageTokens, second.imageTokens)).textTokens(TokenUsage.sum(first.textTokens, second.textTokens)).build();
         }
 
         public static Builder builder() {
@@ -179,6 +171,7 @@ public class OpenAiImageTokenUsage extends TokenUsage {
         public static class Builder {
 
             private Integer imageTokens;
+
             private Integer textTokens;
 
             public Builder imageTokens(Integer imageTokens) {
@@ -198,11 +191,12 @@ public class OpenAiImageTokenUsage extends TokenUsage {
 
         @Override
         public boolean equals(Object obj) {
-            if (obj == this) return true;
-            if (obj == null || obj.getClass() != this.getClass()) return false;
-            var that = (TokensDetails) obj;
-            return Objects.equals(this.imageTokens, that.imageTokens)
-                    && Objects.equals(this.textTokens, that.textTokens);
+            if (obj == this)
+                return true;
+            if (obj == null || obj.getClass() != this.getClass())
+                return false;
+            dev.langchain4j.model.openai.OpenAiImageTokenUsage.TokensDetails that = (TokensDetails) obj;
+            return Objects.equals(this.imageTokens, that.imageTokens) && Objects.equals(this.textTokens, that.textTokens);
         }
 
         @Override
@@ -212,9 +206,7 @@ public class OpenAiImageTokenUsage extends TokenUsage {
 
         @Override
         public String toString() {
-            return "OpenAiImageTokenUsage.TokensDetails {" + " imageTokens = "
-                    + imageTokens + ", textTokens = "
-                    + textTokens + " }";
+            return "OpenAiImageTokenUsage.TokensDetails {" + " imageTokens = " + imageTokens + ", textTokens = " + textTokens + " }";
         }
     }
 }

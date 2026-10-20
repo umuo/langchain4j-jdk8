@@ -1,7 +1,6 @@
 package dev.langchain4j.model.openai;
 
 import static dev.langchain4j.internal.Utils.copy;
-
 import dev.langchain4j.http.client.SuccessfulHttpResponse;
 import dev.langchain4j.http.client.sse.ServerSentEvent;
 import dev.langchain4j.model.chat.response.ChatResponseMetadata;
@@ -12,10 +11,15 @@ import java.util.Objects;
 public class OpenAiChatResponseMetadata extends ChatResponseMetadata {
 
     private final Long created;
+
     private final String serviceTier;
+
     private final String systemFingerprint;
+
     private final SuccessfulHttpResponse rawHttpResponse;
+
     private final List<ServerSentEvent> rawServerSentEvents;
+
     private final List<LogProb> logProbs;
 
     private OpenAiChatResponseMetadata(Builder builder) {
@@ -30,21 +34,14 @@ public class OpenAiChatResponseMetadata extends ChatResponseMetadata {
 
     @Override
     public OpenAiTokenUsage tokenUsage() {
-
         TokenUsage base = super.tokenUsage();
         if (base == null) {
             return null;
         }
-
-        if (base instanceof OpenAiTokenUsage openAiTokenUsage) {
-            return openAiTokenUsage;
+        if (base instanceof OpenAiTokenUsage) {
+            return ((OpenAiTokenUsage) base);
         }
-
-        return OpenAiTokenUsage.builder()
-                .inputTokenCount(base.inputTokenCount())
-                .outputTokenCount(base.outputTokenCount())
-                .totalTokenCount(base.totalTokenCount())
-                .build();
+        return OpenAiTokenUsage.builder().inputTokenCount(base.inputTokenCount()).outputTokenCount(base.outputTokenCount()).totalTokenCount(base.totalTokenCount()).build();
     }
 
     public Long created() {
@@ -73,54 +70,29 @@ public class OpenAiChatResponseMetadata extends ChatResponseMetadata {
 
     @Override
     public Builder toBuilder() {
-        return ((Builder) super.toBuilder(builder()))
-                .created(created)
-                .serviceTier(serviceTier)
-                .systemFingerprint(systemFingerprint)
-                .rawHttpResponse(rawHttpResponse)
-                .rawServerSentEvents(rawServerSentEvents)
-                .logProbs(logProbs);
+        return ((Builder) super.toBuilder(builder())).created(created).serviceTier(serviceTier).systemFingerprint(systemFingerprint).rawHttpResponse(rawHttpResponse).rawServerSentEvents(rawServerSentEvents).logProbs(logProbs);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiChatResponseMetadata that = (OpenAiChatResponseMetadata) o;
-        return Objects.equals(created, that.created)
-                && Objects.equals(serviceTier, that.serviceTier)
-                && Objects.equals(systemFingerprint, that.systemFingerprint)
-                && Objects.equals(rawHttpResponse, that.rawHttpResponse)
-                && Objects.equals(rawServerSentEvents, that.rawServerSentEvents)
-                && Objects.equals(logProbs, that.logProbs);
+        return Objects.equals(created, that.created) && Objects.equals(serviceTier, that.serviceTier) && Objects.equals(systemFingerprint, that.systemFingerprint) && Objects.equals(rawHttpResponse, that.rawHttpResponse) && Objects.equals(rawServerSentEvents, that.rawServerSentEvents) && Objects.equals(logProbs, that.logProbs);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                super.hashCode(),
-                created,
-                serviceTier,
-                systemFingerprint,
-                rawHttpResponse,
-                rawServerSentEvents,
-                logProbs);
+        return Objects.hash(super.hashCode(), created, serviceTier, systemFingerprint, rawHttpResponse, rawServerSentEvents, logProbs);
     }
 
     @Override
     public String toString() {
-        return "OpenAiChatResponseMetadata{" + "id='"
-                + id() + '\'' + ", modelName='"
-                + modelName() + '\'' + ", tokenUsage="
-                + tokenUsage() + ", finishReason="
-                + finishReason() + ", created="
-                + created + ", serviceTier='"
-                + serviceTier + '\'' + ", systemFingerprint='"
-                + systemFingerprint + '\'' + ", rawHttpResponse="
-                + rawHttpResponse + ", rawServerSentEvents="
-                + rawServerSentEvents + ", logProbs="
-                + logProbs + '}';
+        return "OpenAiChatResponseMetadata{" + "id='" + id() + '\'' + ", modelName='" + modelName() + '\'' + ", tokenUsage=" + tokenUsage() + ", finishReason=" + finishReason() + ", created=" + created + ", serviceTier='" + serviceTier + '\'' + ", systemFingerprint='" + systemFingerprint + '\'' + ", rawHttpResponse=" + rawHttpResponse + ", rawServerSentEvents=" + rawServerSentEvents + ", logProbs=" + logProbs + '}';
     }
 
     public static Builder builder() {
@@ -130,10 +102,15 @@ public class OpenAiChatResponseMetadata extends ChatResponseMetadata {
     public static class Builder extends ChatResponseMetadata.Builder<Builder> {
 
         private Long created;
+
         private String serviceTier;
+
         private String systemFingerprint;
+
         private SuccessfulHttpResponse rawHttpResponse;
+
         private List<ServerSentEvent> rawServerSentEvents;
+
         private List<LogProb> logProbs;
 
         public Builder created(Long created) {

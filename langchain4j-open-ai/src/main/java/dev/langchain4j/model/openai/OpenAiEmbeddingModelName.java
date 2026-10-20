@@ -5,16 +5,13 @@ import java.util.Map;
 
 public enum OpenAiEmbeddingModelName {
 
-    TEXT_EMBEDDING_3_SMALL("text-embedding-3-small", 1536),
-    TEXT_EMBEDDING_3_LARGE("text-embedding-3-large", 3072),
-
-    TEXT_EMBEDDING_ADA_002("text-embedding-ada-002", 1536);
+    TEXT_EMBEDDING_3_SMALL("text-embedding-3-small", 1536), TEXT_EMBEDDING_3_LARGE("text-embedding-3-large", 3072), TEXT_EMBEDDING_ADA_002("text-embedding-ada-002", 1536);
 
     private final String stringValue;
+
     private final Integer dimension;
 
-    OpenAiEmbeddingModelName(String stringValue,
-                             Integer dimension) {
+    OpenAiEmbeddingModelName(String stringValue, Integer dimension) {
         this.stringValue = stringValue;
         this.dimension = dimension;
     }

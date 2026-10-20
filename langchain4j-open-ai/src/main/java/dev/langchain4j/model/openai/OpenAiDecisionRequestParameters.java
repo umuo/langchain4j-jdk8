@@ -2,7 +2,6 @@ package dev.langchain4j.model.openai;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.Utils.getOrDefault;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.decision.request.DecisionRequestParameters;
 import dev.langchain4j.model.decision.request.DefaultDecisionRequestParameters;
@@ -49,9 +48,12 @@ public class OpenAiDecisionRequestParameters extends DefaultDecisionRequestParam
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        if (!super.equals(o))
+            return false;
         OpenAiDecisionRequestParameters that = (OpenAiDecisionRequestParameters) o;
         return Objects.equals(customParameters, that.customParameters);
     }
@@ -63,8 +65,7 @@ public class OpenAiDecisionRequestParameters extends DefaultDecisionRequestParam
 
     @Override
     public String toString() {
-        return "OpenAiDecisionRequestParameters{modelName=" + modelName() + ", customParameters="
-                + customParameters + '}';
+        return "OpenAiDecisionRequestParameters{modelName=" + modelName() + ", customParameters=" + customParameters + '}';
     }
 
     public static Builder builder() {
@@ -77,16 +78,12 @@ public class OpenAiDecisionRequestParameters extends DefaultDecisionRequestParam
 
         @Override
         public Builder overrideWith(DecisionRequestParameters parameters) {
-            if (parameters != null
-                    && !(parameters instanceof OpenAiDecisionRequestParameters)
-                    && parameters.getClass() != DefaultDecisionRequestParameters.class) {
-                throw new IllegalArgumentException("OpenAiDecisionModel does not support "
-                        + parameters.getClass().getSimpleName() + ": use OpenAiDecisionRequestParameters, or "
-                        + "DecisionRequestParameters.builder() for the parameters common to all decision models");
+            if (parameters != null && !(parameters instanceof OpenAiDecisionRequestParameters) && parameters.getClass() != DefaultDecisionRequestParameters.class) {
+                throw new IllegalArgumentException("OpenAiDecisionModel does not support " + parameters.getClass().getSimpleName() + ": use OpenAiDecisionRequestParameters, or " + "DecisionRequestParameters.builder() for the parameters common to all decision models");
             }
             super.overrideWith(parameters);
-            if (parameters instanceof OpenAiDecisionRequestParameters openAiParameters) {
-                customParameters(getOrDefault(openAiParameters.customParameters(), customParameters));
+            if (parameters instanceof OpenAiDecisionRequestParameters) {
+                customParameters(getOrDefault(((OpenAiDecisionRequestParameters) parameters).customParameters(), customParameters));
             }
             return this;
         }

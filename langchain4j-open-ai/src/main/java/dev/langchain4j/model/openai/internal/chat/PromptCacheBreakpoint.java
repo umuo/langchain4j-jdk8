@@ -29,7 +29,8 @@ public final class PromptCacheBreakpoint {
     @Override
     @JacocoIgnoreCoverageGenerated
     public boolean equals(Object another) {
-        if (this == another) return true;
+        if (this == another)
+            return true;
         return another instanceof PromptCacheBreakpoint && equalTo((PromptCacheBreakpoint) another);
     }
 
