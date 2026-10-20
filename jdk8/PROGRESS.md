@@ -1,6 +1,14 @@
 # Java 8 移植进度
 
-## 当前状态：第十四阶段现代 stdio/WebSocket 已完成（2026-10-21）
+## 当前状态：第十五阶段 Agentic 移植前审计（WIP，2026-10-21）
+
+- 上一完整 clean/阶段标签仍为 `jdk8-m14`；Agentic 尚未实现、纳入 BOM 或验收，整体目标仍未完成。
+- [Agentic 声明审计](AGENTIC-AUDIT.md) 与 [机器清单](AGENTIC-API-INVENTORY.json) 从固定 Git 对象解析四模块全部 187 个生产 Java 文件，234 个声明类型、1292 个显式候选成员（含内部 owner，不是二进制公开 API 数量）。
+- `./jdk8/audit-agentic.sh` 只读重建声明快照，逐文件与 Git 树核对。Java 8 障碍候选含 33 record、95 instanceof pattern、20 switch expression、7 text block、25 var 及 API 调用候选；未据此声称已完成移植。
+- 主 Agentic/patterns/MCP 的直接依赖已有兼容主模块可作为基础；A2A 的 SDK 1.4.0.Final 两模块及传递依赖仍待产物审计/改造，不能因此排除。继承/合成 API、有效依赖、完整行为验收均仍 pending。
+- 下一单元：解析有效生产依赖并建立主 Agentic release 8 构建入口，再按完整能力清单改造作用域/基础 Agent 与所有工作流。MCP 旧双端点和其他剩余能力继续跟踪，不因转入 Agentic 而移出目标。
+
+## 第十四阶段现代 stdio/WebSocket 已完成（2026-10-21）
 
 - 仓库 `/Volumes/Nas/codex-work/langchain4j-jdk8`，分支 `jdk8/main`；当前完整验收 `jdk8-m14`，上期 `jdk8-m13`；固定基线 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。
 - 八个生产模块和兼容坐标不变，无新增生产依赖；整个 MCP、Agentic、模型/向量库及最终交付仍未全部完成。

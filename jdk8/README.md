@@ -142,3 +142,5 @@ try (SqliteEmbeddingStore store = SqliteEmbeddingStore.builder()
 第十三阶段现代 HTTP 子集结果见 [milestone-13.json](verification/milestone-13.json)，整体目标继续推进。
 
 第十四阶段现代共享通道结果见 [milestone-14.json](verification/milestone-14.json)，整体目标仍未完成。
+
+Agentic 正处于移植前审计 WIP，见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md)。187 个文件的声明清单不等于已实现或已支持。

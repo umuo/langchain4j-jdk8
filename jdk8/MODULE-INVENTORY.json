@@ -1912,7 +1912,12 @@
         }
       ],
       "model_evidence": [],
-      "vector_store_evidence": []
+      "vector_store_evidence": [],
+      "preflight_evidence": [
+        "AGENTIC-AUDIT.md",
+        "AGENTIC-API-INVENTORY.json"
+      ],
+      "implementation_status": "pending; declarations inventoried only"
     },
     {
       "path": "langchain4j-agentic-mcp",
@@ -1953,7 +1958,12 @@
         }
       ],
       "model_evidence": [],
-      "vector_store_evidence": []
+      "vector_store_evidence": [],
+      "preflight_evidence": [
+        "AGENTIC-AUDIT.md",
+        "AGENTIC-API-INVENTORY.json"
+      ],
+      "implementation_status": "pending; declarations inventoried only"
     },
     {
       "path": "langchain4j-agentic-patterns",
@@ -2015,7 +2025,12 @@
         }
       ],
       "model_evidence": [],
-      "vector_store_evidence": []
+      "vector_store_evidence": [],
+      "preflight_evidence": [
+        "AGENTIC-AUDIT.md",
+        "AGENTIC-API-INVENTORY.json"
+      ],
+      "implementation_status": "pending; declarations inventoried only"
     },
     {
       "path": "langchain4j-agentic",
@@ -2063,7 +2078,12 @@
         }
       ],
       "model_evidence": [],
-      "vector_store_evidence": []
+      "vector_store_evidence": [],
+      "preflight_evidence": [
+        "AGENTIC-AUDIT.md",
+        "AGENTIC-API-INVENTORY.json"
+      ],
+      "implementation_status": "pending; declarations inventoried only"
     },
     {
       "path": "langchain4j-anthropic",
