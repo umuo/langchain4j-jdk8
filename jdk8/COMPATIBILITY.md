@@ -78,3 +78,16 @@
 ## 范围调整：跳过 Guardrails
 
 用户明确要求跳过 Guardrails 代码。后续不开展其专项移植、修复或业务验收；保留现有源码及调用路径，不据此宣称 Guardrails 已支持 Java 8。前五阶段已完成的验证结果保持原有范围。
+
+## 第六阶段：SQLite 持久化向量存储（jdk8-m6）
+
+- 新增 `langchain4j-sqlite`，包为 `dev.langchain4j.store.embedding.sqlite`，实现 `EmbeddingStore<TextSegment>` 与 `AutoCloseable`；这是本分支新增模块，非上游既有 SQLite 模块的回移植。兼容 reactor/BOM 现覆盖七个生产模块。
+- 选择 Xerial `sqlite-jdbc:3.53.4.0`，官方 POM 基础编译目标为 release 8，实测 JAR 126 个基础类为版本 52，真实 Java 8/macOS/aarch64 成功加载 SQLite 3.53.4 原生引擎。Java 9/GraalVM 类位于多版本目录，未增加基础类链接排除。来源：[固定版本官方 POM](https://github.com/xerial/sqlite-jdbc/blob/3.53.4.0/pom.xml)。
+- 默认驱动 JAR 含多个平台 native 库，构建把其提取目录固定在外置工作区 `jdk8/native-tmp`，不向系统盘迁移依赖缓存。库本身不修改全局 JVM 属性，消费应用可用 `-Dorg.sqlite.tmpdir` 显式配置。来源：[官方提取配置](https://github.com/xerial/sqlite-jdbc/blob/3.53.4.0/USAGE.md)。
+- 文件路径 API、每文件一个集合，首次非空写入固定维度，removeAll 保留维度；拒绝不匹配维度、空/非有限向量和空白 ID。ID 使用 upsert，同一批重复 ID 最后一个值生效。空/null 输入批次遵循核心 no-op，不访问被锁住的数据库；closed store 仍拒绝操作。
+- 批量写入/按 ID 和 filter 删除为事务；写事务使用 IMMEDIATE，读事务为 DEFERRED 一致快照，busy timeout 可配置。每次操作独立打开并关闭 JDBC 连接，无后台连接池；close 等待在途操作并拒绝后续访问，不删除 DB。没有主动启用 WAL 或改动用户 journal 策略。
+- 向量使用 little-endian float BLOB；TextSegment 原文及有版本号的 primitive metadata 编码持久化，保留 String/Integer/Long/Float/Double/UUID，不用 Java 对象反序列化。文件使用 schema version 1，未知版本/损坏 payload 报错，不自动改写 schema。非 SQLite 文件拒绝打开且不覆盖。
+- 精确余弦检索沿用 core 公式，Java 端执行所有 Metadata Filter，O(N × dimension) 工作量、O(k) 结果队列；按分数降序、相同分数 ID 升序。无 TextSegment 的向量可存储，但不匹配 metadata filter；RAG 使用带文本的入库结果。未实现 SQL 过滤下推、ANN 或向量扩展。
+- JDBC 是阻塞 I/O，searchAsync 保留 core 的不支持默认，异步 RAG 通过显式 offloadBlocking(true) 运行在普通线程；Future 取消不能保证中断已开始的 JDBC 扫描，操作结束后释放连接。测试验证 embedding 阶段取消、HTTP 释放，以及错误/超时/完成后的数据库锁释放，不声称具备原生异步数据库 I/O。
+- 新增 20 个 Java 8 SQLite 用例和 3 个 SQLite RAG 用例：重开、类型/Unicode、upsert、维度/排序/过滤、事务失败回滚（含更新与删除）、损坏/schema、120 行四写者双实例并发、一致快照、busy/锁/close，以及与内存存储的确定性随机对照。RAG 覆盖真实 loopback embedding/chat HTTP、同步/Future/回调/Publisher 四条路径。另以两个独立 Java 8 进程完成写入退出与只查询的重启消费。
+- 本阶段 122 个真实 Java 8、627 个 JDK 17 选定回归、62 个 Publisher TCK 通过，14 项官方 untested 保留；31 JAR/5978 基础类审计、4752 类链接通过。只验证本机外置卷 macOS/aarch64；未验证网络文件系统、同时多进程写、异常进程终止/断电恢复及其他 JNI 平台。Guardrails 继续按用户要求跳过。

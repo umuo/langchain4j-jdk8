@@ -2,9 +2,9 @@
 
 基于官方提交 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`（1.23.0 开发基线）的独立兼容分支。保留完整上游历史、Java 包名和主要模型 API，使用独立 Maven 坐标，按阶段提交。
 
-## 当前产物（第五阶段）
+## 当前产物（第六阶段）
 
-以下六个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
+以下七个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
 
 - `langchain4j-core`
 - `langchain4j-http-client`
@@ -12,6 +12,7 @@
 - `langchain4j-reactive-streaming`
 - `langchain4j-open-ai`
 - `langchain4j`（AI Services、会话记忆、工具执行和基础 RAG）
+- `langchain4j-sqlite`（SQLite 文件持久化、过滤检索和事务）
 
 这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。第三阶段新增基础 RAG：文档加载/分段、内存向量存储与恢复、过滤检索、提示词注入与来源、同步/异步/流式调用。第四阶段新增 OpenAI Embeddings HTTP API 的批量、Base64、参数/维度、token usage、错误/重试/超时和取消，并接入四条 RAG 路径。Agentic、MCP、其他 embedding 适配器、具体向量库、Spring Boot 集成及 Jackson 3 尚未业务验收；真实远程模型和语义质量未验证。
 
@@ -99,3 +100,21 @@ Assistant assistant = AiServices.create(Assistant.class, model);
 `./jdk8/build.sh` 还会在真实 Java 8 上运行独立 `reactive-tck` 模块中的官方 TCK 1.0.4，验证 ZeroPublisher 的同线程/异步 Publisher 行为；测试依赖不进入生产运行时。两组共 62 项通过，14 项是官方标为不验证的 `untested_*`，未跳过 required/optional 项。精确规则与原因见 `COMPATIBILITY.md` 和 `verification/milestone-5.json`。
 
 第五阶段修复取消/终止后订阅者引用保留，以及原始 AI Services 事件流在 RAG 等待期间忽略非正 demand、立即取消仍启动检索的问题。新增并发信号、终止竞争、回收和真实 SSE 资源释放验收。这里的 TCK 结果限于内部 Publisher 桥接，未声明所有适配器的 Subscriber/Processor/Flow TCK 已通过。
+
+## SQLite 持久化向量存储
+
+新增兼容 BOM 模块 `langchain4j-sqlite`，使用 `dev.langchain4j.store.embedding.sqlite.SqliteEmbeddingStore`。这是本分支新增实现，原始上游基线没有此模块；完整用法见 [`../langchain4j-sqlite/README.md`](../langchain4j-sqlite/README.md)。它支持事务批量 upsert、删除、类型保真的元数据、维度约束及精确余弦 topK/过滤检索。每个文件一个集合，同 ID 更新，首次非空写入固定维度，清空数据仍保留维度。
+
+```java
+try (SqliteEmbeddingStore store = SqliteEmbeddingStore.builder()
+        .databasePath(Paths.get("/Volumes/Nas/data/catalog.db"))
+        .build()) {
+    // Pass store to EmbeddingStoreIngestor / EmbeddingStoreContentRetriever.
+}
+```
+
+数据库父目录需已存在。JDBC 是阻塞接口，异步/响应式 RAG 显式使用 `.offloadBlocking(true)`；取消不保证打断在途 JDBC 扫描。检索是 Java 全表精确扫描，未实现 ANN 或 sqlite-vec 索引。metadata 过滤在 Java 端执行。
+
+`HttpRagExample write <file>` 和 `read <file>` 分别在两个真实 Java 8 进程运行，验证 OpenAI HTTP embedding 入库后退出，再重开 SQLite 完成异步 RAG；writer 拒绝覆盖已有示例文件。驱动的 native 提取目录由构建设置为外置盘 `jdk8/native-tmp`，应用自行运行时也可用 `-Dorg.sqlite.tmpdir=/Volumes/Nas/...` 指定已存在目录。
+
+第六阶段结果：122 个 Java 8 验收、627 个 JDK 17 选定回归、62 个 Publisher TCK 通过；14 项官方 untested 单独保留。驱动和 JNI 已在 macOS/aarch64 的 Java 8 验证，其他平台、网络文件系统锁、多进程并发写和断电恢复尚未验收；见 `verification/milestone-6.json`。
