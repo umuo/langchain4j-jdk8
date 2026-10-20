@@ -86,7 +86,9 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                     Response response = chain.proceed(chain.request());
                     // OkHttp follows 503 Retry-After:0 even with retryOnConnectionFailure(false).
                     // Return this failure to our scheduler before its follow-up interceptor can resend GET.
-                    if (response.code() == 503 && "0".equals(response.header("Retry-After"))) {
+                    String retryAfter = response.header("Retry-After");
+                    if (response.code() == 503 && retryAfter != null && !retryAfter.isEmpty()
+                            && retryAfter.chars().allMatch(c -> c == '0')) {
                         response.close();
                         throw new IOException("MCP GET HTTP 503; retry is controlled by the transport");
                     }
