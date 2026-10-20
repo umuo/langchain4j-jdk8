@@ -2,7 +2,7 @@
 
 兼容坐标 `dev.langchain4j.jdk8:langchain4j-mcp:1.23.0-jdk8-SNAPSHOT`，由兼容 BOM 管理。
 固定源码基线与其他模块一致；生产代码 release 8，复用 Jackson 2、OkHttp 4.12.0，无新增依赖版本。
-范围为 MCP **2025-11-25 HTTP/stdio/WebSocket 工具、资源/提示词及 HTTP 会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
+范围为 MCP **2025-11-25 HTTP/stdio/WebSocket 工具、资源/提示词及 HTTP 会话/SSE 恢复**，另有固定基线现代 HTTP 子集（见下文），不是完整 MCP 规范或全部上游功能支持声明。
 
 ```java
 StreamableHttpMcpTransport transport = StreamableHttpMcpTransport.builder()
@@ -130,3 +130,28 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 通知和完成回调在串行读路径运行，应快速返回；阻塞工作使用应用 Executor。出站队列/在途请求有界，入站完整消息仍由 OkHttp 重组，不承诺任意大远端帧的预分配内存保护。底层服务已执行的副作用不能靠取消/断连回滚。
 
 独立 BOM 的 McpWebSocketExample 验证真实 Java 8、断连失败/新调用恢复、分片工具结果和 OpenAI -> AI Services 工具循环。原始 JDK WebSocket 私有实现测试不计通过；专项网络证据及所有旧回归以 milestone-12 为准。
+
+
+## 固定基线现代 HTTP 模式
+
+```java
+StreamableHttpMcpTransport transport = StreamableHttpMcpTransport.builder()
+        .url("http://127.0.0.1:8080/mcp")
+        .maxConcurrentStreams(64)
+        .build();
+try (DefaultMcpClient client = DefaultMcpClient.builder()
+        .transport(transport).protocolVersion("2026-07-28")
+        .autoHealthCheck(false).build()) {
+    List<ToolSpecification> tools = client.listTools();
+    long subscription = client.subscribeToResources(Arrays.asList("test://data"));
+    client.unsubscribeFromResources(subscription);
+}
+```
+
+此模式按固定基线使用 server/discover 和方法/名称/参数请求头，不使用旧 session/DELETE，也不会因 404 自动重发工具请求。protocolVersion("") 显式启用现代探测及基线旧版本回退，默认仍为 2025-11-25。header supplier 不应自行覆盖 transport 的协议字段。
+
+长期订阅在同流匹配 acknowledged 前受 timeout 约束，确认后直到取消、结束或断线；无效确认不能完成其他订阅。断线后调用方可新建订阅，不自动重发订阅 POST。GET/订阅有独立可配置并发预算，原 HTTP 客户端的 executor/pool 所有权不变。
+
+异步工具支持服务器返回 requestState 后的有界续传，取消/超时终止当前轮次；inputRequests 交互仍按基线明确拒绝。只因服务器状态继续操作，不能将网络错误当作重发工具的理由。独立 BOM 示例 McpModernExample 覆盖 Future AI Services、异步续传和订阅释放，最终证据见 milestone-13。
+
+这不是对所有现代协议功能或远端服务器的完成声明；现代 stdio/WebSocket 和旧双端点 HTTP+SSE 等剩余范围继续跟踪。

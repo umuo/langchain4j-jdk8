@@ -5,6 +5,7 @@ import dev.langchain4j.exception.HttpException;
 import dev.langchain4j.mcp.client.McpCallContext;
 import dev.langchain4j.mcp.client.McpHeadersSupplier;
 import dev.langchain4j.mcp.client.transport.McpJson;
+import dev.langchain4j.mcp.client.transport.McpHeaderEncoding;
 import dev.langchain4j.mcp.client.transport.McpOperationHandler;
 import dev.langchain4j.mcp.client.transport.McpTransport;
 import dev.langchain4j.mcp.protocol.*;
@@ -48,11 +49,14 @@ public final class StreamableHttpMcpTransport implements McpTransport {
     private volatile Runnable invalidationListener = () -> {};
     private volatile boolean closed;
     private volatile Session session;
+    private volatile boolean modernProtocol;
+    private volatile String modernVersion = "2026-07-28";
     private volatile McpInitializeParams initializeParams;
     private CompletableFuture<Void> closeFuture;
 
     private static final class Session {
         final CompletableFuture<String> ready = new CompletableFuture<>();
+        boolean modern;
         volatile String id;
         volatile String version = "2025-11-25";
         volatile Stream subsidiary;
@@ -79,8 +83,12 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         // OkHttp can otherwise resend POSTs after connection failures, redirects or authentication challenges.
         client = base.newBuilder().retryOnConnectionFailure(false).followRedirects(false).followSslRedirects(false)
                 .authenticator(Authenticator.NONE).proxyAuthenticator(Authenticator.NONE).build();
-        // Long-lived GETs must not occupy all of the caller's POST dispatcher slots.
-        streamClient = client.newBuilder().dispatcher(new Dispatcher()).callTimeout(0, TimeUnit.MILLISECONDS)
+        // Long-lived streams use a separate, explicit per-host budget, not OkHttp's five unary slots.
+        if (builder.maxConcurrentStreams <= 0) throw new IllegalArgumentException("maxConcurrentStreams must be positive");
+        Dispatcher streamDispatcher = new Dispatcher();
+        streamDispatcher.setMaxRequests(builder.maxConcurrentStreams);
+        streamDispatcher.setMaxRequestsPerHost(builder.maxConcurrentStreams);
+        streamClient = client.newBuilder().dispatcher(streamDispatcher).callTimeout(0, TimeUnit.MILLISECONDS)
                 .readTimeout(timeoutMillis, TimeUnit.MILLISECONDS)
                 .addNetworkInterceptor(chain -> {
                     Response response = chain.proceed(chain.request());
@@ -113,10 +121,36 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         }
     }
     @Override public void setModernProtocol(boolean modern) {
-        if (modern) throw new UnsupportedOperationException("Only MCP 2025-11-25 is ported");
+        synchronized (lifecycle) {
+            assertOpen();
+            if (modernProtocol == modern) return;
+            if (hasActiveRequests()) throw new IllegalStateException("Cannot switch protocol with active requests");
+            modernProtocol = modern;
+            session = null;
+            invalidationListener.run();
+            if (modern) {
+                Session stateless = new Session(); stateless.modern = true; stateless.version = modernVersion;
+                stateless.ready.complete(null); session = stateless;
+            }
+        }
     }
     @Override public void setProtocolVersion(String version) {
-        if (!"2025-11-25".equals(version)) throw new UnsupportedOperationException("Only MCP 2025-11-25 is ported");
+        if (!"2026-07-28".equals(version) && !"2025-11-25".equals(version) && !"2024-11-05".equals(version))
+            throw new UnsupportedOperationException("Unported MCP protocol: " + version);
+        synchronized (lifecycle) {
+            assertOpen();
+            if (session != null && version.equals(session.version)) { modernVersion = version; return; }
+            if (hasActiveRequests()) throw new IllegalStateException("Cannot change protocol with active requests");
+            modernVersion = version;
+            if (session != null) session.version = version;
+        }
+    }
+    private boolean hasActiveRequests() {
+        for (Exchange exchange : exchanges) if (!exchange.result.isDone()) return true;
+        for (Stream stream : streams) {
+            if (!stream.result.isDone() && (stream.exchange == null || !stream.exchange.result.isDone())) return true;
+        }
+        return false;
     }
     @Override public void onSessionReinitialized(Consumer<String> listener) {
         recoveryListener = Objects.requireNonNull(listener, "listener");
@@ -129,6 +163,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
     public void setMcpSessionId(String id) {
         synchronized (lifecycle) {
             assertOpen();
+            if (modernProtocol) throw new IllegalStateException("Modern MCP does not use session IDs");
             if (!exchanges.isEmpty() || !streams.isEmpty()) throw new IllegalStateException("MCP transport is busy");
             if (session == null) throw new IllegalStateException("Initialize the transport first");
             validateSessionId(id);
@@ -142,6 +177,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         Session previous;
         synchronized (lifecycle) {
             assertOpen();
+            if (modernProtocol) throw new IllegalStateException("Modern MCP uses server/discover");
             if (session != null && !session.ready.isDone()) return session.ready;
             initializeParams = McpJson.deserialize(McpJson.serialize(request.getParams()), McpInitializeParams.class);
             previous = session;
@@ -170,8 +206,9 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                 JsonNode root = McpJson.parse(response);
                 if (root.has("error")) throw new IllegalStateException("MCP initialization failed: " + response);
                 String version = root.path("result").path("protocolVersion").asText();
-                if (!"2025-11-25".equals(version)) throw new IllegalStateException("Unsupported MCP version: " + version);
+                if (!"2025-11-25".equals(version) && !"2024-11-05".equals(version)) throw new IllegalStateException("Unsupported MCP version: " + version);
                 created.version = version;
+                if (created.id != null) knownSessions.put(created.id, version);
                 Exchange notification = new Exchange(new McpCallContext(null, new McpInitializationNotification()), created, false);
                 notification.result.whenComplete((ignored, error) -> {
                     if (error != null) { created.ready.completeExceptionally(error); return; }
@@ -259,8 +296,24 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         Map<String, String> supplied = headers.apply(context);
         if (supplied != null) supplied.forEach(builder::header);
         // Session/cursor headers are controlled by the transport, never a stale supplier value.
-        builder.removeHeader("MCP-Session-Id").removeHeader("MCP-Protocol-Version").removeHeader("Last-Event-ID");
-        if (!initializing) {
+        builder.removeHeader("MCP-Session-Id").removeHeader("MCP-Protocol-Version").removeHeader("Last-Event-ID")
+                .removeHeader("Mcp-Method").removeHeader("Mcp-Name");
+        for (String name : new ArrayList<>(builder.build().headers().names())) {
+            if (name.regionMatches(true, 0, "Mcp-Param-", 0, 10)) builder.removeHeader(name);
+        }
+        if (expected.modern) {
+            builder.header("MCP-Protocol-Version", expected.version);
+            if (context != null) {
+                JsonNode body = McpJson.parse(McpJson.serialize(context.message()));
+                String method = body.path("method").asText(null);
+                if (method != null) builder.header("Mcp-Method", method);
+                JsonNode params = body.path("params");
+                String name = "resources/read".equals(method) ? params.path("uri").asText(null)
+                        : ("tools/call".equals(method) || "prompts/get".equals(method)) ? params.path("name").asText(null) : null;
+                if (name != null) builder.header("Mcp-Name", McpHeaderEncoding.encode(name));
+                if (context.mcpParamHeaders() != null) context.mcpParamHeaders().forEach((k,v) -> builder.header("Mcp-Param-" + k, v));
+            }
+        } else if (!initializing) {
             if (expected.id != null) builder.header("MCP-Session-Id", expected.id);
             builder.header("MCP-Protocol-Version", expected.version);
         }
@@ -284,19 +337,19 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         volatile boolean sent;
         volatile Call call;
         volatile Stream stream;
+        volatile ScheduledFuture<?> deadline;
         Exchange(McpCallContext context, Session session, boolean responseExpected) {
             this.context = context; this.session = session; this.responseExpected = responseExpected;
-            final ScheduledFuture<?> deadline;
             synchronized (lifecycle) {
                 if (closed) { result.completeExceptionally(new IllegalStateException("MCP transport closed")); return; }
                 exchanges.add(this);
                 deadline = timer.schedule(() -> result.completeExceptionally(new TimeoutException("MCP request timed out")), timeoutMillis, TimeUnit.MILLISECONDS);
             }
             result.whenComplete((value, failure) -> {
-                deadline.cancel(false); exchanges.remove(this);
+                if (deadline != null) deadline.cancel(false); exchanges.remove(this);
                 Call active = call; if (active != null && (failure != null || stream != null)) active.cancel();
                 Stream activeStream = stream; if (activeStream != null) activeStream.result.complete(null);
-                if (sent && responseExpected && !(context.message() instanceof McpInitializeRequest)
+                if (!session.modern && sent && responseExpected && !(context.message() instanceof McpInitializeRequest)
                         && (result.isCancelled() || failure instanceof TimeoutException) && current(session)) {
                     Exchange cancellation = new Exchange(new McpCallContext(context.invocationContext(),
                             new McpCancellationNotification(context.message().getId(), result.isCancelled() ? "Cancelled" : "Timeout")), session, false);
@@ -316,7 +369,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                         .header("Accept", "application/json, text/event-stream")
                         .post(oneShotBody(json)).build();
                 if (logRequests) logger.info("MCP request: {}", json);
-                call = client.newCall(outgoing);
+                call = (session.modern && message instanceof McpSubscriptionsListenRequest ? streamClient : client).newCall(outgoing);
                 if (responseExpected) handler.expectResponse(message.getId(), result);
                 if (result.isDone() || !current(session)) { call.cancel(); result.completeExceptionally(new IllegalStateException("MCP request stopped")); return; }
                 sent = true;
@@ -325,7 +378,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                     @Override public void onResponse(Call call, Response response) {
                         try (Response received = response) {
                             if (!current(session)) throw new IOException("Stale MCP session response");
-                            if (received.code() == 404 && outgoing.header("MCP-Session-Id") != null) { expired(session); return; }
+                            if (!session.modern && received.code() == 404 && outgoing.header("MCP-Session-Id") != null) { expired(session); return; }
                             if (!received.isSuccessful()) throw new HttpException(received.code(), "MCP HTTP " + received.code());
                             if (!responseExpected) {
                                 if (received.code() != 202) throw new IOException("MCP notification requires HTTP 202");
@@ -350,7 +403,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
                             } else if (contentType.startsWith("application/json")) {
                                 String body = received.body().string();
                                 Exchange.this.call = null;
-                                deliver(body, session);
+                                deliver(body, session, Exchange.this);
                                 if (!result.isDone()) throw new IOException("MCP response ended without the matching JSON-RPC result");
                             } else throw new IOException("Unsupported MCP content type: " + contentType);
                         } catch (Exception failure) { Exchange.this.call = null; result.completeExceptionally(failure); }
@@ -359,8 +412,13 @@ public final class StreamableHttpMcpTransport implements McpTransport {
             } catch (Exception failure) { result.completeExceptionally(failure); }
         }
     }
-    private void deliver(String message, Session expected) {
+    private void deliver(String message, Session expected, Exchange owner) {
         if (!current(expected)) throw new IllegalStateException("Stale MCP session event");
+        JsonNode parsed = McpJson.parse(message);
+        if (owner != null && parsed.has("id") && (parsed.has("result") || parsed.has("error"))
+                && !Objects.equals(parsed.path("id").asText(), String.valueOf(owner.context.message().getId()))) {
+            throw new IllegalArgumentException("MCP response id does not match its HTTP request");
+        }
         if (logResponses) logger.info("MCP response: {}", message);
         handler.onMessage(message);
     }
@@ -391,10 +449,17 @@ public final class StreamableHttpMcpTransport implements McpTransport {
             boolean duplicate = hasId && id != null && !id.isEmpty() && id.equals(lastEventId);
             if (!duplicate && "message".equals(type) && !data.isEmpty()) {
                 JsonNode parsed = McpJson.parse(data);
+                if (session.modern && exchange != null && exchange.context.message() instanceof McpSubscriptionsListenRequest
+                        && "notifications/subscriptions/acknowledged".equals(parsed.path("method").asText())) {
+                    JsonNode idNode = parsed.path("params").path("_meta").path("io.modelcontextprotocol/subscriptionId");
+                    if (!exchange.context.message().getId().toString().equals(idNode.asText()))
+                        throw new IllegalArgumentException("Subscription acknowledgement does not match its HTTP stream");
+                    if (exchange.deadline != null) exchange.deadline.cancel(false);
+                }
                 // An unsolicited GET stream cannot carry responses for other POST requests.
                 if (exchange == null && parsed.has("id") && (parsed.has("result") || parsed.has("error")))
                     throw new IllegalArgumentException("Unexpected JSON-RPC response on unsolicited GET SSE");
-                deliver(data, session);
+                deliver(data, session, exchange);
             }
             if (hasId) lastEventId = id;
             if (!duplicate && (!data.isEmpty() || (hasId && !id.isEmpty()))) attempts = 0;
@@ -412,6 +477,8 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         }
         void resume(Exception failure) {
             if (stopped()) return;
+            // Stateless modern subscriptions are new application requests, never legacy session GET recovery.
+            if (session.modern) { result.completeExceptionally(failure); return; }
             if ((exchange != null && (lastEventId == null || lastEventId.isEmpty())) || attempts >= maxReconnectAttempts) {
                 result.completeExceptionally(failure); return;
             }
@@ -480,7 +547,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         if (current != null && current.subsidiary != null && current.subsidiary.result.isCompletedExceptionally()) current.subsidiary.result.join();
     }
     @Override public void onFailure(Runnable callback) { /* Session recovery is owned by the transport, not an original-request replay callback. */ }
-    @Override public boolean requiresCancellationNotification() { return true; }
+    @Override public boolean requiresCancellationNotification() { return !modernProtocol; }
     @Override public boolean handlesRequestCancellation() { return true; }
     private void assertOpen() { if (closed) throw new IllegalStateException("MCP transport closed"); }
 
@@ -551,6 +618,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
         private OkHttpClient httpClient;
         private McpHeadersSupplier headers;
         private Duration timeout, closeTimeout, reconnectInterval;
+        private int maxConcurrentStreams = 64;
         private int maxReconnectAttempts = 5;
         private boolean logRequests, logResponses, httpVersion1, subsidiaryChannel;
         private Logger logger;
@@ -575,6 +643,7 @@ public final class StreamableHttpMcpTransport implements McpTransport {
             return this;
         }
         public Builder setHttpVersion1_1() { httpVersion1 = true; return this; }
+        public Builder maxConcurrentStreams(int maximum) { maxConcurrentStreams = maximum; return this; }
         public Builder subsidiaryChannel(boolean enabled) { subsidiaryChannel = enabled; return this; }
         public StreamableHttpMcpTransport build() { return new StreamableHttpMcpTransport(this); }
     }

@@ -170,3 +170,18 @@
 - 当前固定 2025-11-25，其他协议、完整 MCP 能力及后续全部模块仍待推进；不声明标准化 WebSocket MCP 规范或外部服务器互操作全部通过。最终 clean exit 0：276 Java 8、864 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6364 类审计、4945 类链接及全部 BOM 消费通过，见 verification/milestone-12.json。
 
 依据：[OkHttp 4.12 WebSocket API](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/WebSocket.kt)、[串行消息回调接口](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/WebSocketListener.kt)、[RFC 6455](https://www.rfc-editor.org/rfc/rfc6455)。
+
+
+## 第十三阶段：固定基线现代 HTTP 协议（jdk8-m13）
+
+- 接通固定源码基线中的版本标识 `2026-07-28`：server/discover、无旧会话 ID 的 HTTP 请求、Mcp-Method/Mcp-Name/Mcp-Param 请求头，以及 subscriptions/listen。此处描述固定基线代码合同，不据此宣称当前公共规范或真实服务器互操作已验证。默认仍是 2025-11-25；显式 protocolVersion("") 才触发自动探测。
+- 现代响应中的 MCP-Session-Id 不采用，404 明确失败，不进入旧 initialize/DELETE 恢复；取消通过关闭对应 HTTP 流，不另发取消 POST。旧协议的会话/GET 游标恢复保持原样。现代订阅 EOF 明确失败，应用可新建订阅；没有自动重放原订阅 POST 或使用旧会话 GET 恢复。
+- reserved 请求头由 transport 最后生成，清除供应者陈旧的 session/version/method/name/param/cursor 值；名称/URI 和 schema 声明的参数使用既有 McpHeaderEncoding。保留 base URL、显式鉴权、自定义 HTTP 客户端及所有权约定。
+- 新增 maxConcurrentStreams（默认 64），GET/长期订阅 POST 使用独立 dispatcher，避免默认每主机 5 个连接槽位被长流占满。请求 deadline 覆盖排队和等待确认；只有同流、同订阅 ID 的 acknowledged 才取消该 deadline，确认后的生命期由订阅取消/断线/关闭控制，底层 read timeout 仍有效。
+- HTTP JSON/SSE 结果必须匹配该 HTTP 请求 ID，订阅确认必须匹配其 HTTP 流，拒绝用一个流的结果/确认完成其他并发操作。协议切换拒绝真实活动请求，已完成但清理回调未退栈的请求不再被误判 busy；同版本设置幂等。
+- 高层现代异步工具补齐 input_required + requestState 续传：服务器明确给出状态才新建下一请求 ID，保留参数头和调用上下文，受工具整体时限及 multiRoundTripMaxRetries 限制。网络故障/HTTP 错误不续发；取消/超时到达当前实际请求，不错误地取消已完成的第一轮。交互 inputRequests 仍沿用基线明确拒绝，未伪造自动回答。
+- 测试复现并修复等待订阅确认时中断后遗留 SSE；同步工具和同步请求状态续传的中断也释放当前 I/O，并保留中断位。现代/旧版本回退覆盖方法不存在、发现超时和 supported 列表选择 2024-11-05；这里只验证固定基线单端点引擎的旧版本字段，原始 2024 双端点 HTTP+SSE 未据此验收。
+- 独立 BOM McpModernExample 在真实 Java 8 验证发现 1、异步续传帧 2、实际工具执行 1、订阅确认与释放、取消 POST 0，经 OpenAI HTTP + AI Services 返回 7 yuan。固定基线较旧默认入口与此前全部回归/示例保持运行。
+- 现代 stdio/WebSocket 的专项、更多剩余 MCP 能力和后续全部 Agentic/模型/向量库仍待推进；本阶段不是完整 MCP 完成声明。最终 clean exit 0：307 Java 8、864 上游、62 TCK 通过；14 官方 untested，33 JAR/6366 类审计、4946 类链接和全部独立消费通过，见 verification/milestone-13.json。
+
+旧 HTTP/SSE 恢复和每请求响应的依据仍见 [MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)；现代字段以本地固定基线 `git show 7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79:langchain4j-mcp/src/main/java/dev/langchain4j/mcp/client/DefaultMcpClient.java` 及同基线 HTTP transport 为审计来源。

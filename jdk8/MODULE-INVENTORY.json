@@ -4538,7 +4538,7 @@
       "categories": [
         "mcp"
       ],
-      "status": "partial-verified-m12",
+      "status": "partial-verified-m13",
       "production_dependency_audit": "pending; raw declarations only; inherit/resolve versions before migration",
       "dependencies": [
         {
@@ -4596,9 +4596,10 @@
       "ported_subset_evidence": [
         "verification/milestone-10.json",
         "verification/milestone-11.json",
-        "verification/milestone-12.json"
+        "verification/milestone-12.json",
+        "verification/milestone-13.json"
       ],
-      "remaining": "Other protocol versions and remaining MCP capabilities; obsolete package-private JDK SSE helper replaced by SseEventReader; integration modules still pending"
+      "remaining": "Modern stdio/WebSocket, original two-endpoint HTTP+SSE and remaining MCP capabilities; agentic integration modules pending"
     },
     {
       "path": "langchain4j-micrometer-metrics",

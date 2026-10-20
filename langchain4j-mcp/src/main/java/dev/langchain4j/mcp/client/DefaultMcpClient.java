@@ -645,8 +645,13 @@ public class DefaultMcpClient implements McpClient {
                 result = resultFuture.get(timeoutMillis, TimeUnit.MILLISECONDS);
             } catch (TimeoutException timeout) {
                 throw new McpOperationTimeoutException(retryOperationId, resultFuture, timeout);
+            } catch (InterruptedException interrupted) {
+                resultFuture.cancel(true);
+                sendCancellationNotification(retryOperationId, "Interrupted");
+                throw interrupted;
+            } finally {
+                pendingOperations.remove(retryOperationId);
             }
-            pendingOperations.remove(retryOperationId);
             parsed = multiRoundTripResult(result);
             retryCount++;
         }
@@ -777,6 +782,7 @@ public class DefaultMcpClient implements McpClient {
             notifyListeners(l -> l.onExecuteToolError(context, e));
             throw new ToolExecutionException(e.getCause());
         } catch (InterruptedException e) {
+            if (resultFuture != null && resultFuture.cancel(true)) sendCancellationNotification(operationId, "Interrupted");
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
@@ -811,6 +817,8 @@ public class DefaultMcpClient implements McpClient {
         Map<String, String> paramHeaders =
                 modernProtocol ? buildMcpParamHeaders(executionRequest.name(), arguments) : null;
         McpCallContext context = new McpCallContext(invocationContext, operation, paramHeaders);
+
+        if (modernProtocol) return executeModernToolAsync(context, executionRequest.name(), arguments, progressToken, timeoutMillis);
 
         CompletableFuture<String> resultFuture;
         try {
@@ -863,6 +871,74 @@ public class DefaultMcpClient implements McpClient {
             }
         });
         return handledFuture;
+    }
+
+    /** Only server-supplied requestState continues an operation; failures never cause a resend. */
+    private CompletableFuture<ToolExecutionResult> executeModernToolAsync(McpCallContext original,
+            String name, Map<String, Object> arguments, String progressToken, long timeoutMillis) {
+        Object lock = new Object();
+        CompletableFuture<String> response = new CompletableFuture<>();
+        AtomicReference<CompletableFuture<String>> active = new AtomicReference<>();
+        java.util.concurrent.atomic.AtomicLong activeId = new java.util.concurrent.atomic.AtomicLong(original.message().getId());
+        AtomicBoolean completionHandled = new AtomicBoolean();
+        response.whenComplete((value, error) -> {
+            if (response.isCancelled()) synchronized (lock) {
+                CompletableFuture<String> leaf = active.get();
+                if (leaf != null && leaf.cancel(true)) sendCancellationNotification(activeId.get(), "Cancelled");
+            }
+        });
+        CompletableFuture<ToolExecutionResult> result = McpTimeouts.orTimeout(response, timeoutMillis).handle((body, error) -> {
+            if (!completionHandled.compareAndSet(false, true)) throw new CancellationException();
+            if (error == null) return extractResultAndNotifyListeners(original, body);
+            Throwable cause = unwrapCompletionException(error);
+            if (cause instanceof TimeoutException) synchronized (lock) {
+                return handleToolTimeout(original, activeId.get(), active.get(), (TimeoutException) cause);
+            }
+            notifyListeners(listener -> listener.onExecuteToolError(original, cause));
+            if (cause instanceof CancellationException) throw (CancellationException) cause;
+            throw new ToolExecutionException(cause);
+        });
+        result.whenComplete((value, error) -> {
+            if (result.isCancelled()) {
+                if (completionHandled.compareAndSet(false, true)) notifyListeners(listener -> listener.onExecuteToolError(original, new CancellationException()));
+                response.cancel(true);
+            }
+        });
+        class RoundTrip {
+            void send(McpCallContext context, int round) {
+                synchronized (lock) {
+                    if (response.isDone()) return;
+                    try {
+                        applyMeta(context.message(), context);
+                        activeId.set(context.message().getId());
+                        CompletableFuture<String> leaf = executeViaTransport(context);
+                        active.set(leaf);
+                        leaf.whenComplete((body, error) -> {
+                            pendingOperations.remove(context.message().getId());
+                            if (response.isDone()) return;
+                            if (error != null) { response.completeExceptionally(error); return; }
+                            try {
+                                McpServerDiscoverResponse.Result parsed = multiRoundTripResult(body);
+                                String type = resultTypeOf(parsed);
+                                if ("complete".equals(type)) { response.complete(body); return; }
+                                if (!"input_required".equals(type)) throw new IllegalStateException("Unexpected resultType for tools/call: " + type);
+                                if (round >= multiRoundTripMaxRetries) throw new IllegalStateException("Multi round-trip retry limit exceeded for tools/call");
+                                if (isNotEmpty(parsed.getInputRequests())) throw new IllegalStateException("Server sent inputRequests that the client cannot handle");
+                                if (parsed.getRequestState() == null) throw new IllegalStateException("Server sent input_required without requestState");
+                                McpCallToolRequest next = new McpCallToolRequest(idGenerator.getAndIncrement(), name, arguments, progressToken);
+                                ((McpCallToolParams)next.getParams()).setRequestState(parsed.getRequestState());
+                                send(new McpCallContext(original.invocationContext(), next, original.mcpParamHeaders()), round + 1);
+                            } catch (RuntimeException failure) { response.completeExceptionally(failure); }
+                        });
+                    } catch (RuntimeException failure) { response.completeExceptionally(failure); }
+                }
+            }
+        }
+        try {
+            notifyListeners(listener -> listener.beforeExecuteTool(original));
+            new RoundTrip().send(original, 0);
+        } catch (RuntimeException failure) { response.completeExceptionally(failure); }
+        return result;
     }
 
     private static Map<String, Object> parseToolArguments(ToolExecutionRequest executionRequest) {
@@ -1323,6 +1399,7 @@ public class DefaultMcpClient implements McpClient {
             notifyListeners(l -> l.onResourcesSubscribeError(context, re));
             throw re;
         } catch (InterruptedException e) {
+            abandonSubscription(subscriptionId, streamFuture, "Interrupted while waiting for subscription acknowledgement");
             Thread.currentThread().interrupt();
             throw new RuntimeException(e);
         } finally {
