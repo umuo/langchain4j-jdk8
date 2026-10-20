@@ -44,7 +44,8 @@ public class McpPromptMessage {
             return UserMessage.userMessage(content.toContent());
         } else if (role.equals(McpRole.ASSISTANT)) {
             Content convertedContent = content.toContent();
-            if (convertedContent instanceof TextContent convertedTextContent) {
+            if (convertedContent instanceof TextContent) {
+            TextContent convertedTextContent = (TextContent) convertedContent;
                 return AiMessage.aiMessage(convertedTextContent.text());
             } else {
                 throw new UnsupportedOperationException("Cannot create an AiMessage with content" + " of type "
@@ -67,7 +68,7 @@ public class McpPromptMessage {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpPromptMessage) obj;
+        McpPromptMessage that = (McpPromptMessage) obj;
         return Objects.equals(this.role, that.role) &&
                 Objects.equals(this.content, that.content);
     }

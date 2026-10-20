@@ -14,4 +14,21 @@ import java.util.List;
  * @param nextCursor the cursor for the following page, or null when this is the last one
  */
 @Internal
-record McpPage<T>(List<T> items, String nextCursor) {}
+final class McpPage<T> {
+    private final List<T> items;
+    private final String nextCursor;
+    McpPage(List<T> items, String nextCursor) {
+        this.items = items;
+        this.nextCursor = nextCursor;
+    }
+    public List<T> items() { return items; }
+    public String nextCursor() { return nextCursor; }
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof McpPage)) return false;
+        McpPage<?> that = (McpPage<?> ) other;
+        return java.util.Objects.equals(items, that.items) && java.util.Objects.equals(nextCursor, that.nextCursor);
+    }
+    @Override public int hashCode() { return (31 * (31 * 0 + java.util.Objects.hashCode(items)) + java.util.Objects.hashCode(nextCursor)); }
+    @Override public String toString() { return "McpPage[" + "items=" + items + ", " + "nextCursor=" + nextCursor + "]"; }
+}

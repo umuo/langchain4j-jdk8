@@ -16,7 +16,7 @@ import java.util.stream.StreamSupport;
  * @deprecated use {@link DefaultMcpToolResultConverter} instead, which does not expose Jackson
  * types.
  */
-@Deprecated(since = "1.20.0", forRemoval = true)
+@Deprecated
 @SuppressWarnings("removal")
 public class DefaultMcpToolResultExtractor implements McpToolResultExtractor {
 

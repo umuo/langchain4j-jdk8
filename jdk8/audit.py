@@ -6,7 +6,7 @@ import zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parent.parent
-modules = ['langchain4j-core', 'langchain4j-http-client', 'http-clients/langchain4j-http-client-okhttp', 'langchain4j-reactive-streaming', 'langchain4j-open-ai', 'langchain4j', 'langchain4j-sqlite']
+modules = ['langchain4j-core', 'langchain4j-http-client', 'http-clients/langchain4j-http-client-okhttp', 'langchain4j-reactive-streaming', 'langchain4j-open-ai', 'langchain4j', 'langchain4j-sqlite', 'langchain4j-mcp']
 classpath = root / 'jdk8/example/target/classpath.txt'
 paths = {Path(p) for p in classpath.read_text().strip().split(':') if p}
 for module in modules:

@@ -11,7 +11,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
  */
 @JsonTypeInfo(use = DEDUCTION)
 @JsonSubTypes({@JsonSubTypes.Type(McpTextResourceContents.class), @JsonSubTypes.Type(McpBlobResourceContents.class)})
-public sealed interface McpResourceContents permits McpTextResourceContents, McpBlobResourceContents {
+public interface McpResourceContents {
 
     Type type();
 

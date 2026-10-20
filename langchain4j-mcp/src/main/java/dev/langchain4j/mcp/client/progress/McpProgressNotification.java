@@ -61,7 +61,7 @@ public class McpProgressNotification {
     /**
      * @deprecated use {@link #fromMap(Map)}, which does not expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public static McpProgressNotification fromJson(JsonNode params) {
         return fromMap(McpJsonConversions.toMap(params));
     }

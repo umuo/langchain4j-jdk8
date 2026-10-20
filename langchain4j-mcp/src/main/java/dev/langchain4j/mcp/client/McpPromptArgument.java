@@ -43,7 +43,7 @@ public class McpPromptArgument {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpPromptArgument) obj;
+        McpPromptArgument that = (McpPromptArgument) obj;
         return Objects.equals(this.name, that.name) &&
                 Objects.equals(this.description, that.description) &&
                 this.required == that.required;

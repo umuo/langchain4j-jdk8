@@ -79,7 +79,7 @@ public class McpOperationHandler {
      *
      * @deprecated use {@link #onMessage(String)} instead, which does not expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public void handle(JsonNode message) {
         onMessage(McpJson.serialize(message));
     }
@@ -299,7 +299,7 @@ public class McpOperationHandler {
      * @deprecated use {@link #expectResponse(Long, CompletableFuture)} instead, which does not
      * expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public void startOperation(Long id, CompletableFuture<JsonNode> future) {
         CompletableFuture<String> jsonFuture = new CompletableFuture<>();
         jsonFuture.whenComplete((json, error) -> {
@@ -322,6 +322,7 @@ public class McpOperationHandler {
      */
     public void expectResponse(Long id, CompletableFuture<String> future) {
         pendingOperations.put(id, future);
+        future.whenComplete((value, error) -> pendingOperations.remove(id, future));
     }
 
     public synchronized void cancelAllPendingOperations(String reason) {

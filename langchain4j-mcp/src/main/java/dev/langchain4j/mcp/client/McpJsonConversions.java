@@ -27,7 +27,7 @@ public final class McpJsonConversions {
 
     public static List<Map<String, Object>> toMaps(JsonNode arrayNode) {
         if (arrayNode == null || !arrayNode.isArray()) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
         List<Map<String, Object>> result = new ArrayList<>();
         arrayNode.forEach(item -> result.add(toMap(item)));

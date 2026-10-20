@@ -20,16 +20,40 @@ import org.jspecify.annotations.Nullable;
  * @param instructions a hint from the server on how it is meant to be used, if it provides one
  * @param resultType how the server answered; {@code "complete"} for an ordinary answer
  */
-public record McpDiscoverResult(
-        List<String> supportedVersions,
-        Map<String, Object> capabilities,
-        @Nullable McpServerInfo serverInfo,
-        @Nullable String instructions,
-        @Nullable String resultType) {
-
-    public McpDiscoverResult {
+public final class McpDiscoverResult {
+    private final List<String> supportedVersions;
+    private final Map<String, Object> capabilities;
+    private final McpServerInfo serverInfo;
+    private final String instructions;
+    private final String resultType;
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public McpDiscoverResult(@com.fasterxml.jackson.annotation.JsonProperty("supportedVersions") List<String> supportedVersions, @com.fasterxml.jackson.annotation.JsonProperty("capabilities") Map<String, Object> capabilities, @com.fasterxml.jackson.annotation.JsonProperty("serverInfo") McpServerInfo serverInfo, @com.fasterxml.jackson.annotation.JsonProperty("instructions") String instructions, @com.fasterxml.jackson.annotation.JsonProperty("resultType") String resultType) {
         supportedVersions =
-                supportedVersions == null ? List.of() : Collections.unmodifiableList(new ArrayList<>(supportedVersions));
-        capabilities = capabilities == null ? Map.of() : Collections.unmodifiableMap(new LinkedHashMap<>(capabilities));
+                supportedVersions == null ? dev.langchain4j.internal.Jdk8.list() : Collections.unmodifiableList(new ArrayList<>(supportedVersions));
+        capabilities = capabilities == null ? dev.langchain4j.internal.Jdk8.map() : Collections.unmodifiableMap(new LinkedHashMap<>(capabilities));
+        this.supportedVersions = supportedVersions;
+        this.capabilities = capabilities;
+        this.serverInfo = serverInfo;
+        this.instructions = instructions;
+        this.resultType = resultType;
     }
+    @com.fasterxml.jackson.annotation.JsonProperty("supportedVersions")
+    public List<String> supportedVersions() { return supportedVersions; }
+    @com.fasterxml.jackson.annotation.JsonProperty("capabilities")
+    public Map<String, Object> capabilities() { return capabilities; }
+    @com.fasterxml.jackson.annotation.JsonProperty("serverInfo")
+    public McpServerInfo serverInfo() { return serverInfo; }
+    @com.fasterxml.jackson.annotation.JsonProperty("instructions")
+    public String instructions() { return instructions; }
+    @com.fasterxml.jackson.annotation.JsonProperty("resultType")
+    public String resultType() { return resultType; }
+    @Override public boolean equals(Object other) {
+        if (this == other) return true;
+        if (!(other instanceof McpDiscoverResult)) return false;
+        McpDiscoverResult that = (McpDiscoverResult) other;
+        return java.util.Objects.equals(supportedVersions, that.supportedVersions) && java.util.Objects.equals(capabilities, that.capabilities) && java.util.Objects.equals(serverInfo, that.serverInfo) && java.util.Objects.equals(instructions, that.instructions) && java.util.Objects.equals(resultType, that.resultType);
+    }
+    @Override public int hashCode() { return (31 * (31 * (31 * (31 * (31 * 0 + java.util.Objects.hashCode(supportedVersions)) + java.util.Objects.hashCode(capabilities)) + java.util.Objects.hashCode(serverInfo)) + java.util.Objects.hashCode(instructions)) + java.util.Objects.hashCode(resultType)); }
+    @Override public String toString() { return "McpDiscoverResult[" + "supportedVersions=" + supportedVersions + ", " + "capabilities=" + capabilities + ", " + "serverInfo=" + serverInfo + ", " + "instructions=" + instructions + ", " + "resultType=" + resultType + "]"; }
+
 }

@@ -57,7 +57,7 @@ public final class McpBlobResourceContents implements McpResourceContents {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpBlobResourceContents) obj;
+        McpBlobResourceContents that = (McpBlobResourceContents) obj;
         return Objects.equals(this.uri, that.uri)
                 && Objects.equals(this.blob, that.blob)
                 && Objects.equals(this.mimeType, that.mimeType);

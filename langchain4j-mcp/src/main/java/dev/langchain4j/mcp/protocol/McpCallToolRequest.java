@@ -17,7 +17,7 @@ public class McpCallToolRequest extends McpClientRequest {
         super(id, McpClientMethod.TOOLS_CALL);
         McpCallToolParams params = new McpCallToolParams(toolName, arguments);
         if (progressToken != null) {
-            params.setMeta(Map.of("progressToken", progressToken));
+            params.setMeta(dev.langchain4j.internal.Jdk8.map("progressToken", progressToken));
         }
         setParams(params);
     }

@@ -60,7 +60,7 @@ public final class McpJson {
      * @deprecated use {@link #deserialize(String, Class)}, which does not expose Jackson types and
      * avoids re-serializing the tree in order to read it.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public static <T> T deserialize(JsonNode message, Class<T> type) {
         return read(message.toString(), type);
     }
@@ -107,7 +107,8 @@ public final class McpJson {
         if (message == null) {
             return null;
         }
-        if (message instanceof JsonNode node) {
+        if (message instanceof JsonNode) {
+            JsonNode node = (JsonNode) message;
             // A Jackson 2 tree is a type only Jackson 2 knows. Another codec would not recognise it
             // and would write out its bean properties - {"empty":false,"nodeType":"OBJECT",...} -
             // rather than the JSON it holds. Its own toString() is that JSON.
@@ -163,7 +164,7 @@ public final class McpJson {
      * transport's response stream open after the client cancels the operation.
      */
     public static <T, R> CompletableFuture<R> map(CompletableFuture<T> source, Function<T, R> mapper) {
-        CompletableFuture<R> mapped = new CompletableFuture<>() {
+        CompletableFuture<R> mapped = new CompletableFuture<R>() {
             @Override
             public boolean cancel(boolean mayInterruptIfRunning) {
                 source.cancel(mayInterruptIfRunning);

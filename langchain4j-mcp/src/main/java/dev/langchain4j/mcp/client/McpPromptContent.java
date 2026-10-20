@@ -15,7 +15,7 @@ import java.util.Locale;
     @JsonSubTypes.Type(value = McpEmbeddedResource.class, name = "resource"),
     @JsonSubTypes.Type(value = McpImageContent.class, name = "image")
 })
-public sealed interface McpPromptContent permits McpTextContent, McpEmbeddedResource, McpImageContent {
+public interface McpPromptContent {
 
     @JsonProperty("type")
     default String getType() {

@@ -42,7 +42,7 @@ public final class McpEmbeddedResource implements McpPromptContent {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpEmbeddedResource) obj;
+        McpEmbeddedResource that = (McpEmbeddedResource) obj;
         return Objects.equals(this.resource, that.resource);
     }
 

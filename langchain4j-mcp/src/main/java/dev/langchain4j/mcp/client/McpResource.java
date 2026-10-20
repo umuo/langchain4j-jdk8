@@ -43,7 +43,7 @@ public class McpResource {
         this.description = description;
         this.mimeType = mimeType;
         this.metadata = copy(metadata);
-        this.icons = icons == null ? List.of() : List.copyOf(icons);
+        this.icons = icons == null ? dev.langchain4j.internal.Jdk8.list() : dev.langchain4j.internal.Jdk8.copyList(icons);
     }
 
     public String uri() {
@@ -74,7 +74,7 @@ public class McpResource {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpResource) obj;
+        McpResource that = (McpResource) obj;
         return Objects.equals(this.uri, that.uri)
                 && Objects.equals(this.name, that.name)
                 && Objects.equals(this.description, that.description)

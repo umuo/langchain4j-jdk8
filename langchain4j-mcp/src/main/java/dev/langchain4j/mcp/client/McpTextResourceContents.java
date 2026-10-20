@@ -46,7 +46,7 @@ public final class McpTextResourceContents implements McpResourceContents {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpTextResourceContents) obj;
+        McpTextResourceContents that = (McpTextResourceContents) obj;
         return Objects.equals(this.uri, that.uri) &&
                 Objects.equals(this.text, that.text) &&
                 Objects.equals(this.mimeType, that.mimeType);

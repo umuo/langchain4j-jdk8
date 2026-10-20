@@ -37,7 +37,7 @@ public final class McpTextContent implements McpPromptContent {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpTextContent) obj;
+        McpTextContent that = (McpTextContent) obj;
         return Objects.equals(this.text, that.text);
     }
 

@@ -41,7 +41,7 @@ class GetResourceToolExecutor implements ToolExecutor {
         Optional<McpClient> client = mcpClients.stream()
                 .filter(mcpClient -> mcpClient.key().equals(mcpServerKey))
                 .findFirst();
-        if (client.isEmpty()) {
+        if (!client.isPresent()) {
             throw new ToolArgumentsException("ERROR: unknown MCP server: " + mcpServerKey);
         } else {
             StringBuilder result = new StringBuilder();

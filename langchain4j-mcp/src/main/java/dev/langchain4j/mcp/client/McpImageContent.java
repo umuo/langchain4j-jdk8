@@ -46,7 +46,7 @@ public final class McpImageContent implements McpPromptContent {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpImageContent) obj;
+        McpImageContent that = (McpImageContent) obj;
         return Objects.equals(this.data, that.data) &&
                 Objects.equals(this.mimeType, that.mimeType);
     }

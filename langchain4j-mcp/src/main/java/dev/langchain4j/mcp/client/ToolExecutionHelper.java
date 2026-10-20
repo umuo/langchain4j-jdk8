@@ -88,7 +88,7 @@ class ToolExecutionHelper {
      */
     private static Map<String, Object> toolAttributes(Map<String, Object> meta) {
         if (meta == null) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
         Map<String, Object> attributes = new HashMap<>();
         meta.forEach((key, value) -> {

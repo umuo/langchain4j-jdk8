@@ -28,7 +28,7 @@ public class McpReadResourceResult {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpReadResourceResult) obj;
+        McpReadResourceResult that = (McpReadResourceResult) obj;
         return Objects.equals(this.contents, that.contents);
     }
 

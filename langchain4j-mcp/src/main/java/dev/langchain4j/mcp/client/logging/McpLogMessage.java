@@ -29,7 +29,7 @@ public class McpLogMessage {
      * @deprecated use {@link #McpLogMessage(McpLogLevel, String, Object)}, which does not expose
      * Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public McpLogMessage(McpLogLevel level, String logger, JsonNode data) {
         this(level, logger, (Object) (data == null ? null : McpJsonConversions.toValue(data)));
     }
@@ -51,7 +51,7 @@ public class McpLogMessage {
      *
      * @deprecated use {@link #fromMap(Map)}, which does not expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public static McpLogMessage fromJson(JsonNode json) {
         return fromMap(McpJsonConversions.toMap(json));
     }
@@ -94,7 +94,7 @@ public class McpLogMessage {
     /**
      * @deprecated use {@link #dataAsMap()} or {@link #dataAsJson()}.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public JsonNode data() {
         return data == null ? null : McpJson.parse(McpJson.serialize(data));
     }
@@ -103,7 +103,7 @@ public class McpLogMessage {
     public boolean equals(Object obj) {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (McpLogMessage) obj;
+        McpLogMessage that = (McpLogMessage) obj;
         return Objects.equals(this.level, that.level) &&
                 Objects.equals(this.logger, that.logger) &&
                 Objects.equals(this.data, that.data);

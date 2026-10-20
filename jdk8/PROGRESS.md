@@ -184,3 +184,11 @@
 - 目标：第八个生产模块 langchain4j-mcp，保留客户端/工具 provider/executor，HTTP 改为 OkHttp，首轮只验收 MCP 2025-11-25 的 tools/list、tools/call、JSON/非恢复 POST SSE 和 AI Services 工具循环。
 - stdio/WebSocket/Registry 源码保留但不进入兼容产物；modern protocol、GET subsidiary SSE/恢复订阅/自动会话重连和资源/提示词专项验收不在本轮支持声明内。
 - 当前尚未通过真实 Java 8 与最终 clean 验收，已支持范围仍以 m7 为准。
+
+### 第八阶段实现检查点（WIP）
+
+- MCP 112 个生产源码文件已使用 --release 8 编译；默认 HTTP 传输以 OkHttp 替换 JDK HTTP，首轮固定 2025-11-25 工具协议。
+- 新增 24 个真实 Java 8 验收用例全部通过：HTTP/SSE、分页/schema、错误、超时/直接取消/close/初始化失败释放、并发 ID、值类 JSON 和四条工具循环。
+- 增加 23 个上游 MCP 测试类，共 158 项；JDK 17 选定回归总计 850 项通过，0 失败/错误/跳过。没有删改这些原始测试。
+- 新增联调用例最初要求 AI Services 立即取消工具，失败后核对源码确认上游有意 drain 已启动工具以保留补偿结果；保留此约定，最终分别验证直接 MCP 取消与 AI Services 取消后不再调用模型。未修改 Guardrails 或通用补偿逻辑。
+- 初始化失败遗留 HTTP 的清理路径已补齐，pending registry 统一终止清理；McpExample 与 BOM 已纳入最终构建，当前待完整 clean/消费/运行时审计。

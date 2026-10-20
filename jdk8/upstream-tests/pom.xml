@@ -40,6 +40,10 @@
             <groupId>dev.langchain4j.jdk8</groupId>
             <artifactId>langchain4j-open-ai</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <testSourceDirectory>${project.basedir}/../..</testSourceDirectory>
@@ -110,6 +114,29 @@
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/ToolExecutionResultMessageTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/SystemMessageTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/CustomMessageTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/McpToolExecutorTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/McpToolProviderTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/protocol/McpProtocolSerializationTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/protocol/McpProtocolDtoTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/ToolSpecificationHelperLocaleTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/DefaultMcpToolResultConverterTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/logging/McpLogMessageTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/logging/McpLogLevelTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpApplicationErrorTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpUnknownFieldToleranceTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/ToolSpecificationHelperTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/PromptContentConversionTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpPayloadAccessorTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpMetadataParsingTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpJsonConversionsTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpSchemaCoercionTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpBlobResourceContentsTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/StructuredContentParsingTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/McpToolResultMetaParsingTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/DefaultMcpToolResultExtractorTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/transport/McpOperationHandlerRobustnessTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/transport/McpPendingOperationTest.java</testInclude>
+                        <testInclude>langchain4j-mcp/src/test/java/dev/langchain4j/mcp/client/transport/McpHeaderEncodingTest.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -167,6 +194,29 @@
                         <include>**/ToolExecutionResultMessageTest.java</include>
                         <include>**/SystemMessageTest.java</include>
                         <include>**/CustomMessageTest.java</include>
+                        <include>**/McpToolExecutorTest.java</include>
+                        <include>**/McpToolProviderTest.java</include>
+                        <include>**/McpProtocolSerializationTest.java</include>
+                        <include>**/McpProtocolDtoTest.java</include>
+                        <include>**/ToolSpecificationHelperLocaleTest.java</include>
+                        <include>**/DefaultMcpToolResultConverterTest.java</include>
+                        <include>**/McpLogMessageTest.java</include>
+                        <include>**/McpLogLevelTest.java</include>
+                        <include>**/McpApplicationErrorTest.java</include>
+                        <include>**/McpUnknownFieldToleranceTest.java</include>
+                        <include>**/ToolSpecificationHelperTest.java</include>
+                        <include>**/PromptContentConversionTest.java</include>
+                        <include>**/McpPayloadAccessorTest.java</include>
+                        <include>**/McpMetadataParsingTest.java</include>
+                        <include>**/McpJsonConversionsTest.java</include>
+                        <include>**/McpSchemaCoercionTest.java</include>
+                        <include>**/McpBlobResourceContentsTest.java</include>
+                        <include>**/StructuredContentParsingTest.java</include>
+                        <include>**/McpToolResultMetaParsingTest.java</include>
+                        <include>**/DefaultMcpToolResultExtractorTest.java</include>
+                        <include>**/McpOperationHandlerRobustnessTest.java</include>
+                        <include>**/McpPendingOperationTest.java</include>
+                        <include>**/McpHeaderEncodingTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

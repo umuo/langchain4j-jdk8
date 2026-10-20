@@ -1,697 +1,219 @@
 package dev.langchain4j.mcp.client.transport.http;
 
-import static dev.langchain4j.internal.Utils.getOrDefault;
-import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import dev.langchain4j.exception.HttpException;
-import dev.langchain4j.exception.JsonException;
-import dev.langchain4j.internal.DefaultExecutorProvider;
 import dev.langchain4j.mcp.client.McpCallContext;
 import dev.langchain4j.mcp.client.McpHeadersSupplier;
-import dev.langchain4j.mcp.client.logging.McpLoggers;
-import dev.langchain4j.mcp.client.transport.McpHeaderEncoding;
 import dev.langchain4j.mcp.client.transport.McpJson;
 import dev.langchain4j.mcp.client.transport.McpOperationHandler;
 import dev.langchain4j.mcp.client.transport.McpTransport;
-import dev.langchain4j.mcp.protocol.McpClientMessage;
-import dev.langchain4j.mcp.protocol.McpInitializationNotification;
-import dev.langchain4j.mcp.protocol.McpInitializeRequest;
-import dev.langchain4j.mcp.protocol.McpJsonRpcMessage;
+import dev.langchain4j.mcp.protocol.*;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-import javax.net.ssl.SSLContext;
+import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class StreamableHttpMcpTransport implements McpTransport {
-    private static final Logger LOG = LoggerFactory.getLogger(StreamableHttpMcpTransport.class);
-    private static final long DEFAULT_SUBSIDIARY_RETRY_MS = 5000;
+/**
+ * Java 8 Streamable HTTP tools transport for MCP 2025-11-25.
+ * Supports JSON and non-resumable POST SSE responses. See the module README for boundaries.
+ * No request is automatically replayed: tools may have side effects.
+ */
+public final class StreamableHttpMcpTransport implements McpTransport {
+    private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
     private final String url;
-    private final McpHeadersSupplier customHeadersSupplier;
-    private final boolean logResponses;
+    private final OkHttpClient client;
+    private final boolean ownsClient;
+    private final McpHeadersSupplier headers;
+    private final Logger logger;
     private final boolean logRequests;
-    private final Logger trafficLog;
-    private final AtomicReference<CompletableFuture<String>> initializeInProgress = new AtomicReference<>(null);
-    private volatile McpOperationHandler operationHandler;
-    private final HttpClient httpClient;
-    private final SSLContext sslContext;
-    private final HttpClient.Version httpVersion;
-    // Legacy protocol only (up to 2025-11-25) — stored for 404 reinitialize
-    private McpInitializeRequest initializeRequest;
-    private final AtomicReference<String> mcpSessionId = new AtomicReference<>();
-    private volatile boolean modernProtocol;
-    private volatile String protocolVersionHeader;
+    private final boolean logResponses;
+    private final Map<CompletableFuture<String>, Call> calls = new ConcurrentHashMap<>();
+    private volatile McpOperationHandler handler;
+    private volatile boolean closed;
+    private volatile String sessionId;
+    private volatile String protocolVersion;
 
-    // Subsidiary SSE channel fields
-    private final boolean subsidiaryChannelEnabled;
-    private volatile Runnable onFailureCallback;
-    private volatile boolean subsidiaryChannelEstablished;
-    private final AtomicReference<String> subsidiaryLastEventId = new AtomicReference<>();
-    private final AtomicLong subsidiaryRetryMs = new AtomicLong(DEFAULT_SUBSIDIARY_RETRY_MS);
-    private final Executor executor;
-    private AtomicBoolean closed = new AtomicBoolean(false);
-    private final Set<SseSubscriber> activeStreamSubscribers = ConcurrentHashMap.newKeySet();
-
-    public StreamableHttpMcpTransport(StreamableHttpMcpTransport.Builder builder) {
-        url = ensureNotNull(builder.url, "Missing server endpoint URL");
+    public StreamableHttpMcpTransport(Builder builder) {
+        HttpUrl parsed = HttpUrl.parse(java.util.Objects.requireNonNull(builder.url, "url"));
+        if (parsed == null) throw new IllegalArgumentException("Invalid MCP HTTP URL");
+        url = parsed.toString();
+        if (builder.subsidiaryChannel) throw new UnsupportedOperationException("Subsidiary SSE is not ported");
+        Duration timeout = builder.timeout == null ? Duration.ofSeconds(60) : builder.timeout;
+        if (timeout.isNegative() || timeout.isZero()) throw new IllegalArgumentException("timeout must be positive");
+        ownsClient = builder.httpClient == null;
+        client = ownsClient ? new OkHttpClient.Builder()
+                .connectTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .readTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .callTimeout(timeout.toMillis(), TimeUnit.MILLISECONDS)
+                .followRedirects(builder.followRedirects).followSslRedirects(false)
+                .protocols(builder.httpVersion1 ? java.util.Collections.singletonList(Protocol.HTTP_1_1)
+                        : java.util.Arrays.asList(Protocol.HTTP_2, Protocol.HTTP_1_1)).build() : builder.httpClient;
+        headers = builder.headers == null ? context -> java.util.Collections.emptyMap() : builder.headers;
+        logger = builder.logger == null ? LoggerFactory.getLogger(getClass()) : builder.logger;
         logRequests = builder.logRequests;
         logResponses = builder.logResponses;
-        trafficLog = getOrDefault(builder.logger, McpLoggers.traffic());
-        Duration timeout = getOrDefault(builder.timeout, Duration.ofSeconds(60));
-        customHeadersSupplier = getOrDefault(builder.customHeadersSupplier, (i) -> Map.of());
-        sslContext = builder.sslContext;
-        httpVersion = builder.forceHttpVersion1_1 ? HttpClient.Version.HTTP_1_1 : HttpClient.Version.HTTP_2;
-        subsidiaryChannelEnabled = builder.subsidiaryChannelEnabled;
-        executor = getOrDefault(builder.executor, DefaultExecutorProvider.getDefaultExecutor());
-        HttpClient.Builder clientBuilder =
-                HttpClient.newBuilder().connectTimeout(timeout).version(httpVersion);
-        if (builder.followRedirects) {
-            clientBuilder.followRedirects(HttpClient.Redirect.NORMAL);
-        }
-        if (builder.executor != null) {
-            clientBuilder.executor(builder.executor);
-        }
-        if (sslContext != null) {
-            clientBuilder.sslContext(sslContext);
-        }
-        httpClient = clientBuilder.build();
     }
 
-    @Override
-    public void start(McpOperationHandler operationHandler) {
-        this.operationHandler = operationHandler;
+    @Override public void start(McpOperationHandler handler) {
+        if (closed) throw new IllegalStateException("MCP transport closed");
+        this.handler = java.util.Objects.requireNonNull(handler, "handler");
     }
+    @Override public void setModernProtocol(boolean modern) {
+        if (modern) throw new UnsupportedOperationException("Only MCP 2025-11-25 is ported");
+    }
+    @Override public void setProtocolVersion(String version) { protocolVersion = version; }
+    public String getMcpSessionId() { return sessionId; }
+    public void setMcpSessionId(String sessionId) { this.sessionId = sessionId; }
 
-    @Override
-    public CompletableFuture<String> sendInitializeRequest(McpInitializeRequest operation) {
-        this.initializeRequest = operation;
-        CompletableFuture<String> completableFuture = execute(new McpCallContext(null, operation), false);
-        initializeInProgress.set(completableFuture);
-        return completableFuture
-                .thenCompose(originalResponse -> {
-                    initializeInProgress.set(null);
-                    return CompletableFuture.completedFuture(originalResponse);
-                })
-                .thenCompose(originalResponse -> execute(
-                                new McpCallContext(null, new McpInitializationNotification()), false)
-                        .thenCompose(nullNode -> CompletableFuture.completedFuture(originalResponse)))
-                .thenCompose(originalResponse -> {
-                    if (subsidiaryChannelEnabled) {
-                        return startSubsidiaryChannel(true)
-                                .thenCompose(v -> CompletableFuture.completedFuture(originalResponse));
-                    }
-                    return CompletableFuture.completedFuture(originalResponse);
+    @Override public CompletableFuture<String> sendInitializeRequest(McpInitializeRequest request) {
+        CompletableFuture<String> initial = execute(new McpCallContext(null, request), true);
+        // Track the current leaf so cancellation also covers the initialized notification.
+        CompletableFuture<String> result = new CompletableFuture<>();
+        dev.langchain4j.internal.CancellationChain cancellation = new dev.langchain4j.internal.CancellationChain(result);
+        cancellation.track(initial);
+        initial.whenComplete((response, error) -> {
+            if (error != null) { result.completeExceptionally(error); return; }
+            if (result.isCancelled()) return;
+            try {
+                JsonNode root = McpJson.parse(response);
+                if (root.has("error")) throw new IllegalStateException("MCP initialization failed: " + response);
+                String version = root.path("result").path("protocolVersion").asText();
+                if (!"2025-11-25".equals(version)) throw new IllegalStateException("Unsupported MCP version: " + version);
+                protocolVersion = version;
+                CompletableFuture<String> notification = execute(new McpCallContext(null, new McpInitializationNotification()), false);
+                cancellation.track(notification);
+                notification.whenComplete((ignored, failure) -> {
+                    if (failure != null) result.completeExceptionally(failure); else result.complete(response);
                 });
+            } catch (RuntimeException failure) { result.completeExceptionally(failure); }
+        });
+        return result;
+    }
+    @Override public CompletableFuture<String> sendRequest(McpClientMessage message) { return sendRequest(new McpCallContext(null, message)); }
+    @Override public CompletableFuture<String> sendRequest(McpCallContext context) { return execute(context, true); }
+    @Override public void sendMessage(McpClientMessage message) { sendMessage(new McpCallContext(null, message)); }
+    @Override public void sendMessage(McpCallContext context) {
+        execute(context, false).whenComplete((ignored, failure) -> {
+            if (failure != null && !closed) logger.warn("MCP notification failed", failure);
+        });
     }
 
-    private HttpRequest createRequest(McpJsonRpcMessage message, McpCallContext callContext) {
-        String body = McpJson.serialize(message);
-        HttpRequest.BodyPublisher bodyPublisher = HttpRequest.BodyPublishers.ofString(body);
-        if (logRequests) {
-            trafficLog.info("Request: {}", body);
-        }
-        final HttpRequest.Builder builder = HttpRequest.newBuilder();
-
-        if (modernProtocol) {
-            // Modern protocol headers
-            if (protocolVersionHeader != null) {
-                builder.header("MCP-Protocol-Version", protocolVersionHeader);
-            }
-            // Extract method from JSON-RPC message
-            JsonNode bodyNode = McpJson.parse(body);
-            String method = bodyNode.path("method").asText(null);
-            if (method != null) {
-                builder.header("Mcp-Method", method);
-            }
-            // Extract name for tools/call, resources/read, prompts/get
-            JsonNode params = bodyNode.path("params");
-            if ("tools/call".equals(method) || "prompts/get".equals(method)) {
-                String name = params.path("name").asText(null);
-                if (name != null) {
-                    builder.header("Mcp-Name", McpHeaderEncoding.encode(name));
-                }
-            } else if ("resources/read".equals(method)) {
-                String uri = params.path("uri").asText(null);
-                if (uri != null) {
-                    builder.header("Mcp-Name", McpHeaderEncoding.encode(uri));
-                }
-            }
-            // Mcp-Param headers from context
-            if (callContext.mcpParamHeaders() != null) {
-                callContext.mcpParamHeaders().forEach((k, v) -> builder.header("Mcp-Param-" + k, v));
-            }
-        } else {
-            // Legacy: send Mcp-Session-Id
-            String sessionId = mcpSessionId.get();
-            if (sessionId != null && !(message instanceof McpInitializeRequest)) {
-                builder.header("Mcp-Session-Id", sessionId);
-            }
-        }
-
-        Map<String, String> headers = customHeadersSupplier.apply(callContext);
-        if (headers != null) {
-            headers.forEach(builder::header);
-        }
-        return builder.uri(URI.create(url))
-                .header("Content-Type", "application/json")
-                .header("Accept", "application/json,text/event-stream")
-                .POST(bodyPublisher)
-                .build();
-    }
-
-    @Override
-    public CompletableFuture<String> sendRequest(McpClientMessage operation) {
-        return sendRequest(new McpCallContext(null, operation));
-    }
-
-    @Override
-    public CompletableFuture<String> sendRequest(McpCallContext context) {
-        return execute(context, false);
-    }
-
-    @Override
-    public void sendMessage(McpClientMessage operation) {
-        sendMessage(new McpCallContext(null, operation));
-    }
-
-    @Override
-    public void sendMessage(McpCallContext context) {
-        execute(context, false, false);
-    }
-
-    @Override
-    public void checkHealth() {
-        // no transport-specific checks right now
-    }
-
-    @Override
-    public void onFailure(Runnable actionOnFailure) {
-        this.onFailureCallback = actionOnFailure;
-    }
-
-    /**
-     * Returns the MCP session ID assigned by the server, or {@code null} if no session
-     * has been established yet (or the server does not use sessions). The session ID is
-     * captured from the {@code Mcp-Session-Id} response header during initialization
-     * and reused on subsequent requests via the same header.
-     * This only applies to the legacy protocol (before 2026-07-28).
-     */
-    public String getMcpSessionId() {
-        return mcpSessionId.get();
-    }
-
-    /**
-     * Sets the MCP session ID to be sent on subsequent requests via the
-     * {@code Mcp-Session-Id} header. This is intended for scenarios where a session
-     * obtained elsewhere (for example, in another process or pod) needs to be resumed
-     * by this transport, allowing stateless deployments without sticky sessions.
-     * This only applies to the legacy protocol (before 2026-07-28).
-     */
-    public void setMcpSessionId(String mcpSessionId) {
-        if (modernProtocol) {
-            LOG.warn(
-                    "Setting MCP session ID has no effect in modern (2026-07-28+) protocol mode, which does not use sessions.");
-        }
-        this.mcpSessionId.set(mcpSessionId);
-    }
-
-    /**
-     * Enables or disables modern protocol mode. When enabled, the transport sends
-     * modern protocol headers ({@code MCP-Protocol-Version}, {@code Mcp-Method},
-     * {@code Mcp-Name}) and skips legacy session management ({@code Mcp-Session-Id}
-     * header and 404-triggered reinitialization).
-     */
-    public void setModernProtocol(boolean modernProtocol) {
-        this.modernProtocol = modernProtocol;
-    }
-
-    /**
-     * Sets the protocol version to be sent in the {@code MCP-Protocol-Version} header
-     * when modern protocol mode is enabled.
-     */
-    public void setProtocolVersion(String protocolVersion) {
-        this.protocolVersionHeader = protocolVersion;
-    }
-
-    private CompletableFuture<String> execute(McpCallContext context, boolean isRetry) {
-        return execute(context, isRetry, true);
-    }
-
-    /**
-     * @param expectResponse whether this message expects a response from the server. A notification
-     *     or a response to a server-initiated request does not, and must not be registered as a
-     *     pending operation: its id comes from the server's id space, so registering it would both
-     *     leave a future that is never completed and displace a client-initiated request that is
-     *     still in flight and happens to carry the same id.
-     */
-    private CompletableFuture<String> execute(McpCallContext context, boolean isRetry, boolean expectResponse) {
-        Long id = expectResponse ? context.message().getId() : null;
-        if (!(context.message() instanceof McpInitializeRequest)) {
-            CompletableFuture<String> reinitializeInProgress = this.initializeInProgress.get();
-            if (reinitializeInProgress != null) {
-                reinitializeInProgress.join();
-            }
-        }
-        HttpRequest request = null;
+    private CompletableFuture<String> execute(McpCallContext context, boolean responseExpected) {
+        CompletableFuture<String> result = new CompletableFuture<>();
         try {
-            request = createRequest(context.message(), context);
-        } catch (JsonException | IllegalArgumentException e) {
-            return CompletableFuture.failedFuture(e);
-        }
-        CompletableFuture<String> future = new CompletableFuture<>();
-        if (id != null) {
-            operationHandler.expectResponse(id, future);
-        }
-
-        httpClient
-                .sendAsync(request, responseInfo -> {
-                    if (!isExpectedStatusCode(responseInfo.statusCode())) {
-                        if (!(context.message() instanceof McpInitializeRequest)
-                                && responseInfo.statusCode() == 404
-                                && !modernProtocol) {
-                            // Legacy protocol only (up to 2025-11-25) — 404 means session expired, reinitialize
-                            if (!isRetry) {
-                                sendInitializeRequest(StreamableHttpMcpTransport.this.initializeRequest)
-                                        .thenAccept(ignored -> {
-                                            execute(context, true, expectResponse)
-                                                    .thenAccept(future::complete)
-                                                    .exceptionally(t -> {
-                                                        future.completeExceptionally(t);
-                                                        return null;
-                                                    });
-                                        })
-                                        .exceptionally(t -> {
-                                            future.completeExceptionally(t);
-                                            return null;
-                                        });
-                            } else {
-                                // Reinitialization did not help; fail instead of leaving the caller hanging
-                                future.completeExceptionally(new HttpException(
-                                        responseInfo.statusCode(),
-                                        "Session expired again after reinitialization: server returned status code "
-                                                + responseInfo.statusCode()));
-                            }
-                        } else {
-                            future.completeExceptionally(new HttpException(
-                                    responseInfo.statusCode(), "Unexpected status code: " + responseInfo.statusCode()));
+            if (closed) throw new IllegalStateException("MCP transport closed");
+            if (handler == null) throw new IllegalStateException("MCP transport not started");
+            McpClientMessage message = context.message();
+            String json = McpJson.serialize(message);
+            Request.Builder builder = new Request.Builder().url(url)
+                    .post(RequestBody.create(json, JSON));
+            Map<String, String> supplied = headers.apply(context);
+            if (supplied != null) supplied.forEach(builder::header);
+            builder.header("Accept", "application/json, text/event-stream");
+            if (!(message instanceof McpInitializeRequest)) {
+                if (sessionId != null) builder.header("MCP-Session-Id", sessionId);
+                if (protocolVersion != null) builder.header("MCP-Protocol-Version", protocolVersion);
+            }
+            if (logRequests) logger.info("MCP request: {}", json);
+            Call call = client.newCall(builder.build());
+            calls.put(result, call);
+            if (responseExpected) handler.expectResponse(message.getId(), result);
+            result.whenComplete((value, failure) -> {
+                calls.remove(result);
+                // Completing a request, including timeout/error, releases its response stream.
+                call.cancel();
+            });
+            if (closed) { result.completeExceptionally(new IllegalStateException("MCP transport closed")); return result; }
+            call.enqueue(new Callback() {
+                @Override public void onFailure(Call call, IOException failure) { result.completeExceptionally(failure); }
+                @Override public void onResponse(Call call, Response response) {
+                    try (Response received = response) {
+                        if (!received.isSuccessful()) throw new HttpException(received.code(), "MCP HTTP " + received.code());
+                        if (!responseExpected) {
+                            if (received.code() != 202) throw new IOException("MCP notification requires HTTP 202");
+                            result.complete(null); return;
                         }
-                        return HttpResponse.BodySubscribers.discarding();
-                    } else {
-                        Optional<String> contentType = responseInfo.headers().firstValue("Content-Type");
-                        if (!modernProtocol) {
-                            Optional<String> mcpSessionId =
-                                    responseInfo.headers().firstValue("Mcp-Session-Id");
-                            if (mcpSessionId.isPresent()) {
-                                LOG.debug("Assigned MCP session ID: {}", mcpSessionId);
-                                StreamableHttpMcpTransport.this.mcpSessionId.set(mcpSessionId.get());
-                            }
-                        }
-                        if (id != null
-                                && contentType.isPresent()
-                                && contentType.get().contains("text/event-stream")) {
-                            // the server has started an SSE stream
-                            SseSubscriber[] holder = new SseSubscriber[1];
-                            SseSubscriber subscriber = new SseSubscriber(
-                                    future,
-                                    logResponses,
-                                    operationHandler,
-                                    trafficLog,
-                                    () -> activeStreamSubscribers.remove(holder[0]));
-                            holder[0] = subscriber;
-                            activeStreamSubscribers.add(subscriber);
-                            return HttpResponse.BodySubscribers.fromLineSubscriber(subscriber);
-                        } else {
-                            // the server has returned a regular HTTP response
-                            return HttpResponse.BodySubscribers.mapping(
-                                    HttpResponse.BodySubscribers.ofString(StandardCharsets.UTF_8), responseBody -> {
-                                        if (logResponses) {
-                                            trafficLog.info("Response: {}", responseBody);
-                                        }
-                                        if (id == null) {
-                                            future.complete(null);
-                                        }
-                                        try {
-                                            operationHandler.onMessage(responseBody);
-                                            return null;
-                                        } catch (RuntimeException e) {
-                                            future.completeExceptionally(e);
-                                            return null;
-                                        }
-                                    });
-                        }
-                    }
-                })
-                .exceptionally(t -> {
-                    future.completeExceptionally(t);
-                    return null;
-                });
-        return future;
-    }
-
-    /**
-     * Opens the subsidiary SSE channel by issuing an HTTP GET to the MCP endpoint.
-     * This allows the server to send notifications and requests to the client
-     * without the client first sending data via HTTP POST.
-     * Only used with the legacy MCP protocol (versions up to 2025-11-25).
-     * In modern protocol, notifications are received via {@code subscriptions/listen}.
-     *
-     * @param firstAttempt if true, failures will not trigger reconnection
-     * @return a future that completes when the channel setup attempt finishes
-     */
-    private CompletableFuture<Void> startSubsidiaryChannel(boolean firstAttempt) {
-        if (closed.get()) {
-            return CompletableFuture.completedFuture(null);
-        }
-        HttpRequest.Builder requestBuilder = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("Accept", "text/event-stream")
-                .GET();
-        String sessionId = mcpSessionId.get();
-        if (sessionId != null) {
-            requestBuilder.header("Mcp-Session-Id", sessionId);
-        }
-        String lastId = subsidiaryLastEventId.get();
-        if (lastId != null) {
-            requestBuilder.header("Last-Event-ID", lastId);
-        }
-        Map<String, String> headers = customHeadersSupplier.apply(null);
-        if (headers != null) {
-            headers.forEach(requestBuilder::header);
-        }
-        HttpRequest request = requestBuilder.build();
-
-        CompletableFuture<Void> result = new CompletableFuture<>();
-        SseSubscriber subscriber = new SseSubscriber(
-                logResponses,
-                operationHandler,
-                trafficLog,
-                subsidiaryLastEventId,
-                subsidiaryRetryMs,
-                this::scheduleSubsidiaryReconnect,
-                closed);
-        activeStreamSubscribers.add(subscriber);
-
-        httpClient
-                .sendAsync(request, responseInfo -> {
-                    int statusCode = responseInfo.statusCode();
-                    Optional<String> contentType = responseInfo.headers().firstValue("Content-Type");
-                    if (isExpectedStatusCode(statusCode)
-                            && contentType.isPresent()
-                            && contentType.get().contains("text/event-stream")) {
-                        subsidiaryChannelEstablished = true;
-                        LOG.debug("Subsidiary SSE channel established");
-                        result.complete(null);
-                        return HttpResponse.BodySubscribers.fromLineSubscriber(subscriber);
-                    } else {
-                        if (firstAttempt) {
-                            LOG.warn(
-                                    "Failed to open subsidiary SSE channel (status={}, contentType={}), will not re-attempt",
-                                    statusCode,
-                                    contentType.orElse("absent"));
-                        } else {
-                            LOG.debug(
-                                    "Failed to reconnect subsidiary SSE channel (status={}, contentType={}), scheduling retry",
-                                    statusCode,
-                                    contentType.orElse("absent"));
-                            if (!closed.get()) {
-                                scheduleSubsidiaryReconnect();
-                            }
-                        }
-                        result.complete(null);
-                        return HttpResponse.BodySubscribers.discarding();
-                    }
-                })
-                .exceptionally(t -> {
-                    if (!closed.get()) {
-                        if (firstAttempt) {
-                            LOG.warn("Failed to open subsidiary SSE channel", t);
-                        } else {
-                            LOG.debug("Subsidiary SSE channel connection failed, scheduling retry", t);
-                            scheduleSubsidiaryReconnect();
-                        }
-                    }
-                    result.complete(null);
-                    return null;
-                });
+                        if (received.code() != 200 || received.body() == null) throw new IOException("MCP response requires HTTP 200 and a body");
+                        if (message instanceof McpInitializeRequest) sessionId = received.header("MCP-Session-Id");
+                        String contentType = received.header("Content-Type", "").toLowerCase(java.util.Locale.ROOT);
+                        if (contentType.startsWith("text/event-stream")) {
+                            readEvents(received.body(), result);
+                        } else if (contentType.startsWith("application/json")) {
+                            deliver(received.body().string());
+                        } else throw new IOException("Unsupported MCP content type: " + contentType);
+                        if (!result.isDone()) throw new IOException("MCP response ended without the matching JSON-RPC result");
+                    } catch (Exception failure) { result.completeExceptionally(failure); }
+                }
+            });
+        } catch (Exception failure) { result.completeExceptionally(failure); }
         return result;
     }
 
-    private void scheduleSubsidiaryReconnect() {
-        if (closed.get() || !subsidiaryChannelEstablished) {
-            return;
-        }
-        long delayMs = subsidiaryRetryMs.get();
-        LOG.debug("Scheduling subsidiary SSE channel reconnect in {} ms", delayMs);
-        Executor delayedExecutor = CompletableFuture.delayedExecutor(delayMs, TimeUnit.MILLISECONDS, executor);
-        CompletableFuture.runAsync(
-                () -> {
-                    if (!closed.get()) {
-                        startSubsidiaryChannel(false);
-                    }
-                },
-                delayedExecutor);
+    private void deliver(String message) {
+        if (logResponses) logger.info("MCP response: {}", message);
+        handler.onMessage(message);
     }
-
-    private boolean isExpectedStatusCode(int statusCode) {
-        return statusCode >= 200 && statusCode < 300;
-    }
-
-    @Override
-    public boolean requiresCancellationNotification() {
-        return false;
-    }
-
-    @Override
-    public void close() throws IOException {
-        closed.set(true);
-        for (SseSubscriber subscriber : activeStreamSubscribers) {
-            subscriber.cancel();
-        }
-        activeStreamSubscribers.clear();
-        // The httpClient.close() method only exists on JDK 21+, so invoke it only if we can.
-        // Replace this with a normal method call when switching the base to JDK 21+.
-        try {
-            httpClient.getClass().getMethod("close").invoke(httpClient);
-        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException ignored) {
+    private void readEvents(ResponseBody body, CompletableFuture<String> result) throws IOException {
+        StringBuilder data = new StringBuilder();
+        String line;
+        // Okio handles UTF-8 characters and CRLF split across arbitrary network chunks.
+        while (!result.isDone() && (line = body.source().readUtf8Line()) != null) {
+            if (line.isEmpty()) {
+                if (data.length() > 0) {
+                    data.setLength(data.length() - 1);
+                    deliver(data.toString()); data.setLength(0);
+                }
+            } else if (line.startsWith("data:")) {
+                String value = line.substring(5);
+                if (value.startsWith(" ")) value = value.substring(1);
+                data.append(value).append('\n');
+            }
         }
     }
-
-    public static Builder builder() {
-        return new Builder();
+    @Override public void checkHealth() { if (closed) throw new IllegalStateException("MCP transport closed"); }
+    @Override public void onFailure(Runnable callback) { /* No automatic reconnect or replay. */ }
+    @Override public boolean requiresCancellationNotification() { return true; }
+    @Override public void close() {
+        closed = true;
+        calls.keySet().forEach(future -> future.completeExceptionally(new IllegalStateException("MCP transport closed")));
+        if (ownsClient) {
+            client.dispatcher().executorService().shutdown();
+            client.connectionPool().evictAll();
+        }
     }
-
-    public static class Builder {
-
-        private Executor executor;
+    public static Builder builder() { return new Builder(); }
+    public static final class Builder {
         private String url;
-        private McpHeadersSupplier customHeadersSupplier;
+        private OkHttpClient httpClient;
+        private McpHeadersSupplier headers;
         private Duration timeout;
-        private boolean logRequests = false;
-        private boolean logResponses = false;
+        private boolean logRequests, logResponses, followRedirects, httpVersion1, subsidiaryChannel;
         private Logger logger;
-        private SSLContext sslContext;
-        private boolean forceHttpVersion1_1;
-        private boolean subsidiaryChannelEnabled = false;
-        private boolean followRedirects = false;
-
-        /**
-         * The URL of the MCP server.
-         */
-        public StreamableHttpMcpTransport.Builder url(String url) {
-            this.url = url;
-            return this;
-        }
-
-        /**
-         * The request headers of the MCP server.
-         */
-        public StreamableHttpMcpTransport.Builder customHeaders(Map<String, String> customHeaders) {
-            this.customHeadersSupplier = (i) -> customHeaders;
-            return this;
-        }
-
-        /**
-         * A supplier for dynamic request headers of the MCP server.
-         * The supplier is called for each request, allowing headers to be updated dynamically.
-         */
-        public StreamableHttpMcpTransport.Builder customHeaders(Supplier<Map<String, String>> customHeadersSupplier) {
-            this.customHeadersSupplier = i -> customHeadersSupplier.get();
-            return this;
-        }
-
-        /**
-         * A supplier for dynamic request headers of the MCP server.
-         * The supplier is called for each request, allowing headers to be updated dynamically.
-         */
-        public StreamableHttpMcpTransport.Builder customHeaders(McpHeadersSupplier customHeadersSupplier) {
-            this.customHeadersSupplier = customHeadersSupplier;
-            return this;
-        }
-
-        /**
-         * The connection timeout (applied on the http client level). Application-level
-         * timeouts are handled by the MCP client itself.
-         */
-        public StreamableHttpMcpTransport.Builder timeout(Duration timeout) {
-            this.timeout = timeout;
-            return this;
-        }
-
-        /**
-         * Whether to log all requests that are sent over this transport.
-         */
-        public StreamableHttpMcpTransport.Builder logRequests(boolean logRequests) {
-            this.logRequests = logRequests;
-            return this;
-        }
-
-        /**
-         * Whether to log all responses received over this transport.
-         */
-        public StreamableHttpMcpTransport.Builder logResponses(boolean logResponses) {
-            this.logResponses = logResponses;
-            return this;
-        }
-
-        /**
-         * Sets a custom {@link Logger} to be used for traffic logging (both requests and responses).
-         * This logger will be used for both regular HTTP responses and Server-Sent Events (SSE) traffic.
-         * If not specified, a default logger will be used.
-         *
-         * @param logger an alternate {@link Logger} to be used instead of the default one provided by Langchain4J for traffic logging.
-         * @return {@code this}.
-         */
-        public StreamableHttpMcpTransport.Builder logger(Logger logger) {
-            this.logger = logger;
-            return this;
-        }
-
-        /**
-         * An optional {@link Executor} that will be used for executing requests and handling responses.
-         * It will also be used for scheduling auto-reconnect attempts of the subsidiary SSE channel if that is enabled.
-         * If not provided, a default shared executor will be used.
-         */
-        public StreamableHttpMcpTransport.Builder executor(Executor executor) {
-            this.executor = executor;
-            return this;
-        }
-
-        /**
-         * Supplies a custom {@link SSLContext} used when establishing HTTPS connections to the MCP server,
-         * allowing private CAs or certificates.
-         */
-        public StreamableHttpMcpTransport.Builder sslContext(SSLContext sslContext) {
-            this.sslContext = sslContext;
-            return this;
-        }
-
-        /**
-         * Forces the transport to use HTTP/1.1 instead of the default HTTP/2.
-         */
-        public StreamableHttpMcpTransport.Builder setHttpVersion1_1() {
-            this.forceHttpVersion1_1 = true;
-            return this;
-        }
-
-        /**
-         * Enables or disables following HTTP redirects (3xx status codes).
-         * When enabled, the transport will automatically follow redirects
-         * using {@link HttpClient.Redirect#NORMAL} policy (always redirect,
-         * except from HTTPS to HTTP).
-         * Defaults to {@code false}.
-         */
-        public StreamableHttpMcpTransport.Builder followRedirects(boolean followRedirects) {
-            this.followRedirects = followRedirects;
-            return this;
-        }
-
-        /**
-         * Enables or disables the subsidiary SSE channel. When enabled, the transport
-         * will open an HTTP GET-based SSE stream after initialization, allowing the
-         * server to send notifications and requests to the client without the client
-         * first sending data via HTTP POST. If the server does not support the
-         * subsidiary channel (returns 405), the transport will log a warning and
-         * continue without it. If the stream breaks after being successfully
-         * established, the transport will automatically attempt to reconnect.
-         * Only used with the legacy MCP protocol (versions up to 2025-11-25).
-         * In modern protocol, notifications are received via {@code subscriptions/listen}.
-         * Defaults to {@code false}.
-         */
-        public StreamableHttpMcpTransport.Builder subsidiaryChannel(boolean subsidiaryChannelEnabled) {
-            this.subsidiaryChannelEnabled = subsidiaryChannelEnabled;
-            return this;
-        }
-
-        public StreamableHttpMcpTransport build() {
-            return new StreamableHttpMcpTransport(this);
-        }
+        public Builder url(String url) { this.url = url; return this; }
+        /** Caller owns the supplied client's executor and connection pool; configure TLS here. */
+        public Builder httpClient(OkHttpClient client) { this.httpClient = client; return this; }
+        public Builder customHeaders(Map<String, String> headers) { this.headers = context -> headers; return this; }
+        public Builder customHeaders(Supplier<Map<String, String>> headers) { this.headers = context -> headers.get(); return this; }
+        public Builder customHeaders(McpHeadersSupplier headers) { this.headers = headers; return this; }
+        public Builder timeout(Duration timeout) { this.timeout = timeout; return this; }
+        public Builder logRequests(boolean enabled) { logRequests = enabled; return this; }
+        public Builder logResponses(boolean enabled) { logResponses = enabled; return this; }
+        public Builder logger(Logger logger) { this.logger = logger; return this; }
+        public Builder followRedirects(boolean enabled) { followRedirects = enabled; return this; }
+        public Builder setHttpVersion1_1() { httpVersion1 = true; return this; }
+        public Builder subsidiaryChannel(boolean enabled) { subsidiaryChannel = enabled; return this; }
+        public StreamableHttpMcpTransport build() { return new StreamableHttpMcpTransport(this); }
     }
-
-    /**
-     * @deprecated use {@link #sendInitializeRequest(McpInitializeRequest)} instead, which does not
-     * expose Jackson types.
-     */
-    @Deprecated(since = "1.20.0", forRemoval = true)
-    @Override
-    public CompletableFuture<JsonNode> initialize(McpInitializeRequest request) {
-        return McpJson.map(sendInitializeRequest(request), McpJson::parse);
-    }
-
-    /**
-     * @deprecated use {@link #sendRequest(McpClientMessage)} instead, which does not expose Jackson
-     * types.
-     */
-    @Deprecated(since = "1.20.0", forRemoval = true)
-    @Override
-    public CompletableFuture<JsonNode> executeOperationWithResponse(McpClientMessage request) {
-        return McpJson.map(sendRequest(request), McpJson::parse);
-    }
-
-    /**
-     * @deprecated use {@link #sendRequest(McpCallContext)} instead, which does not expose Jackson
-     * types.
-     */
-    @Deprecated(since = "1.20.0", forRemoval = true)
-    @Override
-    public CompletableFuture<JsonNode> executeOperationWithResponse(McpCallContext context) {
-        return McpJson.map(sendRequest(context), McpJson::parse);
-    }
-
-    /**
-     * @deprecated use {@link #sendMessage(McpClientMessage)} instead, which does not expose Jackson
-     * types.
-     */
-    @Deprecated(since = "1.20.0", forRemoval = true)
-    @Override
-    public void executeOperationWithoutResponse(McpClientMessage request) {
-        sendMessage(request);
-    }
-
-    /**
-     * @deprecated use {@link #sendMessage(McpCallContext)} instead, which does not expose Jackson
-     * types.
-     */
-    @Deprecated(since = "1.20.0", forRemoval = true)
-    @Override
-    public void executeOperationWithoutResponse(McpCallContext context) {
-        sendMessage(context);
-    }
+    @Deprecated @Override public CompletableFuture<JsonNode> initialize(McpInitializeRequest request) { return McpJson.map(sendInitializeRequest(request), McpJson::parse); }
+    @Deprecated @Override public CompletableFuture<JsonNode> executeOperationWithResponse(McpClientMessage request) { return McpJson.map(sendRequest(request), McpJson::parse); }
+    @Deprecated @Override public CompletableFuture<JsonNode> executeOperationWithResponse(McpCallContext context) { return McpJson.map(sendRequest(context), McpJson::parse); }
+    @Deprecated @Override public void executeOperationWithoutResponse(McpClientMessage request) { sendMessage(request); }
+    @Deprecated @Override public void executeOperationWithoutResponse(McpCallContext context) { sendMessage(context); }
 }

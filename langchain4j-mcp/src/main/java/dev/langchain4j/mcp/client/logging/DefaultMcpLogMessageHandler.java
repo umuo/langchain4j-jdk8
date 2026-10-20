@@ -18,10 +18,10 @@ public class DefaultMcpLogMessageHandler implements McpLogMessageHandler {
             return;
         }
         switch (message.level()) {
-            case DEBUG -> log.debug("MCP logger: {}: {}", message.logger(), message.dataAsJson());
-            case INFO, NOTICE -> log.info("MCP logger: {}: {}", message.logger(), message.dataAsJson());
-            case WARNING -> log.warn("MCP logger: {}: {}", message.logger(), message.dataAsJson());
-            case ERROR, CRITICAL, ALERT, EMERGENCY -> log.error("MCP logger: {}: {}", message.logger(), message.dataAsJson());
+            case DEBUG: log.debug("MCP logger: {}: {}", message.logger(), message.dataAsJson()); break;
+            case INFO: case NOTICE: log.info("MCP logger: {}: {}", message.logger(), message.dataAsJson()); break;
+            case WARNING: log.warn("MCP logger: {}: {}", message.logger(), message.dataAsJson()); break;
+            case ERROR: case CRITICAL: case ALERT: case EMERGENCY: log.error("MCP logger: {}: {}", message.logger(), message.dataAsJson()); break;
         }
     }
 }

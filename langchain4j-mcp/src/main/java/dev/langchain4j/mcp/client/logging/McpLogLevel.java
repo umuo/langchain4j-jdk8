@@ -16,7 +16,7 @@ public enum McpLogLevel {
     EMERGENCY;
 
     public static McpLogLevel from(String val) {
-        if (val == null || val.isBlank()) {
+        if (val == null || dev.langchain4j.internal.Jdk8.isBlank(val)) {
             return null;
         }
         try {

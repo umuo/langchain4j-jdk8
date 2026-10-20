@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 class ToolSpecificationHelper {
 
     private static final Logger log = LoggerFactory.getLogger(ToolSpecificationHelper.class);
-    private static final Set<String> ALLOWED_HEADER_PARAM_TYPES = Set.of("string", "integer", "boolean");
+    private static final Set<String> ALLOWED_HEADER_PARAM_TYPES = dev.langchain4j.internal.Jdk8.set("string", "integer", "boolean");
 
     /**
      * Converts the 'tools' element from a ListToolsResult MCP message
@@ -78,7 +78,7 @@ class ToolSpecificationHelper {
      * to a JsonSchemaElement object that describes the tool's arguments.
      */
     static JsonSchemaElement jsonNodeToJsonSchemaElement(Map<String, Object> node) {
-        return jsonNodeToJsonSchemaElement(node, Map.of(), new HashSet<>());
+        return jsonNodeToJsonSchemaElement(node, dev.langchain4j.internal.Jdk8.map(), new HashSet<>());
     }
 
     /**
@@ -158,10 +158,10 @@ class ToolSpecificationHelper {
                 builder.addProperties(mergedProperties);
             }
             if (node.containsKey("required")) {
-                mergedRequired.addAll(List.of(toStringArray(node.get("required"))));
+                mergedRequired.addAll(dev.langchain4j.internal.Jdk8.list(toStringArray(node.get("required"))));
             }
             if (!mergedRequired.isEmpty()) {
-                builder.required(List.copyOf(mergedRequired));
+                builder.required(dev.langchain4j.internal.Jdk8.copyList(mergedRequired));
             }
             if (node.containsKey("additionalProperties")) {
                 Object additionalProperties = node.get("additionalProperties");
@@ -341,7 +341,8 @@ class ToolSpecificationHelper {
             Map<String, JsonSchemaElement> mergedProperties,
             Set<String> mergedRequired,
             Map<String, JsonSchemaElement> mergedDefinitions) {
-        if (element instanceof JsonObjectSchema subSchema) {
+        if (element instanceof JsonObjectSchema) {
+            JsonObjectSchema subSchema = (JsonObjectSchema) element;
             mergedProperties.putAll(subSchema.properties());
             mergedRequired.addAll(subSchema.required());
             mergedDefinitions.putAll(subSchema.definitions());
@@ -428,13 +429,17 @@ class ToolSpecificationHelper {
         meta.forEach(builder::addMetadata);
     }
 
-    private record McpParamHeaders(Map<List<String>, String> headers) {}
+    private static final class McpParamHeaders {
+        private final Map<List<String>, String> headers;
+        McpParamHeaders(Map<List<String>, String> headers) { this.headers = headers; }
+        Map<List<String>, String> headers() { return headers; }
+    }
 
     private static McpParamHeaders extractAndValidateMcpParamHeaders(Map<String, Object> schema, String toolName) {
         Map<List<String>, String> headers = new LinkedHashMap<>();
         Set<String> seenHeaderNamesLower = new HashSet<>();
         List<String> errors = new ArrayList<>();
-        extractAndValidateMcpParamHeaders(schema, List.of(), headers, seenHeaderNamesLower, errors);
+        extractAndValidateMcpParamHeaders(schema, dev.langchain4j.internal.Jdk8.list(), headers, seenHeaderNamesLower, errors);
         if (!errors.isEmpty()) {
             for (String error : errors) {
                 log.warn("Excluding tool '{}' from tools/list: {}", toolName, error);
@@ -444,7 +449,7 @@ class ToolSpecificationHelper {
         return new McpParamHeaders(headers);
     }
 
-    private static final List<String> FORBIDDEN_SCHEMA_KEYWORDS = List.of(
+    private static final List<String> FORBIDDEN_SCHEMA_KEYWORDS = dev.langchain4j.internal.Jdk8.list(
             "items", "prefixItems", "additionalProperties", "oneOf", "anyOf", "allOf", "not", "if", "then", "else");
 
     private static void extractAndValidateMcpParamHeaders(
@@ -504,7 +509,7 @@ class ToolSpecificationHelper {
             }
         }
         if (errors.isEmpty()) {
-            headers.put(List.copyOf(propertyPath), headerName);
+            headers.put(dev.langchain4j.internal.Jdk8.copyList(propertyPath), headerName);
         }
     }
 
@@ -516,7 +521,7 @@ class ToolSpecificationHelper {
     private static List<String> declaredTypes(Map<String, Object> propSchema) {
         Object type = propSchema.get("type");
         if (type == null) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
         List<String> types = new ArrayList<>();
         if (type instanceof String) {
@@ -613,12 +618,12 @@ class ToolSpecificationHelper {
     private static Map<String, Object> object(Object value) {
         // mirrors JsonNode.path(): anything that is not an object is treated as an empty one,
         // so a boolean schema or a tuple-form 'items' degrades instead of failing
-        return value instanceof Map ? (Map<String, Object>) value : Map.of();
+        return value instanceof Map ? (Map<String, Object>) value : dev.langchain4j.internal.Jdk8.map();
     }
 
     @SuppressWarnings("unchecked")
     private static List<Object> array(Object value) {
-        return value instanceof List ? (List<Object>) value : List.of();
+        return value instanceof List ? (List<Object>) value : dev.langchain4j.internal.Jdk8.list();
     }
 
     private static List<McpIcon> toIcons(Object value) {

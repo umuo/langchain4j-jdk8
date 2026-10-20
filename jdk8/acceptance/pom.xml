@@ -31,6 +31,10 @@
             <groupId>dev.langchain4j.jdk8</groupId>
             <artifactId>langchain4j-sqlite</artifactId>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-mcp</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

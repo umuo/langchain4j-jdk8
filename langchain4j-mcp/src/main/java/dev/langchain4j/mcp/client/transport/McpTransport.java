@@ -42,7 +42,7 @@ public interface McpTransport extends Closeable {
      * not expose Jackson types. This default throws; it does not delegate, because two
      * mutually-delegating defaults would recurse.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     default CompletableFuture<JsonNode> initialize(McpInitializeRequest request) {
         throw new UnsupportedOperationException(
                 "Implement sendInitializeRequest(McpInitializeRequest) instead of initialize(McpInitializeRequest)");
@@ -64,7 +64,7 @@ public interface McpTransport extends Closeable {
      * Jackson types. This default throws; it does not delegate, because two mutually-delegating
      * defaults would recurse.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     default CompletableFuture<JsonNode> executeOperationWithResponse(McpClientMessage request) {
         throw new UnsupportedOperationException("Implement sendRequest(McpClientMessage) instead"
                 + " of executeOperationWithResponse(McpClientMessage)");
@@ -84,7 +84,7 @@ public interface McpTransport extends Closeable {
      * Jackson types. This default throws; it does not delegate, because two mutually-delegating
      * defaults would recurse.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     default CompletableFuture<JsonNode> executeOperationWithResponse(McpCallContext context) {
         throw new UnsupportedOperationException("Implement sendRequest(McpCallContext) instead"
                 + " of executeOperationWithResponse(McpCallContext)");
@@ -104,7 +104,7 @@ public interface McpTransport extends Closeable {
      * it. This default throws; it does not delegate, because two mutually-delegating defaults
      * would recurse.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     default void executeOperationWithoutResponse(McpClientMessage request) {
         throw new UnsupportedOperationException(
                 "Implement sendMessage(McpClientMessage) instead of executeOperationWithoutResponse(McpClientMessage)");
@@ -125,7 +125,7 @@ public interface McpTransport extends Closeable {
      * it. This default throws; it does not delegate, because two mutually-delegating defaults
      * would recurse.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     default void executeOperationWithoutResponse(McpCallContext context) {
         throw new UnsupportedOperationException(
                 "Implement sendMessage(McpCallContext) instead of executeOperationWithoutResponse(McpCallContext)");

@@ -17,7 +17,7 @@ import dev.langchain4j.service.tool.ToolExecutionResult;
  *
  * @deprecated use {@link McpToolResultConverter}, which does not expose Jackson types.
  */
-@Deprecated(since = "1.20.0", forRemoval = true)
+@Deprecated
 public interface McpToolResultExtractor {
 
     /**

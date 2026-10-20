@@ -104,3 +104,14 @@
 - 事务保护单次完整快照，不覆盖一次模型 turn 或跨方法 read-modify-write；同 memory ID 的并发 AI Service 调用仍需应用串行化以防丢更新。测试验证不同会话隔离和同一 ID 的原子快照替换，没有声称自动合并同会话并发对话。
 - 新增 27 个真实 Java 8 用例（15 存储/异步/并发、3 窗口取消、7 HTTP/SSE/会话/工具、2 RAG 共存），上游新增消息 codec/ToolExecutionResult/System/Custom 回归。总计 149 Java 8 / 692 JDK 17 / 62 Publisher TCK 通过，14 项官方 untested 保留；31 JAR/5986 基础类审计、4756 类链接通过，三个既有可选平台排除不变。
 - 独立 BOM 的两个 Java 8 进程在同文件保存向量与记忆：writer 经自动工具循环保存 4 条消息，reader 复用工具调用/结果历史向模型发送 5 条并保存 6 条，使用真实 HTTP 适配器和 loopback fixture；真实远程服务、跨平台 JNI、崩溃/网络文件系统等边界沿用第六阶段声明。
+
+## 第八阶段：MCP 基础工具客户端
+
+- 新增兼容模块 `langchain4j-mcp`，复用现有 Jackson 2/OkHttp 版本，没有 JDK HTTP Client 或官方 SNAPSHOT 运行时依赖。仅验收 MCP 2025-11-25 的 initialize/initialized、tools/list 与 tools/call 子集，不声明完整规范或全模块功能支持。
+- `StreamableHttpMcpTransport` 改用 OkHttp，支持 JSON/连续 POST SSE、会话头/协议头、鉴权自定义 headers、分页、同步/原生异步工具和四条 AI Services 工具循环。默认协议固定为 2025-11-25；其他协商版本明确失败。
+- 新增 builder `httpClient(OkHttpClient)`，调用方拥有其 executor/pool。原 `sslContext`/`executor` builder 方法未保留，改为在 OkHttp builder 配置 TLS（配套 trust manager）和 dispatcher。默认客户端由 transport 关闭；显式客户端只取消该 transport 自己登记的调用。默认 timeout 同时约束 connect/read/call，显式客户端使用自身配置。
+- 工具直接 Future 及 McpToolExecutor Future 取消会发送取消通知并关闭 HTTP；超时保留上游模型可见错误文本。初始化失败关闭传输，pending registry 在所有终止路径清理。取消/断开不能保证服务器回滚副作用，不自动重放工具请求。
+- AI Services 保持上游 drain 语义：取消停止后续模型轮次，已启动工具执行到完成或工具超时，以保留补偿结果；不会立即取消其 MCP Future。两种取消路径分别验收，未为本轮更改通用工具执行/补偿逻辑。
+- stdio/WebSocket/Registry 源码保留但排除出兼容 JAR；GET subsidiary SSE、SSE 恢复、modern 协议/订阅、旧 HTTP+SSE、404 自动重建会话与 DELETE 结束会话未实现。resources/prompts/roots/多模态等仅部分转换回归，业务路径未验收。会话过期后调用方需关闭并重新创建客户端。
+- 独立 BOM 的 McpExample 使用 loopback OpenAI -> AI Services -> MCP 工具 -> 模型完整闭环；无需外部服务和凭据。TLS/OAuth 自动授权、代理、真实服务器互操作未验证。详见 `langchain4j-mcp/README-jdk8.md`。
+- 协议来源：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。本阶段范围小于完整规范，未实现条目不计为通过。

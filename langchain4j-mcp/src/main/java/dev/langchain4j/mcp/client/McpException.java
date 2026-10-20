@@ -30,7 +30,7 @@ public class McpException extends LangChain4jException {
     }
 
     private McpException(int errorCode, String errorMessage, @Nullable String errorDataAsJson) {
-        super("Code: %d, message: %s".formatted(errorCode, errorMessage));
+        super(String.format("Code: %d, message: %s", errorCode, errorMessage));
         this.errorCode = errorCode;
         this.errorMessage = errorMessage;
         this.errorDataAsJson = errorDataAsJson;
@@ -39,7 +39,7 @@ public class McpException extends LangChain4jException {
     /**
      * @deprecated use {@link #withErrorData(int, String, String)}, which does not expose Jackson types.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public McpException(int errorCode, String errorMessage, @Nullable JsonNode errorData) {
         this(errorCode, errorMessage, errorData == null ? null : errorData.toString());
     }
@@ -88,7 +88,7 @@ public class McpException extends LangChain4jException {
     /**
      * @deprecated use {@link #errorDataAsMap()} or {@link #errorDataAsJson()}.
      */
-    @Deprecated(since = "1.20.0", forRemoval = true)
+    @Deprecated
     public @Nullable JsonNode errorData() {
         return errorDataAsJson == null ? null : McpJson.parse(errorDataAsJson);
     }

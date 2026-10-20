@@ -84,7 +84,7 @@ public class McpToolExecutor implements ToolExecutor {
         if (returnToolResultAttributes || result.attributes().isEmpty()) {
             return result;
         }
-        return result.toBuilder().attributes(Map.of()).build();
+        return result.toBuilder().attributes(dev.langchain4j.internal.Jdk8.map()).build();
     }
 
     private ToolExecutionRequest sanitizeToolName(ToolExecutionRequest executionRequest) {

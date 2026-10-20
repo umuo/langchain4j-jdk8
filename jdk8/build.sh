@@ -29,3 +29,5 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 # Persist both vectors and conversation; the reader must send the writer's history to the model.
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample memory-write "$TASK_ROOT/jdk8/example/target/restart-chat-memory.db"
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample memory-read "$TASK_ROOT/jdk8/example/target/restart-chat-memory.db"
+# Independent BOM: real loopback OpenAI HTTP and MCP tool invocation.
+"$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpExample
