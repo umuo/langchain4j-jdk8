@@ -26,3 +26,6 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 # Two actual Java 8 processes prove restart persistence; the first only ingests, the second only queries.
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample write "$TASK_ROOT/jdk8/example/target/restart-vectors.db"
 "$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample read "$TASK_ROOT/jdk8/example/target/restart-vectors.db"
+# Persist both vectors and conversation; the reader must send the writer's history to the model.
+"$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample memory-write "$TASK_ROOT/jdk8/example/target/restart-chat-memory.db"
+"$JAVA8_HOME/bin/java" -Dorg.sqlite.tmpdir="$TASK_ROOT/jdk8/native-tmp" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" HttpRagExample memory-read "$TASK_ROOT/jdk8/example/target/restart-chat-memory.db"

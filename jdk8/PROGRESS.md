@@ -161,3 +161,11 @@
 - 计划：类型隔离的稳定会话 ID、核心消息 JSON codec、会话整体事务替换/删除、重启与会话隔离/工具消息/RAG 验收。
 - 默认仅同步；调用方显式配置 asyncExecutor 才启用阻塞 JDBC 的异步 offload，Executor 生命周期归调用方。
 - 现阶段尚未验收，支持范围仍以第六阶段为准。
+
+### 第七阶段实现检查点
+
+- 新增同模块 SqliteChatMemoryStore：类型隔离 ID、版本化核心消息 JSON、整段事务替换/删除、独立可变读结果、默认同步与显式 Executor offload。抽取 SqliteDatabase 共用连接/事务/close 生命周期，SQLite 向量回归保持通过。
+- 新增 27 个真实 Java 8 用例：15 个存储/异步/并发，3 个窗口记忆取消，7 个 AI Services HTTP/SSE/工具/会话，2 个 SQLite RAG+记忆共存；新增 4 个上游消息 codec/类型测试类。
+- 测试复现并修复窗口记忆消息投影与 addAsync 组合的取消断点，以及 AI Services 等待记忆组装时不传递取消而继续写入排队问题的情况。只修改记忆链路，Guardrails 逻辑未改动。
+- 两个独立 Java 8 进程：memory writer 保存 4 条含工具调用/结果的消息，memory reader 恢复历史后向模型发送 5 条并保存为 6 条，向量及会话共用 DB。
+- 完整 clean 构建已通过：149 个 Java 8、692 个 JDK 17、62 个 Publisher TCK；14 项官方 untested 单独列出。31 JAR/5986 基础类审计、4756 类链接通过；待保存最终快照和阶段标记。

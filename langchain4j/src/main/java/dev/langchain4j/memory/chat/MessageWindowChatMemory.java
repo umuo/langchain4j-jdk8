@@ -77,17 +77,21 @@ public class MessageWindowChatMemory implements ChatMemory {
 
     @Override
     public CompletableFuture<Void> addAsync(List<ChatMessage> messagesToAdd) {
-        return store.getMessagesAsync(id).thenCompose(stored -> {
-            List<ChatMessage> messages = windowed(stored);
-            boolean changed = false;
-            for (ChatMessage message : messagesToAdd) {
-                changed |= appendMessage(messages, message);
-            }
-            if (changed) {
-                return store.updateMessagesAsync(id, messages);
-            }
-            return CompletableFuture.completedFuture(null);
-        });
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        dev.langchain4j.internal.CancellationChain chain = new dev.langchain4j.internal.CancellationChain(result);
+        try {
+            List<ChatMessage> pending = new ArrayList<>(ensureNotNull(messagesToAdd, "messagesToAdd"));
+            chain.track(store.getMessagesAsync(id)).thenCompose(stored -> {
+                if (chain.cancelled()) return dev.langchain4j.internal.Jdk8.<Void>failedFuture(new java.util.concurrent.CancellationException());
+                List<ChatMessage> messages = windowed(stored);
+                boolean changed = false;
+                for (ChatMessage message : pending) changed |= appendMessage(messages, message);
+                return changed ? chain.track(store.updateMessagesAsync(id, messages)) : CompletableFuture.<Void>completedFuture(null);
+            }).whenComplete((ignored, error) -> {
+                if (error == null) result.complete(null); else result.completeExceptionally(error);
+            });
+        } catch (Throwable error) { result.completeExceptionally(error); }
+        return result;
     }
 
     /**
@@ -161,7 +165,12 @@ public class MessageWindowChatMemory implements ChatMemory {
 
     @Override
     public CompletableFuture<List<ChatMessage>> messagesAsync() {
-        return store.getMessagesAsync(id).thenApply(this::windowed);
+        try {
+            CompletableFuture<List<ChatMessage>> inFlight = store.getMessagesAsync(id);
+            CompletableFuture<List<ChatMessage>> result = inFlight.thenApply(this::windowed);
+            dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation(result, inFlight);
+            return result;
+        } catch (Throwable error) { return dev.langchain4j.internal.Jdk8.failedFuture(error); }
     }
 
     private List<ChatMessage> windowed(List<ChatMessage> stored) {

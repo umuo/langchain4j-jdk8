@@ -345,7 +345,10 @@ class DefaultAiServices<T> extends AiServices<T> {
                                     completeExceptionallyAsFailure(result, guardrailError);
                                     return;
                                 }
-                                assembleMessagesAsync(chatMemory, asyncSystemMessage, guardedInput.userMessage(), originalUserMessage).whenComplete((assembledMessages, assemblyError) -> {
+                                if (result.isCancelled()) return;
+                                CompletableFuture<List<ChatMessage>> assembly = assembleMessagesAsync(chatMemory, asyncSystemMessage, guardedInput.userMessage(), originalUserMessage);
+                                propagateCancellation(result, assembly);
+                                assembly.whenComplete((assembledMessages, assemblyError) -> {
                                     if (assemblyError != null) {
                                         completeExceptionallyAsFailure(result, assemblyError);
                                         return;
@@ -414,7 +417,9 @@ class DefaultAiServices<T> extends AiServices<T> {
                                     if (subscription.tryTerminate()) subscriber.onError(unwrapCompletionException(guardrailError));
                                     return;
                                 }
-                                assembleMessagesAsync(reactiveChatMemory, reactiveSystemMessage, guardedInput.userMessage(), originalUserMessage).whenComplete((assembledMessages, assemblyError) -> {
+                                CompletableFuture<List<ChatMessage>> assembly = assembleMessagesAsync(reactiveChatMemory, reactiveSystemMessage, guardedInput.userMessage(), originalUserMessage);
+                                subscription.setCancelAction(() -> assembly.cancel(true));
+                                assembly.whenComplete((assembledMessages, assemblyError) -> {
                                     if (subscription.isCancelled()) {
                                         return;
                                     }
@@ -627,34 +632,45 @@ class DefaultAiServices<T> extends AiServices<T> {
              * I/O-backed) memory. The writes are chained (never concurrent) so the underlying
              * read-modify-write stays ordered.
              */
-            private CompletionStage<List<ChatMessage>> assembleMessagesAsync(ChatMemory chatMemory, Optional<SystemMessage> systemMessage, UserMessage userMessage, UserMessage originalUserMessage) {
+            private CompletableFuture<List<ChatMessage>> assembleMessagesAsync(ChatMemory chatMemory, Optional<SystemMessage> systemMessage, UserMessage userMessage, UserMessage originalUserMessage) {
                 if (!context.hasChatMemory()) {
                     List<ChatMessage> messages = new ArrayList<>();
                     systemMessage.ifPresent(messages::add);
                     messages.add(userMessage);
                     return CompletableFuture.completedFuture(messages);
                 }
-                CompletableFuture<List<ChatMessage>> assembled;
+                CompletableFuture<List<ChatMessage>> result = new CompletableFuture<>();
+                dev.langchain4j.internal.CancellationChain chain = new dev.langchain4j.internal.CancellationChain(result);
                 try {
-                    CompletionStage<Void> addSystem = systemMessage.isPresent() ? chatMemory.addAsync(dev.langchain4j.internal.Jdk8.list(systemMessage.get())) : CompletableFuture.completedFuture(null);
+                    CompletableFuture<Void> addSystem = chain.track(systemMessage.isPresent()
+                            ? chatMemory.addAsync(dev.langchain4j.internal.Jdk8.list(systemMessage.get()))
+                            : CompletableFuture.completedFuture(null));
                     ChatMessage userMessageToStore = context.storeRetrievedContentInChatMemory ? userMessage : originalUserMessage;
-                    assembled = addSystem.thenCompose(ignored -> chatMemory.messagesAsync()).thenCompose(history -> {
+                    addSystem.thenCompose(ignored -> {
+                        if (chain.cancelled()) return dev.langchain4j.internal.Jdk8.<List<ChatMessage>>failedFuture(new CancellationException());
+                        return chain.track(chatMemory.messagesAsync());
+                    }).thenCompose(history -> {
+                        if (chain.cancelled()) return dev.langchain4j.internal.Jdk8.<List<ChatMessage>>failedFuture(new CancellationException());
                         List<ChatMessage> messages = new ArrayList<>(history);
-                        return chatMemory.addAsync(dev.langchain4j.internal.Jdk8.list(userMessageToStore)).thenApply(ignored2 -> {
+                        return chain.track(chatMemory.addAsync(dev.langchain4j.internal.Jdk8.list(userMessageToStore))).thenApply(ignored -> {
                             messages.add(userMessage);
                             return messages;
                         });
-                    }).toCompletableFuture();
-                } catch (Throwable t) {
-                    assembled = dev.langchain4j.internal.Jdk8.failedFuture(t);
-                }
-                return dev.langchain4j.internal.Jdk8.exceptionallyCompose(assembled, error -> {
-                    Throwable cause = unwrapCompletionException(error);
-                    if (cause instanceof AsyncNotSupportedException) {
-                        return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " The asynchronous/reactive AI Service requires the chat memory's" + " ChatMemoryStore to implement its async methods (getMessagesAsync/" + "updateMessagesAsync/deleteMessagesAsync)."));
-                    }
-                    return dev.langchain4j.internal.Jdk8.failedFuture(error);
-                });
+                    }).whenComplete((messages, error) -> {
+                        if (error == null) result.complete(messages);
+                        else {
+                            Throwable cause = unwrapCompletionException(error);
+                            if (cause instanceof AsyncNotSupportedException) {
+                                cause = new UnsupportedFeatureException(cause.getMessage()
+                                        + " The asynchronous/reactive AI Service requires the chat memory's"
+                                        + " ChatMemoryStore to implement its async methods (getMessagesAsync/"
+                                        + "updateMessagesAsync/deleteMessagesAsync).");
+                            }
+                            completeExceptionallyAsFailure(result, cause);
+                        }
+                    });
+                } catch (Throwable error) { completeExceptionallyAsFailure(result, error); }
+                return result;
             }
 
             private final Object fallThroughToOutputProcessing = new Object();

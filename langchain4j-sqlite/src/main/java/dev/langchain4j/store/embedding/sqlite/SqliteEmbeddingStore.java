@@ -7,7 +7,7 @@ import dev.langchain4j.store.embedding.filter.Filter;
 import java.nio.file.*;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import dev.langchain4j.store.sqlite.internal.SqliteDatabase;
 import static dev.langchain4j.internal.ValidationUtils.*;
 
 /**
@@ -17,19 +17,10 @@ import static dev.langchain4j.internal.ValidationUtils.*;
  * IDs are upserted; a batch commits entirely or is rolled back. Metadata filters execute in Java.
  */
 public final class SqliteEmbeddingStore implements EmbeddingStore<TextSegment>, AutoCloseable {
-    private final String jdbcUrl;
-    private final int busyTimeoutMillis;
-    private final ReentrantReadWriteLock lifecycle = new ReentrantReadWriteLock();
-    private boolean closed;
+    private final SqliteDatabase database;
 
     private SqliteEmbeddingStore(Builder builder) {
-        Path file = ensureNotNull(builder.databasePath, "databasePath").toAbsolutePath().normalize();
-        if (Files.isDirectory(file)) throw new IllegalArgumentException("databasePath must be a file");
-        if (builder.busyTimeoutMillis < 0) throw new IllegalArgumentException("busyTimeoutMillis must not be negative");
-        this.busyTimeoutMillis = builder.busyTimeoutMillis;
-        this.jdbcUrl = "jdbc:sqlite:" + file.toUri().toASCIIString();
-        try { Class.forName("org.sqlite.JDBC"); }
-        catch (ClassNotFoundException error) { throw new IllegalStateException("SQLite JDBC driver is not available", error); }
+        this.database = new SqliteDatabase(builder.databasePath, builder.busyTimeoutMillis);
         transaction(true, connection -> {
             try (Statement statement = connection.createStatement()) {
                 statement.execute("CREATE TABLE IF NOT EXISTS lc4j_embedding_config (id INTEGER PRIMARY KEY CHECK(id=1), schema_version INTEGER NOT NULL, dimension INTEGER CHECK(dimension>0))");
@@ -154,10 +145,7 @@ public final class SqliteEmbeddingStore implements EmbeddingStore<TextSegment>, 
             }
         });
     }
-    @Override public void close() {
-        lifecycle.writeLock().lock();
-        try { closed = true; } finally { lifecycle.writeLock().unlock(); }
-    }
+    @Override public void close() { database.close(); }
 
     private static void delete(Connection connection, Collection<String> ids) throws SQLException {
         try (PreparedStatement statement = connection.prepareStatement("DELETE FROM lc4j_embeddings WHERE id=?")) {
@@ -178,31 +166,9 @@ public final class SqliteEmbeddingStore implements EmbeddingStore<TextSegment>, 
     private static boolean matches(TextSegment segment, Filter filter) {
         return filter == null || (segment != null && filter.test(segment.metadata()));
     }
-    private void checkOpen() {
-        lifecycle.readLock().lock();
-        try { if (closed) throw new IllegalStateException("SQLite embedding store is closed"); }
-        finally { lifecycle.readLock().unlock(); }
-    }
-    private interface Work<T> { T run(Connection connection) throws SQLException; }
-    private <T> T transaction(boolean write, Work<T> work) {
-        lifecycle.readLock().lock();
-        try {
-            if (closed) throw new IllegalStateException("SQLite embedding store is closed");
-            Properties properties = new Properties();
-            properties.setProperty("busy_timeout", Integer.toString(busyTimeoutMillis));
-            properties.setProperty("transaction_mode", write ? "IMMEDIATE" : "DEFERRED");
-            try (Connection connection = DriverManager.getConnection(jdbcUrl, properties)) {
-                connection.setAutoCommit(false);
-                try {
-                    T result = work.run(connection);
-                    connection.commit();
-                    return result;
-                } catch (SQLException | RuntimeException | Error failure) {
-                    try { connection.rollback(); } catch (SQLException rollback) { failure.addSuppressed(rollback); }
-                    throw failure;
-                }
-            } catch (SQLException error) { throw new IllegalStateException("SQLite embedding operation failed", error); }
-        } finally { lifecycle.readLock().unlock(); }
+    private void checkOpen() { database.checkOpen(); }
+    private <T> T transaction(boolean write, SqliteDatabase.Work<T> work) {
+        return database.transaction(write, work);
     }
     private static final class Row {
         final String id, segment;

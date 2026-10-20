@@ -106,6 +106,10 @@
                         <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/MockHttpClient.java</testInclude>
                         <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/MockHttpClientBuilder.java</testInclude>
                         <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/SpyingHttpClient.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/ChatMessageSerializerTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/ToolExecutionResultMessageTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/SystemMessageTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/data/message/CustomMessageTest.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -159,6 +163,10 @@
                         <include>**/EmbeddingModelListenerTest.java</include>
                         <include>**/DimensionAwareEmbeddingModelTest.java</include>
                         <include>**/EmbeddingRequestResponseTypesTest.java</include>
+                        <include>**/ChatMessageSerializerTest.java</include>
+                        <include>**/ToolExecutionResultMessageTest.java</include>
+                        <include>**/SystemMessageTest.java</include>
+                        <include>**/CustomMessageTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

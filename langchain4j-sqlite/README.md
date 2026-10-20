@@ -69,3 +69,62 @@ are needed. The writer refuses to overwrite an existing example database.
 
 Driver sources and build target: [Xerial POM](https://github.com/xerial/sqlite-jdbc/blob/3.53.4.0/pom.xml).
 Native extraction configuration: [Xerial usage](https://github.com/xerial/sqlite-jdbc/blob/3.53.4.0/USAGE.md).
+
+## Persistent chat memory
+
+The same module now includes `dev.langchain4j.store.memory.chat.sqlite.SqliteChatMemoryStore`.
+It implements the core `ChatMemoryStore` interface. It can share a file with the embedding
+store, using separate tables and schema versions. It atomically replaces or deletes one
+conversation snapshot; it does not append messages on `updateMessages`.
+
+```java
+ExecutorService io = Executors.newSingleThreadExecutor(); // caller owns the executor
+try (SqliteChatMemoryStore store = SqliteChatMemoryStore.builder()
+        .databasePath(Paths.get("/Volumes/Nas/data/catalog.db"))
+        .asyncExecutor(io) // explicit JDBC offload; omit for synchronous use only
+        .build()) {
+    MessageWindowChatMemory memory = MessageWindowChatMemory.builder()
+            .id("session-1").maxMessages(20).chatMemoryStore(store).build();
+    // Configure memory directly or via AiServices.chatMemoryProvider(id -> ...).
+} finally {
+    io.shutdown();
+}
+```
+
+Use the `SqliteChatMemoryStore`, `MessageWindowChatMemory`, `ExecutorService` and `Executors`
+imports. Without `asyncExecutor`, async store methods return the core unsupported-async
+failure; they do not silently block the caller. With an executor, messages are serialized
+before an asynchronous write is queued, so later mutation of the caller's list cannot alter
+the request. Cancelling a queued store future prevents its work from starting. `close()` does
+not shut down a supplied executor; it remains the application's responsibility.
+
+Memory IDs must be non-null String, Integer, Long or UUID. Each type has its own namespace:
+`"1"`, `1` and `1L` identify different conversations. Unsupported objects fail explicitly
+instead of using an unstable or colliding `toString()`. Empty strings are valid IDs.
+
+Snapshots use the existing `ChatMessageSerializer` / `ChatMessageDeserializer` JSON codec,
+including its SPI and attribute semantics, with payload format version 1. System, user,
+assistant, tool call/result and custom message round trips are tested. Lists returned by
+`getMessages` are independent and mutable; modifying one does not persist changes. Missing
+conversations return an empty list. Invalid JSON, null messages and unknown schema/format
+versions fail explicitly without silently deleting a conversation. No automatic schema
+migration is attempted.
+
+`deleteMessages(id)` or `ChatMemory.clear()` deletes persisted history for that ID.
+`ChatMemoryAccess.evictChatMemory(id)` only removes the AI Service's in-process memory
+instance; subsequent calls reload persistent history. Message-window eviction and removal
+of orphaned tool results retain the core behavior.
+
+The SQLite transaction protects the whole snapshot, not a complete model turn or the
+memory's read-modify-write sequence. Serialize concurrent AI Service calls for the same
+memory ID at the application layer to avoid lost updates. Different conversations remain
+isolated. Cancellation does not roll back already committed history or guarantee interruption
+of JDBC work that has started. Windowed memory and AI Services now forward cancellation
+through the memory read/assembly/write stages, preventing cancelled queued operations from
+persisting a new question. These changes do not alter Guardrails behavior.
+
+The BOM example adds `memory-write <file>` / `memory-read <file>`. Separate Java 8 processes
+persist vector data and four messages (including an automatic tool request/result), then
+restore that history into a five-message model request and finish with six stored messages.
+Both use the real OpenAI HTTP adapters against local fixtures; no credentials or remote
+model are required. Existing `write` / `read` vector-only modes are retained.
