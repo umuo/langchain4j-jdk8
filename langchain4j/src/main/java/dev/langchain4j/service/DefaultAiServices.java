@@ -583,20 +583,36 @@ class DefaultAiServices<T> extends AiServices<T> {
                 if (augmentor == null) {
                     return CompletableFuture.completedFuture(null);
                 }
-                CompletableFuture<AugmentationResult> async;
+                CompletableFuture<AugmentationResult> result = new CompletableFuture<>();
+                dev.langchain4j.internal.CancellationChain chain = new dev.langchain4j.internal.CancellationChain(result);
                 try {
-                    CompletableFuture<List<ChatMessage>> chatMemoryMessages = chatMemory != null ? chatMemory.messagesAsync() : CompletableFuture.completedFuture(null);
-                    async = chatMemoryMessages.thenCompose(memoryMessages -> augmentor.augmentAsync(augmentationRequest(originalUserMessage, systemMessage, memoryMessages, invocationContext)));
+                    CompletableFuture<List<ChatMessage>> chatMemoryMessages = chain.track(chatMemory != null
+                            ? chatMemory.messagesAsync() : CompletableFuture.completedFuture(null));
+                    chatMemoryMessages.thenCompose(memoryMessages -> {
+                        if (chain.cancelled()) {
+                            return dev.langchain4j.internal.Jdk8.<AugmentationResult>failedFuture(new CancellationException());
+                        }
+                        return chain.track(augmentor.augmentAsync(
+                                augmentationRequest(originalUserMessage, systemMessage, memoryMessages, invocationContext)));
+                    }).whenComplete((augmentation, error) -> {
+                        if (error == null) {
+                            result.complete(augmentation);
+                        } else {
+                            Throwable cause = unwrapCompletionException(error);
+                            if (cause instanceof AsyncNotSupportedException) {
+                                cause = new UnsupportedFeatureException(cause.getMessage()
+                                        + " The asynchronous/reactive AI Service requires this component to implement its"
+                                        + " async method, or to be an async-capable component (for a blocking content"
+                                        + " retriever, configure DefaultRetrievalAugmentor.builder().offloadBlocking(true)"
+                                        + " and pass it via retrievalAugmentor(...)).");
+                            }
+                            completeExceptionallyAsFailure(result, cause);
+                        }
+                    });
                 } catch (Throwable t) {
-                    async = dev.langchain4j.internal.Jdk8.failedFuture(t);
+                    completeExceptionallyAsFailure(result, t);
                 }
-                return dev.langchain4j.internal.Jdk8.exceptionallyCompose(async, error -> {
-                    Throwable cause = unwrapCompletionException(error);
-                    if (cause instanceof AsyncNotSupportedException) {
-                        return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " The asynchronous/reactive AI Service requires this component to implement its" + " async method, or to be an async-capable component (for a blocking content" + " retriever, configure DefaultRetrievalAugmentor.builder().offloadBlocking(true)" + " and pass it via retrievalAugmentor(...))."));
-                    }
-                    return dev.langchain4j.internal.Jdk8.failedFuture(error);
-                });
+                return result;
             }
 
             private AugmentationRequest augmentationRequest(UserMessage originalUserMessage, Optional<SystemMessage> systemMessage, List<ChatMessage> memoryMessages, InvocationContext invocationContext) {

@@ -92,6 +92,7 @@
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/aggregator/ReciprocalRankFuserTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/router/DefaultQueryRouterTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/transformer/DefaultQueryTransformerTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/retriever/EmbeddingStoreContentRetrieverAsyncTest.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -134,6 +135,7 @@
                         <include>**/ReciprocalRankFuserTest.java</include>
                         <include>**/DefaultQueryRouterTest.java</include>
                         <include>**/DefaultQueryTransformerTest.java</include>
+                        <include>**/EmbeddingStoreContentRetrieverAsyncTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

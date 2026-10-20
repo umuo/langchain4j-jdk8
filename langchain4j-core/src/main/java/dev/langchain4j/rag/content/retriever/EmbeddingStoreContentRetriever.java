@@ -92,7 +92,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
 
     // When the embedding model or store is not genuinely async (its doEmbedAsync/searchAsync throws), retrieveAsync
     // fails loudly by default (surfacing that exception) rather than silently offloading it. Set offloadBlocking(true)
-    // to instead offload only the blocking component to the shared default executor (virtual threads on Java 21+, platform threads on 17-20).
+    // to instead offload only the blocking component to the shared default executor (virtual threads on Java 21+, platform threads on Java 8-20).
     private final boolean offloadBlocking;
 
     public EmbeddingStoreContentRetriever(EmbeddingStore<TextSegment> embeddingStore, EmbeddingModel embeddingModel) {
@@ -229,7 +229,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
          * By default ({@code false}), {@code retrieveAsync} fails with an {@link UnsupportedFeatureException} naming
          * the blocking component, so a not-truly-async pipeline is never silently made "async" by parking a thread.
          * Set to {@code true} to instead offload <i>only the blocking component(s)</i> - the embedding call and/or the
-         * store search - to the shared default executor (virtual threads on Java 21+, platform threads on 17-20), while any async component keeps running on its native
+         * store search - to the shared default executor (virtual threads on Java 21+, platform threads on Java 8-20), while any async component keeps running on its native
          * path. A deliberate opt-in to blocking-on-a-(virtual)-thread; has no effect on the synchronous
          * {@link #retrieve(Query)}.
          * @since 1.20.0
@@ -272,7 +272,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
      * If a component is blocking (its async method is not implemented), the returned future fails with an
      * {@link UnsupportedFeatureException} - the pipeline is not silently made "async" by parking a thread. Building
      * the retriever with {@code offloadBlocking(true)} instead offloads <i>only the blocking component</i> to a shared
-     * default executor (virtual threads on Java 21+, platform threads on 17-20), leaving any async component on its native path.
+     * default executor (virtual threads on Java 21+, platform threads on Java 8-20), leaving any async component on its native path.
      */
     @Override
     public CompletableFuture<List<Content>> retrieveAsync(Query query) {
@@ -294,7 +294,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
     /**
      * Runs {@code asyncCall} (a component's async method). If it is blocking - i.e. it reports being unimplemented
      * via an {@link AsyncNotSupportedException} - then either offload the corresponding blocking call to a shared
-     * default executor (virtual threads on Java 21+, platform threads on 17-20) (when {@code offloadBlocking}) or fail with an actionable message. Any other error
+     * default executor (virtual threads on Java 21+, platform threads on Java 8-20) (when {@code offloadBlocking}) or fail with an actionable message. Any other error
      * propagates unchanged. No reflection: the (un)availability of async is discovered by calling it.
      */
     private <T> CompletableFuture<T> nativeOrOffload(Query query, Supplier<CompletableFuture<T>> asyncCall, Supplier<T> blockingCall) {
@@ -311,7 +311,7 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
                     InvocationContext invocationContext = query.metadata() != null ? query.metadata().invocationContext() : null;
                     return CompletableFuture.supplyAsync(blockingCall, CapturedContextSupport.restoringIn(DefaultExecutorProvider.getDefaultExecutor(), invocationContext));
                 }
-                return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " Build the retriever with EmbeddingStoreContentRetriever.builder().offloadBlocking(true)" + " to offload this blocking component to a default executor (virtual threads on Java 21+, platform threads on 17-20) instead."));
+                return dev.langchain4j.internal.Jdk8.failedFuture(new UnsupportedFeatureException(cause.getMessage() + " Build the retriever with EmbeddingStoreContentRetriever.builder().offloadBlocking(true)" + " to offload this blocking component to a default executor (virtual threads on Java 21+, platform threads on Java 8-20) instead."));
             }
             return dev.langchain4j.internal.Jdk8.failedFuture(error);
         });
@@ -325,7 +325,12 @@ public class EmbeddingStoreContentRetriever implements ContentRetriever {
         if (embeddingInputType != null) {
             builder.inputType(embeddingInputType);
         }
-        return embeddingModel.embedAsync(builder.build()).thenApply(response -> response.embeddings().get(0));
+        CompletableFuture<dev.langchain4j.model.embedding.response.EmbeddingResponse> inFlight =
+                embeddingModel.embedAsync(builder.build());
+        CompletableFuture<Embedding> result = inFlight.thenApply(response -> response.embeddings().get(0));
+        // thenApply does not forward cancellation to the embedding provider's in-flight work.
+        propagateCancellation(result, inFlight);
+        return result;
     }
 
     private List<Content> toContents(EmbeddingSearchResult<TextSegment> searchResult) {
