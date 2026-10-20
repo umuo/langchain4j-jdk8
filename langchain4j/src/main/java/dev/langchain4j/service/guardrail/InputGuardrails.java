@@ -28,8 +28,9 @@ import java.lang.annotation.Target;
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ ElementType.TYPE, ElementType.METHOD })
 public @interface InputGuardrails {
+
     /**
      * The ordered list of {@link InputGuardrail}s to apply to the input of the model.
      * <p>

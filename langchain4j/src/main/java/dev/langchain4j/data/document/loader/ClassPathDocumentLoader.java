@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.isRegularFile;
-
 import dev.langchain4j.data.document.BlankDocumentException;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentLoader;
@@ -33,11 +32,13 @@ import org.slf4j.LoggerFactory;
  * @author Eric Deandrea
  */
 public class ClassPathDocumentLoader {
-    private static final Logger LOG = LoggerFactory.getLogger(ClassPathDocumentLoader.class);
-    private static final DocumentParser DEFAULT_DOCUMENT_PARSER =
-            getOrDefault(DocumentParserLoader.loadDocumentParser(), TextDocumentParser::new);
 
-    private ClassPathDocumentLoader() {}
+    private static final Logger LOG = LoggerFactory.getLogger(ClassPathDocumentLoader.class);
+
+    private static final DocumentParser DEFAULT_DOCUMENT_PARSER = getOrDefault(DocumentParserLoader.loadDocumentParser(), TextDocumentParser::new);
+
+    private ClassPathDocumentLoader() {
+    }
 
     /**
      * Loads a {@link Document} from the specified file path.
@@ -103,19 +104,16 @@ public class ClassPathDocumentLoader {
      * @return document
      * @throws IllegalArgumentException If specified path is not a file.
      */
-    public static Document loadDocument(
-            String pathOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
-        var classPathSource = ClassPathSource.from(pathOnClasspath, classLoader);
-
+    public static Document loadDocument(String pathOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
+        dev.langchain4j.data.document.source.ClassPathSource classPathSource = ClassPathSource.from(pathOnClasspath, classLoader);
         try {
-            var uri = classPathSource.url().toURI();
-
+            java.net.URI uri = classPathSource.url().toURI();
             if (classPathSource.isInsideArchive()) {
-                try (var fs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {
+                try (java.nio.file.FileSystem fs = FileSystems.newFileSystem(uri, dev.langchain4j.internal.Jdk8.map("create", "true"))) {
                     return loadDocument(classPathSource, fs.getPath(pathOnClasspath), documentParser);
                 }
             } else {
-                return loadDocument(classPathSource, Path.of(uri), documentParser);
+                return loadDocument(classPathSource, java.nio.file.Paths.get(uri), documentParser);
             }
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
@@ -126,7 +124,6 @@ public class ClassPathDocumentLoader {
         if (!isRegularFile(path)) {
             throw illegalArgument("'%s' is not a file", path);
         }
-
         return DocumentLoader.load(classPathSource, documentParser);
     }
 
@@ -194,8 +191,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocuments(
-            String directoryOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
+    public static List<Document> loadDocuments(String directoryOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
         return loadDocuments(directoryOnClasspath, path -> true, documentParser, classLoader);
     }
 
@@ -242,8 +238,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocuments(
-            String directoryOnClasspath, PathMatcher pathMatcher, ClassLoader classLoader) {
+    public static List<Document> loadDocuments(String directoryOnClasspath, PathMatcher pathMatcher, ClassLoader classLoader) {
         return loadDocuments(directoryOnClasspath, pathMatcher, DEFAULT_DOCUMENT_PARSER, classLoader);
     }
 
@@ -265,8 +260,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocuments(
-            String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocuments(String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser) {
         return loadDocuments(directoryOnClasspath, pathMatcher, documentParser, getDefaultClassloader());
     }
 
@@ -289,150 +283,76 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocuments(
-            String directoryOnClasspath,
-            PathMatcher pathMatcher,
-            DocumentParser documentParser,
-            ClassLoader classLoader) {
-        return loadDocuments(
-                directoryOnClasspath,
-                pathMatcher,
-                documentParser,
-                classLoader,
-                ClassPathDocumentLoader::getFilesInDirectory);
+    public static List<Document> loadDocuments(String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser, ClassLoader classLoader) {
+        return loadDocuments(directoryOnClasspath, pathMatcher, documentParser, classLoader, ClassPathDocumentLoader::getFilesInDirectory);
     }
 
     private static ClassLoader getDefaultClassloader() {
         return Thread.currentThread().getContextClassLoader();
     }
 
-    private static List<Document> loadDocuments(
-            String directoryOnClasspath,
-            PathMatcher pathMatcher,
-            DocumentParser documentParser,
-            ClassLoader classLoader,
-            Function<Path, Stream<Path>> pathStreamFunction) {
-        var classPathSource = ClassPathSource.from(directoryOnClasspath, classLoader);
-
+    private static List<Document> loadDocuments(String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser, ClassLoader classLoader, Function<Path, Stream<Path>> pathStreamFunction) {
+        dev.langchain4j.data.document.source.ClassPathSource classPathSource = ClassPathSource.from(directoryOnClasspath, classLoader);
         try {
-            var uri = classPathSource.url().toURI();
-
+            java.net.URI uri = classPathSource.url().toURI();
             if (classPathSource.isInsideArchive()) {
-                try (var fs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {
-                    return loadDocuments(
-                            classPathSource,
-                            directoryOnClasspath,
-                            fs.getPath(directoryOnClasspath),
-                            pathMatcher,
-                            documentParser,
-                            pathStreamFunction);
+                try (java.nio.file.FileSystem fs = FileSystems.newFileSystem(uri, dev.langchain4j.internal.Jdk8.map("create", "true"))) {
+                    return loadDocuments(classPathSource, directoryOnClasspath, fs.getPath(directoryOnClasspath), pathMatcher, documentParser, pathStreamFunction);
                 }
             } else {
-                return loadDocuments(
-                        classPathSource,
-                        directoryOnClasspath,
-                        Path.of(uri),
-                        pathMatcher,
-                        documentParser,
-                        pathStreamFunction);
+                return loadDocuments(classPathSource, directoryOnClasspath, java.nio.file.Paths.get(uri), pathMatcher, documentParser, pathStreamFunction);
             }
         } catch (URISyntaxException | IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static List<Document> loadDocuments(
-            ClassPathSource rootDirectoryClassPathSource,
-            String directoryOnClasspath,
-            Path path,
-            PathMatcher pathMatcher,
-            DocumentParser documentParser,
-            Function<Path, Stream<Path>> pathStreamFunction) {
+    private static List<Document> loadDocuments(ClassPathSource rootDirectoryClassPathSource, String directoryOnClasspath, Path path, PathMatcher pathMatcher, DocumentParser documentParser, Function<Path, Stream<Path>> pathStreamFunction) {
         if (!isDirectory(path)) {
             throw illegalArgument("'%s' is not a directory", path);
         }
-
-        try (var pathStream = pathStreamFunction.apply(path)) {
-            return loadDocuments(
-                    pathStream, rootDirectoryClassPathSource, directoryOnClasspath, path, pathMatcher, documentParser);
+        try (java.util.stream.Stream<java.nio.file.Path> pathStream = pathStreamFunction.apply(path)) {
+            return loadDocuments(pathStream, rootDirectoryClassPathSource, directoryOnClasspath, path, pathMatcher, documentParser);
         }
     }
 
-    private static List<Document> loadDocuments(
-            Stream<Path> pathStream,
-            ClassPathSource rootDirectoryClassPathSource,
-            String directoryOnClasspath,
-            Path pathMatcherRoot,
-            PathMatcher pathMatcher,
-            DocumentParser documentParser) {
+    private static List<Document> loadDocuments(Stream<Path> pathStream, ClassPathSource rootDirectoryClassPathSource, String directoryOnClasspath, Path pathMatcherRoot, PathMatcher pathMatcher, DocumentParser documentParser) {
         AtomicInteger blank = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
-
-        List<Document> documents = pathStream
-                .filter(Files::isRegularFile)
-                // converting absolute pathMatcherRoot into relative before using pathMatcher
-                // because patterns defined in pathMatcher are relative to pathMatcherRoot (directoryPath)
-                .filter(p -> pathMatcher.matches(
-                        Path.of(pathMatcherRoot.relativize(p).toString().replace('/', File.separatorChar))))
-                .map(p -> {
-                    try {
-                        var relativePath = getRelativePath(directoryOnClasspath, rootDirectoryClassPathSource, p);
-
-                        return loadDocument(
-                                ClassPathSource.from(relativePath, rootDirectoryClassPathSource.classLoader()),
-                                p,
-                                documentParser);
-                    } catch (BlankDocumentException ignored) {
-                        blank.incrementAndGet();
-                        return null;
-                    } catch (Exception e) {
-                        failed.incrementAndGet();
-                        LOG.warn("Failed to load '{}'", p, e);
-                        return null;
-                    }
-                })
-                .filter(Objects::nonNull)
-                .toList();
-
+        List<Document> documents = pathStream.filter(Files::isRegularFile).// converting absolute pathMatcherRoot into relative before using pathMatcher
+        // because patterns defined in pathMatcher are relative to pathMatcherRoot (directoryPath)
+        filter(p -> pathMatcher.matches(java.nio.file.Paths.get(pathMatcherRoot.relativize(p).toString().replace('/', File.separatorChar)))).map(p -> {
+            try {
+                java.lang.String relativePath = getRelativePath(directoryOnClasspath, rootDirectoryClassPathSource, p);
+                return loadDocument(ClassPathSource.from(relativePath, rootDirectoryClassPathSource.classLoader()), p, documentParser);
+            } catch (BlankDocumentException ignored) {
+                blank.incrementAndGet();
+                return null;
+            } catch (Exception e) {
+                failed.incrementAndGet();
+                LOG.warn("Failed to load '{}'", p, e);
+                return null;
+            }
+        }).filter(Objects::nonNull).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         if (blank.get() > 0 || failed.get() > 0) {
-            LOG.warn(
-                    "Loaded {} of {} documents from '{}'. Skipped {} that failed to load and {} that were blank.",
-                    documents.size(),
-                    documents.size() + blank.get() + failed.get(),
-                    directoryOnClasspath,
-                    failed.get(),
-                    blank.get());
+            LOG.warn("Loaded {} of {} documents from '{}'. Skipped {} that failed to load and {} that were blank.", documents.size(), documents.size() + blank.get() + failed.get(), directoryOnClasspath, failed.get(), blank.get());
         }
-
         return documents;
     }
 
-    private static String getRelativePath(
-            String directoryOnClasspath, ClassPathSource rootDirectoryClassPathSource, Path subPath) {
+    private static String getRelativePath(String directoryOnClasspath, ClassPathSource rootDirectoryClassPathSource, Path subPath) {
         if (rootDirectoryClassPathSource.isInsideArchive()) {
             return subPath.toString();
         }
-
         try {
-            var rootClasspathPath = Path.of(rootDirectoryClassPathSource.url().toURI());
-            var isClasspathRoot = ".".equals(directoryOnClasspath) || "/".equals(directoryOnClasspath);
-
+            java.nio.file.Path rootClasspathPath = java.nio.file.Paths.get(rootDirectoryClassPathSource.url().toURI());
+            boolean isClasspathRoot = ".".equals(directoryOnClasspath) || "/".equals(directoryOnClasspath);
             if (!isClasspathRoot) {
-                var withoutLeadingAndTrailingSpaces =
-                        directoryOnClasspath.strip().replaceAll("^/+", "").replaceAll("/+$", "");
-                var numDirs = withoutLeadingAndTrailingSpaces
-                                .chars()
-                                .filter(c -> c == '/')
-                                .count()
-                        + 1;
-
-                rootClasspathPath = IntStream.range(0, (int) numDirs)
-                        .mapToObj(index -> "..")
-                        .reduce(rootClasspathPath, Path::resolve, (a, b) -> b)
-                        .normalize();
+                java.lang.String withoutLeadingAndTrailingSpaces = dev.langchain4j.internal.Jdk8.strip(directoryOnClasspath).replaceAll("^/+", "").replaceAll("/+$", "");
+                long numDirs = withoutLeadingAndTrailingSpaces.chars().filter(c -> c == '/').count() + 1;
+                rootClasspathPath = IntStream.range(0, (int) numDirs).mapToObj(index -> "..").reduce(rootClasspathPath, Path::resolve, (a, b) -> b).normalize();
             }
-
-            var relativeClasspathPath = rootClasspathPath.relativize(subPath);
+            java.nio.file.Path relativeClasspathPath = rootClasspathPath.relativize(subPath);
             return relativeClasspathPath.toString().replace(File.separatorChar, '/');
         } catch (URISyntaxException e) {
             throw new RuntimeException(e);
@@ -503,8 +423,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocumentsRecursively(
-            String directoryOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
+    public static List<Document> loadDocumentsRecursively(String directoryOnClasspath, DocumentParser documentParser, ClassLoader classLoader) {
         return loadDocumentsRecursively(directoryOnClasspath, path -> true, documentParser, classLoader);
     }
 
@@ -557,8 +476,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocumentsRecursively(
-            String directoryOnClasspath, PathMatcher pathMatcher, ClassLoader classLoader) {
+    public static List<Document> loadDocumentsRecursively(String directoryOnClasspath, PathMatcher pathMatcher, ClassLoader classLoader) {
         return loadDocumentsRecursively(directoryOnClasspath, pathMatcher, DEFAULT_DOCUMENT_PARSER, classLoader);
     }
 
@@ -583,8 +501,7 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocumentsRecursively(
-            String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocumentsRecursively(String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser) {
         return loadDocumentsRecursively(directoryOnClasspath, pathMatcher, documentParser, getDefaultClassloader());
     }
 
@@ -610,17 +527,8 @@ public class ClassPathDocumentLoader {
      * @return list of documents
      * @throws IllegalArgumentException If specified path is not a directory.
      */
-    public static List<Document> loadDocumentsRecursively(
-            String directoryOnClasspath,
-            PathMatcher pathMatcher,
-            DocumentParser documentParser,
-            ClassLoader classLoader) {
-        return loadDocuments(
-                directoryOnClasspath,
-                pathMatcher,
-                documentParser,
-                classLoader,
-                ClassPathDocumentLoader::getFilesInDirectoryRecursively);
+    public static List<Document> loadDocumentsRecursively(String directoryOnClasspath, PathMatcher pathMatcher, DocumentParser documentParser, ClassLoader classLoader) {
+        return loadDocuments(directoryOnClasspath, pathMatcher, documentParser, classLoader, ClassPathDocumentLoader::getFilesInDirectoryRecursively);
     }
 
     private static Stream<Path> getFilesInDirectory(Path directoryPath) {

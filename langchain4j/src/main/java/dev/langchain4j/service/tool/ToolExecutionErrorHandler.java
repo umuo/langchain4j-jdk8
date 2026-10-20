@@ -1,7 +1,6 @@
 package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
-
 import dev.langchain4j.exception.ToolErrorVisibleToLlm;
 import dev.langchain4j.exception.ToolExecutionException;
 import dev.langchain4j.service.AiServices;

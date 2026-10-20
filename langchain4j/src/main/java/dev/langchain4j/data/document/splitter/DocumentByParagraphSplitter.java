@@ -28,33 +28,26 @@ import dev.langchain4j.model.TokenCountEstimator;
  */
 public class DocumentByParagraphSplitter extends HierarchicalDocumentSplitter {
 
-    public DocumentByParagraphSplitter(int maxSegmentSizeInChars,
-                                       int maxOverlapSizeInChars) {
+    public DocumentByParagraphSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, null);
     }
 
-    public DocumentByParagraphSplitter(int maxSegmentSizeInChars,
-                                       int maxOverlapSizeInChars,
-                                       DocumentSplitter subSplitter) {
+    public DocumentByParagraphSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, subSplitter);
     }
 
-    public DocumentByParagraphSplitter(int maxSegmentSizeInTokens,
-                                       int maxOverlapSizeInTokens,
-                                       TokenCountEstimator tokenCountEstimator) {
+    public DocumentByParagraphSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, null);
     }
 
-    public DocumentByParagraphSplitter(int maxSegmentSizeInTokens,
-                                       int maxOverlapSizeInTokens,
-                                       TokenCountEstimator tokenCountEstimator,
-                                       DocumentSplitter subSplitter) {
+    public DocumentByParagraphSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, subSplitter);
     }
 
     @Override
     public String[] split(String text) {
-        return text.split("\\s*(?>\\R)\\s*(?>\\R)\\s*"); // additional whitespaces are ignored
+        // additional whitespaces are ignored
+        return text.split("\\s*(?>\\R)\\s*(?>\\R)\\s*");
     }
 
     @Override

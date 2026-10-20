@@ -4,10 +4,8 @@ import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.invocation.InvocationContext;
-
 import java.util.List;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -22,7 +20,9 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ToolSearchRequest {
 
     private final ToolExecutionRequest toolExecutionRequest;
+
     private final List<ToolSpecification> searchableTools;
+
     private final InvocationContext invocationContext;
 
     public ToolSearchRequest(Builder builder) {
@@ -55,11 +55,10 @@ public class ToolSearchRequest {
 
     @Override
     public boolean equals(final Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ToolSearchRequest that = (ToolSearchRequest) o;
-        return Objects.equals(toolExecutionRequest, that.toolExecutionRequest)
-                && Objects.equals(searchableTools, that.searchableTools)
-                && Objects.equals(invocationContext, that.invocationContext);
+        return Objects.equals(toolExecutionRequest, that.toolExecutionRequest) && Objects.equals(searchableTools, that.searchableTools) && Objects.equals(invocationContext, that.invocationContext);
     }
 
     @Override
@@ -69,11 +68,7 @@ public class ToolSearchRequest {
 
     @Override
     public String toString() {
-        return "ToolSearchRequest{" +
-                "toolExecutionRequest=" + toolExecutionRequest +
-                ", searchableTools=" + searchableTools +
-                ", invocationContext=" + invocationContext +
-                '}';
+        return "ToolSearchRequest{" + "toolExecutionRequest=" + toolExecutionRequest + ", searchableTools=" + searchableTools + ", invocationContext=" + invocationContext + '}';
     }
 
     public static Builder builder() {
@@ -83,7 +78,9 @@ public class ToolSearchRequest {
     public static class Builder {
 
         private ToolExecutionRequest toolExecutionRequest;
+
         private List<ToolSpecification> searchableTools;
+
         private InvocationContext invocationContext;
 
         public Builder toolExecutionRequest(ToolExecutionRequest toolExecutionRequest) {

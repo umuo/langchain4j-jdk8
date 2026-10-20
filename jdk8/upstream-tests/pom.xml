@@ -32,6 +32,14 @@
             <artifactId>mockito-junit-jupiter</artifactId>
             <version>5.14.2</version>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId>
+            <artifactId>langchain4j-open-ai</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <testSourceDirectory>${project.basedir}/../..</testSourceDirectory>
@@ -57,6 +65,19 @@
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/batch/BatchItemResultTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/decision/response/DecisionResponseTest.java</testInclude>
                         <testInclude>langchain4j-http-client/src/test/java/dev/langchain4j/http/client/sse/DefaultServerSentEventParserTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/AiServicesTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/AiServicesBuilderTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/classinstance/ClassMetadataProviderTests.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/classinstance/ReflectionBasedClassMetadataProviderFactoryTests.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/memory/chat/MessageWindowChatMemoryTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/memory/chat/SingleSlotChatMemoryStoreTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/output/PojoOutputParserTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/output/ServiceOutputParserTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/output/EnumOutputParserTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/output/PolymorphicOutputParserTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/data/document/splitter/DocumentBySentenceSplitterTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/chat/mock/ChatModelMock.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/memory/chat/HitCountChatMemoryStore.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -75,6 +96,17 @@
                         <include>**/BatchItemResultTest.java</include>
                         <include>**/DecisionResponseTest.java</include>
                         <include>**/DefaultServerSentEventParserTest.java</include>
+                        <include>**/AiServicesTest.java</include>
+                        <include>**/AiServicesBuilderTest.java</include>
+                        <include>**/ClassMetadataProviderTests.java</include>
+                        <include>**/ReflectionBasedClassMetadataProviderFactoryTests.java</include>
+                        <include>**/MessageWindowChatMemoryTest.java</include>
+                        <include>**/SingleSlotChatMemoryStoreTest.java</include>
+                        <include>**/PojoOutputParserTest.java</include>
+                        <include>**/ServiceOutputParserTest.java</include>
+                        <include>**/EnumOutputParserTest.java</include>
+                        <include>**/PolymorphicOutputParserTest.java</include>
+                        <include>**/DocumentBySentenceSplitterTest.java</include>
                     </includes>
                 </configuration>
             </plugin>

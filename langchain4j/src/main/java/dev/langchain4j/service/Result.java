@@ -1,7 +1,6 @@
 package dev.langchain4j.service;
 
 import static dev.langchain4j.internal.Utils.copy;
-
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -30,11 +29,17 @@ import java.util.List;
 public class Result<T> {
 
     private final T content;
+
     private final TokenUsage tokenUsage;
+
     private final List<Content> sources;
+
     private final FinishReason finishReason;
+
     private final List<ToolExecution> toolExecutions;
+
     private final List<ChatResponse> intermediateResponses;
+
     private final ChatResponse finalResponse;
 
     /**
@@ -50,18 +55,13 @@ public class Result<T> {
         this.finalResponse = builder.finalResponse;
     }
 
-    public Result(
-            T content,
-            TokenUsage tokenUsage,
-            List<Content> sources,
-            FinishReason finishReason,
-            List<ToolExecution> toolExecutions) {
+    public Result(T content, TokenUsage tokenUsage, List<Content> sources, FinishReason finishReason, List<ToolExecution> toolExecutions) {
         this.content = content;
         this.tokenUsage = tokenUsage;
         this.sources = copy(sources);
         this.finishReason = finishReason;
         this.toolExecutions = copy(toolExecutions);
-        this.intermediateResponses = List.of();
+        this.intermediateResponses = dev.langchain4j.internal.Jdk8.list();
         this.finalResponse = null;
     }
 
@@ -124,14 +124,21 @@ public class Result<T> {
     public static class ResultBuilder<T> {
 
         private T content;
+
         private TokenUsage tokenUsage;
+
         private List<Content> sources;
+
         private FinishReason finishReason;
+
         private List<ToolExecution> toolExecutions;
+
         private List<ChatResponse> intermediateResponses;
+
         private ChatResponse finalResponse;
 
-        ResultBuilder() {}
+        ResultBuilder() {
+        }
 
         public ResultBuilder<T> content(T content) {
             this.content = content;

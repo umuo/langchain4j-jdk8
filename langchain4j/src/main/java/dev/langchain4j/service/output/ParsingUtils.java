@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.Utils.toBase64;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.internal.Json;
 import java.lang.reflect.Type;
@@ -17,34 +16,28 @@ import java.util.function.Supplier;
 class ParsingUtils {
 
     static <T> T parseAsStringOrJson(String text, Function<String, T> parser, Class<T> type) {
-
         if (isNullOrBlank(text)) {
             throw outputParsingException(text, type);
         }
-
         if (isJsonObject(text)) {
             Map<?, ?> map = parseJsonObjectOrThrow(text, type.getTypeName());
             if (isNullOrEmpty(map)) {
                 throw outputParsingException(text, type);
             }
-
             Object value = map.get("value");
             if (value == null) {
                 throw outputParsingException(text, type);
             }
-
             return parse(value.toString(), parser, type);
         } else {
             return parse(text, parser, type);
         }
     }
 
-    static <T, CT extends Collection<T>> CT parseAsStringOrJson(
-            String text, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
+    static <T, CT extends Collection<T>> CT parseAsStringOrJson(String text, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
         if (text == null) {
             throw outputParsingException(text, type, null);
         }
-
         if (isJsonArray(text)) {
             Collection<?> values = parseJsonArrayOrNull(text);
             if (values != null) {
@@ -55,15 +48,12 @@ class ParsingUtils {
             if (isNullOrEmpty(map)) {
                 throw outputParsingException(text, type, null);
             }
-
             Object values = map.get("values");
             if (!(values instanceof Collection<?>)) {
                 throw outputParsingException(text, type, null);
             }
-
             return parseCollectionValues((Collection<?>) values, parser, emptyCollectionSupplier, type);
         }
-
         return parseLines(text, parser, emptyCollectionSupplier, type);
     }
 
@@ -80,12 +70,12 @@ class ParsingUtils {
         try {
             return Json.fromJson(text.trim(), Collection.class);
         } catch (RuntimeException e) {
-            return null; // the text only looks like a JSON array, e.g. "[apple]\n[banana]"
+            // the text only looks like a JSON array, e.g. "[apple]\n[banana]"
+            return null;
         }
     }
 
-    private static <T, CT extends Collection<T>> CT parseLines(
-            String text, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
+    private static <T, CT extends Collection<T>> CT parseLines(String text, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
         CT collection = emptyCollectionSupplier.get();
         for (String line : text.split("\n")) {
             if (isNullOrBlank(line)) {
@@ -96,13 +86,12 @@ class ParsingUtils {
         return collection;
     }
 
-    private static <T, CT extends Collection<T>> CT parseCollectionValues(
-            Collection<?> values, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
+    private static <T, CT extends Collection<T>> CT parseCollectionValues(Collection<?> values, Function<String, T> parser, Supplier<CT> emptyCollectionSupplier, String type) {
         CT collection = emptyCollectionSupplier.get();
         for (Object value : values) {
             String stringValue;
-            if (value instanceof String string) {
-                stringValue = string;
+            if (value instanceof String) {
+                stringValue = ((String) value);
             } else {
                 stringValue = Json.toJson(value);
             }
@@ -137,7 +126,6 @@ class ParsingUtils {
     }
 
     static OutputParsingException outputParsingException(String text, String type, Throwable cause) {
-        return new OutputParsingException(
-                "Failed to parse %s (base64: %s) into %s".formatted(quoted(text), quoted(toBase64(text)), type), cause);
+        return new OutputParsingException(String.format("Failed to parse %s (base64: %s) into %s", quoted(text), quoted(toBase64(text)), type), cause);
     }
 }

@@ -2,9 +2,7 @@ package dev.langchain4j.classification;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.segment.TextSegment;
-
 import java.util.List;
-
 import static java.util.stream.Collectors.toList;
 
 /**
@@ -22,9 +20,7 @@ public interface TextClassifier<L> {
      * @return A list of labels. Can contain zero, one, or multiple labels.
      */
     default List<L> classify(String text) {
-        return classifyWithScores(text).scoredLabels().stream()
-                .map(ScoredLabel::label)
-                .collect(toList());
+        return classifyWithScores(text).scoredLabels().stream().map(ScoredLabel::label).collect(toList());
     }
 
     /**

@@ -51,3 +51,12 @@ Java 8 验收覆盖集合/record 值与 JSON 语义、平台线程回退、SSE �
 - 加入兼容 reactor、BOM 与验收依赖。主模块源码当前尚未完成 Java 8 移植，不能单独声称可用。
 - 仅在 `jdk8/target/stage2` 对固定基线的新模块原始快照做类型分析；未对已移植模块运行一次性转换。
 - OpenNLP 候选版本 2.3.3，后续验证字节码、句子分割模型和运行兼容性。
+
+### 第二阶段主模块检查点
+
+- 146 个生产源码文件已通过 `--release 8`；35 个真实 Java 8 用例和 396 个选定上游用例通过。
+- 默认方法使用 MethodHandles 的 Java 8 Lookup 路径；Java 9+ 通过反射使用 privateLookupIn。保留原始异常。
+- 元数据 SPI 改用 Java 8 ServiceLoader 迭代；record 元数据通过反射视图隔离高版本类型。
+- 响应式桥接新增仅在订阅取消时触发的 whenCancelled，避免把完成/失败混同于取消。
+- OpenNLP 2.3.3 实测为 Java 17 字节码；2.0/2.1 为 Java 11。选择 Java 8 的 1.9.5，并从本仓库官方 0.35.0 历史恢复配套 1.9.3 句子模型；Java 8 实测和 6 个上游句子分割用例通过。此旧依赖的生命周期限制须在最终兼容说明中注明。
+- 状态：WIP；下一步补齐 OpenAI HTTP/SSE 与 AI Services 的端到端联动、取消和产物消费验证。

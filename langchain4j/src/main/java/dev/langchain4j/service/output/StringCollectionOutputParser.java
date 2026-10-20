@@ -5,11 +5,9 @@ import dev.langchain4j.model.chat.request.json.JsonArraySchema;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
 import dev.langchain4j.model.chat.request.json.JsonStringSchema;
-
 import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import static dev.langchain4j.service.output.ParsingUtils.parseAsStringOrJson;
 
 @Internal
@@ -30,15 +28,7 @@ abstract class StringCollectionOutputParser<CT extends Collection<String>> imple
 
     @Override
     public Optional<JsonSchema> jsonSchema() {
-        JsonSchema jsonSchema = JsonSchema.builder()
-                .name(collectionType().getSimpleName() + "_of_String")
-                .rootElement(JsonObjectSchema.builder()
-                        .addProperty("values", JsonArraySchema.builder()
-                                .items(new JsonStringSchema())
-                                .build())
-                        .required("values")
-                        .build())
-                .build();
+        JsonSchema jsonSchema = JsonSchema.builder().name(collectionType().getSimpleName() + "_of_String").rootElement(JsonObjectSchema.builder().addProperty("values", JsonArraySchema.builder().items(new JsonStringSchema()).build()).required("values").build()).build();
         return Optional.of(jsonSchema);
     }
 

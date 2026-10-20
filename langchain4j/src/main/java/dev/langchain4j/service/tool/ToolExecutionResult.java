@@ -6,13 +6,11 @@ import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.ChatMemory;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
 import static dev.langchain4j.internal.Utils.copy;
 
 /**
@@ -37,21 +35,24 @@ import static dev.langchain4j.internal.Utils.copy;
 public class ToolExecutionResult {
 
     private final boolean isError;
+
     private final Object result;
+
     private final AtomicReference<List<Content>> resultContents;
+
     private final Supplier<String> resultTextSupplier;
+
     private final Map<String, Object> attributes;
 
     public ToolExecutionResult(Builder builder) {
         this.isError = builder.isError;
         this.result = builder.result;
-
         boolean hasResultText = builder.resultText != null;
         boolean hasResultTextSupplier = builder.resultTextSupplier != null;
         boolean hasResultContents = builder.resultContents != null && !builder.resultContents.isEmpty();
         validate(hasResultText, hasResultTextSupplier, hasResultContents);
         if (hasResultText) {
-            this.resultContents = new AtomicReference<>(List.of(TextContent.from(builder.resultText)));
+            this.resultContents = new AtomicReference<>(dev.langchain4j.internal.Jdk8.list(TextContent.from(builder.resultText)));
             this.resultTextSupplier = null;
         } else if (hasResultTextSupplier) {
             this.resultContents = new AtomicReference<>();
@@ -60,19 +61,16 @@ public class ToolExecutionResult {
             this.resultContents = new AtomicReference<>(copy(builder.resultContents));
             this.resultTextSupplier = null;
         }
-
         this.attributes = copy(builder.attributes);
     }
 
     private static void validate(boolean hasResultText, boolean hasResultTextSupplier, boolean hasResultContents) {
         int setCount = (hasResultText ? 1 : 0) + (hasResultTextSupplier ? 1 : 0) + (hasResultContents ? 1 : 0);
         if (setCount == 0) {
-            throw new IllegalArgumentException(
-                    "One of resultText, resultTextSupplier, or resultContents must be provided");
+            throw new IllegalArgumentException("One of resultText, resultTextSupplier, or resultContents must be provided");
         }
         if (setCount > 1) {
-            throw new IllegalArgumentException(
-                    "resultText, resultTextSupplier, and resultContents are mutually exclusive");
+            throw new IllegalArgumentException("resultText, resultTextSupplier, and resultContents are mutually exclusive");
         }
     }
 
@@ -109,12 +107,10 @@ public class ToolExecutionResult {
      */
     public String resultText() {
         List<Content> contents = resultContents();
-        if (contents.size() == 1 && contents.get(0) instanceof TextContent textContent) {
-            return textContent.text();
+        if (contents.size() == 1 && contents.get(0) instanceof TextContent) {
+            return ((TextContent) contents.get(0)).text();
         }
-        throw new IllegalStateException(
-                "resultText() cannot be called when resultContents contains non-text or multiple content elements. "
-                        + "Use resultContents() instead.");
+        throw new IllegalStateException("resultText() cannot be called when resultContents contains non-text or multiple content elements. " + "Use resultContents() instead.");
     }
 
     /**
@@ -140,7 +136,7 @@ public class ToolExecutionResult {
                 return current;
             }
             String text = resultTextSupplier.get();
-            return text == null ? List.of() : List.of(TextContent.from(text));
+            return text == null ? dev.langchain4j.internal.Jdk8.list() : dev.langchain4j.internal.Jdk8.list(TextContent.from(text));
         });
     }
 
@@ -158,13 +154,12 @@ public class ToolExecutionResult {
 
     @Override
     public boolean equals(final Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         ToolExecutionResult that = (ToolExecutionResult) object;
-        return isError == that.isError
-                && Objects.equals(result, that.result)
-                && Objects.equals(resultContents(), that.resultContents())
-                && Objects.equals(attributes, that.attributes);
+        return isError == that.isError && Objects.equals(result, that.result) && Objects.equals(resultContents(), that.resultContents()) && Objects.equals(attributes, that.attributes);
     }
 
     @Override
@@ -174,12 +169,7 @@ public class ToolExecutionResult {
 
     @Override
     public String toString() {
-        return "ToolExecutionResult {"
-                + "isError = " + isError
-                + ", result = " + result
-                + ", resultContents = " + resultContents()
-                + ", attributes = " + attributes
-                + '}';
+        return "ToolExecutionResult {" + "isError = " + isError + ", result = " + result + ", resultContents = " + resultContents() + ", attributes = " + attributes + '}';
     }
 
     public static Builder builder() {
@@ -209,10 +199,15 @@ public class ToolExecutionResult {
     public static class Builder {
 
         private boolean isError;
+
         private Object result;
+
         private String resultText;
+
         private Supplier<String> resultTextSupplier;
+
         private List<Content> resultContents;
+
         private Map<String, Object> attributes;
 
         /**

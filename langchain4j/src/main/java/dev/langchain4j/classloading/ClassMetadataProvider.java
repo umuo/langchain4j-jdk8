@@ -2,17 +2,18 @@ package dev.langchain4j.classloading;
 
 import dev.langchain4j.spi.classloading.ClassMetadataProviderFactory;
 import java.util.ServiceLoader;
-import java.util.ServiceLoader.Provider;
+
 
 /**
  * Utility class for returning metadata about a class and its methods. Intended to allow downstream frameworks (like Quarkus
  * or Spring) to use their own mechanisms for providing this information.
  */
 public final class ClassMetadataProvider {
-    private static final ReflectionBasedClassMetadataProviderFactory DEFAULT_CLASS_METADATA_PROVIDER_FACTORY =
-            new ReflectionBasedClassMetadataProviderFactory();
 
-    private ClassMetadataProvider() {}
+    private static final ReflectionBasedClassMetadataProviderFactory DEFAULT_CLASS_METADATA_PROVIDER_FACTORY = new ReflectionBasedClassMetadataProviderFactory();
+
+    private ClassMetadataProvider() {
+    }
 
     /**
      * Retrieves an implementation of a {@link ClassMetadataProviderFactory}. This method first looks for
@@ -25,11 +26,9 @@ public final class ClassMetadataProvider {
      *         to the default implementation.
      */
     public static <MethodKey> ClassMetadataProviderFactory<MethodKey> getClassMetadataProviderFactory() {
-        return ServiceLoader.load(ClassMetadataProviderFactory.class).stream()
-                .filter(provider ->
-                        !DEFAULT_CLASS_METADATA_PROVIDER_FACTORY.getClass().equals(provider.type()))
-                .map(Provider::get)
-                .findFirst()
-                .orElse(DEFAULT_CLASS_METADATA_PROVIDER_FACTORY);
+        for (ClassMetadataProviderFactory factory : ServiceLoader.load(ClassMetadataProviderFactory.class)) {
+            if (!DEFAULT_CLASS_METADATA_PROVIDER_FACTORY.getClass().equals(factory.getClass())) return factory;
+        }
+        return (ClassMetadataProviderFactory<MethodKey>) DEFAULT_CLASS_METADATA_PROVIDER_FACTORY;
     }
 }

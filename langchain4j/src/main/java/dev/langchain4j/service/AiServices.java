@@ -5,7 +5,6 @@ import static dev.langchain4j.service.IllegalConfigurationException.illegalConfi
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.toList;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ReturnBehavior;
@@ -92,7 +91,7 @@ import java.util.function.UnaryOperator;
  * - Various method return types (output parsers), see more details below
  * - Streaming (use {@link TokenStream} as a return type)
  * - Non-blocking invocation (use {@link java.util.concurrent.CompletableFuture} or
- *   {@link java.util.concurrent.Flow.Publisher} as a return type; experimental)
+ *   {@link org.reactivestreams.Publisher} as a return type; experimental)
  * - Structured prompts as method arguments (see @{@link StructuredPrompt})
  * - Auto-moderation, configured via @{@link Moderate} annotation
  * </pre>
@@ -122,7 +121,7 @@ import java.util.function.UnaryOperator;
  * - Result&lt;T&gt; if you want to access {@link TokenUsage} or sources ({@link Content}s retrieved during RAG), aside from T, which can be of any type listed above. For example: Result&lt;String&gt;, Result&lt;MyCustomPojo&gt;
  * - {@link TokenStream}, if you want to receive the answer token by token via callbacks
  * - {@link java.util.concurrent.CompletableFuture}&lt;T&gt; or {@link java.util.concurrent.CompletionStage}&lt;T&gt;, if you want one answer without blocking the calling thread (experimental)
- * - {@link java.util.concurrent.Flow.Publisher}&lt;{@link AiServiceStreamingEvent}&gt; or {@link java.util.concurrent.Flow.Publisher}&lt;{@link String}&gt;, if you want the interaction streamed without blocking the calling thread (experimental)
+ * - {@link org.reactivestreams.Publisher}&lt;{@link AiServiceStreamingEvent}&gt; or {@link org.reactivestreams.Publisher}&lt;{@link String}&gt;, if you want the interaction streamed without blocking the calling thread (experimental)
  * For POJOs, it is advisable to use the "json mode" feature if the LLM provider supports it. For OpenAI, this can be enabled by calling {@code responseFormat("json_object")} during model construction.
  *
  * </pre>
@@ -162,7 +161,7 @@ import java.util.function.UnaryOperator;
  * <p>
  * <b>Asynchronous and reactive return types are experimental.</b> Alongside the synchronous return types and
  * {@link TokenStream}, an AI Service method can return a {@link java.util.concurrent.CompletableFuture} (one
- * response, produced without blocking the calling thread) or a {@link java.util.concurrent.Flow.Publisher}
+ * response, produced without blocking the calling thread) or a {@link org.reactivestreams.Publisher}
  * (a stream of {@link AiServiceStreamingEvent}s, or of {@link String} text chunks). These two modes, and the
  * asynchronous counterparts they build on across the stack - chat models, chat memory, guardrails, tools and
  * RAG - are annotated {@link dev.langchain4j.Experimental}: their APIs and behavior may still change in a
@@ -175,6 +174,7 @@ public abstract class AiServices<T> {
     protected final AiServiceContext context;
 
     private boolean contentRetrieverSet = false;
+
     private boolean retrievalAugmentorSet = false;
 
     protected AiServices(AiServiceContext context) {
@@ -220,14 +220,13 @@ public abstract class AiServices<T> {
     }
 
     private static class FactoryHolder {
+
         private static final AiServicesFactory aiServicesFactory = loadFactory(AiServicesFactory.class);
     }
 
     @Internal
     public static <T> AiServices<T> builder(AiServiceContext context) {
-        return FactoryHolder.aiServicesFactory != null
-                ? FactoryHolder.aiServicesFactory.create(context)
-                : new DefaultAiServices<>(context);
+        return FactoryHolder.aiServicesFactory != null ? FactoryHolder.aiServicesFactory.create(context) : new DefaultAiServices<>(context);
     }
 
     /**
@@ -358,8 +357,7 @@ public abstract class AiServices<T> {
      * @see #systemMessageTransformer(UnaryOperator)
      * @since 1.12.0
      */
-    public AiServices<T> systemMessageTransformer(
-            BiFunction<String, InvocationContext, String> systemMessageTransformer) {
+    public AiServices<T> systemMessageTransformer(BiFunction<String, InvocationContext, String> systemMessageTransformer) {
         context.systemMessageTransformer = systemMessageTransformer;
         return this;
     }
@@ -619,7 +617,7 @@ public abstract class AiServices<T> {
      * @return builder
      * @deprecated use {@link #tools(List)} instead in order to specify {@link ReturnBehavior}
      */
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public AiServices<T> tools(Map<ToolSpecification, ToolExecutor> tools, Set<String> immediateReturnToolNames) {
         context.toolService.tools(tools, immediateReturnToolNames);
         return this;
@@ -670,7 +668,7 @@ public abstract class AiServices<T> {
      * If {@code null} is specified, the default {@link Executor} will be used.
      * <p>
      * <b>Running tools sequentially.</b> The asynchronous AI Service modes (methods returning a
-     * {@link java.util.concurrent.CompletableFuture} or a reactive {@link java.util.concurrent.Flow.Publisher})
+     * {@link java.util.concurrent.CompletableFuture} or a reactive {@link org.reactivestreams.Publisher})
      * execute tools concurrently by default. To run them one at a time instead — e.g. for tools that are not
      * thread-safe, that must preserve the order of their side effects, or that need to be rate-limited — pass a
      * single-threaded executor such as {@link java.util.concurrent.Executors#newSingleThreadExecutor()}. Tools
@@ -709,7 +707,7 @@ public abstract class AiServices<T> {
     }
 
     /**
-     * Sets the size of the bounded back-pressure buffer used by the reactive ({@code Flow.Publisher}) streaming
+     * Sets the size of the bounded back-pressure buffer used by the reactive ({@code Publisher}) streaming
      * path. Events are relayed to the subscriber through this buffer; if the subscriber consumes slower than the
      * model produces and the buffer overflows, the stream terminates with an {@link IllegalStateException}.
      * <p>
@@ -731,7 +729,7 @@ public abstract class AiServices<T> {
     /**
      * @deprecated Use {@link #maxToolCallingRoundTrips(int)} instead.
      */
-    @Deprecated(since = "1.15.0")
+    @Deprecated
     public AiServices<T> maxSequentialToolsInvocations(int maxSequentialToolsInvocations) {
         return maxToolCallingRoundTrips(maxSequentialToolsInvocations);
     }
@@ -771,8 +769,7 @@ public abstract class AiServices<T> {
      * @see #toolArgumentsErrorHandler(ToolArgumentsErrorHandler)
      * @see #toolExecutionErrorHandler(ToolExecutionErrorHandler)
      */
-    public AiServices<T> hallucinatedToolNameStrategy(
-            Function<ToolExecutionRequest, ToolExecutionResultMessage> hallucinatedToolNameStrategy) {
+    public AiServices<T> hallucinatedToolNameStrategy(Function<ToolExecutionRequest, ToolExecutionResultMessage> hallucinatedToolNameStrategy) {
         context.toolService.hallucinatedToolNameStrategy(hallucinatedToolNameStrategy);
         return this;
     }
@@ -809,7 +806,7 @@ public abstract class AiServices<T> {
      * <p>
      * <b>Defaults differ by mode.</b> Without an explicit handler, the synchronous and {@link TokenStream}
      * modes fail the invocation on a tool argument-parse error, while the asynchronous and reactive modes
-     * ({@link java.util.concurrent.CompletableFuture}, {@link java.util.concurrent.Flow.Publisher}) send the error to the LLM so it can retry with corrected arguments.
+     * ({@link java.util.concurrent.CompletableFuture}, {@link org.reactivestreams.Publisher}) send the error to the LLM so it can retry with corrected arguments.
      * A handler set here is used by every mode.
      *
      * @param handler The handler responsible for processing tool argument errors
@@ -860,7 +857,7 @@ public abstract class AiServices<T> {
      * <p>
      * <b>Defaults differ by mode.</b> Without an explicit handler, the synchronous and {@link TokenStream}
      * modes send a tool execution error to the LLM, while the asynchronous and reactive modes
-     * ({@link java.util.concurrent.CompletableFuture}, {@link java.util.concurrent.Flow.Publisher}) fail the invocation, rather than hiding the error from you.
+     * ({@link java.util.concurrent.CompletableFuture}, {@link org.reactivestreams.Publisher}) fail the invocation, rather than hiding the error from you.
      * A handler set here is used by every mode.
      *
      * @param handler The handler responsible for processing tool execution errors
@@ -923,9 +920,7 @@ public abstract class AiServices<T> {
             throw illegalConfiguration("Only one out of [retriever, contentRetriever, retrievalAugmentor] can be set");
         }
         contentRetrieverSet = true;
-        context.retrievalAugmentor = DefaultRetrievalAugmentor.builder()
-                .contentRetriever(ensureNotNull(contentRetriever, "contentRetriever"))
-                .build();
+        context.retrievalAugmentor = DefaultRetrievalAugmentor.builder().contentRetriever(ensureNotNull(contentRetriever, "contentRetriever")).build();
         return this;
     }
 
@@ -1344,10 +1339,7 @@ public abstract class AiServices<T> {
     }
 
     public static List<ChatMessage> removeToolMessages(List<ChatMessage> messages) {
-        return messages.stream()
-                .filter(it -> !(it instanceof ToolExecutionResultMessage))
-                .filter(it -> !(it instanceof AiMessage && ((AiMessage) it).hasToolExecutionRequests()))
-                .collect(toList());
+        return messages.stream().filter(it -> !(it instanceof ToolExecutionResultMessage)).filter(it -> !(it instanceof AiMessage && ((AiMessage) it).hasToolExecutionRequests())).collect(toList());
     }
 
     public static void verifyModerationIfNeeded(Future<Moderation> moderationFuture) {
@@ -1362,8 +1354,7 @@ public abstract class AiServices<T> {
 
     static void verifyModeration(Moderation moderation) {
         if (moderation.flagged()) {
-            throw new ModerationException(
-                    String.format("Text \"%s\" violates content policy", moderation.flaggedText()), moderation);
+            throw new ModerationException(String.format("Text \"%s\" violates content policy", moderation.flaggedText()), moderation);
         }
     }
 }

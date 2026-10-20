@@ -3,7 +3,6 @@ package dev.langchain4j.memory.chat;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -50,9 +49,13 @@ import java.util.function.Function;
 public class TokenWindowChatMemory implements ChatMemory {
 
     private final Object id;
+
     private final Function<Object, Integer> maxTokensProvider;
+
     private final TokenCountEstimator tokenCountEstimator;
+
     private final ChatMemoryStore store;
+
     private final boolean alwaysKeepSystemMessageFirst;
 
     private TokenWindowChatMemory(Builder builder) {
@@ -103,23 +106,22 @@ public class TokenWindowChatMemory implements ChatMemory {
             Optional<SystemMessage> maybeSystemMessage = SystemMessage.findFirst(messages);
             if (maybeSystemMessage.isPresent()) {
                 if (maybeSystemMessage.get().equals(message)) {
-                    return false; // do not add the same system message
+                    // do not add the same system message
+                    return false;
                 } else {
-                    messages.remove(maybeSystemMessage.get()); // need to replace existing system message
+                    // need to replace existing system message
+                    messages.remove(maybeSystemMessage.get());
                 }
             }
         }
-
         if (message instanceof SystemMessage && this.alwaysKeepSystemMessageFirst) {
             messages.add(0, message);
         } else {
             messages.add(message);
         }
-
         Integer maxTokens = maxTokensProvider.apply(id);
         ensureGreaterThanZero(maxTokens, "maxTokens");
         ensureCapacity(messages, maxTokens, tokenCountEstimator);
-
         return true;
     }
 
@@ -153,7 +155,7 @@ public class TokenWindowChatMemory implements ChatMemory {
             ensureCapacity(windowed, maxTokens, tokenCountEstimator);
             return store.updateMessagesAsync(id, windowed);
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
@@ -176,14 +178,11 @@ public class TokenWindowChatMemory implements ChatMemory {
     }
 
     private static void ensureCapacity(List<ChatMessage> messages, int maxTokens, TokenCountEstimator estimator) {
-
         if (messages.isEmpty()) {
             return;
         }
-
         int currentTokenCount = estimator.estimateTokenCountInMessages(messages);
         while (currentTokenCount > maxTokens && !messages.isEmpty()) {
-
             int messageToEvictIndex = 0;
             if (messages.get(0) instanceof SystemMessage) {
                 if (messages.size() == 1) {
@@ -191,14 +190,11 @@ public class TokenWindowChatMemory implements ChatMemory {
                 }
                 messageToEvictIndex = 1;
             }
-
             ChatMessage evictedMessage = messages.remove(messageToEvictIndex);
             int tokenCountOfEvictedMessage = estimator.estimateTokenCountInMessage(evictedMessage);
             currentTokenCount -= tokenCountOfEvictedMessage;
-
-            if (evictedMessage instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
-                while (messages.size() > messageToEvictIndex
-                        && messages.get(messageToEvictIndex) instanceof ToolExecutionResultMessage) {
+            if (evictedMessage instanceof AiMessage && ((AiMessage) evictedMessage).hasToolExecutionRequests()) {
+                while (messages.size() > messageToEvictIndex && messages.get(messageToEvictIndex) instanceof ToolExecutionResultMessage) {
                     // Some LLMs (e.g. OpenAI) prohibit ToolExecutionResultMessage(s) without corresponding AiMessage,
                     // so we have to automatically evict orphan ToolExecutionResultMessage(s) if AiMessage was evicted
                     ChatMessage orphanToolExecutionResultMessage = messages.remove(messageToEvictIndex);
@@ -220,9 +216,13 @@ public class TokenWindowChatMemory implements ChatMemory {
     public static class Builder {
 
         private Object id = ChatMemoryService.DEFAULT;
+
         private Function<Object, Integer> maxTokensProvider;
+
         private TokenCountEstimator tokenCountEstimator;
+
         private ChatMemoryStore store;
+
         private Boolean alwaysKeepSystemMessageFirst;
 
         /**
@@ -257,8 +257,7 @@ public class TokenWindowChatMemory implements ChatMemory {
          * @param tokenCountEstimator A {@link TokenCountEstimator} responsible for counting tokens in the messages.
          * @return builder
          */
-        public Builder dynamicMaxTokens(
-                Function<Object, Integer> maxTokensProvider, TokenCountEstimator tokenCountEstimator) {
+        public Builder dynamicMaxTokens(Function<Object, Integer> maxTokensProvider, TokenCountEstimator tokenCountEstimator) {
             this.maxTokensProvider = maxTokensProvider;
             this.tokenCountEstimator = tokenCountEstimator;
             return this;

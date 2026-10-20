@@ -10,7 +10,6 @@ import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.Content;
 import dev.langchain4j.data.message.TextContent;
 import dev.langchain4j.invocation.InvocationContext;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 /**
@@ -19,9 +18,13 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ToolExecution {
 
     private final ToolExecutionRequest request;
+
     private final ToolExecutionResult result;
+
     private final LocalDateTime startTime;
+
     private final LocalDateTime finishTime;
+
     private final InvocationContext invocationContext;
 
     private ToolExecution(Builder builder) {
@@ -129,13 +132,12 @@ public class ToolExecution {
 
     @Override
     public boolean equals(final Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         ToolExecution that = (ToolExecution) object;
-        return Objects.equals(request, that.request)
-                && Objects.equals(result, that.result)
-                && Objects.equals(startTime, that.startTime)
-                && Objects.equals(finishTime, that.finishTime);
+        return Objects.equals(request, that.request) && Objects.equals(result, that.result) && Objects.equals(startTime, that.startTime) && Objects.equals(finishTime, that.finishTime);
     }
 
     @Override
@@ -145,12 +147,7 @@ public class ToolExecution {
 
     @Override
     public String toString() {
-        return "ToolExecution{" +
-                "request=" + request +
-                ", result=" + result +
-                ", startTime=" + startTime +
-                ", finishTime=" + finishTime +
-                '}';
+        return "ToolExecution{" + "request=" + request + ", result=" + result + ", startTime=" + startTime + ", finishTime=" + finishTime + '}';
     }
 
     public static Builder builder() {
@@ -160,9 +157,13 @@ public class ToolExecution {
     public static final class Builder {
 
         private ToolExecutionRequest request;
+
         private ToolExecutionResult result;
+
         private LocalDateTime startTime;
+
         private LocalDateTime finishTime;
+
         private InvocationContext invocationContext;
 
         private Builder() {
@@ -196,11 +197,9 @@ public class ToolExecution {
         /**
          * @deprecated Please use {@link #result(ToolExecutionResult)} instead
          */
-        @Deprecated(since = "1.5.0")
+        @Deprecated
         public Builder result(String result) {
-            this.result = ToolExecutionResult.builder()
-                    .resultText(result)
-                    .build();
+            this.result = ToolExecutionResult.builder().resultText(result).build();
             return this;
         }
 

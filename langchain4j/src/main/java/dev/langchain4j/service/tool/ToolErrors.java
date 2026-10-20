@@ -1,7 +1,6 @@
 package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
-
 import dev.langchain4j.exception.ToolErrorVisibleToLlm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +12,8 @@ final class ToolErrors {
 
     private static final Logger log = LoggerFactory.getLogger(ToolErrors.class);
 
-    private ToolErrors() {}
+    private ToolErrors() {
+    }
 
     /**
      * The message of the error, falling back to the type of the error when it has no message,
@@ -42,15 +42,12 @@ final class ToolErrors {
     }
 
     private static ToolErrorHandlerResult messageForLlm(Throwable error) {
-        if (error instanceof ToolErrorVisibleToLlm visibleError) {
-            String message = visibleError.messageForLlm();
+        if (error instanceof ToolErrorVisibleToLlm) {
+            String message = ((ToolErrorVisibleToLlm) error).messageForLlm();
             if (!isNullOrBlank(message)) {
                 return ToolErrorHandlerResult.text(message);
             }
-            log.warn(
-                    "{} implements ToolErrorVisibleToLlm, but its messageForLlm() is blank, "
-                            + "so it is handled as if it did not implement ToolErrorVisibleToLlm",
-                    error.getClass().getName());
+            log.warn("{} implements ToolErrorVisibleToLlm, but its messageForLlm() is blank, " + "so it is handled as if it did not implement ToolErrorVisibleToLlm", error.getClass().getName());
         }
         return null;
     }
@@ -61,6 +58,6 @@ final class ToolErrors {
     }
 
     static RuntimeException asRuntimeException(Throwable error) {
-        return error instanceof RuntimeException runtimeException ? runtimeException : new RuntimeException(error);
+        return error instanceof RuntimeException ? ((RuntimeException) error) : new RuntimeException(error);
     }
 }

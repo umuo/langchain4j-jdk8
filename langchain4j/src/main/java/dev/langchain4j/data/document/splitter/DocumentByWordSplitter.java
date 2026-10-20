@@ -28,33 +28,26 @@ import dev.langchain4j.model.TokenCountEstimator;
  */
 public class DocumentByWordSplitter extends HierarchicalDocumentSplitter {
 
-    public DocumentByWordSplitter(int maxSegmentSizeInChars,
-                                  int maxOverlapSizeInChars) {
+    public DocumentByWordSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, null);
     }
 
-    public DocumentByWordSplitter(int maxSegmentSizeInChars,
-                                  int maxOverlapSizeInChars,
-                                  DocumentSplitter subSplitter) {
+    public DocumentByWordSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, subSplitter);
     }
 
-    public DocumentByWordSplitter(int maxSegmentSizeInTokens,
-                                  int maxOverlapSizeInTokens,
-                                  TokenCountEstimator tokenCountEstimator) {
+    public DocumentByWordSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, null);
     }
 
-    public DocumentByWordSplitter(int maxSegmentSizeInTokens,
-                                  int maxOverlapSizeInTokens,
-                                  TokenCountEstimator tokenCountEstimator,
-                                  DocumentSplitter subSplitter) {
+    public DocumentByWordSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, subSplitter);
     }
 
     @Override
     public String[] split(String text) {
-        return text.split("\\s+"); // additional whitespaces are ignored
+        // additional whitespaces are ignored
+        return text.split("\\s+");
     }
 
     @Override

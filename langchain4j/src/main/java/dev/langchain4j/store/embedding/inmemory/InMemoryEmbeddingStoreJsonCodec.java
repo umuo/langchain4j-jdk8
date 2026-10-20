@@ -15,7 +15,7 @@ public interface InMemoryEmbeddingStoreJsonCodec {
     String toJson(InMemoryEmbeddingStore<?> store);
 
     default InMemoryEmbeddingStore<TextSegment> fromJson(InputStream in) throws IOException {
-        String json = new String(in.readAllBytes(), StandardCharsets.UTF_8);
+        String json = new String(dev.langchain4j.internal.Jdk8.readAllBytes(in), StandardCharsets.UTF_8);
         return fromJson(json);
     }
 

@@ -19,27 +19,19 @@ import dev.langchain4j.model.TokenCountEstimator;
  */
 public class DocumentByCharacterSplitter extends HierarchicalDocumentSplitter {
 
-    public DocumentByCharacterSplitter(int maxSegmentSizeInChars,
-                                       int maxOverlapSizeInChars) {
+    public DocumentByCharacterSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, null);
     }
 
-    public DocumentByCharacterSplitter(int maxSegmentSizeInChars,
-                                       int maxOverlapSizeInChars,
-                                       DocumentSplitter subSplitter) {
+    public DocumentByCharacterSplitter(int maxSegmentSizeInChars, int maxOverlapSizeInChars, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInChars, maxOverlapSizeInChars, null, subSplitter);
     }
 
-    public DocumentByCharacterSplitter(int maxSegmentSizeInTokens,
-                                       int maxOverlapSizeInTokens,
-                                       TokenCountEstimator tokenCountEstimator) {
+    public DocumentByCharacterSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, null);
     }
 
-    public DocumentByCharacterSplitter(int maxSegmentSizeInTokens,
-                                       int maxOverlapSizeInTokens,
-                                       TokenCountEstimator tokenCountEstimator,
-                                       DocumentSplitter subSplitter) {
+    public DocumentByCharacterSplitter(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator, DocumentSplitter subSplitter) {
         super(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, subSplitter);
     }
 

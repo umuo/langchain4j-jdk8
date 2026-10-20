@@ -2,10 +2,8 @@ package dev.langchain4j.service.tool.search;
 
 import dev.langchain4j.Experimental;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
-
 import java.util.List;
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -20,6 +18,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ToolSearchResult {
 
     private final List<String> foundToolNames;
+
     private final String toolResultMessageText;
 
     /**
@@ -51,10 +50,10 @@ public class ToolSearchResult {
 
     @Override
     public boolean equals(final Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         ToolSearchResult that = (ToolSearchResult) o;
-        return Objects.equals(foundToolNames, that.foundToolNames)
-                && Objects.equals(toolResultMessageText, that.toolResultMessageText);
+        return Objects.equals(foundToolNames, that.foundToolNames) && Objects.equals(toolResultMessageText, that.toolResultMessageText);
     }
 
     @Override
@@ -64,9 +63,6 @@ public class ToolSearchResult {
 
     @Override
     public String toString() {
-        return "ToolSearchResult{" +
-                "foundToolNames=" + foundToolNames +
-                ", toolResultMessageText='" + toolResultMessageText + '\'' +
-                '}';
+        return "ToolSearchResult{" + "foundToolNames=" + foundToolNames + ", toolResultMessageText='" + toolResultMessageText + '\'' + '}';
     }
 }

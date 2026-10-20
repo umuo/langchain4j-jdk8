@@ -6,7 +6,6 @@ import dev.langchain4j.service.decision.internal.DecisionServiceConfig;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.IllegalConfigurationException.illegalConfiguration;
 import static dev.langchain4j.spi.ServiceHelper.loadFactory;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.decision.DecisionModel;
 import dev.langchain4j.spi.services.DecisionServicesFactory;
@@ -75,9 +74,11 @@ import java.util.Map;
 @Experimental
 public final class DecisionServices {
 
-    private DecisionServices() {}
+    private DecisionServices() {
+    }
 
     private static class FactoryHolder {
+
         private static final DecisionServicesFactory FACTORY = loadFactory(DecisionServicesFactory.class);
     }
 
@@ -93,9 +94,7 @@ public final class DecisionServices {
      * Creates a builder for an implementation of the given interface.
      */
     public static <T> Builder<T> builder(Class<T> serviceInterface) {
-        return FactoryHolder.FACTORY != null
-                ? FactoryHolder.FACTORY.create(serviceInterface)
-                : new Builder<>(serviceInterface);
+        return FactoryHolder.FACTORY != null ? FactoryHolder.FACTORY.create(serviceInterface) : new Builder<>(serviceInterface);
     }
 
     /**
@@ -105,7 +104,9 @@ public final class DecisionServices {
     public static class Builder<T> {
 
         private final Class<T> serviceInterface;
+
         private DecisionModel decisionModel;
+
         private ThresholdProvider thresholdProvider;
 
         protected Builder(Class<T> serviceInterface) {
@@ -142,45 +143,39 @@ public final class DecisionServices {
 
         public T build() {
             if (decisionModel == null) {
-                throw illegalConfiguration(
-                        "The decision model must be set: DecisionServices.builder(%s.class).decisionModel(...)",
-                        serviceInterface.getSimpleName());
+                throw illegalConfiguration("The decision model must be set: DecisionServices.builder(%s.class).decisionModel(...)", serviceInterface.getSimpleName());
             }
             if (!serviceInterface.isInterface()) {
                 throw illegalConfiguration("%s must be an interface", serviceInterface.getName());
             }
-
             Map<Method, DecisionMethod> methods = new HashMap<>();
             for (Method method : serviceInterface.getMethods()) {
                 if (!method.isDefault() && !Modifier.isStatic(method.getModifiers())) {
                     methods.put(method, DecisionMethod.of(method));
                 }
             }
-            Map<Method, DecisionMethod> decisionMethods = Map.copyOf(methods);
-
-            DecisionServiceConfig config = DecisionServiceConfig.builder()
-                    .serviceInterface(serviceInterface)
-                    .decisionModel(decisionModel)
-                    .thresholdProvider(thresholdProvider)
-                    .build();
+            Map<Method, DecisionMethod> decisionMethods = dev.langchain4j.internal.Jdk8.copyMap(methods);
+            DecisionServiceConfig config = DecisionServiceConfig.builder().serviceInterface(serviceInterface).decisionModel(decisionModel).thresholdProvider(thresholdProvider).build();
             InvocationHandler handler = (proxy, method, args) -> {
                 if (method.getDeclaringClass() == Object.class) {
-                    return switch (method.getName()) {
-                        case "equals" -> proxy == args[0];
-                        case "hashCode" -> System.identityHashCode(proxy);
-                        case "toString" -> "DecisionService(" + serviceInterface.getName() + ")";
-                        default -> throw new IllegalStateException("Unexpected method: " + method);
-                    };
+                    switch(method.getName()) {
+                        case "equals":
+                            return proxy == args[0];
+                        case "hashCode":
+                            return System.identityHashCode(proxy);
+                        case "toString":
+                            return "DecisionService(" + serviceInterface.getName() + ")";
+                        default:
+                            throw new IllegalStateException("Unexpected method: " + method);
+                    }
                 }
                 if (method.isDefault()) {
-                    return InvocationHandler.invokeDefault(proxy, method, args);
+                    return dev.langchain4j.internal.DefaultMethodInvoker.invoke(proxy, method, args);
                 }
                 return decisionMethods.get(method).invoke(config, args == null ? new Object[0] : args);
             };
-
             @SuppressWarnings("unchecked")
-            T service = (T) Proxy.newProxyInstance(
-                    serviceInterface.getClassLoader(), new Class<?>[] {serviceInterface}, handler);
+            T service = (T) Proxy.newProxyInstance(serviceInterface.getClassLoader(), new Class<?>[] { serviceInterface }, handler);
             return service;
         }
     }

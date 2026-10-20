@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.Utils.toBase64;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.exception.ToolArgumentsException;
@@ -49,11 +48,14 @@ public class DecisionModelToolSearchStrategy implements ToolSearchStrategy {
      */
     public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = DecisionModelToolSelector.DEFAULT_QUESTION_TEMPLATE;
 
-
     private static final String DEFAULT_TOOL_NAME = "tool_search_tool";
+
     private static final String DEFAULT_TOOL_DESCRIPTION = "Finds available tools that can help with a task";
+
     private static final String DEFAULT_TOOL_ARGUMENT_NAME = "query";
+
     private static final String DEFAULT_TOOL_ARGUMENT_DESCRIPTION = "Natural language description of the task";
+
     private static final Function<List<String>, String> DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER = foundToolNames -> {
         if (foundToolNames.isEmpty()) {
             return "No matching tools found";
@@ -63,9 +65,13 @@ public class DecisionModelToolSearchStrategy implements ToolSearchStrategy {
     };
 
     private final ToolSpecification toolSearchTool;
+
     private final String toolArgumentName;
+
     private final DecisionModelToolSelector selector;
+
     private final boolean throwToolArgumentsExceptions;
+
     private final Function<List<String>, String> toolResultMessageTextProvider;
 
     public DecisionModelToolSearchStrategy(DecisionModel decisionModel) {
@@ -73,39 +79,22 @@ public class DecisionModelToolSearchStrategy implements ToolSearchStrategy {
     }
 
     protected DecisionModelToolSearchStrategy(Builder builder) {
-        this.selector = new DecisionModelToolSelector(
-                builder.decisionModel,
-                builder.questionTemplate,
-                builder.maxResults,
-                builder.minProbability,
-                builder.maxToolsPerDecisionRequest);
+        this.selector = new DecisionModelToolSelector(builder.decisionModel, builder.questionTemplate, builder.maxResults, builder.minProbability, builder.maxToolsPerDecisionRequest);
         this.toolArgumentName = getOrDefault(builder.toolArgumentName, DEFAULT_TOOL_ARGUMENT_NAME);
-        this.toolSearchTool = ToolSpecification.builder()
-                .name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME))
-                .description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION))
-                .parameters(JsonObjectSchema.builder()
-                        .addStringProperty(
-                                toolArgumentName,
-                                getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION))
-                        .required(toolArgumentName)
-                        .build())
-                .build();
+        this.toolSearchTool = ToolSpecification.builder().name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME)).description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION)).parameters(JsonObjectSchema.builder().addStringProperty(toolArgumentName, getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION)).required(toolArgumentName).build()).build();
         this.throwToolArgumentsExceptions = getOrDefault(builder.throwToolArgumentsExceptions, false);
-        this.toolResultMessageTextProvider =
-                getOrDefault(builder.toolResultMessageTextProvider, DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER);
+        this.toolResultMessageTextProvider = getOrDefault(builder.toolResultMessageTextProvider, DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER);
     }
 
     @Override
     public List<ToolSpecification> getToolSearchTools(InvocationContext invocationContext) {
-        return List.of(toolSearchTool);
+        return dev.langchain4j.internal.Jdk8.list(toolSearchTool);
     }
 
     @Override
     public ToolSearchResult search(ToolSearchRequest request) {
         String query = extractQuery(request.toolExecutionRequest().arguments());
-        List<String> toolNames = request.searchableTools().isEmpty()
-                ? List.of()
-                : selector.select(TextInput.from(query), request.searchableTools());
+        List<String> toolNames = request.searchableTools().isEmpty() ? dev.langchain4j.internal.Jdk8.list() : selector.select(TextInput.from(query), request.searchableTools());
         return new ToolSearchResult(toolNames, toolResultMessageTextProvider.apply(toolNames));
     }
 
@@ -114,14 +103,11 @@ public class DecisionModelToolSearchStrategy implements ToolSearchStrategy {
         try {
             arguments = Json.fromJson(argumentsJson, Map.class);
         } catch (Exception e) {
-            throw exception(
-                    "Failed to parse tool search arguments: '%s' (base64: '%s')"
-                            .formatted(argumentsJson, toBase64(argumentsJson)),
-                    e);
+            throw exception(String.format("Failed to parse tool search arguments: '%s' (base64: '%s')", argumentsJson, toBase64(argumentsJson)), e);
         }
         Object query = isNullOrEmpty(arguments) ? null : arguments.get(toolArgumentName);
         if (query == null || isNullOrBlank(query.toString())) {
-            throw exception("Missing required tool argument '%s'".formatted(toolArgumentName), null);
+            throw exception(String.format("Missing required tool argument '%s'", toolArgumentName), null);
         }
         return query.toString();
     }
@@ -140,15 +126,25 @@ public class DecisionModelToolSearchStrategy implements ToolSearchStrategy {
     public static class Builder {
 
         private DecisionModel decisionModel;
+
         private PromptTemplate questionTemplate;
+
         private Integer maxResults;
+
         private Double minProbability;
+
         private Integer maxToolsPerDecisionRequest;
+
         private String toolName;
+
         private String toolDescription;
+
         private String toolArgumentName;
+
         private String toolArgumentDescription;
+
         private Boolean throwToolArgumentsExceptions;
+
         private Function<List<String>, String> toolResultMessageTextProvider;
 
         /**

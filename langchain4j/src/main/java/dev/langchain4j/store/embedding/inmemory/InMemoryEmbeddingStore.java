@@ -10,7 +10,6 @@ import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.util.Arrays.asList;
 import static java.util.Comparator.comparingDouble;
 import static java.util.stream.Collectors.toList;
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.document.Metadata;
@@ -93,11 +92,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
 
     @Override
     public List<String> addAll(List<Embedding> embeddings) {
-
-        List<Entry<Embedded>> newEntries = embeddings.stream()
-                .map(embedding -> new Entry<Embedded>(randomUUID(), embedding))
-                .collect(toList());
-
+        List<Entry<Embedded>> newEntries = embeddings.stream().map(embedding -> new Entry<Embedded>(randomUUID(), embedding)).collect(toList());
         return add(newEntries);
     }
 
@@ -106,9 +101,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
         if (ids.size() != embeddings.size() || embeddings.size() != embedded.size()) {
             throw new IllegalArgumentException("The list of ids and embeddings and embedded must have the same size");
         }
-
         List<Entry<Embedded>> newEntries = new ArrayList<>(ids.size());
-
         for (int i = 0; i < ids.size(); i++) {
             newEntries.add(new Entry<>(ids.get(i), embeddings.get(i), embedded.get(i)));
         }
@@ -116,9 +109,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
     }
 
     private List<String> add(List<Entry<Embedded>> newEntries) {
-
         entries.addAll(newEntries);
-
         return newEntries.stream().map(entry -> entry.id).collect(toList());
     }
 
@@ -128,7 +119,6 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
             return;
         }
         Set<String> idSet = (ids instanceof Set) ? (Set<String>) ids : new HashSet<>(ids);
-
         entries.removeIf(entry -> idSet.contains(entry.id));
     }
 
@@ -143,7 +133,6 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
     @Override
     public void removeAll(Filter filter) {
         ensureNotNull(filter, "filter");
-
         entries.removeIf(entry -> matchesFilter(entry.embedded, filter));
     }
 
@@ -164,20 +153,14 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
      */
     @Override
     public EmbeddingSearchResult<Embedded> search(EmbeddingSearchRequest embeddingSearchRequest) {
-
         Comparator<EmbeddingMatch<Embedded>> comparator = comparingDouble(EmbeddingMatch::score);
         PriorityQueue<EmbeddingMatch<Embedded>> matches = new PriorityQueue<>(comparator);
-
         Filter filter = embeddingSearchRequest.filter();
-
         for (Entry<Embedded> entry : entries) {
-
             if (!matchesFilter(entry.embedded, filter)) {
                 continue;
             }
-
-            double cosineSimilarity =
-                    CosineSimilarity.between(entry.embedding, embeddingSearchRequest.queryEmbedding());
+            double cosineSimilarity = CosineSimilarity.between(entry.embedding, embeddingSearchRequest.queryEmbedding());
             double score = RelevanceScore.fromCosineSimilarity(cosineSimilarity);
             if (score >= embeddingSearchRequest.minScore()) {
                 matches.add(new EmbeddingMatch<>(score, entry.id, entry.embedding, entry.embedded));
@@ -186,11 +169,9 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
                 }
             }
         }
-
         List<EmbeddingMatch<Embedded>> result = new ArrayList<>(matches);
         result.sort(comparator);
         Collections.reverse(result);
-
         return new EmbeddingSearchResult<>(result);
     }
 
@@ -204,7 +185,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
         try {
             return CompletableFuture.completedFuture(search(request));
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
@@ -219,8 +200,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
      * Prefer this over {@link #serializeToJson()}
      */
     public void serializeToFile(Path filePath) {
-        try (OutputStream outputStream =
-                new BufferedOutputStream(Files.newOutputStream(filePath, CREATE, TRUNCATE_EXISTING))) {
+        try (OutputStream outputStream = new BufferedOutputStream(Files.newOutputStream(filePath, CREATE, TRUNCATE_EXISTING))) {
             loadCodec().toJson(outputStream, this);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -246,7 +226,6 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
     public static InMemoryEmbeddingStore<TextSegment> fromFile(Path filePath) {
         try (InputStream inputStream = new BufferedInputStream(Files.newInputStream(filePath))) {
             return loadCodec().fromJson(inputStream);
-
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -263,8 +242,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
      * Merges given {@code InMemoryEmbeddingStore}s into a single {@code InMemoryEmbeddingStore},
      * copying all entries from each store.
      */
-    public static <Embedded> InMemoryEmbeddingStore<Embedded> merge(
-            Collection<InMemoryEmbeddingStore<Embedded>> stores) {
+    public static <Embedded> InMemoryEmbeddingStore<Embedded> merge(Collection<InMemoryEmbeddingStore<Embedded>> stores) {
         ensureNotNull(stores, "stores");
         List<Entry<Embedded>> entries = new ArrayList<>();
         for (InMemoryEmbeddingStore<Embedded> store : stores) {
@@ -277,8 +255,7 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
      * Merges given {@code InMemoryEmbeddingStore}s into a single {@code InMemoryEmbeddingStore},
      * copying all entries from each store.
      */
-    public static <Embedded> InMemoryEmbeddingStore<Embedded> merge(
-            InMemoryEmbeddingStore<Embedded> first, InMemoryEmbeddingStore<Embedded> second) {
+    public static <Embedded> InMemoryEmbeddingStore<Embedded> merge(InMemoryEmbeddingStore<Embedded> first, InMemoryEmbeddingStore<Embedded> second) {
         return merge(asList(first, second));
     }
 
@@ -309,7 +286,9 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
     public static class Entry<Embedded> {
 
         String id;
+
         Embedding embedding;
+
         Embedded embedded;
 
         Entry(String id, Embedding embedding) {
@@ -324,12 +303,12 @@ public class InMemoryEmbeddingStore<Embedded> implements EmbeddingStore<Embedded
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o)
+                return true;
+            if (o == null || getClass() != o.getClass())
+                return false;
             Entry<?> that = (Entry<?>) o;
-            return Objects.equals(this.id, that.id)
-                    && Objects.equals(this.embedding, that.embedding)
-                    && Objects.equals(this.embedded, that.embedded);
+            return Objects.equals(this.id, that.id) && Objects.equals(this.embedding, that.embedding) && Objects.equals(this.embedded, that.embedded);
         }
 
         @Override

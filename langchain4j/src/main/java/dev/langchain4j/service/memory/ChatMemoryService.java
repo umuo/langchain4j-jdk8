@@ -1,7 +1,6 @@
 package dev.langchain4j.service.memory;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
@@ -15,7 +14,9 @@ public class ChatMemoryService {
     public static final String DEFAULT = "default";
 
     private ChatMemory defaultChatMemory;
+
     private Map<Object, ChatMemory> chatMemories;
+
     private ChatMemoryProvider chatMemoryProvider;
 
     public ChatMemoryService(ChatMemoryProvider chatMemoryProvider) {

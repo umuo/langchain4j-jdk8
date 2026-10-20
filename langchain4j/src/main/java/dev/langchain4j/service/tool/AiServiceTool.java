@@ -2,9 +2,7 @@ package dev.langchain4j.service.tool;
 
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.ToolSpecification;
-
 import java.util.Objects;
-
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -21,7 +19,9 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class AiServiceTool {
 
     private final ToolSpecification toolSpecification;
+
     private final ToolExecutor toolExecutor;
+
     private final ReturnBehavior returnBehavior;
 
     private AiServiceTool(Builder builder) {
@@ -52,18 +52,17 @@ public class AiServiceTool {
     /**
      * @deprecated use {@link #returnBehavior()} instead
      */
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public boolean immediateReturn() {
         return returnBehavior == ReturnBehavior.IMMEDIATE;
     }
 
     @Override
     public boolean equals(final Object o) {
-        if (o == null || getClass() != o.getClass()) return false;
+        if (o == null || getClass() != o.getClass())
+            return false;
         AiServiceTool that = (AiServiceTool) o;
-        return Objects.equals(toolSpecification, that.toolSpecification)
-                && Objects.equals(toolExecutor, that.toolExecutor)
-                && returnBehavior == that.returnBehavior;
+        return Objects.equals(toolSpecification, that.toolSpecification) && Objects.equals(toolExecutor, that.toolExecutor) && returnBehavior == that.returnBehavior;
     }
 
     @Override
@@ -73,18 +72,11 @@ public class AiServiceTool {
 
     @Override
     public String toString() {
-        return "AiServiceTool{" +
-                "toolSpecification=" + toolSpecification +
-                ", toolExecutor=" + toolExecutor +
-                ", returnBehavior=" + returnBehavior +
-                '}';
+        return "AiServiceTool{" + "toolSpecification=" + toolSpecification + ", toolExecutor=" + toolExecutor + ", returnBehavior=" + returnBehavior + '}';
     }
 
     public Builder toBuilder() {
-        return builder()
-                .toolSpecification(toolSpecification)
-                .toolExecutor(toolExecutor)
-                .returnBehavior(returnBehavior);
+        return builder().toolSpecification(toolSpecification).toolExecutor(toolExecutor).returnBehavior(returnBehavior);
     }
 
     public static Builder builder() {
@@ -94,7 +86,9 @@ public class AiServiceTool {
     public static class Builder {
 
         private ToolSpecification toolSpecification;
+
         private ToolExecutor toolExecutor;
+
         private ReturnBehavior returnBehavior;
 
         public Builder toolSpecification(ToolSpecification toolSpecification) {
@@ -118,7 +112,7 @@ public class AiServiceTool {
         /**
          * @deprecated use {@link #returnBehavior(ReturnBehavior)} instead
          */
-        @Deprecated(since = "1.14.0")
+        @Deprecated
         public Builder immediateReturn(boolean immediateReturn) {
             if (immediateReturn) {
                 this.returnBehavior = ReturnBehavior.IMMEDIATE;

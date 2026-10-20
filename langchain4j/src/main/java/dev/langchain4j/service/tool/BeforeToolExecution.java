@@ -1,7 +1,6 @@
 package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.Objects;
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -14,6 +13,7 @@ import dev.langchain4j.invocation.InvocationContext;
 public class BeforeToolExecution {
 
     private final ToolExecutionRequest request;
+
     private final InvocationContext invocationContext;
 
     private BeforeToolExecution(Builder builder) {
@@ -39,8 +39,10 @@ public class BeforeToolExecution {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (obj == null || getClass() != obj.getClass()) return false;
+        if (this == obj)
+            return true;
+        if (obj == null || getClass() != obj.getClass())
+            return false;
         BeforeToolExecution that = (BeforeToolExecution) obj;
         return Objects.equals(request, that.request);
     }
@@ -64,9 +66,11 @@ public class BeforeToolExecution {
     public static class Builder {
 
         private ToolExecutionRequest request;
+
         private InvocationContext invocationContext;
 
-        private Builder() {}
+        private Builder() {
+        }
 
         public Builder request(ToolExecutionRequest request) {
             this.request = request;

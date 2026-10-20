@@ -4,7 +4,6 @@ import static dev.langchain4j.data.document.Document.FILE_NAME;
 import static dev.langchain4j.data.document.Document.URL;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.DocumentSource;
 import dev.langchain4j.data.document.Metadata;
 import java.io.IOException;
@@ -19,15 +18,17 @@ import java.net.URL;
  * </p>
  */
 public class ClassPathSource implements DocumentSource {
+
     private final URL url;
+
     private final ClassLoader classLoader;
+
     private final Metadata metadata = new Metadata();
 
     protected ClassPathSource(URL url, ClassLoader classLoader) {
         this.url = ensureNotNull(url, "url");
         this.classLoader = ensureNotNull(classLoader, "classLoader");
-
-        var file = this.url.getFile();
+        java.lang.String file = this.url.getFile();
         this.metadata.put(URL, file);
         this.metadata.put(FILE_NAME, file.substring(file.lastIndexOf('/') + 1));
     }
@@ -54,11 +55,9 @@ public class ClassPathSource implements DocumentSource {
      * @throws IllegalArgumentException If the classpath resource is blank or cannot be found, or if the class loader is null.
      */
     public static ClassPathSource from(String classPathResource, ClassLoader classLoader) {
-        var resource = ensureNotBlank(classPathResource, "classPathResource");
-        var cl = (classLoader != null) ? classLoader : Thread.currentThread().getContextClassLoader();
-        var url = ensureNotNull(
-                cl.getResource(resource), "'%s' was not found as a classpath resource", classPathResource);
-
+        java.lang.String resource = ensureNotBlank(classPathResource, "classPathResource");
+        java.lang.ClassLoader cl = (classLoader != null) ? classLoader : Thread.currentThread().getContextClassLoader();
+        java.net.URL url = ensureNotNull(cl.getResource(resource), "'%s' was not found as a classpath resource", classPathResource);
         return new ClassPathSource(url, classLoader);
     }
 

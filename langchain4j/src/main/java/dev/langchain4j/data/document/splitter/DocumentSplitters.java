@@ -18,16 +18,8 @@ public class DocumentSplitters {
      * @param tokenCountEstimator    The {@code TokenCountEstimator} that is used to count tokens in the text.
      * @return recursive document splitter
      */
-    public static DocumentSplitter recursive(int maxSegmentSizeInTokens,
-                                             int maxOverlapSizeInTokens,
-                                             TokenCountEstimator tokenCountEstimator) {
-        return new DocumentByParagraphSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator,
-                new DocumentByLineSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator,
-                        new DocumentBySentenceSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator,
-                                new DocumentByWordSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator)
-                        )
-                )
-        );
+    public static DocumentSplitter recursive(int maxSegmentSizeInTokens, int maxOverlapSizeInTokens, TokenCountEstimator tokenCountEstimator) {
+        return new DocumentByParagraphSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, new DocumentByLineSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, new DocumentBySentenceSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator, new DocumentByWordSplitter(maxSegmentSizeInTokens, maxOverlapSizeInTokens, tokenCountEstimator))));
     }
 
     /**

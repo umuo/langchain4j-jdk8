@@ -7,13 +7,11 @@ import dev.langchain4j.model.chat.request.json.JsonArraySchema;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchemaElement;
-
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import static dev.langchain4j.internal.JsonSchemaElementUtils.jsonObjectOrReferenceSchemaFrom;
 import static dev.langchain4j.internal.JsonSchemaElementUtils.polymorphicSchemaFrom;
 import static dev.langchain4j.internal.JsonSchemaElementUtils.referenceIfRecursive;
@@ -25,6 +23,7 @@ import static dev.langchain4j.service.output.ParsingUtils.parseAsStringOrJson;
 abstract class PojoCollectionOutputParser<T, CT extends Collection<T>> implements OutputParser<CT> {
 
     private final Class<T> type;
+
     private final PojoOutputParser<T> parser;
 
     PojoCollectionOutputParser(Class<T> type) {
@@ -49,20 +48,10 @@ abstract class PojoCollectionOutputParser<T, CT extends Collection<T>> implement
     public Optional<JsonSchema> jsonSchema() {
         boolean polymorphic = PolymorphicTypes.isPolymorphic(type);
         Map<Class<?>, VisitedClassMetadata> visited = new LinkedHashMap<>();
-        JsonSchemaElement itemSchema = polymorphic
-                ? referenceIfRecursive(polymorphicSchemaFrom(type, null, false, visited), type, visited)
-                : jsonObjectOrReferenceSchemaFrom(type, null, false, visited, true);
+        JsonSchemaElement itemSchema = polymorphic ? referenceIfRecursive(polymorphicSchemaFrom(type, null, false, visited), type, visited) : jsonObjectOrReferenceSchemaFrom(type, null, false, visited, true);
         JsonArraySchema valuesArray = JsonArraySchema.builder().items(itemSchema).build();
-        JsonObjectSchema rootElement = polymorphic
-                ? wrapPolymorphic("values", valuesArray, visited)
-                : JsonObjectSchema.builder()
-                        .addProperty("values", valuesArray)
-                        .required("values")
-                        .build();
-        return Optional.of(JsonSchema.builder()
-                .name(collectionType().getSimpleName() + "_of_" + type.getSimpleName())
-                .rootElement(rootElement)
-                .build());
+        JsonObjectSchema rootElement = polymorphic ? wrapPolymorphic("values", valuesArray, visited) : JsonObjectSchema.builder().addProperty("values", valuesArray).required("values").build();
+        return Optional.of(JsonSchema.builder().name(collectionType().getSimpleName() + "_of_" + type.getSimpleName()).rootElement(rootElement).build());
     }
 
     @Override

@@ -1,7 +1,6 @@
 package dev.langchain4j.service.decision;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.decision.response.DecisionResponse;
 import dev.langchain4j.model.output.TokenUsage;
@@ -25,6 +24,7 @@ import java.util.Objects;
 public final class DecisionResult<T> {
 
     private final T content;
+
     private final DecisionResponse response;
 
     private DecisionResult(Builder<T> builder) {
@@ -58,9 +58,11 @@ public final class DecisionResult<T> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof DecisionResult<?> that)) return false;
-        return Objects.equals(content, that.content) && Objects.equals(response, that.response);
+        if (this == o)
+            return true;
+        if (!(o instanceof DecisionResult<?>))
+            return false;
+        return Objects.equals(content, ((DecisionResult<?>) o).content) && Objects.equals(response, ((DecisionResult<?>) o).response);
     }
 
     @Override
@@ -76,6 +78,7 @@ public final class DecisionResult<T> {
     public static final class Builder<T> {
 
         private T content;
+
         private DecisionResponse response;
 
         public Builder<T> content(T content) {

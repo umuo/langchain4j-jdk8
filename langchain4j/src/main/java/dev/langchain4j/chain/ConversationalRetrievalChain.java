@@ -12,7 +12,6 @@ import dev.langchain4j.rag.RetrievalAugmentor;
 import dev.langchain4j.rag.content.retriever.ContentRetriever;
 import dev.langchain4j.rag.query.Metadata;
 import dev.langchain4j.service.AiServices;
-
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
@@ -28,24 +27,16 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ConversationalRetrievalChain implements Chain<String, String> {
 
     private final ChatModel chatModel;
+
     private final ChatMemory chatMemory;
+
     private final RetrievalAugmentor retrievalAugmentor;
 
-    public ConversationalRetrievalChain(ChatModel chatModel,
-                                        ChatMemory chatMemory,
-                                        ContentRetriever contentRetriever) {
-        this(
-                chatModel,
-                chatMemory,
-                DefaultRetrievalAugmentor.builder()
-                        .contentRetriever(contentRetriever)
-                        .build()
-        );
+    public ConversationalRetrievalChain(ChatModel chatModel, ChatMemory chatMemory, ContentRetriever contentRetriever) {
+        this(chatModel, chatMemory, DefaultRetrievalAugmentor.builder().contentRetriever(contentRetriever).build());
     }
 
-    public ConversationalRetrievalChain(ChatModel chatModel,
-                                        ChatMemory chatMemory,
-                                        RetrievalAugmentor retrievalAugmentor) {
+    public ConversationalRetrievalChain(ChatModel chatModel, ChatMemory chatMemory, RetrievalAugmentor retrievalAugmentor) {
         this.chatModel = ensureNotNull(chatModel, "chatModel");
         this.chatMemory = getOrDefault(chatMemory, () -> MessageWindowChatMemory.withMaxMessages(10));
         this.retrievalAugmentor = ensureNotNull(retrievalAugmentor, "retrievalAugmentor");
@@ -53,24 +44,18 @@ public class ConversationalRetrievalChain implements Chain<String, String> {
 
     @Override
     public String execute(String query) {
-
         UserMessage userMessage = UserMessage.from(query);
         userMessage = augment(userMessage);
         chatMemory.add(userMessage);
-
         AiMessage aiMessage = chatModel.chat(chatMemory.messages()).aiMessage();
-
         chatMemory.add(aiMessage);
         return aiMessage.text();
     }
 
     private UserMessage augment(UserMessage userMessage) {
         Metadata metadata = Metadata.from(userMessage, chatMemory.id(), chatMemory.messages());
-
         AugmentationRequest augmentationRequest = new AugmentationRequest(userMessage, metadata);
-
         AugmentationResult augmentationResult = retrievalAugmentor.augment(augmentationRequest);
-
         return (UserMessage) augmentationResult.chatMessage();
     }
 
@@ -81,7 +66,9 @@ public class ConversationalRetrievalChain implements Chain<String, String> {
     public static class Builder {
 
         private ChatModel chatModel;
+
         private ChatMemory chatMemory;
+
         private RetrievalAugmentor retrievalAugmentor;
 
         public Builder chatModel(ChatModel chatModel) {
@@ -96,9 +83,7 @@ public class ConversationalRetrievalChain implements Chain<String, String> {
 
         public Builder contentRetriever(ContentRetriever contentRetriever) {
             if (contentRetriever != null) {
-                this.retrievalAugmentor = DefaultRetrievalAugmentor.builder()
-                        .contentRetriever(contentRetriever)
-                        .build();
+                this.retrievalAugmentor = DefaultRetrievalAugmentor.builder().contentRetriever(contentRetriever).build();
             }
             return this;
         }

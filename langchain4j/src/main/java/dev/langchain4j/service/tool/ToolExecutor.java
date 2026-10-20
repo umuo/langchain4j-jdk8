@@ -40,12 +40,8 @@ public interface ToolExecutor {
      */
     default ToolExecutionResult executeWithContext(ToolExecutionRequest request, InvocationContext context) {
         Object memoryId = context == null ? null : context.chatMemoryId();
-
         String result = execute(request, memoryId);
-
-        return ToolExecutionResult.builder()
-                .resultText(result)
-                .build();
+        return ToolExecutionResult.builder().resultText(result).build();
     }
 
     /**
@@ -73,12 +69,7 @@ public interface ToolExecutor {
      * @since 1.20.0
      */
     @Experimental
-    default CompletableFuture<ToolExecutionResult> executeAsync(
-            ToolExecutionRequest request, InvocationContext context) {
-        return AsyncNotSupported.failedFuture(getClass().getName()
-                + " does not support asynchronous execution. To use this tool with an AI Service method"
-                + " returning a CompletableFuture, override ToolExecutor.executeAsync()."
-                + " If blocking execution is acceptable, it can simply return"
-                + " CompletableFuture.completedFuture(executeWithContext(request, context)).");
+    default CompletableFuture<ToolExecutionResult> executeAsync(ToolExecutionRequest request, InvocationContext context) {
+        return AsyncNotSupported.failedFuture(getClass().getName() + " does not support asynchronous execution. To use this tool with an AI Service method" + " returning a CompletableFuture, override ToolExecutor.executeAsync()." + " If blocking execution is acceptable, it can simply return" + " CompletableFuture.completedFuture(executeWithContext(request, context)).");
     }
 }

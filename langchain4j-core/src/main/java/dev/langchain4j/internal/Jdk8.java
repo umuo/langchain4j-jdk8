@@ -161,4 +161,30 @@ public final class Jdk8 {
             throw new AssertionError(e);
         }
     }
+
+    /** Reflective view of Java 16 record metadata; absent on Java 8. */
+    public static RecordComponent[] getRecordComponents(Class<?> type) {
+        try {
+            Object[] values = (Object[]) Class.class.getMethod("getRecordComponents").invoke(type);
+            if (values == null) return new RecordComponent[0];
+            RecordComponent[] result = new RecordComponent[values.length];
+            for (int i=0; i<values.length; i++) result[i] = new RecordComponent(values[i]);
+            return result;
+        } catch (NoSuchMethodException unavailable) {
+            return new RecordComponent[0];
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException(failure);
+        }
+    }
+    public static final class RecordComponent {
+        private final Object value;
+        private RecordComponent(Object value) { this.value = value; }
+        private Object invoke(String name) {
+            try { return value.getClass().getMethod(name).invoke(value); }
+            catch (ReflectiveOperationException failure) { throw new IllegalStateException(failure); }
+        }
+        public String getName() { return (String) invoke("getName"); }
+        public Class<?> getType() { return (Class<?>) invoke("getType"); }
+        public java.lang.reflect.Type getGenericType() { return (java.lang.reflect.Type) invoke("getGenericType"); }
+    }
 }

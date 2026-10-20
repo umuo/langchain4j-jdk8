@@ -3,7 +3,6 @@ package dev.langchain4j.service.decision;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.METHOD;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import dev.langchain4j.Experimental;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -23,7 +22,7 @@ import java.lang.annotation.Target;
  * @since 1.21.0
  */
 @Experimental
-@Target({METHOD, FIELD})
+@Target({ METHOD, FIELD })
 @Retention(RUNTIME)
 public @interface Decide {
 

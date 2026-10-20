@@ -39,6 +39,8 @@ public final class ZeroPublisher {
 
         private final List<Runnable> cleanup = new ArrayList<Runnable>();
 
+        private final List<Runnable> cancellationActions = new ArrayList<Runnable>();
+
         private long demand;
 
         private boolean done, cancelled, terminated, resourcesReleased;
@@ -73,13 +75,27 @@ public final class ZeroPublisher {
         }
 
         public void cancel() {
+            List<Runnable> actions;
             synchronized (this) {
                 if (cancelled || terminated)
                     return;
                 cancelled = true;
                 queue.clear();
+                actions = new ArrayList<Runnable>(cancellationActions);
+                cancellationActions.clear();
             }
             release();
+            for (Runnable action : actions) safeRun(action);
+        }
+
+        public void whenCancelled(Runnable action) {
+            Objects.requireNonNull(action);
+            boolean run;
+            synchronized (this) {
+                run = cancelled;
+                if (!run && !terminated) cancellationActions.add(action);
+            }
+            if (run) safeRun(action);
         }
 
         public boolean cancelled() {
@@ -182,6 +198,7 @@ public final class ZeroPublisher {
                             if (terminated)
                                 return;
                             terminated = true;
+                            cancellationActions.clear();
                             next = null;
                         } else if (demand > 0 && !queue.isEmpty()) {
                             next = queue.poll();

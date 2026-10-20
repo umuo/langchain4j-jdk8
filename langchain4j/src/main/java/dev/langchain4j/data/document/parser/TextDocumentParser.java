@@ -3,10 +3,8 @@ package dev.langchain4j.data.document.parser;
 import dev.langchain4j.data.document.BlankDocumentException;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentParser;
-
 import java.io.InputStream;
 import java.nio.charset.Charset;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -25,8 +23,8 @@ public class TextDocumentParser implements DocumentParser {
     @Override
     public Document parse(InputStream inputStream) {
         try {
-            String text = new String(inputStream.readAllBytes(), charset);
-            if (text.isBlank()) {
+            String text = new String(dev.langchain4j.internal.Jdk8.readAllBytes(inputStream), charset);
+            if (dev.langchain4j.internal.Jdk8.isBlank(text)) {
                 throw new BlankDocumentException();
             }
             return Document.from(text);

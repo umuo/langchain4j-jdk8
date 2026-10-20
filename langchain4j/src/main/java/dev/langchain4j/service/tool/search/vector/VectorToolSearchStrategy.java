@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.Utils.toBase64;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.document.Metadata;
@@ -48,11 +47,17 @@ import java.util.function.Function;
 public class VectorToolSearchStrategy implements ToolSearchStrategy {
 
     private static final String DEFAULT_TOOL_NAME = "tool_search_tool";
+
     private static final String DEFAULT_TOOL_DESCRIPTION = "Finds available tools using semantic vector search";
+
     private static final String DEFAULT_TOOL_ARGUMENT_NAME = "query";
+
     private static final String DEFAULT_TOOL_ARGUMENT_DESCRIPTION = "Natural language query describing desired tool";
+
     private static final int DEFAULT_MAX_RESULTS = 5;
+
     private static final double DEFAULT_MIN_SCORE = 0.0;
+
     private static final Function<List<String>, String> DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER = foundToolNames -> {
         if (foundToolNames.isEmpty()) {
             return "No matching tools found";
@@ -60,14 +65,21 @@ public class VectorToolSearchStrategy implements ToolSearchStrategy {
             return "Tools found: " + String.join(", ", foundToolNames);
         }
     };
+
     private static final String METADATA_TOOL_NAME = "toolName";
 
     private final ToolSpecification toolSearchTool;
+
     private final EmbeddingModel embeddingModel;
+
     private final int maxResults;
+
     private final double minScore;
+
     private final String toolArgumentName;
+
     private final boolean throwToolArgumentsExceptions;
+
     private final Function<List<String>, String> toolResultMessageTextProvider;
 
     public VectorToolSearchStrategy(EmbeddingModel embeddingModel) {
@@ -77,84 +89,50 @@ public class VectorToolSearchStrategy implements ToolSearchStrategy {
     public VectorToolSearchStrategy(Builder builder) {
         Boolean cacheEmbeddings = getOrDefault(builder.cacheEmbeddings, true);
         if (cacheEmbeddings) {
-            this.embeddingModel =
-                    ensureNotNull(new ToolCachingEmbeddingModel(builder.embeddingModel), "embeddingModel");
+            this.embeddingModel = ensureNotNull(new ToolCachingEmbeddingModel(builder.embeddingModel), "embeddingModel");
         } else {
             this.embeddingModel = ensureNotNull(builder.embeddingModel, "embeddingModel");
         }
         this.toolArgumentName = getOrDefault(builder.toolArgumentName, DEFAULT_TOOL_ARGUMENT_NAME);
-
-        this.toolSearchTool = ToolSpecification.builder()
-                .name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME))
-                .description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION))
-                .parameters(JsonObjectSchema.builder()
-                        .addStringProperty(
-                                toolArgumentName,
-                                getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION))
-                        .required(toolArgumentName)
-                        .build())
-                .build();
-
+        this.toolSearchTool = ToolSpecification.builder().name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME)).description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION)).parameters(JsonObjectSchema.builder().addStringProperty(toolArgumentName, getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION)).required(toolArgumentName).build()).build();
         this.maxResults = getOrDefault(builder.maxResults, DEFAULT_MAX_RESULTS);
         this.minScore = getOrDefault(builder.minScore, DEFAULT_MIN_SCORE);
         this.throwToolArgumentsExceptions = getOrDefault(builder.throwToolArgumentsExceptions, false);
-        this.toolResultMessageTextProvider =
-                getOrDefault(builder.toolResultMessageTextProvider, DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER);
+        this.toolResultMessageTextProvider = getOrDefault(builder.toolResultMessageTextProvider, DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER);
     }
 
     @Override
     public List<ToolSpecification> getToolSearchTools(InvocationContext context) {
-        return List.of(toolSearchTool);
+        return dev.langchain4j.internal.Jdk8.list(toolSearchTool);
     }
 
     @Override
     public ToolSearchResult search(ToolSearchRequest request) {
-
         String query = extractQuery(request.toolExecutionRequest().arguments());
-
         List<TextSegment> segments = new ArrayList<>();
         segments.add(TextSegment.from(query));
-
-        request.searchableTools().stream()
-                .map(tool -> {
-                    String text = format(tool);
-                    Metadata metadata = Metadata.from(METADATA_TOOL_NAME, tool.name());
-                    return TextSegment.from(text, metadata);
-                })
-                .forEach(segments::add);
-
+        request.searchableTools().stream().map(tool -> {
+            String text = format(tool);
+            Metadata metadata = Metadata.from(METADATA_TOOL_NAME, tool.name());
+            return TextSegment.from(text, metadata);
+        }).forEach(segments::add);
         List<Embedding> embeddings = embeddingModel.embedAll(segments).content();
-
         InMemoryEmbeddingStore<TextSegment> store = new InMemoryEmbeddingStore<>();
         store.addAll(embeddings.subList(1, embeddings.size()), segments.subList(1, segments.size()));
-
-        EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder()
-                .query(query)
-                .queryEmbedding(embeddings.get(0))
-                .maxResults(maxResults)
-                .minScore(minScore)
-                .build();
-
+        EmbeddingSearchRequest embeddingSearchRequest = EmbeddingSearchRequest.builder().query(query).queryEmbedding(embeddings.get(0)).maxResults(maxResults).minScore(minScore).build();
         EmbeddingSearchResult<TextSegment> searchResult = store.search(embeddingSearchRequest);
-
-        List<String> toolNames = searchResult.matches().stream()
-                .map(match -> (String) match.embedded().metadata().getString(METADATA_TOOL_NAME))
-                .toList();
-
+        List<String> toolNames = searchResult.matches().stream().map(match -> (String) match.embedded().metadata().getString(METADATA_TOOL_NAME)).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         String toolResultMessageText = toolResultMessageTextProvider.apply(toolNames);
-
         return new ToolSearchResult(toolNames, toolResultMessageText);
     }
 
     private String extractQuery(String argumentsJson) {
         Map<String, Object> map = parseMap(argumentsJson);
-
         Object value = isNullOrEmpty(map) ? null : map.get(toolArgumentName);
         if (value == null) {
-            String message = "Missing required tool argument '%s'".formatted(toolArgumentName);
+            String message = String.format("Missing required tool argument '%s'", toolArgumentName);
             throwException(message, null);
         }
-
         return value.toString();
     }
 
@@ -162,10 +140,10 @@ public class VectorToolSearchStrategy implements ToolSearchStrategy {
         try {
             return Json.fromJson(json, Map.class);
         } catch (Exception e) {
-            String message =
-                    "Failed to parse tool search arguments: '%s' (base64: '%s')".formatted(json, toBase64(json));
+            String message = String.format("Failed to parse tool search arguments: '%s' (base64: '%s')", json, toBase64(json));
             throwException(message, e);
-            return null; // unreachable
+            // unreachable
+            return null;
         }
     }
 
@@ -181,15 +159,13 @@ public class VectorToolSearchStrategy implements ToolSearchStrategy {
         if (throwToolArgumentsExceptions) {
             throw e == null ? new ToolArgumentsException(message) : new ToolArgumentsException(message, e);
         } else {
-            throw e == null
-                    ? new LlmVisibleToolExecutionException(message)
-                    : new LlmVisibleToolExecutionException(message, e);
+            throw e == null ? new LlmVisibleToolExecutionException(message) : new LlmVisibleToolExecutionException(message, e);
         }
     }
 
     public void clearEmbeddingsCache() {
-        if (embeddingModel instanceof ToolCachingEmbeddingModel cachingEmbeddingModel) {
-            cachingEmbeddingModel.clearCache();
+        if (embeddingModel instanceof ToolCachingEmbeddingModel) {
+            ((ToolCachingEmbeddingModel) embeddingModel).clearCache();
         } else {
             throw new IllegalStateException("Not caching embeddings, nothing to clear");
         }
@@ -202,14 +178,23 @@ public class VectorToolSearchStrategy implements ToolSearchStrategy {
     public static class Builder {
 
         private EmbeddingModel embeddingModel;
+
         private Integer maxResults;
+
         private Double minScore;
+
         private String toolName;
+
         private String toolDescription;
+
         private String toolArgumentName;
+
         private String toolArgumentDescription;
+
         private Boolean throwToolArgumentsExceptions;
+
         private Boolean cacheEmbeddings;
+
         private Function<List<String>, String> toolResultMessageTextProvider;
 
         /**

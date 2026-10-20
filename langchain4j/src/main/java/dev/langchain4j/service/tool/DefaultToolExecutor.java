@@ -10,7 +10,6 @@ import static dev.langchain4j.internal.Utils.isNotNullOrBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.tool.ToolExecutionRequestUtil.argumentsAsMap;
 import static dev.langchain4j.spi.ServiceHelper.loadFactories;
-
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
@@ -46,13 +45,16 @@ import java.util.concurrent.CompletionStage;
 
 public class DefaultToolExecutor implements ToolExecutor {
 
-    private static final Collection<CompletableFutureAdapter> COMPLETABLE_FUTURE_ADAPTERS =
-            loadFactories(CompletableFutureAdapter.class);
+    private static final Collection<CompletableFutureAdapter> COMPLETABLE_FUTURE_ADAPTERS = loadFactories(CompletableFutureAdapter.class);
 
     private final Object object;
+
     private final Method originalMethod;
+
     private final Method methodToInvoke;
+
     private final boolean wrapToolArgumentsExceptions;
+
     private final boolean propagateToolExecutionExceptions;
 
     public DefaultToolExecutor(Builder builder) {
@@ -85,32 +87,56 @@ public class DefaultToolExecutor implements ToolExecutor {
         return originalMethod;
     }
 
-    private record ResolvedMethod(Method originalMethod, Method methodToInvoke) {}
+    private final static class ResolvedMethod {
+
+        private final Method originalMethod;
+
+        public Method originalMethod() {
+            return originalMethod;
+        }
+
+        private final Method methodToInvoke;
+
+        public Method methodToInvoke() {
+            return methodToInvoke;
+        }
+
+        public ResolvedMethod(Method originalMethod, Method methodToInvoke) {
+            this.originalMethod = originalMethod;
+            this.methodToInvoke = methodToInvoke;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(originalMethod, ((ResolvedMethod) obj).originalMethod) && java.util.Objects.equals(methodToInvoke, ((ResolvedMethod) obj).methodToInvoke));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(originalMethod)) + java.util.Objects.hashCode(methodToInvoke));
+        }
+
+        public String toString() {
+            return "ResolvedMethod[" + "originalMethod=" + originalMethod + ", methodToInvoke=" + methodToInvoke + "]";
+        }
+    }
 
     private ResolvedMethod findMethod(Object object, ToolExecutionRequest toolExecutionRequest) {
         String requestedToolName = toolExecutionRequest.name();
         List<Method> methods = allConcreteMethods(object.getClass());
-
         for (Method method : methods) {
             Optional<Method> annotatedMethod = getAnnotatedMethod(method, Tool.class);
-            if (annotatedMethod.isPresent()
-                    && toolNameFrom(annotatedMethod.get()).equals(requestedToolName)) {
+            if (annotatedMethod.isPresent() && toolNameFrom(annotatedMethod.get()).equals(requestedToolName)) {
                 // @Tool and @P can be declared on a supertype (interface, superclass, AOP proxy),
                 // so parameter names have to be read from the annotated method,
                 // while the concrete method is the one that gets invoked
                 return new ResolvedMethod(annotatedMethod.get(), method);
             }
         }
-
         for (Method method : methods) {
             if (method.getName().equals(requestedToolName)) {
                 return new ResolvedMethod(method, method);
             }
         }
-
-        throw new IllegalArgumentException(String.format(
-                "Method '%s' is not found in object '%s'",
-                requestedToolName, object.getClass().getName()));
+        throw new IllegalArgumentException(String.format("Method '%s' is not found in object '%s'", requestedToolName, object.getClass().getName()));
     }
 
     /**
@@ -133,7 +159,6 @@ public class DefaultToolExecutor implements ToolExecutor {
     @Override
     public ToolExecutionResult executeWithContext(ToolExecutionRequest request, InvocationContext context) {
         Object[] arguments = prepareArguments(request, context);
-
         try {
             Object result = invokeMethod(arguments);
             CompletableFuture<?> futureResult = toCompletableFuture(result);
@@ -148,10 +173,7 @@ public class DefaultToolExecutor implements ToolExecutor {
             if (propagateToolExecutionExceptions) {
                 throw new ToolExecutionException(e.getCause());
             } else {
-                return ToolExecutionResult.builder()
-                        .isError(true)
-                        .resultText(errorMessage(e.getCause()))
-                        .build();
+                return ToolExecutionResult.builder().isError(true).resultText(errorMessage(e.getCause())).build();
             }
         }
     }
@@ -166,33 +188,26 @@ public class DefaultToolExecutor implements ToolExecutor {
      * the calling thread, like the default implementation.
      */
     @Override
-    public CompletableFuture<ToolExecutionResult> executeAsync(
-            ToolExecutionRequest request, InvocationContext context) {
+    public CompletableFuture<ToolExecutionResult> executeAsync(ToolExecutionRequest request, InvocationContext context) {
         Object[] arguments = prepareArguments(request, context);
-
         Object result;
         try {
             result = invokeMethod(arguments);
         } catch (IllegalAccessException e) {
-            return CompletableFuture.failedFuture(new IllegalStateException(
-                    "Tool method is not accessible even after setAccessible(true): " + methodToInvoke, e));
+            return dev.langchain4j.internal.Jdk8.failedFuture(new IllegalStateException("Tool method is not accessible even after setAccessible(true): " + methodToInvoke, e));
         } catch (InvocationTargetException e) {
             return toFailedOrErrorResult(e.getCause());
         }
-
         CompletableFuture<?> futureResult = toCompletableFuture(result);
         if (futureResult != null) {
-            return futureResult
-                    .handle((value, error) -> {
-                        if (error != null) {
-                            Throwable cause = unwrapCompletionException(error);
-                            return toFailedOrErrorResult(cause);
-                        }
-                        return CompletableFuture.completedFuture(toToolExecutionResult(value, futureValueType()));
-                    })
-                    .thenCompose(futureToolResult -> futureToolResult);
+            return futureResult.handle((value, error) -> {
+                if (error != null) {
+                    Throwable cause = unwrapCompletionException(error);
+                    return toFailedOrErrorResult(cause);
+                }
+                return CompletableFuture.completedFuture(toToolExecutionResult(value, futureValueType()));
+            }).thenCompose(futureToolResult -> futureToolResult);
         }
-
         return CompletableFuture.completedFuture(toToolExecutionResult(result, methodToInvoke.getReturnType()));
     }
 
@@ -202,11 +217,11 @@ public class DefaultToolExecutor implements ToolExecutor {
      * {@link CompletionStage} are handled natively; other types via a {@link CompletableFutureAdapter}.
      */
     private CompletableFuture<?> toCompletableFuture(Object result) {
-        if (result instanceof CompletableFuture<?> future) {
-            return future;
+        if (result instanceof CompletableFuture<?>) {
+            return ((CompletableFuture<?>) result);
         }
-        if (result instanceof CompletionStage<?> stage) {
-            return stage.toCompletableFuture();
+        if (result instanceof CompletionStage<?>) {
+            return ((CompletionStage<?>) result).toCompletableFuture();
         }
         if (result != null) {
             for (CompletableFutureAdapter adapter : COMPLETABLE_FUTURE_ADAPTERS) {
@@ -220,11 +235,8 @@ public class DefaultToolExecutor implements ToolExecutor {
 
     @Override
     public String execute(ToolExecutionRequest request, Object memoryId) {
-        InvocationContext invocationContext =
-                InvocationContext.builder().chatMemoryId(memoryId).build();
-
+        InvocationContext invocationContext = InvocationContext.builder().chatMemoryId(memoryId).build();
         ToolExecutionResult result = executeWithContext(request, invocationContext);
-
         return result.resultText();
     }
 
@@ -249,12 +261,9 @@ public class DefaultToolExecutor implements ToolExecutor {
 
     private CompletableFuture<ToolExecutionResult> toFailedOrErrorResult(Throwable cause) {
         if (propagateToolExecutionExceptions) {
-            return CompletableFuture.failedFuture(new ToolExecutionException(cause));
+            return dev.langchain4j.internal.Jdk8.failedFuture(new ToolExecutionException(cause));
         }
-        return CompletableFuture.completedFuture(ToolExecutionResult.builder()
-                .isError(true)
-                .resultText(errorMessage(cause))
-                .build());
+        return CompletableFuture.completedFuture(ToolExecutionResult.builder().isError(true).resultText(errorMessage(cause)).build());
     }
 
     /**
@@ -263,13 +272,13 @@ public class DefaultToolExecutor implements ToolExecutor {
      */
     private Class<?> futureValueType() {
         Type genericReturnType = methodToInvoke.getGenericReturnType();
-        if (genericReturnType instanceof ParameterizedType parameterizedType) {
-            Type valueType = parameterizedType.getActualTypeArguments()[0];
-            if (valueType instanceof Class<?> valueClass) {
-                return valueClass;
+        if (genericReturnType instanceof ParameterizedType) {
+            Type valueType = ((ParameterizedType) genericReturnType).getActualTypeArguments()[0];
+            if (valueType instanceof Class<?>) {
+                return ((Class<?>) valueType);
             }
-            if (valueType instanceof ParameterizedType nestedParameterizedType) {
-                return (Class<?>) nestedParameterizedType.getRawType();
+            if (valueType instanceof ParameterizedType) {
+                return (Class<?>) ((ParameterizedType) valueType).getRawType();
             }
         }
         return Object.class;
@@ -291,32 +300,23 @@ public class DefaultToolExecutor implements ToolExecutor {
     private ToolExecutionResult toToolExecutionResult(Object result, Class<?> declaredReturnType) {
         List<Content> resultContents = toContents(result);
         if (resultContents != null) {
-            return ToolExecutionResult.builder()
-                    .result(result)
-                    .resultContents(resultContents)
-                    .build();
+            return ToolExecutionResult.builder().result(result).resultContents(resultContents).build();
         }
-
-        return ToolExecutionResult.builder()
-                .result(result)
-                .resultTextSupplier(() -> toText(result, declaredReturnType))
-                .build();
+        return ToolExecutionResult.builder().result(result).resultTextSupplier(() -> toText(result, declaredReturnType)).build();
     }
 
     private List<Content> toContents(Object result) {
         if (result == null) {
             return null;
         }
-        if (result instanceof Image image) {
-            return List.of(ImageContent.from(image));
-        } else if (result instanceof Content content) {
-            return List.of(content);
-        } else if (result instanceof Collection<?> collection
-                && !collection.isEmpty()
-                && collection.iterator().next() instanceof Content) {
-            return collection.stream().map(Content.class::cast).toList();
-        } else if (result instanceof Content[] array) {
-            return List.of(array);
+        if (result instanceof Image) {
+            return dev.langchain4j.internal.Jdk8.list(ImageContent.from(((Image) result)));
+        } else if (result instanceof Content) {
+            return dev.langchain4j.internal.Jdk8.list(((Content) result));
+        } else if (result instanceof Collection<?> && !((Collection<?>) result).isEmpty() && ((Collection<?>) result).iterator().next() instanceof Content) {
+            return ((Collection<?>) result).stream().map(Content.class::cast).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+        } else if (result instanceof Content[]) {
+            return dev.langchain4j.internal.Jdk8.list(((Content[]) result));
         }
         return null;
     }
@@ -334,40 +334,31 @@ public class DefaultToolExecutor implements ToolExecutor {
         }
     }
 
-    static Object[] prepareArguments(
-            Method method, String toolName, Map<String, Object> argumentsMap, InvocationContext context) {
+    static Object[] prepareArguments(Method method, String toolName, Map<String, Object> argumentsMap, InvocationContext context) {
         Parameter[] parameters = method.getParameters();
         Object[] arguments = new Object[parameters.length];
-
         for (int i = 0; i < parameters.length; i++) {
-
             Parameter parameter = parameters[i];
-
             if (parameter.isAnnotationPresent(ToolMemoryId.class)) {
                 arguments[i] = context.chatMemoryId();
                 continue;
             }
-
             if (InvocationParameters.class.isAssignableFrom(parameter.getType())) {
                 arguments[i] = context.invocationParameters();
                 continue;
             }
-
             if (parameter.getType() == InvocationContext.class) {
                 arguments[i] = context;
                 continue;
             }
-
             if (LangChain4jManaged.class.isAssignableFrom(parameter.getType())) {
                 arguments[i] = context.managedParameters().get(parameter.getType());
                 continue;
             }
-
             String parameterName = getName(parameter);
             Object argument = argumentsMap.get(parameterName);
             Class<?> parameterClass = parameter.getType();
             Type parameterType = parameter.getParameterizedType();
-
             if (parameterClass == Optional.class) {
                 arguments[i] = createOptional(argument, parameterName, parameterType);
             } else if (argument != null) {
@@ -375,15 +366,12 @@ public class DefaultToolExecutor implements ToolExecutor {
             } else {
                 P pAnnotation = parameter.getAnnotation(P.class);
                 if (pAnnotation != null && !P.NO_DEFAULT.equals(pAnnotation.defaultValue())) {
-                    arguments[i] =
-                            parseDefaultValue(pAnnotation.defaultValue(), parameterName, parameterClass, parameterType);
+                    arguments[i] = parseDefaultValue(pAnnotation.defaultValue(), parameterName, parameterClass, parameterType);
                 } else if (parameterClass.isPrimitive()) {
-                    throw new IllegalArgumentException(String.format(
-                            "Required parameter \"%s\" of tool \"%s\" is missing", parameterName, toolName));
+                    throw new IllegalArgumentException(String.format("Required parameter \"%s\" of tool \"%s\" is missing", parameterName, toolName));
                 }
             }
         }
-
         return arguments;
     }
 
@@ -405,24 +393,20 @@ public class DefaultToolExecutor implements ToolExecutor {
     }
 
     private static Class<?> extractActualClass(Type actualType) {
-        return actualType instanceof Class
-                ? (Class<?>) actualType
-                : (Class<?>) ((ParameterizedType) actualType).getRawType();
+        return actualType instanceof Class ? (Class<?>) actualType : (Class<?>) ((ParameterizedType) actualType).getRawType();
     }
 
     private static Optional<?> createOptional(Object argument, String parameterName, Type parameterType) {
         if (argument == null) {
             return Optional.empty();
         }
-
         Type actualType = extractActualType(parameterType);
         Class<?> actualClass = extractActualClass(actualType);
         Object coercedValue = coerceArgument(argument, parameterName, actualClass, actualType);
         return Optional.of(coercedValue);
     }
 
-    static Object parseDefaultValue(
-            String defaultValue, String parameterName, Class<?> parameterClass, Type parameterType) {
+    static Object parseDefaultValue(String defaultValue, String parameterName, Class<?> parameterClass, Type parameterType) {
         if (parameterClass == String.class || parameterClass.isEnum() || parameterClass == UUID.class) {
             return coerceArgument(defaultValue, parameterName, parameterClass, parameterType);
         }
@@ -430,16 +414,10 @@ public class DefaultToolExecutor implements ToolExecutor {
         try {
             jsonParsed = Json.fromJson(defaultValue, Object.class);
         } catch (Exception e) {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "Cannot parse @P(defaultValue = \"%s\") for parameter \"%s\" of type %s: %s",
-                            defaultValue, parameterName, parameterClass.getName(), e.getMessage()),
-                    e);
+            throw new IllegalArgumentException(String.format("Cannot parse @P(defaultValue = \"%s\") for parameter \"%s\" of type %s: %s", defaultValue, parameterName, parameterClass.getName(), e.getMessage()), e);
         }
         if (jsonParsed == null) {
-            throw new IllegalArgumentException(String.format(
-                    "@P(defaultValue = \"%s\") parses to null for parameter \"%s\" of type %s",
-                    defaultValue, parameterName, parameterClass.getName()));
+            throw new IllegalArgumentException(String.format("@P(defaultValue = \"%s\") parses to null for parameter \"%s\" of type %s", defaultValue, parameterName, parameterClass.getName()));
         }
         return coerceArgument(jsonParsed, parameterName, parameterClass, parameterType);
     }
@@ -448,12 +426,11 @@ public class DefaultToolExecutor implements ToolExecutor {
         if (parameterClass == String.class) {
             return argument.toString();
         }
-
         if (parameterClass.isEnum()) {
             try {
-                @SuppressWarnings({"unchecked", "rawtypes"})
+                @SuppressWarnings({ "unchecked", "rawtypes" })
                 Class<Enum> enumClass = (Class<Enum>) parameterClass;
-                String enumValue = Objects.requireNonNull(argument).toString().strip();
+                String enumValue = dev.langchain4j.internal.Jdk8.strip(Objects.requireNonNull(argument).toString());
                 try {
                     return Enum.valueOf(enumClass, enumValue);
                 } catch (IllegalArgumentException e) {
@@ -461,68 +438,48 @@ public class DefaultToolExecutor implements ToolExecutor {
                     return Enum.valueOf(enumClass, enumValue.toUpperCase(Locale.ROOT));
                 }
             } catch (Exception | Error e) {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Argument \"%s\" is not a valid enum value for %s: <%s>",
-                                parameterName, parameterClass.getName(), argument),
-                        e);
+                throw new IllegalArgumentException(String.format("Argument \"%s\" is not a valid enum value for %s: <%s>", parameterName, parameterClass.getName(), argument), e);
             }
         }
-
         if (parameterClass == Boolean.class || parameterClass == boolean.class) {
             if (argument instanceof Boolean) {
                 return argument;
             }
-            throw new IllegalArgumentException(String.format(
-                    "Argument \"%s\" is not convertable to %s, got %s: <%s>",
-                    parameterName, parameterClass.getName(), argument.getClass().getName(), argument));
+            throw new IllegalArgumentException(String.format("Argument \"%s\" is not convertable to %s, got %s: <%s>", parameterName, parameterClass.getName(), argument.getClass().getName(), argument));
         }
-
         if (parameterClass == Double.class || parameterClass == double.class) {
             return getDoubleValue(argument, parameterName, parameterClass);
         }
-
         if (parameterClass == Float.class || parameterClass == float.class) {
             double doubleValue = getDoubleValue(argument, parameterName, parameterClass);
             checkBounds(doubleValue, parameterName, parameterClass, -Float.MAX_VALUE, Float.MAX_VALUE);
             return (float) doubleValue;
         }
-
         if (parameterClass == BigDecimal.class) {
             return getBigDecimalValue(argument, parameterName, parameterClass);
         }
-
         if (parameterClass == Integer.class || parameterClass == int.class) {
-            return (int)
-                    getBoundedLongValue(argument, parameterName, parameterClass, Integer.MIN_VALUE, Integer.MAX_VALUE);
+            return (int) getBoundedLongValue(argument, parameterName, parameterClass, Integer.MIN_VALUE, Integer.MAX_VALUE);
         }
-
         if (parameterClass == Long.class || parameterClass == long.class) {
             return getBoundedLongValue(argument, parameterName, parameterClass, Long.MIN_VALUE, Long.MAX_VALUE);
         }
-
         if (parameterClass == Short.class || parameterClass == short.class) {
-            return (short)
-                    getBoundedLongValue(argument, parameterName, parameterClass, Short.MIN_VALUE, Short.MAX_VALUE);
+            return (short) getBoundedLongValue(argument, parameterName, parameterClass, Short.MIN_VALUE, Short.MAX_VALUE);
         }
-
         if (parameterClass == Byte.class || parameterClass == byte.class) {
             return (byte) getBoundedLongValue(argument, parameterName, parameterClass, Byte.MIN_VALUE, Byte.MAX_VALUE);
         }
-
         if (parameterClass == BigInteger.class) {
             return getBigIntegerValue(argument, parameterName, parameterClass);
         }
-
         if (Collection.class.isAssignableFrom(parameterClass) || Map.class.isAssignableFrom(parameterClass)) {
             // Conversion to JSON and back is required when parameterType is a POJO
             return Json.fromJson(Json.toJson(argument), parameterType);
         }
-
         if (parameterClass == UUID.class) {
             return UUID.fromString(argument.toString());
         }
-
         if (argument instanceof String) {
             return Json.fromJson(argument.toString(), parameterClass);
         } else {
@@ -540,29 +497,21 @@ public class DefaultToolExecutor implements ToolExecutor {
             }
         }
         if (!(argument instanceof Number)) {
-            throw new IllegalArgumentException(String.format(
-                    "Argument \"%s\" is not convertable to %s, got %s: <%s>",
-                    parameterName, parameterType.getName(), argument.getClass().getName(), argument));
+            throw new IllegalArgumentException(String.format("Argument \"%s\" is not convertable to %s, got %s: <%s>", parameterName, parameterType.getName(), argument.getClass().getName(), argument));
         }
         return ((Number) argument).doubleValue();
     }
 
-    private static void checkBounds(
-            double doubleValue, String parameterName, Class<?> parameterType, double minValue, double maxValue) {
+    private static void checkBounds(double doubleValue, String parameterName, Class<?> parameterType, double minValue, double maxValue) {
         if (doubleValue < minValue || doubleValue > maxValue) {
-            throw new IllegalArgumentException(String.format(
-                    "Argument \"%s\" is out of range for %s: <%s>",
-                    parameterName, parameterType.getName(), doubleValue));
+            throw new IllegalArgumentException(String.format("Argument \"%s\" is out of range for %s: <%s>", parameterName, parameterType.getName(), doubleValue));
         }
     }
 
-    public static long getBoundedLongValue(
-            Object argument, String parameterName, Class<?> parameterType, long minValue, long maxValue) {
+    public static long getBoundedLongValue(Object argument, String parameterName, Class<?> parameterType, long minValue, long maxValue) {
         BigInteger bigIntegerValue = getBigIntegerValue(argument, parameterName, parameterType);
-        if (bigIntegerValue.compareTo(BigInteger.valueOf(minValue)) < 0
-                || bigIntegerValue.compareTo(BigInteger.valueOf(maxValue)) > 0) {
-            throw new IllegalArgumentException(String.format(
-                    "Argument \"%s\" is out of range for %s: <%s>", parameterName, parameterType.getName(), argument));
+        if (bigIntegerValue.compareTo(BigInteger.valueOf(minValue)) < 0 || bigIntegerValue.compareTo(BigInteger.valueOf(maxValue)) > 0) {
+            throw new IllegalArgumentException(String.format("Argument \"%s\" is out of range for %s: <%s>", parameterName, parameterType.getName(), argument));
         }
         return bigIntegerValue.longValue();
     }
@@ -577,9 +526,7 @@ public class DefaultToolExecutor implements ToolExecutor {
         try {
             return bigDecimalValue.toBigIntegerExact();
         } catch (ArithmeticException e) {
-            throw new IllegalArgumentException(String.format(
-                    "Argument \"%s\" has non-integer value for %s: <%s>",
-                    parameterName, parameterType.getName(), argument));
+            throw new IllegalArgumentException(String.format("Argument \"%s\" has non-integer value for %s: <%s>", parameterName, parameterType.getName(), argument));
         }
     }
 
@@ -589,16 +536,16 @@ public class DefaultToolExecutor implements ToolExecutor {
      * or introduce floating-point representation error.
      */
     private static BigDecimal getBigDecimalValue(Object argument, String parameterName, Class<?> parameterType) {
-        if (argument instanceof BigDecimal bigDecimal) {
-            return bigDecimal;
+        if (argument instanceof BigDecimal) {
+            return ((BigDecimal) argument);
         }
-        if (argument instanceof BigInteger bigInteger) {
-            return new BigDecimal(bigInteger);
+        if (argument instanceof BigInteger) {
+            return new BigDecimal(((BigInteger) argument));
         }
         // Long/Integer/Short/Byte have exact string representations; Double/Float are rendered via
         // Number.toString() (matching the behavior of IsEqualTo's numeric comparison).
-        if (argument instanceof Number number) {
-            return new BigDecimal(number.toString());
+        if (argument instanceof Number) {
+            return new BigDecimal(((Number) argument).toString());
         }
         if (argument instanceof String) {
             try {
@@ -609,12 +556,7 @@ public class DefaultToolExecutor implements ToolExecutor {
                 // fall through to the error below
             }
         }
-        throw new IllegalArgumentException(String.format(
-                "Argument \"%s\" is not convertable to %s, got %s: <%s>",
-                parameterName,
-                parameterType.getName(),
-                argument == null ? "null" : argument.getClass().getName(),
-                argument));
+        throw new IllegalArgumentException(String.format("Argument \"%s\" is not convertable to %s, got %s: <%s>", parameterName, parameterType.getName(), argument == null ? "null" : argument.getClass().getName(), argument));
     }
 
     public static Builder builder() {
@@ -624,9 +566,13 @@ public class DefaultToolExecutor implements ToolExecutor {
     public static class Builder {
 
         private Object object;
+
         private Method originalMethod;
+
         private Method methodToInvoke;
+
         private Boolean wrapToolArgumentsExceptions;
+
         private Boolean propagateToolExecutionExceptions;
 
         public Builder object(Object object) {

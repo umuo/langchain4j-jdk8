@@ -4,16 +4,16 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.invocation.InvocationParameters;
-
 import java.util.List;
-
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 public class ToolProviderRequest {
 
     private final InvocationContext invocationContext;
+
     private final UserMessage userMessage;
+
     private final List<ChatMessage> messages;
 
     /**
@@ -26,11 +26,9 @@ public class ToolProviderRequest {
     }
 
     public ToolProviderRequest(Object chatMemoryId, UserMessage userMessage) {
-        this.invocationContext = InvocationContext.builder()
-                .chatMemoryId(chatMemoryId)
-                .build();
+        this.invocationContext = InvocationContext.builder().chatMemoryId(chatMemoryId).build();
         this.userMessage = ensureNotNull(userMessage, "userMessage");
-        this.messages = List.of();
+        this.messages = dev.langchain4j.internal.Jdk8.list();
     }
 
     /**
@@ -66,7 +64,9 @@ public class ToolProviderRequest {
     public static class Builder {
 
         private InvocationContext invocationContext;
+
         private UserMessage userMessage;
+
         private List<ChatMessage> messages;
 
         public Builder invocationContext(InvocationContext invocationContext) {

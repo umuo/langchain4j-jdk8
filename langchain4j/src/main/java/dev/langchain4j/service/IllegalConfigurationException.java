@@ -1,7 +1,6 @@
 package dev.langchain4j.service;
 
 import dev.langchain4j.exception.LangChain4jException;
-
 import static java.lang.String.format;
 
 public class IllegalConfigurationException extends LangChain4jException {

@@ -3,14 +3,12 @@ package dev.langchain4j.data.document.source;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSource;
 import dev.langchain4j.data.document.Metadata;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 public class UrlSource implements DocumentSource {

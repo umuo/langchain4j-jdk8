@@ -1,7 +1,6 @@
 package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.invocation.InvocationParameters;
@@ -13,7 +12,9 @@ import java.util.Objects;
 public class ToolErrorContext {
 
     private final ToolExecutionRequest toolExecutionRequest;
+
     private final InvocationContext invocationContext;
+
     private final Exception rawError;
 
     public ToolErrorContext(Builder builder) {
@@ -56,12 +57,12 @@ public class ToolErrorContext {
 
     @Override
     public boolean equals(Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         ToolErrorContext that = (ToolErrorContext) object;
-        return Objects.equals(toolExecutionRequest, that.toolExecutionRequest)
-                && Objects.equals(invocationContext, that.invocationContext)
-                && Objects.equals(rawError, that.rawError);
+        return Objects.equals(toolExecutionRequest, that.toolExecutionRequest) && Objects.equals(invocationContext, that.invocationContext) && Objects.equals(rawError, that.rawError);
     }
 
     @Override
@@ -71,10 +72,7 @@ public class ToolErrorContext {
 
     @Override
     public String toString() {
-        return "ToolErrorContext{" + "toolExecutionRequest="
-                + toolExecutionRequest + ", invocationContext="
-                + invocationContext + ", rawError="
-                + rawError + '}';
+        return "ToolErrorContext{" + "toolExecutionRequest=" + toolExecutionRequest + ", invocationContext=" + invocationContext + ", rawError=" + rawError + '}';
     }
 
     public static Builder builder() {
@@ -84,7 +82,9 @@ public class ToolErrorContext {
     public static class Builder {
 
         private ToolExecutionRequest toolExecutionRequest;
+
         private InvocationContext invocationContext;
+
         private Exception rawError;
 
         public Builder toolExecutionRequest(ToolExecutionRequest toolExecutionRequest) {
@@ -110,10 +110,9 @@ public class ToolErrorContext {
         /**
          * @deprecated Please set {@link #invocationContext(InvocationContext)} instead
          */
-        @Deprecated(since = "1.5.0")
+        @Deprecated
         public Builder memoryId(Object memoryId) {
-            this.invocationContext =
-                    InvocationContext.builder().chatMemoryId(memoryId).build();
+            this.invocationContext = InvocationContext.builder().chatMemoryId(memoryId).build();
             return this;
         }
 

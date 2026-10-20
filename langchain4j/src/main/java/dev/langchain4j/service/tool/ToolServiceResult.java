@@ -2,7 +2,6 @@ package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.List;
 import java.util.Objects;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -15,11 +14,17 @@ import dev.langchain4j.model.output.TokenUsage;
 public class ToolServiceResult {
 
     private final List<ChatResponse> intermediateResponses;
+
     private final ChatResponse finalResponse;
+
     private final List<ToolExecution> toolExecutions;
+
     private final TokenUsage aggregateTokenUsage;
+
     private final boolean immediateToolReturn;
+
     private final List<ChatMessage> messages;
+
     private final ChatRequest lastChatRequest;
 
     /**
@@ -38,15 +43,14 @@ public class ToolServiceResult {
     /**
      * @deprecated Please use {@link #ToolServiceResult(Builder)} instead
      */
-    @Deprecated(since = "1.2.0")
-    public ToolServiceResult(ChatResponse chatResponse,
-                             List<ToolExecution> toolExecutions) {
-        this.intermediateResponses = List.of();
+    @Deprecated
+    public ToolServiceResult(ChatResponse chatResponse, List<ToolExecution> toolExecutions) {
+        this.intermediateResponses = dev.langchain4j.internal.Jdk8.list();
         this.finalResponse = ensureNotNull(chatResponse, "chatResponse");
         this.toolExecutions = ensureNotNull(toolExecutions, "toolExecutions");
         this.aggregateTokenUsage = chatResponse.tokenUsage();
         this.immediateToolReturn = false;
-        this.messages = List.of();
+        this.messages = dev.langchain4j.internal.Jdk8.list();
         this.lastChatRequest = null;
     }
 
@@ -68,18 +72,13 @@ public class ToolServiceResult {
      * @since 1.2.0
      */
     public ChatResponse aggregateResponse() {
-        return ChatResponse.builder()
-                .aiMessage(finalResponse.aiMessage())
-                .metadata(finalResponse.metadata().toBuilder()
-                        .tokenUsage(aggregateTokenUsage)
-                        .build())
-                .build();
+        return ChatResponse.builder().aiMessage(finalResponse.aiMessage()).metadata(finalResponse.metadata().toBuilder().tokenUsage(aggregateTokenUsage).build()).build();
     }
 
     /**
      * @deprecated Please use {@link #aggregateResponse()} instead for clarity
      */
-    @Deprecated(since = "1.2.0")
+    @Deprecated
     public ChatResponse chatResponse() {
         return aggregateResponse();
     }
@@ -125,41 +124,22 @@ public class ToolServiceResult {
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (ToolServiceResult) obj;
-        return Objects.equals(this.intermediateResponses, that.intermediateResponses)
-                && Objects.equals(this.finalResponse, that.finalResponse)
-                && Objects.equals(this.toolExecutions, that.toolExecutions)
-                && Objects.equals(this.aggregateTokenUsage, that.aggregateTokenUsage)
-                && Objects.equals(this.immediateToolReturn, that.immediateToolReturn)
-                && Objects.equals(this.messages, that.messages)
-                && Objects.equals(this.lastChatRequest, that.lastChatRequest);
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
+        dev.langchain4j.service.tool.ToolServiceResult that = (ToolServiceResult) obj;
+        return Objects.equals(this.intermediateResponses, that.intermediateResponses) && Objects.equals(this.finalResponse, that.finalResponse) && Objects.equals(this.toolExecutions, that.toolExecutions) && Objects.equals(this.aggregateTokenUsage, that.aggregateTokenUsage) && Objects.equals(this.immediateToolReturn, that.immediateToolReturn) && Objects.equals(this.messages, that.messages) && Objects.equals(this.lastChatRequest, that.lastChatRequest);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(
-                intermediateResponses,
-                finalResponse,
-                toolExecutions,
-                aggregateTokenUsage,
-                immediateToolReturn,
-                messages,
-                lastChatRequest);
+        return Objects.hash(intermediateResponses, finalResponse, toolExecutions, aggregateTokenUsage, immediateToolReturn, messages, lastChatRequest);
     }
 
     @Override
     public String toString() {
-        return "ToolServiceResult{" +
-                "intermediateResponses=" + intermediateResponses +
-                ", finalResponse=" + finalResponse +
-                ", toolExecutions=" + toolExecutions +
-                ", aggregateTokenUsage=" + aggregateTokenUsage +
-                ", immediateToolReturn=" + immediateToolReturn +
-                ", messages=" + messages +
-                ", lastChatRequest=" + lastChatRequest +
-                '}';
+        return "ToolServiceResult{" + "intermediateResponses=" + intermediateResponses + ", finalResponse=" + finalResponse + ", toolExecutions=" + toolExecutions + ", aggregateTokenUsage=" + aggregateTokenUsage + ", immediateToolReturn=" + immediateToolReturn + ", messages=" + messages + ", lastChatRequest=" + lastChatRequest + '}';
     }
 
     public static Builder builder() {
@@ -169,11 +149,17 @@ public class ToolServiceResult {
     public static class Builder {
 
         private List<ChatResponse> intermediateResponses;
+
         private ChatResponse finalResponse;
+
         private List<ToolExecution> toolExecutions;
+
         private TokenUsage aggregateTokenUsage;
+
         private boolean immediateToolReturn;
+
         private List<ChatMessage> messages;
+
         private ChatRequest lastChatRequest;
 
         public Builder intermediateResponses(List<ChatResponse> intermediateResponses) {

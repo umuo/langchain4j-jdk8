@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureBetween;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.model.decision.DecisionModel;
@@ -31,43 +30,36 @@ public final class DecisionModelToolSelector {
 
     private static final Logger log = LoggerFactory.getLogger(DecisionModelToolSelector.class);
 
-    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = PromptTemplate.from(
-            "Would this tool help to handle the request?\nTool: {{name}}\nDescription: {{description}}");
+    public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = PromptTemplate.from("Would this tool help to handle the request?\nTool: {{name}}\nDescription: {{description}}");
+
     public static final int DEFAULT_MAX_RESULTS = 5;
+
     public static final double DEFAULT_MIN_PROBABILITY = 0.5;
 
     private final DecisionModel decisionModel;
+
     private final PromptTemplate questionTemplate;
+
     private final int maxResults;
+
     private final double minProbability;
+
     private final int maxToolsPerDecisionRequest;
 
-    public DecisionModelToolSelector(
-            DecisionModel decisionModel,
-            PromptTemplate questionTemplate,
-            Integer maxResults,
-            Double minProbability,
-            Integer maxToolsPerDecisionRequest) {
+    public DecisionModelToolSelector(DecisionModel decisionModel, PromptTemplate questionTemplate, Integer maxResults, Double minProbability, Integer maxToolsPerDecisionRequest) {
         this.decisionModel = ensureNotNull(decisionModel, "decisionModel");
         this.questionTemplate = getOrDefault(questionTemplate, DEFAULT_QUESTION_TEMPLATE);
         if (!this.questionTemplate.template().contains("{{name}}")) {
-            throw new IllegalArgumentException("The question template must contain {{name}}, but was: "
-                    + this.questionTemplate.template());
+            throw new IllegalArgumentException("The question template must contain {{name}}, but was: " + this.questionTemplate.template());
         }
         try {
-            this.questionTemplate.apply(Map.of("name", "name", "description", "description"));
+            this.questionTemplate.apply(dev.langchain4j.internal.Jdk8.map("name", "name", "description", "description"));
         } catch (RuntimeException e) {
-            throw new IllegalArgumentException(
-                    "The question template can only use the {{name}} and {{description}} variables, but was: "
-                            + this.questionTemplate.template(),
-                    e);
+            throw new IllegalArgumentException("The question template can only use the {{name}} and {{description}} variables, but was: " + this.questionTemplate.template(), e);
         }
         this.maxResults = ensureGreaterThanZero(getOrDefault(maxResults, DEFAULT_MAX_RESULTS), "maxResults");
-        this.minProbability =
-                ensureBetween(getOrDefault(minProbability, DEFAULT_MIN_PROBABILITY), 0, 1, "minProbability");
-        this.maxToolsPerDecisionRequest = maxToolsPerDecisionRequest == null
-                ? Integer.MAX_VALUE
-                : ensureGreaterThanZero(maxToolsPerDecisionRequest, "maxToolsPerDecisionRequest");
+        this.minProbability = ensureBetween(getOrDefault(minProbability, DEFAULT_MIN_PROBABILITY), 0, 1, "minProbability");
+        this.maxToolsPerDecisionRequest = maxToolsPerDecisionRequest == null ? Integer.MAX_VALUE : ensureGreaterThanZero(maxToolsPerDecisionRequest, "maxToolsPerDecisionRequest");
     }
 
     /**
@@ -76,8 +68,7 @@ public final class DecisionModelToolSelector {
     public List<String> select(DecisionInput input, List<ToolSpecification> tools) {
         List<ScoredTool> scoredTools = new ArrayList<>();
         for (int start = 0; start < tools.size(); ) {
-            List<ToolSpecification> batch =
-                    tools.subList(start, start + Math.min(maxToolsPerDecisionRequest, tools.size() - start));
+            List<ToolSpecification> batch = tools.subList(start, start + Math.min(maxToolsPerDecisionRequest, tools.size() - start));
             start += batch.size();
             DecisionRequest.Builder decisionRequest = DecisionRequest.builder();
             decisionRequest.input(input);
@@ -93,19 +84,45 @@ public final class DecisionModelToolSelector {
                 }
             }
         }
-        return scoredTools.stream()
-                .sorted(Comparator.comparingDouble(ScoredTool::probability).reversed())
-                .limit(maxResults)
-                .map(ScoredTool::name)
-                .toList();
+        return scoredTools.stream().sorted(Comparator.comparingDouble(ScoredTool::probability).reversed()).limit(maxResults).map(ScoredTool::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     private String question(ToolSpecification tool) {
         Map<String, Object> variables = new HashMap<>();
         variables.put("name", tool.name());
         variables.put("description", isNullOrBlank(tool.description()) ? "" : tool.description());
-        return questionTemplate.apply(variables).text().strip();
+        return dev.langchain4j.internal.Jdk8.strip(questionTemplate.apply(variables).text());
     }
 
-    private record ScoredTool(String name, double probability) {}
+    private final static class ScoredTool {
+
+        private final String name;
+
+        public String name() {
+            return name;
+        }
+
+        private final double probability;
+
+        public double probability() {
+            return probability;
+        }
+
+        public ScoredTool(String name, double probability) {
+            this.name = name;
+            this.probability = probability;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(name, ((ScoredTool) obj).name) && java.util.Objects.equals(probability, ((ScoredTool) obj).probability));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(name)) + java.util.Objects.hashCode(probability));
+        }
+
+        public String toString() {
+            return "ScoredTool[" + "name=" + name + ", probability=" + probability + "]";
+        }
+    }
 }

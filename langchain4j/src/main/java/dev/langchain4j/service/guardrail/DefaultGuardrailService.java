@@ -25,10 +25,8 @@ import java.util.stream.Stream;
  * </p>
  */
 final class DefaultGuardrailService extends AbstractGuardrailService {
-    DefaultGuardrailService(
-            Class<?> aiServiceClass,
-            Map<Object, InputGuardrailExecutor> inputGuardrails,
-            Map<Object, OutputGuardrailExecutor> outputGuardrails) {
+
+    DefaultGuardrailService(Class<?> aiServiceClass, Map<Object, InputGuardrailExecutor> inputGuardrails, Map<Object, OutputGuardrailExecutor> outputGuardrails) {
         super(aiServiceClass, inputGuardrails, outputGuardrails);
     }
 
@@ -43,16 +41,14 @@ final class DefaultGuardrailService extends AbstractGuardrailService {
     }
 
     List<InputGuardrail> getInputGuardrails(String methodName) {
-        return findMethod(methodName).map(super::getInputGuardrails).orElseGet(List::of);
+        return findMethod(methodName).map(super::getInputGuardrails).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
     List<OutputGuardrail> getOutputGuardrails(String methodName) {
-        return findMethod(methodName).map(super::getOutputGuardrails).orElseGet(List::of);
+        return findMethod(methodName).map(super::getOutputGuardrails).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
     private Optional<Method> findMethod(String methodName) {
-        return Stream.of(aiServiceClass().getMethods())
-                .filter(method -> methodName.equals(method.getName()))
-                .findFirst();
+        return Stream.of(aiServiceClass().getMethods()).filter(method -> methodName.equals(method.getName())).findFirst();
     }
 }

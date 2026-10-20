@@ -3,7 +3,6 @@ package dev.langchain4j.service.tool;
 import dev.langchain4j.agent.tool.ReturnBehavior;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.service.IllegalConfigurationException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -12,7 +11,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import static java.util.stream.Collectors.toSet;
 
 public class ToolProviderResult {
@@ -38,7 +36,7 @@ public class ToolProviderResult {
         return tools;
     }
 
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public ToolSpecification toolSpecificationByName(String name) {
         for (AiServiceTool tool : tools) {
             if (tool.name().equals(name)) {
@@ -48,7 +46,7 @@ public class ToolProviderResult {
         return null;
     }
 
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public ToolExecutor toolExecutorByName(String name) {
         for (AiServiceTool tool : tools) {
             if (tool.name().equals(name)) {
@@ -61,7 +59,7 @@ public class ToolProviderResult {
     /**
      * @deprecated use {@link #aiServiceTools()} instead
      */
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public Map<ToolSpecification, ToolExecutor> tools() {
         Map<ToolSpecification, ToolExecutor> result = new LinkedHashMap<>(tools.size());
         for (AiServiceTool tool : tools) {
@@ -73,12 +71,9 @@ public class ToolProviderResult {
     /**
      * @deprecated use {@link #aiServiceTools()} to get tool's {@link ReturnBehavior}
      */
-    @Deprecated(since = "1.14.0")
+    @Deprecated
     public Set<String> immediateReturnToolNames() {
-        return tools.stream()
-                .filter(tool -> tool.returnBehavior() == ReturnBehavior.IMMEDIATE)
-                .map(tool -> tool.name())
-                .collect(toSet());
+        return tools.stream().filter(tool -> tool.returnBehavior() == ReturnBehavior.IMMEDIATE).map(tool -> tool.name()).collect(toSet());
     }
 
     public Builder toBuilder() {
@@ -92,6 +87,7 @@ public class ToolProviderResult {
     public static class Builder {
 
         private final List<AiServiceTool> tools = new ArrayList<>();
+
         private final Set<String> immediateReturnToolNames = new HashSet<>();
 
         public Builder add(AiServiceTool tool) {
@@ -104,11 +100,7 @@ public class ToolProviderResult {
         }
 
         public Builder add(ToolSpecification tool, ToolExecutor executor, ReturnBehavior returnBehavior) {
-            tools.add(AiServiceTool.builder()
-                    .toolSpecification(tool)
-                    .toolExecutor(executor)
-                    .returnBehavior(returnBehavior)
-                    .build());
+            tools.add(AiServiceTool.builder().toolSpecification(tool).toolExecutor(executor).returnBehavior(returnBehavior).build());
             return this;
         }
 
@@ -126,7 +118,7 @@ public class ToolProviderResult {
          * @deprecated use {@link #add(AiServiceTool)} or {@link #add(ToolSpecification, ToolExecutor, ReturnBehavior)}
          * to specify tool's {@link ReturnBehavior}
          */
-        @Deprecated(since = "1.14.0")
+        @Deprecated
         public Builder immediateReturnToolNames(Set<String> immediateReturnToolNames) {
             if (immediateReturnToolNames != null) {
                 this.immediateReturnToolNames.addAll(immediateReturnToolNames);
@@ -153,9 +145,7 @@ public class ToolProviderResult {
                 }
                 AiServiceTool existing = tools.get(idx);
                 if (existing.returnBehavior() != ReturnBehavior.IMMEDIATE) {
-                    tools.set(idx, existing.toBuilder()
-                            .returnBehavior(ReturnBehavior.IMMEDIATE)
-                            .build());
+                    tools.set(idx, existing.toBuilder().returnBehavior(ReturnBehavior.IMMEDIATE).build());
                 }
             }
             return tools;

@@ -1,7 +1,6 @@
 package dev.langchain4j.service;
 
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
-
 import dev.langchain4j.guardrail.ChatExchange;
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.message.ChatMessage;
@@ -28,12 +27,13 @@ import java.util.function.Function;
  * model call: {@link #wrap} drives the synchronous tool loop (a {@code ChatModel} for the synchronous path, a
  * blocking {@code StreamingChatModel} call for the {@code TokenStream} path), while {@link #wrapAsync} drives the
  * asynchronous tool loop (a {@code ChatModel.chatAsync} for the {@code CompletableFuture} path, a non-blocking
- * {@code StreamingChatModel} call for the reactive {@code Flow.Publisher} path).
+ * {@code StreamingChatModel} call for the reactive {@code Publisher} path).
  */
 @Internal
 final class ToolAwareRepromptExecutor {
 
-    private ToolAwareRepromptExecutor() {}
+    private ToolAwareRepromptExecutor() {
+    }
 
     /**
      * The last request of the tool loop and the response it ended with.
@@ -47,15 +47,9 @@ final class ToolAwareRepromptExecutor {
      * Synchronous tool-aware wrapper: {@link ChatExecutor#execute(List)} resolves any reprompt-requested tools
      * through the synchronous tool loop. Used by the synchronous and {@code TokenStream} output-guardrail paths.
      */
-    static ChatExecutor wrap(
-            ChatExecutor rawChatExecutor,
-            AiServiceContext context,
-            Object memoryId,
-            ChatRequestParameters parameters,
-            InvocationContext invocationContext,
-            ToolServiceContext toolServiceContext,
-            Function<ChatRequest, ChatResponse> chatModelInvoker) {
+    static ChatExecutor wrap(ChatExecutor rawChatExecutor, AiServiceContext context, Object memoryId, ChatRequestParameters parameters, InvocationContext invocationContext, ToolServiceContext toolServiceContext, Function<ChatRequest, ChatResponse> chatModelInvoker) {
         return new ChatExecutor() {
+
             @Override
             public ChatResponse execute() {
                 return rawChatExecutor.execute();
@@ -69,21 +63,10 @@ final class ToolAwareRepromptExecutor {
             @Override
             public ChatExchange exchange(List<ChatMessage> chatMessages) {
                 ChatExchange initial = rawChatExecutor.exchange(chatMessages);
-
                 if (!initial.response().aiMessage().hasToolExecutionRequests()) {
                     return initial;
                 }
-
-                ToolServiceResult result = context.toolService.executeInferenceAndToolsLoop(
-                        context,
-                        memoryId,
-                        initial.response(),
-                        parameters,
-                        chatMessages,
-                        null,
-                        invocationContext,
-                        toolServiceContext,
-                        chatModelInvoker);
+                ToolServiceResult result = context.toolService.executeInferenceAndToolsLoop(context, memoryId, initial.response(), parameters, chatMessages, null, invocationContext, toolServiceContext, chatModelInvoker);
                 return toolLoopExchange(initial, result);
             }
         };
@@ -96,15 +79,9 @@ final class ToolAwareRepromptExecutor {
      * paths; {@code asyncChatModelInvoker} performs each model call (a {@code ChatModel.chatAsync} for the former,
      * a non-blocking {@code StreamingChatModel} call for the latter).
      */
-    static ChatExecutor wrapAsync(
-            ChatExecutor rawChatExecutor,
-            AiServiceContext context,
-            Object memoryId,
-            ChatRequestParameters parameters,
-            InvocationContext invocationContext,
-            ToolServiceContext toolServiceContext,
-            Function<ChatRequest, CompletableFuture<ChatResponse>> asyncChatModelInvoker) {
+    static ChatExecutor wrapAsync(ChatExecutor rawChatExecutor, AiServiceContext context, Object memoryId, ChatRequestParameters parameters, InvocationContext invocationContext, ToolServiceContext toolServiceContext, Function<ChatRequest, CompletableFuture<ChatResponse>> asyncChatModelInvoker) {
         return new ChatExecutor() {
+
             @Override
             public ChatResponse execute() {
                 return rawChatExecutor.execute();
@@ -130,19 +107,7 @@ final class ToolAwareRepromptExecutor {
                     if (!initial.response().aiMessage().hasToolExecutionRequests()) {
                         return CompletableFuture.completedFuture(initial);
                     }
-                    return context.toolService
-                            .executeInferenceAndToolsLoopAsync(
-                                    context,
-                                    memoryId,
-                                    initial.response(),
-                                    parameters,
-                                    chatMessages,
-                                    null,
-                                    invocationContext,
-                                    toolServiceContext,
-                                    null,
-                                    asyncChatModelInvoker)
-                            .thenApply(result -> toolLoopExchange(initial, result));
+                    return context.toolService.executeInferenceAndToolsLoopAsync(context, memoryId, initial.response(), parameters, chatMessages, null, invocationContext, toolServiceContext, null, asyncChatModelInvoker).thenApply(result -> toolLoopExchange(initial, result));
                 });
                 propagateCancellation(exchange, initialExchange);
                 return exchange;

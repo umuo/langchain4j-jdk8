@@ -13,7 +13,6 @@ import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.IllegalConfigurationException.illegalConfiguration;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.data.image.Image;
 import dev.langchain4j.data.message.Content;
@@ -39,7 +38,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
 import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.RecordComponent;
+import dev.langchain4j.internal.Jdk8.RecordComponent;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,21 +70,30 @@ public final class DecisionMethod {
     private static final double DEFAULT_THRESHOLD = 0.5;
 
     private final Method method;
+
     private final boolean async;
+
     private final boolean withResponse;
+
     private final Type contentType;
+
     private final List<InputParameter> inputParameters;
+
     private final int requestParametersIndex;
+
     private final Map<String, QuestionMapping> mappings;
+
     private final Map<String, Question> questions;
+
     private final Set<Class<?>> reflectiveTypes;
+
     private final List<Type> inputTypes;
+
     private final Function<Map<String, Object>, Object> resultFactory;
 
     private DecisionMethod(Method method, Type returnType) {
         this.method = method;
         Analysis analysis = new Analysis(method);
-
         Type type = returnType;
         this.async = isParameterizedBy(type, CompletableFuture.class) || isParameterizedBy(type, CompletionStage.class);
         if (async) {
@@ -96,44 +104,30 @@ public final class DecisionMethod {
             type = typeArgument(type);
         }
         this.contentType = type;
-
         Decide decide = method.getAnnotation(Decide.class);
         if (kindOf(type) != null) {
             if (decide == null) {
-                throw illegalConfiguration(
-                        "Method '%s' must be annotated with @Decide, which contains the question to answer",
-                        method.getName());
+                throw illegalConfiguration("Method '%s' must be annotated with @Decide, which contains the question to answer", method.getName());
             }
             QuestionMapping single = analysis.mappingFor(method.getName(), type, decide.value());
             analysis.add(single);
             this.resultFactory = values -> values.get(single.name());
-        } else if (type instanceof Class<?> objectType && isObjectType(objectType)) {
+        } else if (type instanceof Class<?> && isObjectType(((Class<?>) type))) {
             if (decide != null) {
-                throw illegalConfiguration(
-                        "Method '%s' returns %s, which contains several questions. "
-                                + "@Decide is not supported on such methods: annotate the fields of %s instead",
-                        method.getName(), objectType.getSimpleName(), objectType.getSimpleName());
+                throw illegalConfiguration("Method '%s' returns %s, which contains several questions. " + "@Decide is not supported on such methods: annotate the fields of %s instead", method.getName(), ((Class<?>) type).getSimpleName(), ((Class<?>) type).getSimpleName());
             }
-            analysis.reflectiveTypes.add(objectType);
-            this.resultFactory = analysis.objectFactory(objectType);
+            analysis.reflectiveTypes.add(((Class<?>) type));
+            this.resultFactory = analysis.objectFactory(((Class<?>) type));
         } else {
-            throw illegalConfiguration(
-                    "Method '%s' has an unsupported return type: %s. Supported types are boolean, YesNoAnswer, an enum, "
-                            + "Choice<enum>, Scale<enum>, and objects whose fields are of these types, optionally wrapped in "
-                            + "DecisionResult<> and/or CompletableFuture<> (or CompletionStage<>)",
-                    method.getName(), returnType.getTypeName());
+            throw illegalConfiguration("Method '%s' has an unsupported return type: %s. Supported types are boolean, YesNoAnswer, an enum, " + "Choice<enum>, Scale<enum>, and objects whose fields are of these types, optionally wrapped in " + "DecisionResult<> and/or CompletableFuture<> (or CompletionStage<>)", method.getName(), returnType.getTypeName());
         }
-
         analysis.analyzeParameters();
-        this.inputParameters = List.copyOf(analysis.inputParameters);
+        this.inputParameters = dev.langchain4j.internal.Jdk8.copyList(analysis.inputParameters);
         this.requestParametersIndex = analysis.requestParametersIndex;
         this.mappings = Collections.unmodifiableMap(analysis.mappings);
         this.questions = Collections.unmodifiableMap(analysis.questions);
         this.reflectiveTypes = Collections.unmodifiableSet(analysis.reflectiveTypes);
-        this.inputTypes = analysis.inputParameters.stream()
-                .filter(parameter -> !parameter.contents())
-                .map(parameter -> method.getGenericParameterTypes()[parameter.index()])
-                .toList();
+        this.inputTypes = analysis.inputParameters.stream().filter(parameter -> !parameter.contents()).map(parameter -> method.getGenericParameterTypes()[parameter.index()]).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     /**
@@ -210,24 +204,15 @@ public final class DecisionMethod {
         Map<String, Object> input = new LinkedHashMap<>();
         for (InputParameter parameter : inputParameters) {
             Object value = args[parameter.index()];
-            Object inputValue = value == null
-                    ? null
-                    : parameter.contents() || isContents(value) ? toContents(value) : toInputValue(value);
+            Object inputValue = value == null ? null : parameter.contents() || isContents(value) ? toContents(value) : toInputValue(value);
             if (inputValue != null) {
                 input.put(parameter.name(), inputValue);
             }
         }
         if (input.isEmpty()) {
-            throw new IllegalArgumentException("All arguments of method '%s' that are sent to the model (%s) are null"
-                    .formatted(
-                            method.getName(),
-                            inputParameters.stream().map(InputParameter::name).toList()));
+            throw new IllegalArgumentException(String.format("All arguments of method '%s' that are sent to the model (%s) are null", method.getName(), inputParameters.stream().map(InputParameter::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList))));
         }
-        return DecisionRequest.builder()
-                .inputFields(input)
-                .questions(questions)
-                .parameters(requestParameters(args))
-                .build();
+        return DecisionRequest.builder().inputFields(input).questions(questions).parameters(requestParameters(args)).build();
     }
 
     /**
@@ -239,7 +224,7 @@ public final class DecisionMethod {
         if (items == null) {
             return value instanceof Content || value instanceof Image;
         }
-        List<?> nonNull = items.stream().filter(Objects::nonNull).toList();
+        List<?> nonNull = items.stream().filter(Objects::nonNull).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         return !nonNull.isEmpty() && nonNull.stream().allMatch(item -> item instanceof Content || item instanceof Image);
     }
 
@@ -252,7 +237,7 @@ public final class DecisionMethod {
     private static Object toContents(Object value) {
         List<?> items = items(value);
         if (items == null) {
-            return value instanceof Image image ? ImageContent.from(image, ImageContent.DetailLevel.AUTO) : value;
+            return value instanceof Image ? ImageContent.from(((Image) value), ImageContent.DetailLevel.AUTO) : value;
         }
         List<Object> contents = new ArrayList<>();
         items.forEach(item -> {
@@ -264,11 +249,11 @@ public final class DecisionMethod {
     }
 
     private static List<?> items(Object value) {
-        if (value instanceof Collection<?> collection) {
-            return new ArrayList<>(collection);
+        if (value instanceof Collection<?>) {
+            return new ArrayList<>(((Collection<?>) value));
         }
-        if (value instanceof Object[] array) {
-            return Arrays.asList(array);
+        if (value instanceof Object[]) {
+            return Arrays.asList(((Object[]) value));
         }
         return null;
     }
@@ -281,17 +266,17 @@ public final class DecisionMethod {
         if (value == null || value instanceof String || value instanceof Number || value instanceof Boolean) {
             return value;
         }
-        if (value instanceof Enum<?> constant) {
-            return constant.name();
+        if (value instanceof Enum<?>) {
+            return ((Enum<?>) value).name();
         }
-        if (value instanceof Map<?, ?> map) {
+        if (value instanceof Map<?, ?>) {
             Map<String, Object> result = new LinkedHashMap<>();
-            map.forEach((key, item) -> result.put(String.valueOf(key), toInputValue(item)));
+            ((Map<?, ?>) value).forEach((key, item) -> result.put(String.valueOf(key), toInputValue(item)));
             return result;
         }
-        if (value instanceof Collection<?> collection) {
+        if (value instanceof Collection<?>) {
             List<Object> result = new ArrayList<>();
-            collection.forEach(item -> result.add(toInputValue(item)));
+            ((Collection<?>) value).forEach(item -> result.add(toInputValue(item)));
             return result;
         }
         return toInputValue(Json.fromJson(Json.toJson(value), Object.class));
@@ -304,12 +289,9 @@ public final class DecisionMethod {
      */
     public Object toResult(DecisionResponse response, Function<String, Double> thresholds) {
         Map<String, Object> values = new LinkedHashMap<>();
-        mappings.forEach(
-                (name, mapping) -> values.put(name, mapping.value(response, () -> threshold(name, thresholds))));
+        mappings.forEach((name, mapping) -> values.put(name, mapping.value(response, () -> threshold(name, thresholds))));
         Object content = resultFactory.apply(values);
-        return withResponse
-                ? DecisionResult.builder().content(content).response(response).build()
-                : content;
+        return withResponse ? DecisionResult.builder().content(content).response(response).build() : content;
     }
 
     /**
@@ -337,36 +319,26 @@ public final class DecisionMethod {
             request = toRequest(args);
             source = ensureNotNull(config.decisionModel().decideAsync(request), "decideAsync result");
         } catch (RuntimeException e) {
-            return CompletableFuture.failedFuture(e);
+            return dev.langchain4j.internal.Jdk8.failedFuture(e);
         }
-        CompletableFuture<Object> result =
-                source.thenApply(response -> toResult(response, thresholds(config, request, response)));
+        CompletableFuture<Object> result = source.thenApply(response -> toResult(response, thresholds(config, request, response)));
         propagateCancellation(result, source);
         return result;
     }
 
-    private Function<String, Double> thresholds(
-            DecisionServiceConfig config, DecisionRequest request, DecisionResponse response) {
+    private Function<String, Double> thresholds(DecisionServiceConfig config, DecisionRequest request, DecisionResponse response) {
         ThresholdProvider thresholdProvider = config.thresholdProvider();
         if (thresholdProvider == null) {
             return questionName -> null;
         }
-        String modelName = getOrDefault(
-                response.modelName(), () -> getOrDefault(request.modelName(), config.decisionModel().modelName()));
-        return questionName -> thresholdProvider.threshold(ThresholdContext.builder()
-                .serviceInterface(config.serviceInterface())
-                .method(method)
-                .questionName(questionName)
-                .modelName(modelName)
-                .build());
+        String modelName = getOrDefault(response.modelName(), () -> getOrDefault(request.modelName(), config.decisionModel().modelName()));
+        return questionName -> thresholdProvider.threshold(ThresholdContext.builder().serviceInterface(config.serviceInterface()).method(method).questionName(questionName).modelName(modelName).build());
     }
 
     private double threshold(String questionName, Function<String, Double> thresholds) {
         Double threshold = thresholds == null ? null : thresholds.apply(questionName);
         if (threshold != null && !(threshold >= 0 && threshold <= 1)) {
-            throw new IllegalArgumentException(
-                    "The threshold for question '%s' of method '%s' must be between 0 and 1, but was %s"
-                            .formatted(questionName, method.getName(), threshold));
+            throw new IllegalArgumentException(String.format("The threshold for question '%s' of method '%s' must be between 0 and 1, but was %s", questionName, method.getName(), threshold));
         }
         return getOrDefault(threshold, DEFAULT_THRESHOLD);
     }
@@ -383,7 +355,7 @@ public final class DecisionMethod {
             return Kind.BOOLEAN;
         } else if (type == YesNoAnswer.class) {
             return Kind.YES_NO;
-        } else if (type instanceof Class<?> c && c.isEnum()) {
+        } else if (type instanceof Class<?> && ((Class<?>) type).isEnum()) {
             return Kind.ENUM;
         } else if (isParameterizedBy(type, Choice.class)) {
             return Kind.CHOICE;
@@ -394,18 +366,11 @@ public final class DecisionMethod {
     }
 
     private static boolean isObjectType(Class<?> type) {
-        return !type.isPrimitive()
-                && !type.isArray()
-                && !type.isInterface()
-                && !type.isEnum()
-                && !Modifier.isAbstract(type.getModifiers())
-                && !type.getName().startsWith("java.")
-                && !Collection.class.isAssignableFrom(type)
-                && !Map.class.isAssignableFrom(type);
+        return !type.isPrimitive() && !type.isArray() && !type.isInterface() && !type.isEnum() && !Modifier.isAbstract(type.getModifiers()) && !type.getName().startsWith("java.") && !Collection.class.isAssignableFrom(type) && !Map.class.isAssignableFrom(type);
     }
 
     private static boolean isParameterizedBy(Type type, Class<?> rawType) {
-        return type instanceof ParameterizedType parameterized && parameterized.getRawType() == rawType;
+        return type instanceof ParameterizedType && ((ParameterizedType) type).getRawType() == rawType;
     }
 
     private static Type typeArgument(Type type) {
@@ -424,8 +389,7 @@ public final class DecisionMethod {
         try {
             return constructor.newInstance(arguments);
         } catch (ReflectiveOperationException e) {
-            throw new IllegalStateException(
-                    "Cannot create an instance of " + constructor.getDeclaringClass().getName(), e);
+            throw new IllegalStateException("Cannot create an instance of " + constructor.getDeclaringClass().getName(), e);
         }
     }
 
@@ -435,10 +399,15 @@ public final class DecisionMethod {
     private static final class Analysis {
 
         private final Method method;
+
         private final List<InputParameter> inputParameters = new ArrayList<>();
+
         private int requestParametersIndex = -1;
+
         private final Map<String, QuestionMapping> mappings = new LinkedHashMap<>();
+
         private final Map<String, Question> questions = new LinkedHashMap<>();
+
         private final Set<Class<?>> reflectiveTypes = new LinkedHashSet<>();
 
         private Analysis(Method method) {
@@ -451,37 +420,28 @@ public final class DecisionMethod {
                 Parameter parameter = parameters[i];
                 if (DecisionRequestParameters.class.isAssignableFrom(parameter.getType())) {
                     if (requestParametersIndex >= 0) {
-                        throw illegalConfiguration(
-                                "Method '%s' has several DecisionRequestParameters parameters", method.getName());
+                        throw illegalConfiguration("Method '%s' has several DecisionRequestParameters parameters", method.getName());
                     }
                     requestParametersIndex = i;
                     continue;
                 }
                 if (!ParameterNameResolver.hasName(parameter) && !parameter.isNamePresent()) {
-                    throw illegalConfiguration(
-                            "The name of parameter %s of method '%s' is not available, but it is sent to the model "
-                                    + "together with the value. Compile with the '-parameters' option "
-                                    + "or annotate the parameter with @V(\"name\")",
-                            i, method.getName());
+                    throw illegalConfiguration("The name of parameter %s of method '%s' is not available, but it is sent to the model " + "together with the value. Compile with the '-parameters' option " + "or annotate the parameter with @V(\"name\")", i, method.getName());
                 }
                 String name = ParameterNameResolver.name(parameter);
                 if (inputParameters.stream().anyMatch(p -> p.name().equals(name))) {
-                    throw illegalConfiguration(
-                            "Method '%s' has several parameters named '%s'", method.getName(), name);
+                    throw illegalConfiguration("Method '%s' has several parameters named '%s'", method.getName(), name);
                 }
                 inputParameters.add(new InputParameter(name, i, isContentType(parameter.getParameterizedType())));
             }
             if (inputParameters.isEmpty()) {
-                throw illegalConfiguration(
-                        "Method '%s' must have at least one parameter that is not DecisionRequestParameters: "
-                                + "the parameters are what the model evaluates",
-                        method.getName());
+                throw illegalConfiguration("Method '%s' must have at least one parameter that is not DecisionRequestParameters: " + "the parameters are what the model evaluates", method.getName());
             }
         }
 
         private Function<Map<String, Object>, Object> objectFactory(Class<?> type) {
-            if (type.isRecord()) {
-                RecordComponent[] components = type.getRecordComponents();
+            if (dev.langchain4j.internal.Jdk8.isRecord(type)) {
+                RecordComponent[] components = dev.langchain4j.internal.Jdk8.getRecordComponents(type);
                 Class<?>[] componentTypes = new Class<?>[components.length];
                 for (int i = 0; i < components.length; i++) {
                     RecordComponent component = components[i];
@@ -497,14 +457,8 @@ public final class DecisionMethod {
                     return newInstance(constructor, arguments);
                 };
             }
-
-            if ((type.isMemberClass() && !Modifier.isStatic(type.getModifiers()))
-                    || type.isLocalClass()
-                    || type.isAnonymousClass()) {
-                throw illegalConfiguration(
-                        "%s, returned by method '%s', is an inner class: declare it as a static nested class,"
-                                + " a top-level class or a record",
-                        type.getSimpleName(), method.getName());
+            if ((type.isMemberClass() && !Modifier.isStatic(type.getModifiers())) || type.isLocalClass() || type.isAnonymousClass()) {
+                throw illegalConfiguration("%s, returned by method '%s', is an inner class: declare it as a static nested class," + " a top-level class or a record", type.getSimpleName(), method.getName());
             }
             List<Field> fields = new ArrayList<>();
             for (Class<?> c = type; c != null && c != Object.class; c = c.getSuperclass()) {
@@ -513,19 +467,14 @@ public final class DecisionMethod {
                     int modifiers = field.getModifiers();
                     if (!Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers) && !field.isSynthetic()) {
                         if (Modifier.isFinal(modifiers)) {
-                            throw illegalConfiguration(
-                                    "Field '%s' of %s, returned by method '%s', is final: make it non-final,"
-                                            + " or return a record",
-                                    field.getName(), type.getSimpleName(), method.getName());
+                            throw illegalConfiguration("Field '%s' of %s, returned by method '%s', is final: make it non-final," + " or return a record", field.getName(), type.getSimpleName(), method.getName());
                         }
                         fields.add(field);
                     }
                 }
             }
             if (fields.isEmpty()) {
-                throw illegalConfiguration(
-                        "%s, returned by method '%s', has no fields to decide on",
-                        type.getSimpleName(), method.getName());
+                throw illegalConfiguration("%s, returned by method '%s', has no fields to decide on", type.getSimpleName(), method.getName());
             }
             for (Field field : fields) {
                 add(fieldMapping(field, field.getGenericType()));
@@ -538,7 +487,7 @@ public final class DecisionMethod {
                     try {
                         field.set(instance, values.get(field.getName()));
                     } catch (IllegalAccessException e) {
-                        throw new IllegalStateException("Cannot set field '%s'".formatted(field.getName()), e);
+                        throw new IllegalStateException(String.format("Cannot set field '%s'", field.getName()), e);
                     }
                 }
                 return instance;
@@ -548,29 +497,17 @@ public final class DecisionMethod {
         private QuestionMapping fieldMapping(Field field, Type type) {
             Decide decide = field.getAnnotation(Decide.class);
             if (decide == null) {
-                throw illegalConfiguration(
-                        "Field '%s' of %s, returned by method '%s', must be annotated with @Decide, "
-                                + "which contains the question to answer",
-                        field.getName(), field.getDeclaringClass().getSimpleName(), method.getName());
+                throw illegalConfiguration("Field '%s' of %s, returned by method '%s', must be annotated with @Decide, " + "which contains the question to answer", field.getName(), field.getDeclaringClass().getSimpleName(), method.getName());
             }
             if (kindOf(type) == null) {
-                throw illegalConfiguration(
-                        "Field '%s' of %s, returned by method '%s', has an unsupported type: %s. "
-                                + "Supported types are boolean, YesNoAnswer, an enum, Choice<enum> and Scale<enum>",
-                        field.getName(),
-                        field.getDeclaringClass().getSimpleName(),
-                        method.getName(),
-                        type.getTypeName());
+                throw illegalConfiguration("Field '%s' of %s, returned by method '%s', has an unsupported type: %s. " + "Supported types are boolean, YesNoAnswer, an enum, Choice<enum> and Scale<enum>", field.getName(), field.getDeclaringClass().getSimpleName(), method.getName(), type.getTypeName());
             }
             return mappingFor(field.getName(), type, decide.value());
         }
 
         private void add(QuestionMapping mapping) {
             if (mappings.containsKey(mapping.name())) {
-                throw illegalConfiguration(
-                        "The object returned by method '%s' has several fields named '%s' (for example, one of them "
-                                + "in a superclass), but each question needs a unique name",
-                        method.getName(), mapping.name());
+                throw illegalConfiguration("The object returned by method '%s' has several fields named '%s' (for example, one of them " + "in a superclass), but each question needs a unique name", method.getName(), mapping.name());
             }
             mappings.put(mapping.name(), mapping);
             questions.put(mapping.name(), mapping.question());
@@ -578,20 +515,17 @@ public final class DecisionMethod {
 
         private QuestionMapping mappingFor(String name, Type type, String questionText) {
             if (isNullOrBlank(questionText)) {
-                throw illegalConfiguration(
-                        "The question of '%s' of method '%s' in @Decide must not be blank", name, method.getName());
+                throw illegalConfiguration("The question of '%s' of method '%s' in @Decide must not be blank", name, method.getName());
             }
             Kind kind = kindOf(type);
             Class<?> enumType = null;
             if (kind == Kind.ENUM) {
                 enumType = (Class<?>) type;
             } else if (kind == Kind.CHOICE || kind == Kind.SCALE) {
-                if (!(typeArgument(type) instanceof Class<?> c) || !c.isEnum()) {
-                    throw illegalConfiguration(
-                            "'%s' of method '%s': %s must be parameterized with an enum",
-                            name, method.getName(), kind == Kind.CHOICE ? "Choice" : "Scale");
+                if (!(typeArgument(type) instanceof Class<?>) || !((Class<?>) typeArgument(type)).isEnum()) {
+                    throw illegalConfiguration("'%s' of method '%s': %s must be parameterized with an enum", name, method.getName(), kind == Kind.CHOICE ? "Choice" : "Scale");
                 }
-                enumType = c;
+                enumType = ((Class<?>) typeArgument(type));
             }
             if (enumType != null) {
                 reflectiveTypes.add(enumType);
@@ -629,9 +563,7 @@ public final class DecisionMethod {
         private Map<String, String> descriptions(String name, Class<?> enumType) {
             Object[] constants = enumType.getEnumConstants();
             if (constants.length < 2) {
-                throw illegalConfiguration(
-                        "'%s' of method '%s': enum %s must have at least 2 constants",
-                        name, method.getName(), enumType.getSimpleName());
+                throw illegalConfiguration("'%s' of method '%s': enum %s must have at least 2 constants", name, method.getName(), enumType.getSimpleName());
             }
             Map<String, String> descriptions = new LinkedHashMap<>();
             for (Object constant : constants) {
@@ -648,19 +580,14 @@ public final class DecisionMethod {
                 constructor.setAccessible(true);
                 return constructor;
             } catch (NoSuchMethodException e) {
-                throw illegalConfiguration(
-                        "%s, returned by method '%s', must have a no-argument constructor",
-                        type.getSimpleName(), method.getName());
+                throw illegalConfiguration("%s, returned by method '%s', must have a no-argument constructor", type.getSimpleName(), method.getName());
             }
         }
     }
 
     private enum Kind {
-        BOOLEAN,
-        YES_NO,
-        ENUM,
-        CHOICE,
-        SCALE
+
+        BOOLEAN, YES_NO, ENUM, CHOICE, SCALE
     }
 
     /**
@@ -668,47 +595,86 @@ public final class DecisionMethod {
      * array of them.
      */
     private static boolean isContentType(Type type) {
-        if (type instanceof Class<?> c) {
-            return Content.class.isAssignableFrom(c)
-                    || Image.class.isAssignableFrom(c)
-                    || (c.isArray() && isContentType(c.getComponentType()));
+        if (type instanceof Class<?>) {
+            return Content.class.isAssignableFrom(((Class<?>) type)) || Image.class.isAssignableFrom(((Class<?>) type)) || (((Class<?>) type).isArray() && isContentType(((Class<?>) type).getComponentType()));
         }
-        if (type instanceof ParameterizedType parameterized) {
-            return parameterized.getRawType() instanceof Class<?> raw
-                    && Collection.class.isAssignableFrom(raw)
-                    && isContentType(parameterized.getActualTypeArguments()[0]);
+        if (type instanceof ParameterizedType) {
+            return ((ParameterizedType) type).getRawType() instanceof Class<?> && Collection.class.isAssignableFrom(((Class<?>) ((ParameterizedType) type).getRawType())) && isContentType(((ParameterizedType) type).getActualTypeArguments()[0]);
         }
-        if (type instanceof WildcardType wildcard) {
-            return isContentType(wildcard.getUpperBounds()[0]);
+        if (type instanceof WildcardType) {
+            return isContentType(((WildcardType) type).getUpperBounds()[0]);
         }
-        return type instanceof GenericArrayType array && isContentType(array.getGenericComponentType());
+        return type instanceof GenericArrayType && isContentType(((GenericArrayType) type).getGenericComponentType());
     }
 
-    private record InputParameter(String name, int index, boolean contents) {}
+    private final static class InputParameter {
 
-    private record QuestionMapping(String name, Question question, Kind kind, Class<?> enumType) {
+        private final String name;
 
-        Object value(DecisionResponse response, DoubleSupplier threshold) {
-            return switch (kind) {
-                case BOOLEAN -> response.yesNo(name).isYes(threshold.getAsDouble());
-                case YES_NO -> response.yesNo(name);
-                case ENUM -> constant(response.choice(name).value());
-                case CHOICE -> choice(response.choice(name));
-                case SCALE -> scale(response.scale(name));
-            };
+        public String name() {
+            return name;
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        private final int index;
+
+        public int index() {
+            return index;
+        }
+
+        private final boolean contents;
+
+        public boolean contents() {
+            return contents;
+        }
+
+        public InputParameter(String name, int index, boolean contents) {
+            this.name = name;
+            this.index = index;
+            this.contents = contents;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(name, ((InputParameter) obj).name) && java.util.Objects.equals(index, ((InputParameter) obj).index) && java.util.Objects.equals(contents, ((InputParameter) obj).contents));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(name)) + java.util.Objects.hashCode(index)) + java.util.Objects.hashCode(contents));
+        }
+
+        public String toString() {
+            return "InputParameter[" + "name=" + name + ", index=" + index + ", contents=" + contents + "]";
+        }
+    }
+
+    private final static class QuestionMapping {
+
+        Object value(DecisionResponse response, DoubleSupplier threshold) {
+            switch(kind) {
+                case BOOLEAN:
+                    return response.yesNo(name).isYes(threshold.getAsDouble());
+                case YES_NO:
+                    return response.yesNo(name);
+                case ENUM:
+                    return constant(response.choice(name).value());
+                case CHOICE:
+                    return choice(response.choice(name));
+                case SCALE:
+                    return scale(response.scale(name));
+                default:
+                    throw new IllegalStateException("Unexpected enum value");
+            }
+        }
+
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         private Enum constant(String option) {
             try {
                 return Enum.valueOf((Class) enumType, option);
             } catch (IllegalArgumentException e) {
-                throw new InvalidDecisionResponseException("The model chose '%s' for '%s', which is not a constant of %s"
-                        .formatted(option, name, enumType.getSimpleName()));
+                throw new InvalidDecisionResponseException(String.format("The model chose '%s' for '%s', which is not a constant of %s", option, name, enumType.getSimpleName()));
             }
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         private Scale scale(ScaleAnswer answer) {
             Object[] levels = enumType.getEnumConstants();
             List<Double> reported = answer.probabilities();
@@ -716,22 +682,57 @@ public final class DecisionMethod {
             for (int i = 0; i < reported.size(); i++) {
                 probabilities.put(levels[i], reported.get(i));
             }
-            return Scale.builder((Class) enumType)
-                    .mean(answer.mean())
-                    .probabilities(probabilities)
-                    .confidence(answer.confidence())
-                    .build();
+            return Scale.builder((Class) enumType).mean(answer.mean()).probabilities(probabilities).confidence(answer.confidence()).build();
         }
 
-        @SuppressWarnings({"unchecked", "rawtypes"})
+        @SuppressWarnings({ "unchecked", "rawtypes" })
         private Choice choice(ChoiceAnswer answer) {
             Map probabilities = new EnumMap(enumType);
             answer.probabilities().forEach((option, probability) -> probabilities.put(constant(option), probability));
-            return Choice.builder()
-                    .value(constant(answer.value()))
-                    .probabilities(probabilities)
-                    .confidence(answer.confidence())
-                    .build();
+            return Choice.builder().value(constant(answer.value())).probabilities(probabilities).confidence(answer.confidence()).build();
+        }
+
+        private final String name;
+
+        public String name() {
+            return name;
+        }
+
+        private final Question question;
+
+        public Question question() {
+            return question;
+        }
+
+        private final Kind kind;
+
+        public Kind kind() {
+            return kind;
+        }
+
+        private final Class<?> enumType;
+
+        public Class<?> enumType() {
+            return enumType;
+        }
+
+        public QuestionMapping(String name, Question question, Kind kind, Class<?> enumType) {
+            this.name = name;
+            this.question = question;
+            this.kind = kind;
+            this.enumType = enumType;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(name, ((QuestionMapping) obj).name) && java.util.Objects.equals(question, ((QuestionMapping) obj).question) && java.util.Objects.equals(kind, ((QuestionMapping) obj).kind) && java.util.Objects.equals(enumType, ((QuestionMapping) obj).enumType));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * (31 * (31 * 0 + java.util.Objects.hashCode(name)) + java.util.Objects.hashCode(question)) + java.util.Objects.hashCode(kind)) + java.util.Objects.hashCode(enumType));
+        }
+
+        public String toString() {
+            return "QuestionMapping[" + "name=" + name + ", question=" + question + ", kind=" + kind + ", enumType=" + enumType + "]";
         }
     }
 }

@@ -13,6 +13,7 @@ import java.util.stream.Stream;
  * via reflection-based mechanisms.
  */
 public final class ReflectionBasedClassMetadataProviderFactory implements ClassMetadataProviderFactory<Method> {
+
     @Override
     public <T extends Annotation> Optional<T> getAnnotation(Method method, Class<T> annotationClass) {
         return Optional.ofNullable(method.getAnnotation(annotationClass));
@@ -25,8 +26,6 @@ public final class ReflectionBasedClassMetadataProviderFactory implements ClassM
 
     @Override
     public Iterable<Method> getNonStaticMethodsOnClass(Class<?> clazz) {
-        return Stream.of(clazz.getMethods())
-                .filter(method -> !Modifier.isStatic(method.getModifiers()))
-                .toList();
+        return Stream.of(clazz.getMethods()).filter(method -> !Modifier.isStatic(method.getModifiers())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 }

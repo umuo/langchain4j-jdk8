@@ -5,7 +5,6 @@ import static dev.langchain4j.internal.Exceptions.illegalArgument;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static java.nio.file.Files.isDirectory;
 import static java.nio.file.Files.isRegularFile;
-
 import dev.langchain4j.data.document.BlankDocumentException;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentLoader;
@@ -28,10 +27,10 @@ public class FileSystemDocumentLoader {
 
     private static final Logger log = LoggerFactory.getLogger(FileSystemDocumentLoader.class);
 
-    private static final DocumentParser DEFAULT_DOCUMENT_PARSER =
-            getOrDefault(DocumentParserLoader.loadDocumentParser(), TextDocumentParser::new);
+    private static final DocumentParser DEFAULT_DOCUMENT_PARSER = getOrDefault(DocumentParserLoader.loadDocumentParser(), TextDocumentParser::new);
 
-    private FileSystemDocumentLoader() {}
+    private FileSystemDocumentLoader() {
+    }
 
     /**
      * Loads a {@link Document} from the specified file {@link Path}.
@@ -50,7 +49,6 @@ public class FileSystemDocumentLoader {
         if (!isRegularFile(filePath)) {
             throw illegalArgument("'%s' is not a file", filePath);
         }
-
         return DocumentLoader.load(from(filePath), documentParser);
     }
 
@@ -124,7 +122,6 @@ public class FileSystemDocumentLoader {
         if (!isDirectory(directoryPath)) {
             throw illegalArgument("'%s' is not a directory", directoryPath);
         }
-
         try (Stream<Path> pathStream = Files.list(directoryPath)) {
             return loadDocuments(pathStream, (path) -> true, directoryPath, documentParser);
         } catch (IOException e) {
@@ -204,12 +201,10 @@ public class FileSystemDocumentLoader {
      * @throws IllegalArgumentException If specified path is not a directory.
      * @see dev.langchain4j.data.document.source.FileSystemSource FileSystemSource
      */
-    public static List<Document> loadDocuments(
-            Path directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocuments(Path directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
         if (!isDirectory(directoryPath)) {
             throw illegalArgument("'%s' is not a directory", directoryPath);
         }
-
         try (Stream<Path> pathStream = Files.list(directoryPath)) {
             return loadDocuments(pathStream, pathMatcher, directoryPath, documentParser);
         } catch (IOException e) {
@@ -260,8 +255,7 @@ public class FileSystemDocumentLoader {
      * @throws IllegalArgumentException If specified path is not a directory.
      * @see dev.langchain4j.data.document.source.FileSystemSource FileSystemSource
      */
-    public static List<Document> loadDocuments(
-            String directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocuments(String directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
         return loadDocuments(Paths.get(directoryPath), pathMatcher, documentParser);
     }
 
@@ -306,7 +300,6 @@ public class FileSystemDocumentLoader {
         if (!isDirectory(directoryPath)) {
             throw illegalArgument("'%s' is not a directory", directoryPath);
         }
-
         try (Stream<Path> pathStream = Files.walk(directoryPath)) {
             return loadDocuments(pathStream, (path) -> true, directoryPath, documentParser);
         } catch (IOException e) {
@@ -389,12 +382,10 @@ public class FileSystemDocumentLoader {
      * @throws IllegalArgumentException If specified path is not a directory.
      * @see dev.langchain4j.data.document.source.FileSystemSource FileSystemSource
      */
-    public static List<Document> loadDocumentsRecursively(
-            Path directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocumentsRecursively(Path directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
         if (!isDirectory(directoryPath)) {
             throw illegalArgument("'%s' is not a directory", directoryPath);
         }
-
         try (Stream<Path> pathStream = Files.walk(directoryPath)) {
             return loadDocuments(pathStream, pathMatcher, directoryPath, documentParser);
         } catch (IOException e) {
@@ -451,8 +442,7 @@ public class FileSystemDocumentLoader {
      * @throws IllegalArgumentException If specified path is not a directory.
      * @see dev.langchain4j.data.document.source.FileSystemSource FileSystemSource
      */
-    public static List<Document> loadDocumentsRecursively(
-            String directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
+    public static List<Document> loadDocumentsRecursively(String directoryPath, PathMatcher pathMatcher, DocumentParser documentParser) {
         return loadDocumentsRecursively(Paths.get(directoryPath), pathMatcher, documentParser);
     }
 
@@ -483,42 +473,27 @@ public class FileSystemDocumentLoader {
         return loadDocumentsRecursively(directoryPath, pathMatcher, DEFAULT_DOCUMENT_PARSER);
     }
 
-    private static List<Document> loadDocuments(
-            Stream<Path> pathStream, PathMatcher pathMatcher, Path pathMatcherRoot, DocumentParser documentParser) {
+    private static List<Document> loadDocuments(Stream<Path> pathStream, PathMatcher pathMatcher, Path pathMatcherRoot, DocumentParser documentParser) {
         List<Document> documents = new ArrayList<>();
         AtomicInteger blank = new AtomicInteger();
         AtomicInteger failed = new AtomicInteger();
-
-        pathStream
-                .filter(Files::isRegularFile)
-                // converting absolute path into relative before using pathMatcher
-                // because patterns defined in pathMatcher are relative to pathMatcherRoot (directoryPath)
-                .map(pathMatcherRoot::relativize)
-                .filter(pathMatcher::matches)
-                // converting relative path back into absolute before loading document
-                .map(pathMatcherRoot::resolve)
-                .forEach(file -> {
-                    try {
-                        Document document = loadDocument(file, documentParser);
-                        documents.add(document);
-                    } catch (BlankDocumentException ignored) {
-                        blank.incrementAndGet();
-                    } catch (Exception e) {
-                        failed.incrementAndGet();
-                        log.warn("Failed to load '{}'", file, e);
-                    }
-                });
-
+        pathStream.filter(Files::isRegularFile).// converting absolute path into relative before using pathMatcher
+        // because patterns defined in pathMatcher are relative to pathMatcherRoot (directoryPath)
+        map(pathMatcherRoot::relativize).filter(pathMatcher::matches).// converting relative path back into absolute before loading document
+        map(pathMatcherRoot::resolve).forEach(file -> {
+            try {
+                Document document = loadDocument(file, documentParser);
+                documents.add(document);
+            } catch (BlankDocumentException ignored) {
+                blank.incrementAndGet();
+            } catch (Exception e) {
+                failed.incrementAndGet();
+                log.warn("Failed to load '{}'", file, e);
+            }
+        });
         if (blank.get() > 0 || failed.get() > 0) {
-            log.warn(
-                    "Loaded {} of {} documents from '{}'. Skipped {} that failed to load and {} that were blank.",
-                    documents.size(),
-                    documents.size() + blank.get() + failed.get(),
-                    pathMatcherRoot,
-                    failed.get(),
-                    blank.get());
+            log.warn("Loaded {} of {} documents from '{}'. Skipped {} that failed to load and {} that were blank.", documents.size(), documents.size() + blank.get() + failed.get(), pathMatcherRoot, failed.get(), blank.get());
         }
-
         return documents;
     }
 }

@@ -1,7 +1,6 @@
 package dev.langchain4j.service.guardrail;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.guardrail.InputGuardrail;
 import dev.langchain4j.guardrail.InputGuardrailExecutor;
@@ -29,20 +28,21 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @Internal
 public abstract class AbstractGuardrailService implements GuardrailService {
+
     private static final Object NULL_KEY = new Object();
 
     private final Class<?> aiServiceClass;
+
     private final Map<Object, InputGuardrailExecutor> inputGuardrails = new ConcurrentHashMap<>();
+
     private final Map<Object, OutputGuardrailExecutor> outputGuardrails = new ConcurrentHashMap<>();
 
     // Caches for whether or not a method has input or output guardrails
     private final Map<Object, Boolean> inputGuardrailMethods = new ConcurrentHashMap<>();
+
     private final Map<Object, Boolean> outputGuardrailMethods = new ConcurrentHashMap<>();
 
-    protected AbstractGuardrailService(
-            Class<?> aiServiceClass,
-            Map<Object, InputGuardrailExecutor> inputGuardrails,
-            Map<Object, OutputGuardrailExecutor> outputGuardrails) {
+    protected AbstractGuardrailService(Class<?> aiServiceClass, Map<Object, InputGuardrailExecutor> inputGuardrails, Map<Object, OutputGuardrailExecutor> outputGuardrails) {
         this.aiServiceClass = ensureNotNull(aiServiceClass, "aiServiceClass");
         Optional.ofNullable(inputGuardrails).ifPresent(this.inputGuardrails::putAll);
         Optional.ofNullable(outputGuardrails).ifPresent(this.outputGuardrails::putAll);
@@ -55,48 +55,32 @@ public abstract class AbstractGuardrailService implements GuardrailService {
 
     @Override
     public <MethodKey> InputGuardrailResult executeInputGuardrails(MethodKey method, InputGuardrailRequest request) {
-        return Optional.ofNullable(method)
-                .map(this.inputGuardrails::get)
-                .map(executor -> executor.execute(request))
-                .orElseGet(InputGuardrailResult::success);
+        return Optional.ofNullable(method).map(this.inputGuardrails::get).map(executor -> executor.execute(request)).orElseGet(InputGuardrailResult::success);
     }
 
     @Override
-    public <MethodKey> CompletableFuture<InputGuardrailResult> executeInputGuardrailsAsync(
-            MethodKey method, InputGuardrailRequest request) {
-        return Optional.ofNullable(method)
-                .map(this.inputGuardrails::get)
-                .map(executor -> executor.executeAsync(request))
-                .orElseGet(() -> CompletableFuture.completedFuture(InputGuardrailResult.success()));
+    public <MethodKey> CompletableFuture<InputGuardrailResult> executeInputGuardrailsAsync(MethodKey method, InputGuardrailRequest request) {
+        return Optional.ofNullable(method).map(this.inputGuardrails::get).map(executor -> executor.executeAsync(request)).orElseGet(() -> CompletableFuture.completedFuture(InputGuardrailResult.success()));
     }
 
     @Override
     public <MethodKey> OutputGuardrailResult executeOutputGuardrails(MethodKey method, OutputGuardrailRequest request) {
-        return Optional.ofNullable(method)
-                .map(this.outputGuardrails::get)
-                .map(executor -> executor.execute(request))
-                .orElseGet(OutputGuardrailResult::success);
+        return Optional.ofNullable(method).map(this.outputGuardrails::get).map(executor -> executor.execute(request)).orElseGet(OutputGuardrailResult::success);
     }
 
     @Override
-    public <MethodKey> CompletableFuture<OutputGuardrailResult> executeOutputGuardrailsAsync(
-            MethodKey method, OutputGuardrailRequest request) {
-        return Optional.ofNullable(method)
-                .map(this.outputGuardrails::get)
-                .map(executor -> executor.executeAsync(request))
-                .orElseGet(() -> CompletableFuture.completedFuture(OutputGuardrailResult.success()));
+    public <MethodKey> CompletableFuture<OutputGuardrailResult> executeOutputGuardrailsAsync(MethodKey method, OutputGuardrailRequest request) {
+        return Optional.ofNullable(method).map(this.outputGuardrails::get).map(executor -> executor.executeAsync(request)).orElseGet(() -> CompletableFuture.completedFuture(OutputGuardrailResult.success()));
     }
 
     @Override
     public <MethodKey> boolean hasInputGuardrails(MethodKey method) {
-        return this.inputGuardrailMethods.computeIfAbsent(
-                checkMethodKey(method), m -> !getInputGuardrails(m).isEmpty());
+        return this.inputGuardrailMethods.computeIfAbsent(checkMethodKey(method), m -> !getInputGuardrails(m).isEmpty());
     }
 
     @Override
     public <MethodKey> boolean hasOutputGuardrails(MethodKey method) {
-        return this.outputGuardrailMethods.computeIfAbsent(
-                checkMethodKey(method), m -> !getOutputGuardrails(m).isEmpty());
+        return this.outputGuardrailMethods.computeIfAbsent(checkMethodKey(method), m -> !getOutputGuardrails(m).isEmpty());
     }
 
     private static <MethodKey> MethodKey checkMethodKey(MethodKey method) {
@@ -122,16 +106,10 @@ public abstract class AbstractGuardrailService implements GuardrailService {
     }
 
     <MethodKey> List<InputGuardrail> getInputGuardrails(MethodKey method) {
-        return Optional.ofNullable(method)
-                .map(this.inputGuardrails::get)
-                .map(InputGuardrailExecutor::guardrails)
-                .orElseGet(List::of);
+        return Optional.ofNullable(method).map(this.inputGuardrails::get).map(InputGuardrailExecutor::guardrails).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 
     <MethodKey> List<OutputGuardrail> getOutputGuardrails(MethodKey method) {
-        return Optional.ofNullable(method)
-                .map(this.outputGuardrails::get)
-                .map(OutputGuardrailExecutor::guardrails)
-                .orElseGet(List::of);
+        return Optional.ofNullable(method).map(this.outputGuardrails::get).map(OutputGuardrailExecutor::guardrails).orElseGet(dev.langchain4j.internal.Jdk8::list);
     }
 }

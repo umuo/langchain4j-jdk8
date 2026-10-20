@@ -7,7 +7,6 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.AiServiceParamsUtil.chatRequestParameters;
 import static dev.langchain4j.service.tool.ToolService.shouldReturnImmediately;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
@@ -60,16 +59,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Flow;
+import org.reactivestreams.Publisher;
+import org.reactivestreams.Subscriber;
+import org.reactivestreams.Subscription;
 import java.util.concurrent.atomic.AtomicReference;
-import mutiny.zero.BackpressureStrategy;
-import mutiny.zero.Tube;
-import mutiny.zero.TubeConfiguration;
-import mutiny.zero.ZeroPublisher;
+import dev.langchain4j.internal.reactive.BackpressureStrategy;
+import dev.langchain4j.internal.reactive.Tube;
+import dev.langchain4j.internal.reactive.TubeConfiguration;
+import dev.langchain4j.internal.reactive.ZeroPublisher;
 
 /**
  * A cold, non-blocking reactive stream for an AI Service method that returns a
- * {@link Flow.Publisher} of {@link AiServiceStreamingEvent}s.
+ * {@link Publisher} of {@link AiServiceStreamingEvent}s.
  * <p>
  * It consumes the model's reactive {@link dev.langchain4j.model.chat.StreamingChatModel#chat(ChatRequest)}
  * publisher round by round, mapping each low-level {@link ChatModelStreamingEvent} to the corresponding high-level
@@ -113,7 +114,7 @@ import mutiny.zero.ZeroPublisher;
  * consumer trips the buffer on a long response, raise it via {@code AiServices.streamingBufferSize(int)}
  * (or set it to {@link Integer#MAX_VALUE} for an effectively unbounded buffer, accepting the OOM risk).
  * <p>
- * <b>Cancellation.</b> Cancelling the {@link Flow.Subscription} stops the interaction: the in-flight model
+ * <b>Cancellation.</b> Cancelling the {@link Subscription} stops the interaction: the in-flight model
  * call is cancelled (for providers whose reactive stream supports it, this aborts the underlying HTTP
  * request), no further round is started, and no more events — including the terminal
  * {@link AiServiceStreamingEvent.FinalResponseEvent} and {@code onComplete}/{@code onError} — are emitted. A
@@ -124,7 +125,7 @@ import mutiny.zero.ZeroPublisher;
  * @since 1.20.0
  */
 @Internal
-public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServiceStreamingEvent> {
+public class AiServiceStreamingEventPublisher implements Publisher<AiServiceStreamingEvent> {
 
     /**
      * Default size of the bounded back-pressure buffer (see the class-level "Back-pressure" note), used when an AI
@@ -133,14 +134,20 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
     public static final int DEFAULT_BUFFER_SIZE = 16384;
 
     private final List<ChatMessage> messages;
+
     private final ToolServiceContext toolServiceContext;
+
     private final List<Content> retrievedContents;
+
     private final AiServiceContext context;
+
     private final InvocationContext invocationContext;
+
     private final GuardrailRequestParams commonGuardrailParams;
+
     private final Object methodKey;
 
-    private final Flow.Publisher<AiServiceStreamingEvent> delegate;
+    private final Publisher<AiServiceStreamingEvent> delegate;
 
     public AiServiceStreamingEventPublisher(AiServiceTokenStreamParameters parameters, int bufferSize) {
         ensureNotNull(parameters, "parameters");
@@ -152,15 +159,12 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
         this.invocationContext = parameters.invocationContext();
         this.commonGuardrailParams = parameters.commonGuardrailParams();
         this.methodKey = parameters.methodKey();
-
-        TubeConfiguration config = new TubeConfiguration()
-                .withBackpressureStrategy(BackpressureStrategy.BUFFER)
-                .withBufferSize(bufferSize);
+        TubeConfiguration config = new TubeConfiguration().withBackpressureStrategy(BackpressureStrategy.BUFFER).withBufferSize(bufferSize);
         this.delegate = ZeroPublisher.create(config, tube -> new Loop(tube).start());
     }
 
     @Override
-    public void subscribe(Flow.Subscriber<? super AiServiceStreamingEvent> subscriber) {
+    public void subscribe(Subscriber<? super AiServiceStreamingEvent> subscriber) {
         delegate.subscribe(subscriber);
     }
 
@@ -190,15 +194,12 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
      * @param hasOutputGuardrails whether the AI Service method has output guardrails configured
      * @param bufferSize         the back-pressure buffer size
      */
-    public static Flow.Publisher<String> toTextPublisher(
-            Flow.Publisher<AiServiceStreamingEvent> events, boolean hasOutputGuardrails, int bufferSize) {
-        TubeConfiguration config = new TubeConfiguration()
-                .withBackpressureStrategy(BackpressureStrategy.BUFFER)
-                .withBufferSize(bufferSize);
-        return ZeroPublisher.create(config, tube -> events.subscribe(new Flow.Subscriber<>() {
+    public static Publisher<String> toTextPublisher(Publisher<AiServiceStreamingEvent> events, boolean hasOutputGuardrails, int bufferSize) {
+        TubeConfiguration config = new TubeConfiguration().withBackpressureStrategy(BackpressureStrategy.BUFFER).withBufferSize(bufferSize);
+        return ZeroPublisher.create(config, tube -> events.subscribe(new Subscriber<dev.langchain4j.service.AiServiceStreamingEvent>() {
 
             @Override
-            public void onSubscribe(Flow.Subscription subscription) {
+            public void onSubscribe(Subscription subscription) {
                 if (tube.cancelled()) {
                     subscription.cancel();
                     return;
@@ -213,14 +214,14 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
                     return;
                 }
                 if (hasOutputGuardrails) {
-                    if (event instanceof FinalResponseEvent finalResponseEvent) {
-                        String text = finalResponseEvent.chatResponse().aiMessage().text();
+                    if (event instanceof FinalResponseEvent) {
+                        String text = ((FinalResponseEvent) event).chatResponse().aiMessage().text();
                         if (text != null) {
                             tube.send(text);
                         }
                     }
-                } else if (event instanceof PartialResponseEvent partialResponseEvent) {
-                    tube.send(partialResponseEvent.partialResponse().text());
+                } else if (event instanceof PartialResponseEvent) {
+                    tube.send(((PartialResponseEvent) event).partialResponse().text());
                 }
             }
 
@@ -247,19 +248,27 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
     private final class Loop {
 
         private final Tube<AiServiceStreamingEvent> tube;
+
         private final ChatMemory temporaryMemory;
-        private final AtomicReference<Flow.Subscription> modelSubscription = new AtomicReference<>();
+
+        private final AtomicReference<Subscription> modelSubscription = new AtomicReference<>();
+
         private final AtomicReference<InflightRound> inflightRound = new AtomicReference<>();
-        private final AtomicReference<Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>>>
-                startedRoundTools = new AtomicReference<>();
+
+        private final AtomicReference<Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>>> startedRoundTools = new AtomicReference<>();
+
         private final AtomicReference<CompletableFuture<?>> guardrailsFuture = new AtomicReference<>();
-        private final List<ToolService.CompensableToolExecution> compensableExecutions =
-                context.toolService.newCompensableExecutionsAccumulator();
+
+        private final List<ToolService.CompensableToolExecution> compensableExecutions = context.toolService.newCompensableExecutionsAccumulator();
+
         private final boolean hasOutputGuardrails = context.guardrailService().hasOutputGuardrails(methodKey);
+
         private ChatExecutor chatExecutor;
-        private final Executor toolExecutor =
-                CapturedContextSupport.restoringIn(context.toolService.effectiveToolExecutor(), invocationContext);
+
+        private final Executor toolExecutor = CapturedContextSupport.restoringIn(context.toolService.effectiveToolExecutor(), invocationContext);
+
         private TokenUsage tokenUsage = new TokenUsage();
+
         private int roundTripsLeft = context.toolService.maxToolCallingRoundTrips();
 
         private Loop(Tube<AiServiceStreamingEvent> tube) {
@@ -269,7 +278,7 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
 
         private void start() {
             tube.whenTerminates(() -> {
-                Flow.Subscription subscription = modelSubscription.get();
+                Subscription subscription = modelSubscription.get();
                 if (subscription != null) {
                     subscription.cancel();
                 }
@@ -281,73 +290,51 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
             tube.whenCancelled(() -> {
                 Object[] claimed = underAccumulatorLock(() -> {
                     InflightRound round = inflightRound.getAndSet(null);
-                    Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> started =
-                            round == null ? startedRoundTools.getAndSet(null) : null;
-                    return new Object[] {round, started};
+                    Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> started = round == null ? startedRoundTools.getAndSet(null) : null;
+                    return new Object[] { round, started };
                 });
                 InflightRound round = (InflightRound) claimed[0];
                 @SuppressWarnings("unchecked")
-                Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools =
-                        (Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>>) claimed[1];
+                Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools = (Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>>) claimed[1];
                 if (round != null) {
-                    round.toolsFuture().whenComplete((combined, error) -> doCancellationCompensation(
-                            round.toolRequests(), combined != null ? combined.results() : null));
+                    round.toolsFuture().whenComplete((combined, error) -> doCancellationCompensation(round.toolRequests(), combined != null ? combined.results() : null));
                 } else if (startedTools != null && !startedTools.isEmpty()) {
                     List<ToolExecutionRequest> requests = new ArrayList<>(startedTools.keySet());
-                    ToolService.combineToolResultsCollectingErrors(startedTools)
-                            .whenComplete((combined, error) -> doCancellationCompensation(
-                                    requests, combined != null ? combined.results() : null));
+                    ToolService.combineToolResultsCollectingErrors(startedTools).whenComplete((combined, error) -> doCancellationCompensation(requests, combined != null ? combined.results() : null));
                 } else {
                     doCancellationCompensation(null, null);
                 }
             });
-
             try {
                 if (retrievedContents != null && !retrievedContents.isEmpty()) {
                     tube.send(new RetrievedContentsEvent(retrievedContents, invocationContext));
                 }
-
-                List<ToolSpecification> effectiveTools =
-                        toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
-                ChatRequestParameters parameters =
-                        chatRequestParameters(invocationContext.methodArguments(), effectiveTools);
-                ChatRequest chatRequest = context.chatRequestTransformer.apply(
-                        ChatRequest.builder().messages(messages).parameters(parameters).build(),
-                        invocationContext.chatMemoryId());
-
-                chatExecutor = ChatExecutor.builder(context.streamingChatModel)
-                        .chatRequest(chatRequest)
-                        .invocationContext(invocationContext)
-                        .eventListenerRegistrar(context.eventListenerRegistrar)
-                        .build();
-
+                List<ToolSpecification> effectiveTools = toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
+                ChatRequestParameters parameters = chatRequestParameters(invocationContext.methodArguments(), effectiveTools);
+                ChatRequest chatRequest = context.chatRequestTransformer.apply(ChatRequest.builder().messages(messages).parameters(parameters).build(), invocationContext.chatMemoryId());
+                chatExecutor = ChatExecutor.builder(context.streamingChatModel).chatRequest(chatRequest).invocationContext(invocationContext).eventListenerRegistrar(context.eventListenerRegistrar).build();
                 fireRequestIssuedEvent(chatRequest);
-
                 startRound(chatRequest, toolServiceContext, parameters);
             } catch (Throwable error) {
                 fail(error);
             }
         }
 
-        private void startRound(
-                ChatRequest chatRequest, ToolServiceContext currentToolContext, ChatRequestParameters parameters) {
-
+        private void startRound(ChatRequest chatRequest, ToolServiceContext currentToolContext, ChatRequestParameters parameters) {
             if (tube.cancelled()) {
                 return;
             }
-
             Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools = new LinkedHashMap<>();
             underAccumulatorLock(() -> {
                 startedRoundTools.set(startedTools);
                 return null;
             });
-
-            context.streamingChatModel.chat(chatRequest).subscribe(new Flow.Subscriber<>() {
+            context.streamingChatModel.chat(chatRequest).subscribe(new Subscriber<dev.langchain4j.model.chat.response.ChatModelStreamingEvent>() {
 
                 private ChatResponse roundResponse;
 
                 @Override
-                public void onSubscribe(Flow.Subscription subscription) {
+                public void onSubscribe(Subscription subscription) {
                     modelSubscription.set(subscription);
                     if (tube.cancelled()) {
                         subscription.cancel();
@@ -361,32 +348,26 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
                     if (tube.cancelled()) {
                         return;
                     }
-                    if (event instanceof CompleteResponse completeResponse) {
-                        this.roundResponse = completeResponse.chatResponse();
-                    } else if (event instanceof PartialResponse partialResponse) {
+                    if (event instanceof CompleteResponse) {
+                        this.roundResponse = ((CompleteResponse) event).chatResponse();
+                    } else if (event instanceof PartialResponse) {
                         if (!hasOutputGuardrails) {
-                            tube.send(new PartialResponseEvent(partialResponse, invocationContext));
+                            tube.send(new PartialResponseEvent(((PartialResponse) event), invocationContext));
                         }
-                    } else if (event instanceof PartialThinking partialThinking) {
-                        tube.send(new PartialThinkingEvent(partialThinking, invocationContext));
-                    } else if (event instanceof PartialToolCall partialToolCall) {
-                        tube.send(new PartialToolCallEvent(partialToolCall, invocationContext));
-                    } else if (event instanceof CompleteToolCall completeToolCall) {
-                        tube.send(new CompleteToolCallEvent(completeToolCall, invocationContext));
-                        ToolExecutionRequest toolRequest = completeToolCall.toolExecutionRequest();
-                        CompletableFuture<ToolExecutionResult> startedTool = context.toolService.startTool(
-                                toolRequest,
-                                currentToolContext.toolExecutors(),
-                                invocationContext,
-                                Loop.this::emitBeforeToolExecution,
-                                Loop.this::emitAfterToolExecution,
-                                toolExecutor);
+                    } else if (event instanceof PartialThinking) {
+                        tube.send(new PartialThinkingEvent(((PartialThinking) event), invocationContext));
+                    } else if (event instanceof PartialToolCall) {
+                        tube.send(new PartialToolCallEvent(((PartialToolCall) event), invocationContext));
+                    } else if (event instanceof CompleteToolCall) {
+                        tube.send(new CompleteToolCallEvent(((CompleteToolCall) event), invocationContext));
+                        ToolExecutionRequest toolRequest = ((CompleteToolCall) event).toolExecutionRequest();
+                        CompletableFuture<ToolExecutionResult> startedTool = context.toolService.startTool(toolRequest, currentToolContext.toolExecutors(), invocationContext, Loop.this::emitBeforeToolExecution, Loop.this::emitAfterToolExecution, toolExecutor);
                         underAccumulatorLock(() -> {
                             startedTools.put(toolRequest, startedTool);
                             return null;
                         });
-                    } else if (event instanceof RawStreamingEvent rawStreamingEvent) {
-                        tube.send(new RawEvent(rawStreamingEvent, invocationContext));
+                    } else if (event instanceof RawStreamingEvent) {
+                        tube.send(new RawEvent(((RawStreamingEvent) event), invocationContext));
                     }
                 }
 
@@ -412,19 +393,11 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
         // the request whose response is being processed; rounds run one after another
         private volatile ChatRequest lastChatRequest;
 
-        private void processRound(
-                ChatRequest chatRequest,
-                ToolServiceContext currentToolContext,
-                ChatRequestParameters parameters,
-                ChatResponse chatResponse,
-                Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools) {
-
+        private void processRound(ChatRequest chatRequest, ToolServiceContext currentToolContext, ChatRequestParameters parameters, ChatResponse chatResponse, Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools) {
             fireResponseReceivedEvent(chatRequest, chatResponse);
             lastChatRequest = chatRequest;
-
             AiMessage aiMessage = chatResponse.aiMessage();
-
-            getMemory().addAsync(List.of(aiMessage)).whenComplete((ignored, error) -> {
+            getMemory().addAsync(dev.langchain4j.internal.Jdk8.list(aiMessage)).whenComplete((ignored, error) -> {
                 if (error != null) {
                     fail(error);
                     return;
@@ -440,30 +413,17 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
             });
         }
 
-        private void afterAiMessageAdded(
-                ToolServiceContext currentToolContext,
-                ChatRequestParameters parameters,
-                ChatResponse chatResponse,
-                AiMessage aiMessage,
-                Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools) {
-
+        private void afterAiMessageAdded(ToolServiceContext currentToolContext, ChatRequestParameters parameters, ChatResponse chatResponse, AiMessage aiMessage, Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools) {
             if (!aiMessage.hasToolExecutionRequests()) {
                 emitFinalResponse(chatResponse, aiMessage, currentToolContext, parameters);
                 return;
             }
-
             if (roundTripsLeft-- == 0) {
-                throw runtime(
-                        "Something is wrong, exceeded %s tool calling round trips (maxToolCallingRoundTrips)",
-                        context.toolService.maxToolCallingRoundTrips());
+                throw runtime("Something is wrong, exceeded %s tool calling round trips (maxToolCallingRoundTrips)", context.toolService.maxToolCallingRoundTrips());
             }
-
             tube.send(new IntermediateResponseEvent(chatResponse, invocationContext));
-
             List<ToolExecutionRequest> toolRequests = aiMessage.toolExecutionRequests();
-
-            CompletableFuture<ToolService.CombinedToolResults> toolResultsFuture =
-                    combineEagerlyStartedTools(toolRequests, startedTools, currentToolContext);
+            CompletableFuture<ToolService.CombinedToolResults> toolResultsFuture = combineEagerlyStartedTools(toolRequests, startedTools, currentToolContext);
             InflightRound round = new InflightRound(toolRequests, toolResultsFuture);
             boolean promoted = underAccumulatorLock(() -> {
                 if (tube.cancelled()) {
@@ -476,7 +436,6 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
             if (!promoted) {
                 return;
             }
-
             toolResultsFuture.whenComplete((combined, error) -> {
                 if (error != null) {
                     fail(error);
@@ -488,28 +447,21 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
                         return false;
                     }
                     if (compensableExecutions != null) {
-                        failedToolNameHolder[0] = context.toolService.collectCompensableRound(
-                                toolRequests, combined.results(), compensableExecutions, invocationContext);
+                        failedToolNameHolder[0] = context.toolService.collectCompensableRound(toolRequests, combined.results(), compensableExecutions, invocationContext);
                     }
                     return true;
                 });
                 if (!won) {
-                    return; // the cancel path claimed the round; it compensates
+                    // the cancel path claimed the round; it compensates
+                    return;
                 }
                 if (tube.cancelled()) {
-                    doCancellationCompensation(null, null); // this round already collected above
+                    // this round already collected above
+                    doCancellationCompensation(null, null);
                     return;
                 }
                 try {
-                    afterToolsExecuted(
-                            chatResponse,
-                            aiMessage,
-                            currentToolContext,
-                            parameters,
-                            toolRequests,
-                            combined.results(),
-                            combined.firstError(),
-                            failedToolNameHolder[0]);
+                    afterToolsExecuted(chatResponse, aiMessage, currentToolContext, parameters, toolRequests, combined.results(), combined.firstError(), failedToolNameHolder[0]);
                 } catch (Throwable t) {
                     fail(t);
                 }
@@ -539,23 +491,41 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
          * those are mutually exclusive via {@code inflightRound}, so no round is collected twice. Stream events are not
          * delivered after a cancel, so only the observability {@code ToolCompensatedEvent} fires here.
          */
-        private void doCancellationCompensation(
-                List<ToolExecutionRequest> currentRoundRequests,
-                Map<ToolExecutionRequest, ToolExecutionResult> currentRoundResults) {
-            context.toolService.compensateOnCancellationAsync(
-                    currentRoundRequests,
-                    currentRoundResults,
-                    compensableExecutions,
-                    getMemory(),
-                    null,
-                    invocationContext,
-                    context.eventListenerRegistrar,
-                    null);
+        private void doCancellationCompensation(List<ToolExecutionRequest> currentRoundRequests, Map<ToolExecutionRequest, ToolExecutionResult> currentRoundResults) {
+            context.toolService.compensateOnCancellationAsync(currentRoundRequests, currentRoundResults, compensableExecutions, getMemory(), null, invocationContext, context.eventListenerRegistrar, null);
         }
 
-        private record InflightRound(
-                List<ToolExecutionRequest> toolRequests,
-                CompletableFuture<ToolService.CombinedToolResults> toolsFuture) {}
+        private final class InflightRound {
+
+            private final List<ToolExecutionRequest> toolRequests;
+
+            public List<ToolExecutionRequest> toolRequests() {
+                return toolRequests;
+            }
+
+            private final CompletableFuture<ToolService.CombinedToolResults> toolsFuture;
+
+            public CompletableFuture<ToolService.CombinedToolResults> toolsFuture() {
+                return toolsFuture;
+            }
+
+            public InflightRound(List<ToolExecutionRequest> toolRequests, CompletableFuture<ToolService.CombinedToolResults> toolsFuture) {
+                this.toolRequests = toolRequests;
+                this.toolsFuture = toolsFuture;
+            }
+
+            public boolean equals(Object obj) {
+                return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(toolRequests, ((InflightRound) obj).toolRequests) && java.util.Objects.equals(toolsFuture, ((InflightRound) obj).toolsFuture));
+            }
+
+            public int hashCode() {
+                return (31 * (31 * 0 + java.util.Objects.hashCode(toolRequests)) + java.util.Objects.hashCode(toolsFuture));
+            }
+
+            public String toString() {
+                return "InflightRound[" + "toolRequests=" + toolRequests + ", toolsFuture=" + toolsFuture + "]";
+            }
+        }
 
         /**
          * Combines the tools that were already started eagerly (on their CompleteToolCall) into a single
@@ -568,69 +538,24 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
          * announced in the order they appear in the response, so positions line up whenever every call was
          * announced; otherwise each request is looked up on its own and the missing ones are started here.
          */
-        private CompletableFuture<ToolService.CombinedToolResults> combineEagerlyStartedTools(
-                List<ToolExecutionRequest> toolRequests,
-                Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools,
-                ToolServiceContext currentToolContext) {
-
-            List<CompletableFuture<ToolExecutionResult>> startedInAnnouncedOrder =
-                    new ArrayList<>(startedTools.values());
+        private CompletableFuture<ToolService.CombinedToolResults> combineEagerlyStartedTools(List<ToolExecutionRequest> toolRequests, Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> startedTools, ToolServiceContext currentToolContext) {
+            List<CompletableFuture<ToolExecutionResult>> startedInAnnouncedOrder = new ArrayList<>(startedTools.values());
             boolean everyToolCallWasAnnounced = startedInAnnouncedOrder.size() == toolRequests.size();
-
             Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> orderedFutures = new LinkedHashMap<>();
             for (int i = 0; i < toolRequests.size(); i++) {
                 ToolExecutionRequest toolRequest = toolRequests.get(i);
-                CompletableFuture<ToolExecutionResult> future = everyToolCallWasAnnounced
-                        ? startedInAnnouncedOrder.get(i)
-                        : startedTools.get(toolRequest);
+                CompletableFuture<ToolExecutionResult> future = everyToolCallWasAnnounced ? startedInAnnouncedOrder.get(i) : startedTools.get(toolRequest);
                 if (future == null) {
-                    future = context.toolService.startTool(
-                            toolRequest,
-                            currentToolContext.toolExecutors(),
-                            invocationContext,
-                            this::emitBeforeToolExecution,
-                            this::emitAfterToolExecution,
-                            toolExecutor);
+                    future = context.toolService.startTool(toolRequest, currentToolContext.toolExecutors(), invocationContext, this::emitBeforeToolExecution, this::emitAfterToolExecution, toolExecutor);
                 }
                 orderedFutures.put(toolRequest, future);
             }
             return ToolService.combineToolResultsCollectingErrors(orderedFutures);
         }
 
-        private void afterToolsExecuted(
-                ChatResponse chatResponse,
-                AiMessage aiMessage,
-                ToolServiceContext currentToolContext,
-                ChatRequestParameters parameters,
-                List<ToolExecutionRequest> toolRequests,
-                Map<ToolExecutionRequest, ToolExecutionResult> toolResults,
-                Throwable firstError,
-                String preCollectedFailedToolName) {
-
-            ToolService.ToolResultsOutcome outcome = context.toolService.processToolResults(
-                    context,
-                    toolRequests,
-                    toolResults,
-                    new ArrayList<>(),
-                    invocationContext,
-                    currentToolContext);
-
-            CompletableFuture<Void> compensated = context.toolService.compensateIfNeededAsync(
-                    toolRequests,
-                    toolResults,
-                    outcome.resultMessages(),
-                    compensableExecutions,
-                    outcome.anyToolErrored(),
-                    getMemory(),
-                    messages,
-                    invocationContext,
-                    CompensationReason.TOOL_EXECUTION_FAILED,
-                    context.eventListenerRegistrar,
-                    (toolExecution, reason) ->
-                            tube.send(new ToolCompensatedEvent(toolExecution, reason, invocationContext)),
-                    true,
-                    preCollectedFailedToolName);
-
+        private void afterToolsExecuted(ChatResponse chatResponse, AiMessage aiMessage, ToolServiceContext currentToolContext, ChatRequestParameters parameters, List<ToolExecutionRequest> toolRequests, Map<ToolExecutionRequest, ToolExecutionResult> toolResults, Throwable firstError, String preCollectedFailedToolName) {
+            ToolService.ToolResultsOutcome outcome = context.toolService.processToolResults(context, toolRequests, toolResults, new ArrayList<>(), invocationContext, currentToolContext);
+            CompletableFuture<Void> compensated = context.toolService.compensateIfNeededAsync(toolRequests, toolResults, outcome.resultMessages(), compensableExecutions, outcome.anyToolErrored(), getMemory(), messages, invocationContext, CompensationReason.TOOL_EXECUTION_FAILED, context.eventListenerRegistrar, (toolExecution, reason) -> tube.send(new ToolCompensatedEvent(toolExecution, reason, invocationContext)), true, preCollectedFailedToolName);
             compensated.whenComplete((ignoredCompensation, compensationError) -> {
                 if (tube.cancelled()) {
                     doCancellationCompensation(null, null);
@@ -655,71 +580,30 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
                     emitFinalResponse(chatResponse, aiMessage, currentToolContext, parameters);
                     return;
                 }
-
                 tokenUsage = TokenUsage.sum(tokenUsage, chatResponse.metadata().tokenUsage());
-
-                context.toolService
-                        .persistToolResultsAndResolveMessages(
-                                context, getMemory(), null, outcome.resultMessages(), invocationContext)
-                        .thenAccept(nextMessages -> {
-                            if (tube.cancelled()) {
-                                return;
-                            }
-                            ToolService.NextChatRequest next = context.toolService.prepareNextChatRequest(
-                                    context,
-                                    invocationContext.chatMemoryId(),
-                                    nextMessages,
-                                    invocationContext,
-                                    currentToolContext,
-                                    toolResults,
-                                    parameters);
-
-                            startRound(next.chatRequest(), next.toolServiceContext(), next.parameters());
-                        })
-                        .exceptionally(error -> {
-                            fail(error);
-                            return null;
-                        });
+                context.toolService.persistToolResultsAndResolveMessages(context, getMemory(), null, outcome.resultMessages(), invocationContext).thenAccept(nextMessages -> {
+                    if (tube.cancelled()) {
+                        return;
+                    }
+                    ToolService.NextChatRequest next = context.toolService.prepareNextChatRequest(context, invocationContext.chatMemoryId(), nextMessages, invocationContext, currentToolContext, toolResults, parameters);
+                    startRound(next.chatRequest(), next.toolServiceContext(), next.parameters());
+                }).exceptionally(error -> {
+                    fail(error);
+                    return null;
+                });
             });
         }
 
-        private void emitFinalResponse(
-                ChatResponse chatResponse,
-                AiMessage aiMessage,
-                ToolServiceContext currentToolContext,
-                ChatRequestParameters parameters) {
-            ChatResponse finalChatResponse = ChatResponse.builder()
-                    .aiMessage(aiMessage)
-                    .metadata(chatResponse.metadata().toBuilder()
-                            .tokenUsage(tokenUsage.add(chatResponse.metadata().tokenUsage()))
-                            .build())
-                    .build();
-
+        private void emitFinalResponse(ChatResponse chatResponse, AiMessage aiMessage, ToolServiceContext currentToolContext, ChatRequestParameters parameters) {
+            ChatResponse finalChatResponse = ChatResponse.builder().aiMessage(aiMessage).metadata(chatResponse.metadata().toBuilder().tokenUsage(tokenUsage.add(chatResponse.metadata().tokenUsage())).build()).build();
             if (!hasOutputGuardrails || commonGuardrailParams == null) {
                 completeWithFinalResponse(finalChatResponse);
                 return;
             }
-
-            GuardrailRequestParams guardrailParams =
-                    commonGuardrailParams.toBuilder().chatMemory(getMemory()).build();
-
-            ChatExecutor toolAwareRepromptExecutor = ToolAwareRepromptExecutor.wrapAsync(
-                    chatExecutor,
-                    context,
-                    invocationContext.chatMemoryId(),
-                    parameters,
-                    invocationContext,
-                    currentToolContext,
-                    request -> StreamingChatModelHelper.chatAsync(context.streamingChatModel, request));
-            OutputGuardrailRequest request = OutputGuardrailRequest.builder()
-                    .responseFromLLM(finalChatResponse)
-                    .chatExecutor(toolAwareRepromptExecutor)
-                    .requestParams(guardrailParams)
-                    .chatRequest(lastChatRequest)
-                    .build();
-
-            CompletableFuture<ChatResponse> guarded =
-                    context.guardrailService().executeGuardrailsAsync(methodKey, request);
+            GuardrailRequestParams guardrailParams = commonGuardrailParams.toBuilder().chatMemory(getMemory()).build();
+            ChatExecutor toolAwareRepromptExecutor = ToolAwareRepromptExecutor.wrapAsync(chatExecutor, context, invocationContext.chatMemoryId(), parameters, invocationContext, currentToolContext, request -> StreamingChatModelHelper.chatAsync(context.streamingChatModel, request));
+            OutputGuardrailRequest request = OutputGuardrailRequest.builder().responseFromLLM(finalChatResponse).chatExecutor(toolAwareRepromptExecutor).requestParams(guardrailParams).chatRequest(lastChatRequest).build();
+            CompletableFuture<ChatResponse> guarded = context.guardrailService().executeGuardrailsAsync(methodKey, request);
             guardrailsFuture.set(guarded);
             guarded.whenComplete((guardedResponse, error) -> {
                 if (error != null) {
@@ -761,9 +645,7 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
         }
 
         private ChatMemory getMemory() {
-            return context.hasChatMemory()
-                    ? context.chatMemoryService.getOrCreateChatMemory(invocationContext.chatMemoryId())
-                    : temporaryMemory;
+            return context.hasChatMemory() ? context.chatMemoryService.getOrCreateChatMemory(invocationContext.chatMemoryId()) : temporaryMemory;
         }
 
         private void emitBeforeToolExecution(BeforeToolExecution beforeToolExecution) {
@@ -775,32 +657,19 @@ public class AiServiceStreamingEventPublisher implements Flow.Publisher<AiServic
         }
 
         private void fireRequestIssuedEvent(ChatRequest chatRequest) {
-            context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder()
-                    .invocationContext(invocationContext)
-                    .request(chatRequest)
-                    .build());
+            context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(invocationContext).request(chatRequest).build());
         }
 
         private void fireResponseReceivedEvent(ChatRequest chatRequest, ChatResponse chatResponse) {
-            context.eventListenerRegistrar.fireEvent(AiServiceResponseReceivedEvent.builder()
-                    .invocationContext(invocationContext)
-                    .request(chatRequest)
-                    .response(chatResponse)
-                    .build());
+            context.eventListenerRegistrar.fireEvent(AiServiceResponseReceivedEvent.builder().invocationContext(invocationContext).request(chatRequest).response(chatResponse).build());
         }
 
         private void fireInvocationComplete(ChatResponse finalChatResponse) {
-            context.eventListenerRegistrar.fireEvent(AiServiceCompletedEvent.builder()
-                    .invocationContext(invocationContext)
-                    .result(finalChatResponse)
-                    .build());
+            context.eventListenerRegistrar.fireEvent(AiServiceCompletedEvent.builder().invocationContext(invocationContext).result(finalChatResponse).build());
         }
 
         private void fireErrorReceived(Throwable error) {
-            context.eventListenerRegistrar.fireEvent(AiServiceErrorEvent.builder()
-                    .invocationContext(invocationContext)
-                    .error(error)
-                    .build());
+            context.eventListenerRegistrar.fireEvent(AiServiceErrorEvent.builder().invocationContext(invocationContext).error(error).build());
         }
     }
 }

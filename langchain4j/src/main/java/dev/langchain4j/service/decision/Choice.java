@@ -1,7 +1,6 @@
 package dev.langchain4j.service.decision;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.decision.response.ChoiceAnswer;
 import java.util.Collections;
@@ -24,15 +23,16 @@ import java.util.Objects;
 public final class Choice<E> {
 
     private final E value;
+
     private final Map<E, Double> probabilities;
+
     private final ChoiceAnswer answer;
 
     private Choice(Builder<E> builder) {
         this.value = ensureNotNull(builder.value, "value");
         Map<E, Double> probabilities = new LinkedHashMap<>();
         if (builder.probabilities != null) {
-            builder.probabilities.forEach(
-                    (option, probability) -> probabilities.put(ensureNotNull(option, "option"), probability));
+            builder.probabilities.forEach((option, probability) -> probabilities.put(ensureNotNull(option, "option"), probability));
         }
         this.probabilities = Collections.unmodifiableMap(probabilities);
         ChoiceAnswer.Builder answer = ChoiceAnswer.builder().value(name(value)).confidence(builder.confidence);
@@ -41,7 +41,7 @@ public final class Choice<E> {
     }
 
     private static String name(Object option) {
-        return option instanceof Enum<?> constant ? constant.name() : String.valueOf(option);
+        return option instanceof Enum<?> ? ((Enum<?>) option).name() : String.valueOf(option);
     }
 
     public static <E> Builder<E> builder() {
@@ -94,11 +94,11 @@ public final class Choice<E> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Choice<?> that)) return false;
-        return Objects.equals(value, that.value)
-                && Objects.equals(probabilities, that.probabilities)
-                && Objects.equals(confidence(), that.confidence());
+        if (this == o)
+            return true;
+        if (!(o instanceof Choice<?>))
+            return false;
+        return Objects.equals(value, ((Choice<?>) o).value) && Objects.equals(probabilities, ((Choice<?>) o).probabilities) && Objects.equals(confidence(), ((Choice<?>) o).confidence());
     }
 
     @Override
@@ -114,7 +114,9 @@ public final class Choice<E> {
     public static final class Builder<E> {
 
         private E value;
+
         private Map<E, Double> probabilities;
+
         private Double confidence;
 
         public Builder<E> value(E value) {

@@ -1,7 +1,6 @@
 package dev.langchain4j.classification;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -24,9 +23,11 @@ public class ClassificationResult<L> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof ClassificationResult<?> that)) return false;
-        return Objects.equals(this.scoredLabels, that.scoredLabels);
+        if (this == obj)
+            return true;
+        if (!(obj instanceof ClassificationResult<?>))
+            return false;
+        return Objects.equals(this.scoredLabels, ((ClassificationResult<?>) obj).scoredLabels);
     }
 
     @Override

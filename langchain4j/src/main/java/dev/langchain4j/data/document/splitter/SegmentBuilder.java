@@ -2,7 +2,6 @@ package dev.langchain4j.data.document.splitter;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import java.util.function.Function;
 
@@ -13,10 +12,15 @@ import java.util.function.Function;
 class SegmentBuilder {
 
     private final int maxSegmentSize;
+
     private final Function<String, Integer> sizeFunction;
+
     private final String joinSeparator;
+
     private final int joinSeparatorSize;
+
     private StringBuilder segment = new StringBuilder();
+
     private int segmentSize = 0;
 
     /**

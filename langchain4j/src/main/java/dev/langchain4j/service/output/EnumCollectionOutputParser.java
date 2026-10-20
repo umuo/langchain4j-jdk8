@@ -5,12 +5,10 @@ import dev.langchain4j.model.chat.request.json.JsonArraySchema;
 import dev.langchain4j.model.chat.request.json.JsonEnumSchema;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
-
 import java.util.Collection;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.function.Supplier;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.output.EnumOutputParser.getEnumDescription;
@@ -21,6 +19,7 @@ import static java.util.Arrays.stream;
 abstract class EnumCollectionOutputParser<E extends Enum<E>, CE extends Collection<E>> implements OutputParser<CE> {
 
     protected final Class<E> enumClass;
+
     protected final EnumOutputParser<E> enumOutputParser;
 
     EnumCollectionOutputParser(Class<E> enumClass) {
@@ -43,19 +42,7 @@ abstract class EnumCollectionOutputParser<E extends Enum<E>, CE extends Collecti
 
     @Override
     public Optional<JsonSchema> jsonSchema() {
-        JsonSchema jsonSchema = JsonSchema.builder()
-                .name(collectionType().getSimpleName() + "_of_" + enumClass.getSimpleName())
-                .rootElement(JsonObjectSchema.builder()
-                        .addProperty("values", JsonArraySchema.builder()
-                                .items(JsonEnumSchema.builder()
-                                        .enumValues(stream(enumClass.getEnumConstants())
-                                                .map(e -> ((Enum<?>) e).name())
-                                                .toList())
-                                        .build())
-                                .build())
-                        .required("values")
-                        .build())
-                .build();
+        JsonSchema jsonSchema = JsonSchema.builder().name(collectionType().getSimpleName() + "_of_" + enumClass.getSimpleName()).rootElement(JsonObjectSchema.builder().addProperty("values", JsonArraySchema.builder().items(JsonEnumSchema.builder().enumValues((java.util.List<String>) stream(enumClass.getEnumConstants()).map(e -> ((Enum<?>) e).name()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList))).build()).build()).required("values").build()).build();
         return Optional.of(jsonSchema);
     }
 
@@ -63,21 +50,16 @@ abstract class EnumCollectionOutputParser<E extends Enum<E>, CE extends Collecti
     public String formatInstructions() {
         try {
             E[] enumConstants = enumClass.getEnumConstants();
-
             ensureNotEmpty(enumConstants, "%s", "Should be at least one enum constant defined.");
-
             StringBuilder instruction = new StringBuilder();
-
             // 'enums' keyword will hopefully make it clearer that
             // no description should be included (if present)
             instruction.append("\nYou must answer strictly with zero or more of these enums on a separate line:");
-
             for (E enumConstant : enumConstants) {
                 instruction.append("\n").append(enumConstant.name().toUpperCase(Locale.ROOT));
                 Optional<String> optionalEnumDescription = getEnumDescription(enumClass, enumConstant);
                 optionalEnumDescription.ifPresent(description -> instruction.append(" - ").append(description));
             }
-
             return instruction.toString();
         } catch (NoSuchFieldException e) {
             throw new RuntimeException(e);

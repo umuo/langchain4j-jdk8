@@ -2,7 +2,6 @@ package dev.langchain4j.service.decision;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import java.lang.reflect.Method;
 import java.util.Objects;
@@ -16,8 +15,11 @@ import java.util.Objects;
 public final class ThresholdContext {
 
     private final Class<?> serviceInterface;
+
     private final Method method;
+
     private final String questionName;
+
     private final String modelName;
 
     private ThresholdContext(Builder builder) {
@@ -63,12 +65,11 @@ public final class ThresholdContext {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ThresholdContext that)) return false;
-        return serviceInterface.equals(that.serviceInterface)
-                && method.equals(that.method)
-                && questionName.equals(that.questionName)
-                && Objects.equals(modelName, that.modelName);
+        if (this == o)
+            return true;
+        if (!(o instanceof ThresholdContext))
+            return false;
+        return serviceInterface.equals(((ThresholdContext) o).serviceInterface) && method.equals(((ThresholdContext) o).method) && questionName.equals(((ThresholdContext) o).questionName) && Objects.equals(modelName, ((ThresholdContext) o).modelName);
     }
 
     @Override
@@ -78,15 +79,17 @@ public final class ThresholdContext {
 
     @Override
     public String toString() {
-        return "ThresholdContext{serviceInterface=" + serviceInterface.getName() + ", method=" + method.getName()
-                + ", questionName=" + questionName + ", modelName=" + modelName + '}';
+        return "ThresholdContext{serviceInterface=" + serviceInterface.getName() + ", method=" + method.getName() + ", questionName=" + questionName + ", modelName=" + modelName + '}';
     }
 
     public static final class Builder {
 
         private Class<?> serviceInterface;
+
         private Method method;
+
         private String questionName;
+
         private String modelName;
 
         public Builder serviceInterface(Class<?> serviceInterface) {

@@ -8,25 +8,16 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Optional;
-
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 
 class AiServiceParamsUtil {
 
-    private AiServiceParamsUtil() { }
+    private AiServiceParamsUtil() {
+    }
 
-    static ChatRequestParameters chatRequestParameters(
-            Method method,
-            Object[] args,
-            ToolServiceContext toolServiceContext,
-            ResponseFormat responseFormat) {
-        ChatRequestParameters defaultParams = ChatRequestParameters.builder()
-                .toolSpecifications(toolServiceContext.effectiveTools())
-                .responseFormat(responseFormat)
-                .build();
-        return findArgumentOfType(ChatRequestParameters.class, args, method.getParameters())
-                .map(p -> p.defaultedBy(defaultParams))
-                .orElse(defaultParams);
+    static ChatRequestParameters chatRequestParameters(Method method, Object[] args, ToolServiceContext toolServiceContext, ResponseFormat responseFormat) {
+        ChatRequestParameters defaultParams = ChatRequestParameters.builder().toolSpecifications(toolServiceContext.effectiveTools()).responseFormat(responseFormat).build();
+        return findArgumentOfType(ChatRequestParameters.class, args, method.getParameters()).map(p -> p.defaultedBy(defaultParams)).orElse(defaultParams);
     }
 
     static <P> Optional<P> findArgumentOfType(Class<P> paramType, Object[] args, Parameter[] params) {
@@ -44,15 +35,9 @@ class AiServiceParamsUtil {
         return Optional.empty();
     }
 
-    static ChatRequestParameters chatRequestParameters(
-            List<? extends Object> args,
-            List<ToolSpecification> toolSpecifications) {
-        ChatRequestParameters defaultParams = ChatRequestParameters.builder()
-                .toolSpecifications(toolSpecifications)
-                .build();
-        return findArgumentOfType(ChatRequestParameters.class, args)
-                .map(p -> p.defaultedBy(defaultParams))
-                .orElse(defaultParams);
+    static ChatRequestParameters chatRequestParameters(List<? extends Object> args, List<ToolSpecification> toolSpecifications) {
+        ChatRequestParameters defaultParams = ChatRequestParameters.builder().toolSpecifications(toolSpecifications).build();
+        return findArgumentOfType(ChatRequestParameters.class, args).map(p -> p.defaultedBy(defaultParams)).orElse(defaultParams);
     }
 
     static <P> Optional<P> findArgumentOfType(Class<P> paramType, List<? extends Object> args) {

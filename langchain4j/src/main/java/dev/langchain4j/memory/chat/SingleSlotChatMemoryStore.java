@@ -4,7 +4,6 @@ import dev.langchain4j.Internal;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -50,7 +49,7 @@ class SingleSlotChatMemoryStore implements ChatMemoryStore {
         try {
             return CompletableFuture.completedFuture(getMessages(memoryId));
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
@@ -60,7 +59,7 @@ class SingleSlotChatMemoryStore implements ChatMemoryStore {
             updateMessages(memoryId, messages);
             return CompletableFuture.completedFuture(null);
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
@@ -70,14 +69,13 @@ class SingleSlotChatMemoryStore implements ChatMemoryStore {
             deleteMessages(memoryId);
             return CompletableFuture.completedFuture(null);
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
     private void checkMemoryId(Object memoryId) {
         if (!this.memoryId.equals(memoryId)) {
-            throw new IllegalStateException("This chat memory has id: " + this.memoryId +
-                    " but an operation has been requested on a memory with id: " + memoryId);
+            throw new IllegalStateException("This chat memory has id: " + this.memoryId + " but an operation has been requested on a memory with id: " + memoryId);
         }
     }
 }

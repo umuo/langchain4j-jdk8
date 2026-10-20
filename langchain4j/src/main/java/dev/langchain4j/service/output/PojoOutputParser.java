@@ -11,7 +11,6 @@ import static dev.langchain4j.service.IllegalConfigurationException.illegalConfi
 import static dev.langchain4j.service.output.ParsingUtils.outputParsingException;
 import static java.lang.String.format;
 import static java.lang.reflect.Modifier.isAbstract;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.exception.UnsupportedFeatureException;
 import dev.langchain4j.internal.Json;
@@ -45,7 +44,6 @@ class PojoOutputParser<T> implements OutputParser<T> {
         if (isNullOrBlank(text)) {
             throw outputParsingException(text, type);
         }
-
         try {
             if (isPolymorphic(type)) {
                 return extractAndParseJson(text, json -> {
@@ -75,19 +73,10 @@ class PojoOutputParser<T> implements OutputParser<T> {
         } else {
             root = jsonObjectOrReferenceSchemaFrom(type, null, false, new LinkedHashMap<>(), true);
         }
-
-        if (root instanceof JsonObjectSchema obj && obj.properties().isEmpty() && isAbstract(type.getModifiers())) {
-            throw new UnsupportedFeatureException(String.format(
-                    "Type %s is an interface or abstract class with no permitted subtypes discoverable "
-                            + "by langchain4j, which produced an empty JSON schema. To use it as a "
-                            + "polymorphic return type, either make it sealed or annotate it with @JsonSubTypes.",
-                    type.getName()));
+        if (root instanceof JsonObjectSchema && ((JsonObjectSchema) root).properties().isEmpty() && isAbstract(type.getModifiers())) {
+            throw new UnsupportedFeatureException(String.format("Type %s is an interface or abstract class with no permitted subtypes discoverable " + "by langchain4j, which produced an empty JSON schema. To use it as a " + "polymorphic return type, either make it sealed or annotate it with @JsonSubTypes.", type.getName()));
         }
-
-        return Optional.of(JsonSchema.builder()
-                .name(type.getSimpleName())
-                .rootElement(root)
-                .build());
+        return Optional.of(JsonSchema.builder().name(type.getSimpleName()).rootElement(root).build());
     }
 
     @Override
@@ -99,7 +88,6 @@ class PojoOutputParser<T> implements OutputParser<T> {
 
     private static String jsonStructure(Class<?> type, Set<Class<?>> visited) {
         StringBuilder jsonSchema = new StringBuilder();
-
         jsonSchema.append("{\n");
         for (Field field : type.getDeclaredFields()) {
             String name = field.getName();
@@ -109,7 +97,6 @@ class PojoOutputParser<T> implements OutputParser<T> {
             }
             jsonSchema.append(format("\"%s\": (%s),\n", name, descriptionFor(field, visited)));
         }
-
         int trailingCommaIndex = jsonSchema.lastIndexOf(",");
         if (trailingCommaIndex > 0) {
             jsonSchema.delete(trailingCommaIndex, trailingCommaIndex + 1);
@@ -123,7 +110,6 @@ class PojoOutputParser<T> implements OutputParser<T> {
         if (fieldDescription == null) {
             return "type: " + typeOf(field, visited);
         }
-
         return String.join(" ", fieldDescription.value()) + "; type: " + typeOf(field, visited);
     }
 
@@ -132,33 +118,25 @@ class PojoOutputParser<T> implements OutputParser<T> {
     }
 
     private static String typeOf(Type type, Set<Class<?>> visited) {
-        if (type instanceof ParameterizedType parameterizedType) {
-            Type rawType = parameterizedType.getRawType();
-
-            if (rawType instanceof Class<?> rawClass && (rawClass == List.class || rawClass == Set.class)) {
-
-                return format("array of %s", typeOf(parameterizedType.getActualTypeArguments()[0], visited));
+        if (type instanceof ParameterizedType) {
+            Type rawType = ((ParameterizedType) type).getRawType();
+            if (rawType instanceof Class<?> && (((Class<?>) rawType) == List.class || ((Class<?>) rawType) == Set.class)) {
+                return format("array of %s", typeOf(((ParameterizedType) type).getActualTypeArguments()[0], visited));
             }
-        } else if (type instanceof Class<?> clazz) {
-            if (clazz.isArray()) {
-                return format("array of %s", typeOf(clazz.getComponentType(), visited));
-            } else if (clazz.isEnum()) {
-                return "enum, must be one of "
-                        + Arrays.stream(clazz.getEnumConstants())
-                                .map(e -> ((Enum<?>) e).name())
-                                .toList();
+        } else if (type instanceof Class<?>) {
+            if (((Class<?>) type).isArray()) {
+                return format("array of %s", typeOf(((Class<?>) type).getComponentType(), visited));
+            } else if (((Class<?>) type).isEnum()) {
+                return "enum, must be one of " + Arrays.stream(((Class<?>) type).getEnumConstants()).map(e -> ((Enum<?>) e).name()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
             }
-            return simpleNameOrJsonStructure(clazz, visited);
+            return simpleNameOrJsonStructure(((Class<?>) type), visited);
         }
-
         return simpleTypeName(type);
     }
 
     private static String simpleNameOrJsonStructure(Class<?> structured, Set<Class<?>> visited) {
         String simpleTypeName = simpleTypeName(structured);
-        if (structured.getPackage() == null
-                || structured.getPackage().getName().startsWith("java.")
-                || visited.contains(structured)) {
+        if (structured.getPackage() == null || structured.getPackage().getName().startsWith("java.") || visited.contains(structured)) {
             return simpleTypeName;
         } else {
             visited.add(structured);
@@ -167,24 +145,37 @@ class PojoOutputParser<T> implements OutputParser<T> {
     }
 
     private static String simpleTypeName(Type type) {
-        return switch (type.getTypeName()) {
-            case "java.lang.String" -> "string";
-            case "java.lang.Integer", "int" -> "integer";
-            case "java.lang.Boolean", "boolean" -> "boolean";
-            case "java.lang.Float", "float" -> "float";
-            case "java.lang.Double", "double" -> "double";
-            case "java.util.Date", "java.time.LocalDate" -> "date string (2023-12-31)";
-            case "java.time.LocalTime" -> "time string (23:59:59)";
-            case "java.time.LocalDateTime" -> "date-time string (2023-12-31T23:59:59)";
-            default -> type.getTypeName();
-        };
+        switch(type.getTypeName()) {
+            case "java.lang.String":
+                return "string";
+            case "java.lang.Integer":
+            case "int":
+                return "integer";
+            case "java.lang.Boolean":
+            case "boolean":
+                return "boolean";
+            case "java.lang.Float":
+            case "float":
+                return "float";
+            case "java.lang.Double":
+            case "double":
+                return "double";
+            case "java.util.Date":
+            case "java.time.LocalDate":
+                return "date string (2023-12-31)";
+            case "java.time.LocalTime":
+                return "time string (23:59:59)";
+            case "java.time.LocalDateTime":
+                return "date-time string (2023-12-31T23:59:59)";
+            default:
+                return type.getTypeName();
+        }
     }
 
     private void validateJsonStructure(String jsonStructure, Type returnType) {
         if (jsonStructure.replaceAll("\\s", "").equals("{}")) {
             if (returnType.toString().contains("reactor.core.publisher.Flux")) {
-                throw illegalConfiguration("Please import langchain4j-reactor module "
-                        + "if you wish to use Flux<String> as a method return type");
+                throw illegalConfiguration("Please import langchain4j-reactor module " + "if you wish to use Flux<String> as a method return type");
             }
             throw illegalConfiguration("Illegal method return type: " + returnType);
         }

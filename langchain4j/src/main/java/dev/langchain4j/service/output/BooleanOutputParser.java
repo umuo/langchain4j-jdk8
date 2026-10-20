@@ -3,9 +3,7 @@ package dev.langchain4j.service.output;
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.chat.request.json.JsonObjectSchema;
 import dev.langchain4j.model.chat.request.json.JsonSchema;
-
 import java.util.Optional;
-
 import static dev.langchain4j.service.output.ParsingUtils.outputParsingException;
 import static dev.langchain4j.service.output.ParsingUtils.parseAsStringOrJson;
 
@@ -28,13 +26,7 @@ class BooleanOutputParser implements OutputParser<Boolean> {
 
     @Override
     public Optional<JsonSchema> jsonSchema() {
-        JsonSchema jsonSchema = JsonSchema.builder()
-                .name("boolean")
-                .rootElement(JsonObjectSchema.builder()
-                        .addBooleanProperty("value")
-                        .required("value")
-                        .build())
-                .build();
+        JsonSchema jsonSchema = JsonSchema.builder().name("boolean").rootElement(JsonObjectSchema.builder().addBooleanProperty("value").required("value").build()).build();
         return Optional.of(jsonSchema);
     }
 

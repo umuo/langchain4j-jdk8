@@ -1,7 +1,6 @@
 package dev.langchain4j.service.guardrail;
 
 import static dev.langchain4j.internal.CompletableFutureUtils.propagateCancellation;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.exception.AsyncNotSupportedException;
 import dev.langchain4j.internal.AsyncNotSupported;
@@ -25,6 +24,7 @@ import java.util.concurrent.CompletableFuture;
  * Guardrails are constraints or validations applied either to input or output of a method.
  */
 public interface GuardrailService {
+
     /**
      * Retrieves the class representing the AI service to which the guardrails apply.
      *
@@ -57,8 +57,7 @@ public interface GuardrailService {
      * @since 1.20.0
      */
     @Experimental
-    default <MethodKey> CompletableFuture<InputGuardrailResult> executeInputGuardrailsAsync(
-            MethodKey method, InputGuardrailRequest request) {
+    default <MethodKey> CompletableFuture<InputGuardrailResult> executeInputGuardrailsAsync(MethodKey method, InputGuardrailRequest request) {
         return AsyncNotSupported.failedFuture(getClass(), "executeInputGuardrailsAsync");
     }
 
@@ -85,8 +84,7 @@ public interface GuardrailService {
      * @since 1.20.0
      */
     @Experimental
-    default <MethodKey> CompletableFuture<UserMessage> executeGuardrailsAsync(
-            MethodKey method, InputGuardrailRequest request) {
+    default <MethodKey> CompletableFuture<UserMessage> executeGuardrailsAsync(MethodKey method, InputGuardrailRequest request) {
         CompletableFuture<InputGuardrailResult> guardrailFuture = executeInputGuardrailsAsync(method, request);
         CompletableFuture<UserMessage> result = guardrailFuture.thenApply(r -> r.userMessage(request));
         propagateCancellation(result, guardrailFuture);
@@ -118,8 +116,7 @@ public interface GuardrailService {
      * @since 1.20.0
      */
     @Experimental
-    default <MethodKey> CompletableFuture<OutputGuardrailResult> executeOutputGuardrailsAsync(
-            MethodKey method, OutputGuardrailRequest request) {
+    default <MethodKey> CompletableFuture<OutputGuardrailResult> executeOutputGuardrailsAsync(MethodKey method, OutputGuardrailRequest request) {
         return AsyncNotSupported.failedFuture(getClass(), "executeOutputGuardrailsAsync");
     }
 
@@ -154,7 +151,7 @@ public interface GuardrailService {
 
     /**
      * Non-blocking counterpart of {@link #executeGuardrails(Object, OutputGuardrailRequest)} for the asynchronous
-     * ({@code CompletableFuture}) and reactive ({@code Flow.Publisher}) AI Service modes. The output guardrails —
+     * ({@code CompletableFuture}) and reactive ({@code Publisher}) AI Service modes. The output guardrails —
      * including any reprompt round-trips to the model — run without blocking the calling thread; a guardrail that
      * performs blocking I/O keeps the calling thread free only if it overrides
      * {@link dev.langchain4j.guardrail.Guardrail#validateAsync(dev.langchain4j.guardrail.GuardrailRequest)}.
@@ -180,16 +177,14 @@ public interface GuardrailService {
      * @return A {@link Builder} instance initialized with the specified AI service class.
      */
     static Builder builder(Class<?> aiServiceClass) {
-        return ServiceLoader.load(GuardrailServiceBuilderFactory.class)
-                .findFirst()
-                .map(builderFactory -> builderFactory.getBuilder(aiServiceClass))
-                .orElseGet(() -> new GuardrailServiceBuilder(aiServiceClass));
+        return dev.langchain4j.internal.Jdk8.firstService(ServiceLoader.load(GuardrailServiceBuilderFactory.class)).map(builderFactory -> builderFactory.getBuilder(aiServiceClass)).orElseGet(() -> new GuardrailServiceBuilder(aiServiceClass));
     }
 
     /**
      * Builder class for building {@link GuardrailService} instances
      */
     interface Builder {
+
         /**
          * Configures the input guardrails for the builder.
          *
@@ -228,9 +223,7 @@ public interface GuardrailService {
          * @return The current instance of {@link Builder} for method chaining.
          */
         default <I extends InputGuardrail> Builder inputGuardrailClasses(Class<? extends I>... guardrailClasses) {
-            return Optional.ofNullable(guardrailClasses)
-                    .map(g -> inputGuardrailClasses(List.of(g)))
-                    .orElse(this);
+            return Optional.ofNullable(guardrailClasses).map(g -> inputGuardrailClasses(dev.langchain4j.internal.Jdk8.list(g))).orElse(this);
         }
 
         /**
@@ -254,9 +247,7 @@ public interface GuardrailService {
          * @return The current instance of {@link Builder} for method chaining.
          */
         default <O extends OutputGuardrail> Builder outputGuardrailClasses(Class<? extends O>... guardrailClasses) {
-            return Optional.ofNullable(guardrailClasses)
-                    .map(g -> outputGuardrailClasses(List.of(g)))
-                    .orElse(this);
+            return Optional.ofNullable(guardrailClasses).map(g -> outputGuardrailClasses(dev.langchain4j.internal.Jdk8.list(g))).orElse(this);
         }
 
         /**
@@ -277,9 +268,7 @@ public interface GuardrailService {
          * @return The current instance of {@link Builder} for method chaining.
          */
         default <I extends InputGuardrail> Builder inputGuardrails(I... guardrails) {
-            return Optional.ofNullable(guardrails)
-                    .map(ig -> inputGuardrails(List.of(ig)))
-                    .orElse(this);
+            return Optional.ofNullable(guardrails).map(ig -> inputGuardrails(dev.langchain4j.internal.Jdk8.list(ig))).orElse(this);
         }
 
         /**
@@ -300,9 +289,7 @@ public interface GuardrailService {
          * @return The current instance of {@link Builder} for method chaining.
          */
         default <O extends OutputGuardrail> Builder outputGuardrails(O... guardrails) {
-            return Optional.ofNullable(guardrails)
-                    .map(og -> outputGuardrails(List.of(og)))
-                    .orElse(this);
+            return Optional.ofNullable(guardrails).map(og -> outputGuardrails(dev.langchain4j.internal.Jdk8.list(og))).orElse(this);
         }
 
         /**

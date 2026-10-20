@@ -1,7 +1,6 @@
 package dev.langchain4j.service.decision.internal;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.decision.DecisionModel;
 import dev.langchain4j.service.decision.ThresholdProvider;
@@ -16,7 +15,9 @@ import dev.langchain4j.service.decision.ThresholdProvider;
 public final class DecisionServiceConfig {
 
     private final Class<?> serviceInterface;
+
     private final DecisionModel decisionModel;
+
     private final ThresholdProvider thresholdProvider;
 
     private DecisionServiceConfig(Builder builder) {
@@ -47,7 +48,9 @@ public final class DecisionServiceConfig {
     public static final class Builder {
 
         private Class<?> serviceInterface;
+
         private DecisionModel decisionModel;
+
         private ThresholdProvider thresholdProvider;
 
         public Builder serviceInterface(Class<?> serviceInterface) {

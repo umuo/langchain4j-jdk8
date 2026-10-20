@@ -2,7 +2,6 @@ package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
-
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.Map;
@@ -19,16 +18,19 @@ import dev.langchain4j.internal.Json;
 class ToolExecutionRequestUtil {
 
     private static final Pattern TRAILING_COMMA_PATTERN = Pattern.compile(",(\\s*[}\\]])");
+
     private static final Pattern LEADING_TRAILING_QUOTE_PATTERN = Pattern.compile("^\"|\"$");
+
     private static final Pattern ESCAPED_QUOTE_PATTERN = Pattern.compile("\\\\\"");
 
-    private ToolExecutionRequestUtil() {}
+    private ToolExecutionRequestUtil() {
+    }
 
     private static final Type MAP_TYPE = new ParameterizedType() {
 
         @Override
         public Type[] getActualTypeArguments() {
-            return new Type[] {String.class, Object.class};
+            return new Type[] { String.class, Object.class };
         }
 
         @Override
@@ -50,9 +52,8 @@ class ToolExecutionRequestUtil {
      */
     static Map<String, Object> argumentsAsMap(String arguments) {
         if (isNullOrBlank(arguments)) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
-
         try {
             return Json.fromJson(arguments, MAP_TYPE);
         } catch (Exception ignored) {
@@ -85,10 +86,8 @@ class ToolExecutionRequestUtil {
         if (isNullOrEmpty(arguments)) {
             return arguments;
         }
-
         Matcher leadingTrailingMatcher = LEADING_TRAILING_QUOTE_PATTERN.matcher(arguments);
         String normalizedJson = leadingTrailingMatcher.replaceAll("");
-
         Matcher escapedQuoteMatcher = ESCAPED_QUOTE_PATTERN.matcher(normalizedJson);
         return escapedQuoteMatcher.replaceAll("\"");
     }

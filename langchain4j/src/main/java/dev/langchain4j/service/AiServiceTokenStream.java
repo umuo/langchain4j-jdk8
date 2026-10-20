@@ -4,7 +4,6 @@ import static dev.langchain4j.internal.Utils.copy;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.AiServiceParamsUtil.chatRequestParameters;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.ChatMessage;
@@ -40,44 +39,77 @@ public class AiServiceTokenStream implements TokenStream {
     private final List<ChatMessage> messages;
 
     private final ToolServiceContext toolServiceContext;
+
     private final ToolArgumentsErrorHandler toolArgumentsErrorHandler;
+
     private final ToolExecutionErrorHandler toolExecutionErrorHandler;
+
     private final Executor toolExecutor;
+
     private final Executor completeResponseProcessingExecutor;
 
     private final List<Content> retrievedContents;
+
     private final AiServiceContext context;
+
     private final InvocationContext invocationContext;
+
     private final GuardrailRequestParams commonGuardrailParams;
+
     private final Object methodKey;
 
     private Consumer<String> partialResponseHandler;
+
     private BiConsumer<PartialResponse, PartialResponseContext> partialResponseWithContextHandler;
+
     private Consumer<PartialThinking> partialThinkingHandler;
+
     private BiConsumer<PartialThinking, PartialThinkingContext> partialThinkingWithContextHandler;
+
     private Consumer<PartialToolCall> partialToolCallHandler;
+
     private BiConsumer<PartialToolCall, PartialToolCallContext> partialToolCallWithContextHandler;
+
     private Consumer<List<Content>> contentsHandler;
+
     private Consumer<ChatResponse> intermediateResponseHandler;
+
     private Consumer<BeforeToolExecution> beforeToolExecutionHandler;
+
     private Consumer<Object> rawEventHandler;
+
     private Consumer<ToolExecution> toolExecutionHandler;
+
     private Consumer<ChatResponse> completeResponseHandler;
+
     private Consumer<Throwable> errorHandler;
 
     private int onPartialResponseInvoked;
+
     private int onPartialResponseWithContextInvoked;
+
     private int onPartialThinkingInvoked;
+
     private int onPartialThinkingWithContextInvoked;
+
     private int onPartialToolCallInvoked;
+
     private int onPartialToolCallWithContextInvoked;
+
     private int onIntermediateResponseInvoked;
+
     private int onCompleteResponseInvoked;
+
     private int onRetrievedInvoked;
+
     private int beforeToolExecutionInvoked;
+
     private int onUnmappedRawEventInvoked;
+
     private int onToolExecutedInvoked;
+
     private int onErrorInvoked;
+
     private int ignoreErrorsInvoked;
 
     /**
@@ -92,8 +124,7 @@ public class AiServiceTokenStream implements TokenStream {
         this.toolArgumentsErrorHandler = parameters.toolArgumentsErrorHandler();
         this.toolExecutionErrorHandler = parameters.toolExecutionErrorHandler();
         this.toolExecutor = CapturedContextSupport.restoringIn(parameters.toolExecutor(), parameters.invocationContext());
-        this.completeResponseProcessingExecutor = CapturedContextSupport.restoringIn(
-                parameters.completeResponseProcessingExecutor(), parameters.invocationContext());
+        this.completeResponseProcessingExecutor = CapturedContextSupport.restoringIn(parameters.completeResponseProcessingExecutor(), parameters.invocationContext());
         this.retrievedContents = copy(parameters.retrievedContents());
         this.context = ensureNotNull(parameters.context(), "context");
         ensureNotNull(this.context.streamingChatModel, "streamingChatModel");
@@ -203,80 +234,29 @@ public class AiServiceTokenStream implements TokenStream {
     @Override
     public void start() {
         validateConfiguration();
-
-        List<ToolSpecification> effectiveTools =
-                toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
-
-        ChatRequest chatRequest = context.chatRequestTransformer.apply(
-                ChatRequest.builder()
-                        .messages(messages)
-                        .parameters(chatRequestParameters(invocationContext.methodArguments(), effectiveTools))
-                        .build(),
-                invocationContext.chatMemoryId());
-
-        ChatExecutor chatExecutor = ChatExecutor.builder(context.streamingChatModel)
-                .errorHandler(errorHandler)
-                .chatRequest(chatRequest)
-                .invocationContext(invocationContext)
-                .eventListenerRegistrar(context.eventListenerRegistrar)
-                .build();
-
-        var handler = new AiServiceStreamingResponseHandler(
-                chatRequest,
-                chatExecutor,
-                context,
-                invocationContext,
-                partialResponseHandler,
-                partialResponseWithContextHandler,
-                partialThinkingHandler,
-                partialThinkingWithContextHandler,
-                partialToolCallHandler,
-                partialToolCallWithContextHandler,
-                beforeToolExecutionHandler,
-                rawEventHandler,
-                toolExecutionHandler,
-                intermediateResponseHandler,
-                completeResponseHandler,
-                errorHandler,
-                initTemporaryMemory(context, messages),
-                null,
-                toolServiceContext,
-                context.toolService.maxToolCallingRoundTrips(),
-                toolArgumentsErrorHandler,
-                toolExecutionErrorHandler,
-                toolExecutor,
-                completeResponseProcessingExecutor,
-                commonGuardrailParams,
-                methodKey);
-
+        List<ToolSpecification> effectiveTools = toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
+        ChatRequest chatRequest = context.chatRequestTransformer.apply(ChatRequest.builder().messages(messages).parameters(chatRequestParameters(invocationContext.methodArguments(), effectiveTools)).build(), invocationContext.chatMemoryId());
+        ChatExecutor chatExecutor = ChatExecutor.builder(context.streamingChatModel).errorHandler(errorHandler).chatRequest(chatRequest).invocationContext(invocationContext).eventListenerRegistrar(context.eventListenerRegistrar).build();
+        dev.langchain4j.service.AiServiceStreamingResponseHandler handler = new AiServiceStreamingResponseHandler(chatRequest, chatExecutor, context, invocationContext, partialResponseHandler, partialResponseWithContextHandler, partialThinkingHandler, partialThinkingWithContextHandler, partialToolCallHandler, partialToolCallWithContextHandler, beforeToolExecutionHandler, rawEventHandler, toolExecutionHandler, intermediateResponseHandler, completeResponseHandler, errorHandler, initTemporaryMemory(context, messages), null, toolServiceContext, context.toolService.maxToolCallingRoundTrips(), toolArgumentsErrorHandler, toolExecutionErrorHandler, toolExecutor, completeResponseProcessingExecutor, commonGuardrailParams, methodKey);
         if (contentsHandler != null && retrievedContents != null) {
             contentsHandler.accept(retrievedContents);
         }
-
-        context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder()
-                .invocationContext(invocationContext)
-                .request(chatRequest)
-                .build());
-
+        context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(invocationContext).request(chatRequest).build());
         context.streamingChatModel.chat(chatRequest, handler);
     }
 
     private void validateConfiguration() {
         if (onPartialResponseInvoked + onPartialResponseWithContextInvoked > 1) {
-            throw new IllegalConfigurationException("One of [onPartialResponse, onPartialResponseWithContext] "
-                    + "can be invoked on TokenStream at most 1 time");
+            throw new IllegalConfigurationException("One of [onPartialResponse, onPartialResponseWithContext] " + "can be invoked on TokenStream at most 1 time");
         }
         if (onPartialThinkingInvoked + onPartialThinkingWithContextInvoked > 1) {
-            throw new IllegalConfigurationException("One of [onPartialThinking, onPartialThinkingWithContext] "
-                    + "can be invoked on TokenStream at most 1 time");
+            throw new IllegalConfigurationException("One of [onPartialThinking, onPartialThinkingWithContext] " + "can be invoked on TokenStream at most 1 time");
         }
         if (onPartialToolCallInvoked + onPartialToolCallWithContextInvoked > 1) {
-            throw new IllegalConfigurationException("One of [onPartialToolCall, onPartialToolCallWithContext] can be "
-                    + "invoked on TokenStream at most 1 time");
+            throw new IllegalConfigurationException("One of [onPartialToolCall, onPartialToolCallWithContext] can be " + "invoked on TokenStream at most 1 time");
         }
         if (onIntermediateResponseInvoked > 1) {
-            throw new IllegalConfigurationException(
-                    "onIntermediateResponse can be invoked on TokenStream at most 1 time");
+            throw new IllegalConfigurationException("onIntermediateResponse can be invoked on TokenStream at most 1 time");
         }
         if (onCompleteResponseInvoked > 1) {
             throw new IllegalConfigurationException("onCompleteResponse can be invoked on TokenStream at most 1 time");
@@ -294,18 +274,15 @@ public class AiServiceTokenStream implements TokenStream {
             throw new IllegalConfigurationException("onToolExecuted can be invoked on TokenStream at most 1 time");
         }
         if (onErrorInvoked + ignoreErrorsInvoked != 1) {
-            throw new IllegalConfigurationException(
-                    "One of [onError, ignoreErrors] " + "must be invoked on TokenStream exactly 1 time");
+            throw new IllegalConfigurationException("One of [onError, ignoreErrors] " + "must be invoked on TokenStream exactly 1 time");
         }
     }
 
     private ChatMemory initTemporaryMemory(AiServiceContext context, List<ChatMessage> messagesToSend) {
-        var chatMemory = MessageWindowChatMemory.withMaxMessages(Integer.MAX_VALUE);
-
+        dev.langchain4j.memory.chat.MessageWindowChatMemory chatMemory = MessageWindowChatMemory.withMaxMessages(Integer.MAX_VALUE);
         if (!context.hasChatMemory()) {
             chatMemory.add(messagesToSend);
         }
-
         return chatMemory;
     }
 }

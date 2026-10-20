@@ -2,7 +2,6 @@ package dev.langchain4j.service.tool;
 
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.Objects;
 
 /**
@@ -26,8 +25,10 @@ public class ToolErrorHandlerResult {
 
     @Override
     public boolean equals(final Object object) {
-        if (this == object) return true;
-        if (object == null || getClass() != object.getClass()) return false;
+        if (this == object)
+            return true;
+        if (object == null || getClass() != object.getClass())
+            return false;
         ToolErrorHandlerResult that = (ToolErrorHandlerResult) object;
         return Objects.equals(text, that.text);
     }
@@ -39,8 +40,6 @@ public class ToolErrorHandlerResult {
 
     @Override
     public String toString() {
-        return "ToolErrorHandlerResult{" +
-                "text=" + quoted(text) +
-                '}';
+        return "ToolErrorHandlerResult{" + "text=" + quoted(text) + '}';
     }
 }

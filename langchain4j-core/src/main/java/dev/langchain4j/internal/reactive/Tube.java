@@ -14,4 +14,6 @@ public interface Tube<T> {
     boolean cancelled();
 
     void whenTerminates(Runnable action);
+
+    void whenCancelled(Runnable action);
 }

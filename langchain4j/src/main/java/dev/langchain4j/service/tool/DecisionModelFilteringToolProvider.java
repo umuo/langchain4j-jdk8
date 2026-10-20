@@ -8,7 +8,6 @@ import static dev.langchain4j.agent.tool.ToolSpecification.METADATA_SEARCH_BEHAV
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.AiMessage;
@@ -81,10 +80,10 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
      */
     public static final PromptTemplate DEFAULT_QUESTION_TEMPLATE = DecisionModelToolSelector.DEFAULT_QUESTION_TEMPLATE;
 
-
     private static final Logger log = LoggerFactory.getLogger(DecisionModelFilteringToolProvider.class);
 
     private static final int DEFAULT_MAX_MESSAGES = 10;
+
     private static final int DEFAULT_MAX_MESSAGE_LENGTH = 2000;
 
     /**
@@ -96,13 +95,11 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
          * Pass on all tools of the wrapped tool provider, and log a warning.
          */
         ALL_TOOLS,
-
         /**
          * Pass on only the tools configured with {@link Builder#alwaysInclude(String...)} and the tools already called in
          * the conversation, and log a warning.
          */
         NO_TOOLS,
-
         /**
          * Fail the request with the error of the decision model.
          */
@@ -110,11 +107,17 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
     }
 
     private final ToolProvider toolProvider;
+
     private final DecisionModelToolSelector selector;
+
     private final Set<String> alwaysIncludedTools;
+
     private final int maxMessages;
+
     private final int maxMessageLength;
+
     private final Predicate<? super ChatMessage> messageFilter;
+
     private final FallbackStrategy fallbackStrategy;
 
     public DecisionModelFilteringToolProvider(ToolProvider toolProvider, DecisionModel decisionModel) {
@@ -123,16 +126,10 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
 
     protected DecisionModelFilteringToolProvider(Builder builder) {
         this.toolProvider = ensureNotNull(builder.toolProvider, "toolProvider");
-        this.selector = new DecisionModelToolSelector(
-                builder.decisionModel,
-                builder.questionTemplate,
-                getOrDefault(builder.maxResults, Integer.MAX_VALUE),
-                builder.minProbability,
-                builder.maxToolsPerDecisionRequest);
-        this.alwaysIncludedTools = Set.copyOf(builder.alwaysIncludedTools);
+        this.selector = new DecisionModelToolSelector(builder.decisionModel, builder.questionTemplate, getOrDefault(builder.maxResults, Integer.MAX_VALUE), builder.minProbability, builder.maxToolsPerDecisionRequest);
+        this.alwaysIncludedTools = dev.langchain4j.internal.Jdk8.copySet(builder.alwaysIncludedTools);
         this.maxMessages = ensureGreaterThanZero(getOrDefault(builder.maxMessages, DEFAULT_MAX_MESSAGES), "maxMessages");
-        this.maxMessageLength = ensureGreaterThanZero(
-                getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
+        this.maxMessageLength = ensureGreaterThanZero(getOrDefault(builder.maxMessageLength, DEFAULT_MAX_MESSAGE_LENGTH), "maxMessageLength");
         this.messageFilter = getOrDefault(builder.messageFilter, message -> true);
         this.fallbackStrategy = getOrDefault(builder.fallbackStrategy, FallbackStrategy.ALL_TOOLS);
     }
@@ -147,17 +144,10 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
         if (input == null) {
             return result;
         }
-
         Set<String> selected = new HashSet<>(alwaysIncludedTools);
         selected.addAll(calledTools(request.messages()));
-        result.aiServiceTools().stream()
-                .map(AiServiceTool::toolSpecification)
-                .filter(tool -> tool.metadata().get(METADATA_SEARCH_BEHAVIOR) == ALWAYS_VISIBLE)
-                .forEach(tool -> selected.add(tool.name()));
-        List<ToolSpecification> candidates = result.aiServiceTools().stream()
-                .map(AiServiceTool::toolSpecification)
-                .filter(tool -> !selected.contains(tool.name()))
-                .toList();
+        result.aiServiceTools().stream().map(AiServiceTool::toolSpecification).filter(tool -> tool.metadata().get(METADATA_SEARCH_BEHAVIOR) == ALWAYS_VISIBLE).forEach(tool -> selected.add(tool.name()));
+        List<ToolSpecification> candidates = result.aiServiceTools().stream().map(AiServiceTool::toolSpecification).filter(tool -> !selected.contains(tool.name())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         if (!candidates.isEmpty()) {
             Set<String> selectedCandidates = select(input, candidates);
             if (selectedCandidates == null) {
@@ -165,9 +155,7 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
             }
             selected.addAll(selectedCandidates);
         }
-        return new ToolProviderResult(result.aiServiceTools().stream()
-                .filter(tool -> selected.contains(tool.name()))
-                .toList());
+        return new ToolProviderResult((java.util.List<AiServiceTool>) result.aiServiceTools().stream().filter(tool -> selected.contains(tool.name())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)));
     }
 
     /**
@@ -175,27 +163,32 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
      */
     private Set<String> select(DecisionInput input, List<ToolSpecification> candidates) {
         try {
-            return Set.copyOf(selector.select(input, candidates));
+            return dev.langchain4j.internal.Jdk8.copySet(selector.select(input, candidates));
         } catch (RuntimeException e) {
-            return switch (fallbackStrategy) {
-                case ALL_TOOLS -> {
-                    log.warn("Failed to select tools, all tools will be passed on", e);
-                    yield null;
-                }
-                case NO_TOOLS -> {
-                    log.warn("Failed to select tools, only the always included tools will be passed on", e);
-                    yield Set.of();
-                }
-                case FAIL -> throw e;
-            };
+            switch(fallbackStrategy) {
+                case ALL_TOOLS:
+                    {
+                        log.warn("Failed to select tools, all tools will be passed on", e);
+                        return null;
+                    }
+                case NO_TOOLS:
+                    {
+                        log.warn("Failed to select tools, only the always included tools will be passed on", e);
+                        return dev.langchain4j.internal.Jdk8.set();
+                    }
+                case FAIL:
+                    throw e;
+                default:
+                    throw new IllegalStateException("Unexpected enum value");
+            }
         }
     }
 
     private static Set<String> calledTools(List<ChatMessage> messages) {
         Set<String> calledTools = new HashSet<>();
         for (ChatMessage message : messages) {
-            if (message instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
-                aiMessage.toolExecutionRequests().forEach(toolCall -> calledTools.add(toolCall.name()));
+            if (message instanceof AiMessage && ((AiMessage) message).hasToolExecutionRequests()) {
+                ((AiMessage) message).toolExecutionRequests().forEach(toolCall -> calledTools.add(toolCall.name()));
             }
         }
         return calledTools;
@@ -210,7 +203,7 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
         if (userMessage == null || !DecisionModelInputUtils.hasText(userMessage)) {
             return null;
         }
-        List<ChatMessage> messages = new ArrayList<>(request.messages() == null ? List.of() : request.messages());
+        List<ChatMessage> messages = new ArrayList<>(request.messages() == null ? dev.langchain4j.internal.Jdk8.list() : request.messages());
         int current = lastUserMessage(messages);
         if (current >= 0 && isCurrentUserMessage(messages.get(current), request, userMessage)) {
             messages.set(current, userMessage);
@@ -236,9 +229,7 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
      */
     private static UserMessage originalUserMessage(ToolProviderRequest request) {
         InvocationContext invocationContext = request.invocationContext();
-        if (invocationContext != null
-                && invocationContext.originalUserMessage() != null
-                && DecisionModelInputUtils.hasText(invocationContext.originalUserMessage())) {
+        if (invocationContext != null && invocationContext.originalUserMessage() != null && DecisionModelInputUtils.hasText(invocationContext.originalUserMessage())) {
             return invocationContext.originalUserMessage();
         }
         return request.userMessage();
@@ -248,12 +239,11 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
      * Whether the message is the current user message, as sent to the LLM or before retrieved content was added.
      */
     private static boolean isCurrentUserMessage(ChatMessage message, ToolProviderRequest request, UserMessage current) {
-        if (!(message instanceof UserMessage userMessage)) {
+        if (!(message instanceof UserMessage)) {
             return false;
         }
-        String text = DecisionModelInputUtils.text(userMessage);
-        return text.equals(DecisionModelInputUtils.text(current))
-                || (request.userMessage() != null && text.equals(DecisionModelInputUtils.text(request.userMessage())));
+        String text = DecisionModelInputUtils.text(((UserMessage) message));
+        return text.equals(DecisionModelInputUtils.text(current)) || (request.userMessage() != null && text.equals(DecisionModelInputUtils.text(request.userMessage())));
     }
 
     @Override
@@ -268,15 +258,25 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
     public static class Builder {
 
         private ToolProvider toolProvider;
+
         private DecisionModel decisionModel;
+
         private PromptTemplate questionTemplate;
+
         private Integer maxResults;
+
         private Double minProbability;
+
         private Integer maxToolsPerDecisionRequest;
+
         private final Set<String> alwaysIncludedTools = new HashSet<>();
+
         private Integer maxMessages;
+
         private Integer maxMessageLength;
+
         private Predicate<? super ChatMessage> messageFilter;
+
         private FallbackStrategy fallbackStrategy;
 
         /**
@@ -345,7 +345,7 @@ public class DecisionModelFilteringToolProvider implements ToolProvider {
          * Sets tools that are always passed on, without asking the decision model. Replaces the previously set tools.
          */
         public Builder alwaysInclude(String... toolNames) {
-            return alwaysInclude(List.of(toolNames));
+            return alwaysInclude(dev.langchain4j.internal.Jdk8.list(toolNames));
         }
 
         /**

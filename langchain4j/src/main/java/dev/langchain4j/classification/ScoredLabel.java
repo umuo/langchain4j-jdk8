@@ -2,7 +2,6 @@ package dev.langchain4j.classification;
 
 import static dev.langchain4j.internal.Utils.quoted;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import java.util.Objects;
 
 /**
@@ -13,6 +12,7 @@ import java.util.Objects;
 public class ScoredLabel<L> {
 
     private final L label;
+
     private final double score;
 
     public ScoredLabel(L label, double score) {
@@ -30,10 +30,11 @@ public class ScoredLabel<L> {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) return true;
-        if (!(obj instanceof ScoredLabel<?> that)) return false;
-        return Objects.equals(this.label, that.label)
-                && Double.doubleToLongBits(this.score) == Double.doubleToLongBits(that.score);
+        if (this == obj)
+            return true;
+        if (!(obj instanceof ScoredLabel<?>))
+            return false;
+        return Objects.equals(this.label, ((ScoredLabel<?>) obj).label) && Double.doubleToLongBits(this.score) == Double.doubleToLongBits(((ScoredLabel<?>) obj).score);
     }
 
     @Override

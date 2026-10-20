@@ -3,7 +3,6 @@ package dev.langchain4j.data.document.source;
 import static dev.langchain4j.data.document.Document.ABSOLUTE_DIRECTORY_PATH;
 import static dev.langchain4j.data.document.Document.FILE_NAME;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.data.document.DocumentSource;
 import dev.langchain4j.data.document.Metadata;
 import java.io.File;
@@ -29,9 +28,7 @@ public class FileSystemSource implements DocumentSource {
 
     @Override
     public Metadata metadata() {
-        return new Metadata()
-                .put(FILE_NAME, path.getFileName().toString())
-                .put(ABSOLUTE_DIRECTORY_PATH, path.toAbsolutePath().getParent().toString());
+        return new Metadata().put(FILE_NAME, path.getFileName().toString()).put(ABSOLUTE_DIRECTORY_PATH, path.toAbsolutePath().getParent().toString());
     }
 
     public static FileSystemSource from(Path filePath) {

@@ -4,7 +4,6 @@ import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentLoader;
 import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.source.UrlSource;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 

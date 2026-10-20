@@ -4,7 +4,9 @@ import java.lang.reflect.Parameter;
 import java.util.ServiceLoader;
 
 public interface ParameterNameResolver {
+
     boolean hasVariableName(Parameter parameter);
+
     String getVariableName(Parameter parameter);
 
     static String name(Parameter parameter) {
@@ -16,20 +18,22 @@ public interface ParameterNameResolver {
     }
 
     class Holder {
+
         public static final ParameterNameResolver RESOLVER = findResolver();
 
-        private Holder() { }
+        private Holder() {
+        }
 
         static ParameterNameResolver findResolver() {
             for (ParameterNameResolver resolver : ServiceLoader.load(ParameterNameResolver.class)) {
                 return resolver;
             }
             return new DefaultParameterNameResolver();
-
         }
     }
 
     class DefaultParameterNameResolver implements ParameterNameResolver {
+
         @Override
         public boolean hasVariableName(final Parameter parameter) {
             return parameter.getAnnotation(V.class) != null;

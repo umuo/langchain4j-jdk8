@@ -3,7 +3,6 @@ package dev.langchain4j.memory.chat;
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.ValidationUtils.ensureGreaterThanZero;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -48,8 +47,11 @@ import java.util.function.Function;
 public class MessageWindowChatMemory implements ChatMemory {
 
     private final Object id;
+
     private final Function<Object, Integer> maxMessagesProvider;
+
     private final ChatMemoryStore store;
+
     private final boolean alwaysKeepSystemMessageFirst;
 
     private MessageWindowChatMemory(Builder builder) {
@@ -99,23 +101,22 @@ public class MessageWindowChatMemory implements ChatMemory {
             Optional<SystemMessage> systemMessage = SystemMessage.findFirst(messages);
             if (systemMessage.isPresent()) {
                 if (systemMessage.get().equals(message)) {
-                    return false; // do not add the same system message
+                    // do not add the same system message
+                    return false;
                 } else {
-                    messages.remove(systemMessage.get()); // need to replace existing system message
+                    // need to replace existing system message
+                    messages.remove(systemMessage.get());
                 }
             }
         }
-
         if (message instanceof SystemMessage && this.alwaysKeepSystemMessageFirst) {
             messages.add(0, message);
         } else {
             messages.add(message);
         }
-
         Integer maxMessages = this.maxMessagesProvider.apply(this.id);
         ensureGreaterThanZero(maxMessages, "maxMessages");
         ensureCapacity(messages, maxMessages);
-
         return true;
     }
 
@@ -149,7 +150,7 @@ public class MessageWindowChatMemory implements ChatMemory {
             ensureCapacity(windowed, maxMessages);
             return store.updateMessagesAsync(id, windowed);
         } catch (Throwable t) {
-            return CompletableFuture.failedFuture(t);
+            return dev.langchain4j.internal.Jdk8.failedFuture(t);
         }
     }
 
@@ -173,16 +174,13 @@ public class MessageWindowChatMemory implements ChatMemory {
 
     private static void ensureCapacity(List<ChatMessage> messages, int maxMessages) {
         while (messages.size() > maxMessages) {
-
             int messageToEvictIndex = 0;
             if (messages.get(0) instanceof SystemMessage) {
                 messageToEvictIndex = 1;
             }
-
             ChatMessage evictedMessage = messages.remove(messageToEvictIndex);
-            if (evictedMessage instanceof AiMessage aiMessage && aiMessage.hasToolExecutionRequests()) {
-                while (messages.size() > messageToEvictIndex
-                        && messages.get(messageToEvictIndex) instanceof ToolExecutionResultMessage) {
+            if (evictedMessage instanceof AiMessage && ((AiMessage) evictedMessage).hasToolExecutionRequests()) {
+                while (messages.size() > messageToEvictIndex && messages.get(messageToEvictIndex) instanceof ToolExecutionResultMessage) {
                     // Some LLMs (e.g. OpenAI) prohibit ToolExecutionResultMessage(s) without corresponding AiMessage,
                     // so we have to automatically evict orphan ToolExecutionResultMessage(s) if AiMessage was evicted
                     messages.remove(messageToEvictIndex);
@@ -203,8 +201,11 @@ public class MessageWindowChatMemory implements ChatMemory {
     public static class Builder {
 
         private Object id = ChatMemoryService.DEFAULT;
+
         private Function<Object, Integer> maxMessagesProvider;
+
         private ChatMemoryStore store;
+
         private Boolean alwaysKeepSystemMessageFirst;
 
         /**

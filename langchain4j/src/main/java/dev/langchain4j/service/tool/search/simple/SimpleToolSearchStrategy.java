@@ -13,13 +13,11 @@ import dev.langchain4j.model.chat.request.json.JsonStringSchema;
 import dev.langchain4j.service.tool.search.ToolSearchRequest;
 import dev.langchain4j.service.tool.search.ToolSearchResult;
 import dev.langchain4j.service.tool.search.ToolSearchStrategy;
-
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.function.Function;
-
 import static dev.langchain4j.internal.Utils.getOrDefault;
 import static dev.langchain4j.internal.Utils.isNullOrEmpty;
 import static dev.langchain4j.internal.Utils.toBase64;
@@ -43,11 +41,17 @@ import static java.util.Comparator.comparingInt;
 public class SimpleToolSearchStrategy implements ToolSearchStrategy {
 
     private static final String DEFAULT_TOOL_NAME = "tool_search_tool";
+
     private static final String DEFAULT_TOOL_DESCRIPTION = "Finds available tools whose name or description contains given search terms";
+
     private static final String DEFAULT_TOOL_ARGUMENT_NAME = "terms";
+
     private static final String DEFAULT_TOOL_ARGUMENT_DESCRIPTION = "A list of individual search terms (single words) used to find relevant tools";
+
     private static final int DEFAULT_MAX_RESULTS = 5;
+
     private static final int DEFAULT_MIN_SCORE = 1;
+
     private static final Function<List<String>, String> DEFAULT_TOOL_RESULT_MESSAGE_TEXT_PROVIDER = foundToolNames -> {
         if (foundToolNames.isEmpty()) {
             return "No matching tools found";
@@ -57,10 +61,15 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
     };
 
     private final ToolSpecification toolSearchTool;
+
     private final int maxResults;
+
     private final int minScore;
+
     private final String toolArgumentName;
+
     private final boolean throwToolArgumentsExceptions;
+
     private final Function<List<String>, String> toolResultMessageTextProvider;
 
     public SimpleToolSearchStrategy() {
@@ -69,19 +78,7 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
 
     public SimpleToolSearchStrategy(Builder builder) {
         this.toolArgumentName = getOrDefault(builder.toolArgumentName, DEFAULT_TOOL_ARGUMENT_NAME);
-
-        this.toolSearchTool = ToolSpecification.builder()
-                .name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME))
-                .description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION))
-                .parameters(JsonObjectSchema.builder()
-                        .addProperty(toolArgumentName, JsonArraySchema.builder()
-                                .description(getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION))
-                                .items(new JsonStringSchema())
-                                .build())
-                        .required(toolArgumentName)
-                        .build())
-                .build();
-
+        this.toolSearchTool = ToolSpecification.builder().name(getOrDefault(builder.toolName, DEFAULT_TOOL_NAME)).description(getOrDefault(builder.toolDescription, DEFAULT_TOOL_DESCRIPTION)).parameters(JsonObjectSchema.builder().addProperty(toolArgumentName, JsonArraySchema.builder().description(getOrDefault(builder.toolArgumentDescription, DEFAULT_TOOL_ARGUMENT_DESCRIPTION)).items(new JsonStringSchema()).build()).required(toolArgumentName).build()).build();
         this.maxResults = getOrDefault(builder.maxResults, DEFAULT_MAX_RESULTS);
         this.minScore = getOrDefault(builder.minScore, DEFAULT_MIN_SCORE);
         this.throwToolArgumentsExceptions = getOrDefault(builder.throwToolArgumentsExceptions, false);
@@ -90,37 +87,22 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
 
     @Override
     public List<ToolSpecification> getToolSearchTools(InvocationContext context) {
-        return List.of(toolSearchTool);
+        return dev.langchain4j.internal.Jdk8.list(toolSearchTool);
     }
 
     public ToolSearchResult search(ToolSearchRequest request) {
         List<String> terms = extractTerms(request.toolExecutionRequest().arguments());
-
-        List<ScoredTool> scoredTools = request.searchableTools().stream()
-                .map(tool -> new ScoredTool(tool, score(tool, terms)))
-                .filter(scoredTool -> scoredTool.score >= minScore)
-                .sorted(comparingInt(ScoredTool::score).reversed())
-                .limit(maxResults)
-                .toList();
-
-        List<String> toolNames = scoredTools.stream()
-                .map(st -> st.tool.name())
-                .toList();
-
+        List<ScoredTool> scoredTools = request.searchableTools().stream().map(tool -> new ScoredTool(tool, score(tool, terms))).filter(scoredTool -> scoredTool.score >= minScore).sorted(comparingInt(ScoredTool::score).reversed()).limit(maxResults).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+        List<String> toolNames = scoredTools.stream().map(st -> st.tool.name()).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         String toolResultMessageText = toolResultMessageTextProvider.apply(toolNames);
-
         return new ToolSearchResult(toolNames, toolResultMessageText);
     }
 
     protected int score(ToolSpecification tool, List<String> terms) {
-
         List<String> cleanedTerms = clean(terms);
-
         String name = lower(tool.name());
         String description = lower(tool.description());
-
         int score = 0;
-
         for (String term : cleanedTerms) {
             if (name.contains(term)) {
                 score += 2;
@@ -129,38 +111,27 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
                 score += 1;
             }
         }
-
         return score;
     }
 
     protected List<String> clean(List<String> terms) {
-        return terms.stream()
-                .flatMap(term -> stream(term.split("\\s+")))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .map(SimpleToolSearchStrategy::lower)
-                .distinct()
-                .toList();
+        return terms.stream().flatMap(term -> stream(term.split("\\s+"))).map(String::trim).filter(s -> !s.isEmpty()).map(SimpleToolSearchStrategy::lower).distinct().collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     protected List<String> extractTerms(String argumentsJson) {
         Map<String, Object> map = parseMap(argumentsJson);
-
         if (isNullOrEmpty(map) || !map.containsKey(toolArgumentName)) {
-            String message = "Missing required tool argument '%s'".formatted(toolArgumentName);
+            String message = String.format("Missing required tool argument '%s'", toolArgumentName);
             throwArgumentException(message, null);
         }
-
         Object value = map.get(toolArgumentName);
-        if (value instanceof List<?> list) {
-            return list.stream()
-                    .filter(Objects::nonNull)
-                    .map(Object::toString)
-                    .toList();
+        if (value instanceof List<?>) {
+            return ((List<?>) value).stream().filter(Objects::nonNull).map(Object::toString).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         } else {
-            String message = "Tool argument '%s' must be an array of strings".formatted(toolArgumentName);
+            String message = String.format("Tool argument '%s' must be an array of strings", toolArgumentName);
             throwArgumentException(message, null);
-            return null; // unreachable
+            // unreachable
+            return null;
         }
     }
 
@@ -168,18 +139,21 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
         try {
             return Json.fromJson(json, Map.class);
         } catch (Exception e) {
-            String message = "Failed to parse tool search arguments: '%s' (base64: '%s')".formatted(json, toBase64(json));
+            String message = String.format("Failed to parse tool search arguments: '%s' (base64: '%s')", json, toBase64(json));
             throwArgumentException(message, e);
-            return null; // unreachable
+            // unreachable
+            return null;
         }
     }
 
     private void throwArgumentException(String message, Exception e) {
         if (throwToolArgumentsExceptions) {
-            if (e == null) throw new ToolArgumentsException(message);
+            if (e == null)
+                throw new ToolArgumentsException(message);
             throw new ToolArgumentsException(message, e);
         } else {
-            if (e == null) throw new LlmVisibleToolExecutionException(message);
+            if (e == null)
+                throw new LlmVisibleToolExecutionException(message);
             throw new LlmVisibleToolExecutionException(message, e);
         }
     }
@@ -188,7 +162,36 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
         return value == null ? null : value.toLowerCase(Locale.ROOT);
     }
 
-    private record ScoredTool(ToolSpecification tool, int score) {
+    private final static class ScoredTool {
+
+        private final ToolSpecification tool;
+
+        public ToolSpecification tool() {
+            return tool;
+        }
+
+        private final int score;
+
+        public int score() {
+            return score;
+        }
+
+        public ScoredTool(ToolSpecification tool, int score) {
+            this.tool = tool;
+            this.score = score;
+        }
+
+        public boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(tool, ((ScoredTool) obj).tool) && java.util.Objects.equals(score, ((ScoredTool) obj).score));
+        }
+
+        public int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(tool)) + java.util.Objects.hashCode(score));
+        }
+
+        public String toString() {
+            return "ScoredTool[" + "tool=" + tool + ", score=" + score + "]";
+        }
     }
 
     public static Builder builder() {
@@ -198,12 +201,19 @@ public class SimpleToolSearchStrategy implements ToolSearchStrategy {
     public static class Builder {
 
         private Integer maxResults;
+
         private Integer minScore;
+
         private String toolName;
+
         private String toolDescription;
+
         private String toolArgumentName;
+
         private String toolArgumentDescription;
+
         private Boolean throwToolArgumentsExceptions;
+
         private Function<List<String>, String> toolResultMessageTextProvider;
 
         /**

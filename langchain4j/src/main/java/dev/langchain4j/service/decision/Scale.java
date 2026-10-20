@@ -1,7 +1,6 @@
 package dev.langchain4j.service.decision;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.model.decision.response.ScaleAnswer;
 import java.util.ArrayList;
@@ -25,30 +24,26 @@ import java.util.Objects;
 public final class Scale<E extends Enum<E>> {
 
     private final List<E> levels;
+
     private final Map<E, Double> probabilities;
+
     private final ScaleAnswer answer;
 
     private Scale(Builder<E> builder) {
-        this.levels = List.of(ensureNotNull(builder.levelType, "levelType").getEnumConstants());
+        this.levels = dev.langchain4j.internal.Jdk8.list(ensureNotNull(builder.levelType, "levelType").getEnumConstants());
         Map<E, Double> probabilities = new EnumMap<>(builder.levelType);
         if (builder.probabilities != null) {
-            builder.probabilities.forEach(
-                    (level, probability) -> probabilities.put(ensureNotNull(level, "level"), probability));
+            builder.probabilities.forEach((level, probability) -> probabilities.put(ensureNotNull(level, "level"), probability));
         }
         this.probabilities = Collections.unmodifiableMap(probabilities);
         List<Double> probabilityList = new ArrayList<>();
         if (!probabilities.isEmpty()) {
             levels.forEach(level -> probabilityList.add(probabilities.getOrDefault(level, 0.0)));
         }
-        this.answer = ScaleAnswer.builder()
-                .mean(builder.mean)
-                .probabilities(probabilityList)
-                .confidence(builder.confidence)
-                .build();
+        this.answer = ScaleAnswer.builder().mean(builder.mean).probabilities(probabilityList).confidence(builder.confidence).build();
         double mean = answer.mean();
         if (mean < 0 || mean > levels.size() - 1) {
-            throw new IllegalArgumentException(
-                    "mean must be between 0 and %s, but was %s".formatted(levels.size() - 1, mean));
+            throw new IllegalArgumentException(String.format("mean must be between 0 and %s, but was %s", levels.size() - 1, mean));
         }
     }
 
@@ -76,8 +71,7 @@ public final class Scale<E extends Enum<E>> {
         if (probabilities.isEmpty()) {
             return levels.get((int) Math.round(mean()));
         }
-        return Collections.max(probabilities.entrySet(), Map.Entry.comparingByValue())
-                .getKey();
+        return Collections.max(probabilities.entrySet(), Map.Entry.comparingByValue()).getKey();
     }
 
     /**
@@ -106,10 +100,7 @@ public final class Scale<E extends Enum<E>> {
      */
     public double probabilityAtLeast(E level) {
         ensureProbabilities();
-        return probabilities.entrySet().stream()
-                .filter(entry -> entry.getKey().compareTo(level) >= 0)
-                .mapToDouble(Map.Entry::getValue)
-                .sum();
+        return probabilities.entrySet().stream().filter(entry -> entry.getKey().compareTo(level) >= 0).mapToDouble(Map.Entry::getValue).sum();
     }
 
     private void ensureProbabilities() {
@@ -128,11 +119,11 @@ public final class Scale<E extends Enum<E>> {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Scale<?> that)) return false;
-        return Objects.equals(levels, that.levels)
-                && Objects.equals(probabilities, that.probabilities)
-                && Objects.equals(answer, that.answer);
+        if (this == o)
+            return true;
+        if (!(o instanceof Scale<?>))
+            return false;
+        return Objects.equals(levels, ((Scale<?>) o).levels) && Objects.equals(probabilities, ((Scale<?>) o).probabilities) && Objects.equals(answer, ((Scale<?>) o).answer);
     }
 
     @Override
@@ -148,8 +139,11 @@ public final class Scale<E extends Enum<E>> {
     public static final class Builder<E extends Enum<E>> {
 
         private final Class<E> levelType;
+
         private Double mean;
+
         private Map<E, Double> probabilities;
+
         private Double confidence;
 
         private Builder(Class<E> levelType) {

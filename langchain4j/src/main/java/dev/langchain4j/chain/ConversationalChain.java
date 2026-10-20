@@ -5,7 +5,6 @@ import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
-
 import static dev.langchain4j.data.message.UserMessage.userMessage;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotBlank;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
@@ -19,6 +18,7 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 public class ConversationalChain implements Chain<String, String> {
 
     private final ChatModel chatModel;
+
     private final ChatMemory chatMemory;
 
     private ConversationalChain(ChatModel chatModel, ChatMemory chatMemory) {
@@ -32,18 +32,16 @@ public class ConversationalChain implements Chain<String, String> {
 
     @Override
     public String execute(String userMessage) {
-
         chatMemory.add(userMessage(ensureNotBlank(userMessage, "userMessage")));
-
         AiMessage aiMessage = chatModel.chat(chatMemory.messages()).aiMessage();
-
         chatMemory.add(aiMessage);
-
         return aiMessage.text();
     }
 
     public static class ConversationalChainBuilder {
+
         private ChatModel chatModel;
+
         private ChatMemory chatMemory;
 
         ConversationalChainBuilder() {

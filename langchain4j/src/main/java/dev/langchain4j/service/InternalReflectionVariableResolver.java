@@ -1,7 +1,6 @@
 package dev.langchain4j.service;
 
 import static dev.langchain4j.service.IllegalConfigurationException.illegalConfiguration;
-
 import dev.langchain4j.invocation.InvocationParameters;
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.input.structured.StructuredPrompt;
@@ -23,14 +22,14 @@ import java.util.Map;
 @Internal
 public class InternalReflectionVariableResolver {
 
-    private InternalReflectionVariableResolver() {}
+    private InternalReflectionVariableResolver() {
+    }
 
     public static Map<String, Object> findTemplateVariables(String template, Method method, Object[] args) {
         if (args == null) {
             return Collections.emptyMap();
         }
         Parameter[] parameters = method.getParameters();
-
         Map<String, Object> variables = new HashMap<>();
         for (int i = 0; i < args.length; i++) {
             Parameter parameter = parameters[i];
@@ -39,18 +38,14 @@ public class InternalReflectionVariableResolver {
             }
             Object variableValue = args[i];
             variables.put(ParameterNameResolver.name(parameter), variableValue);
-            if (variableValue instanceof Map<?, ?> variablesMap) {
-                variablesMap.entrySet().stream()
-                        .filter(e -> e.getKey().getClass() == String.class)
-                        .forEach(e -> variables.put((String) e.getKey(), e.getValue()));
+            if (variableValue instanceof Map<?, ?>) {
+                ((Map<?, ?>) variableValue).entrySet().stream().filter(e -> e.getKey().getClass() == String.class).forEach(e -> variables.put((String) e.getKey(), e.getValue()));
             }
         }
-
         if (template.contains("{{it}}") && !variables.containsKey("it")) {
             String itValue = getValueOfVariableIt(parameters, args);
             variables.put("it", itValue);
         }
-
         return variables;
     }
 
@@ -58,21 +53,16 @@ public class InternalReflectionVariableResolver {
         if (args != null) {
             if (args.length == 1) {
                 Parameter parameter = parameters[0];
-                if (!parameter.isAnnotationPresent(MemoryId.class)
-                        && !parameter.isAnnotationPresent(UserMessage.class)
-                        && !parameter.isAnnotationPresent(UserName.class)
-                        && (!parameter.isAnnotationPresent(V.class) || isAnnotatedWithIt(parameter))) {
+                if (!parameter.isAnnotationPresent(MemoryId.class) && !parameter.isAnnotationPresent(UserMessage.class) && !parameter.isAnnotationPresent(UserName.class) && (!parameter.isAnnotationPresent(V.class) || isAnnotatedWithIt(parameter))) {
                     return asString(args[0]);
                 }
             }
-
             for (int i = 0; i < args.length; i++) {
                 if (isAnnotatedWithIt(parameters[i])) {
                     return asString(args[i]);
                 }
             }
         }
-
         throw illegalConfiguration("Error: cannot find the value of the prompt template variable \"{{it}}\".");
     }
 

@@ -2,7 +2,6 @@ package dev.langchain4j.service;
 
 import static java.lang.annotation.ElementType.PARAMETER;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
-
 import dev.langchain4j.memory.chat.ChatMemoryProvider;
 import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
@@ -16,4 +15,5 @@ import java.lang.annotation.Target;
  */
 @Retention(RUNTIME)
 @Target(PARAMETER)
-public @interface MemoryId {}
+public @interface MemoryId {
+}

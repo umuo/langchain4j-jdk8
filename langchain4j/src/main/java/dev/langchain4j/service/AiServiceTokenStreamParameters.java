@@ -23,15 +23,25 @@ import java.util.concurrent.Executor;
 public class AiServiceTokenStreamParameters {
 
     private final List<ChatMessage> messages;
+
     private final ToolServiceContext toolServiceContext;
+
     private final ToolArgumentsErrorHandler toolArgumentsErrorHandler;
+
     private final ToolExecutionErrorHandler toolExecutionErrorHandler;
+
     private final Executor toolExecutor;
+
     private final Executor completeResponseProcessingExecutor;
+
     private final List<Content> retrievedContents;
+
     private final AiServiceContext context;
+
     private final InvocationContext invocationContext;
+
     private final GuardrailRequestParams commonGuardrailParams;
+
     private final Object methodKey;
 
     protected AiServiceTokenStreamParameters(Builder builder) {
@@ -65,7 +75,7 @@ public class AiServiceTokenStreamParameters {
      * @see #availableTools()
      * @deprecated use {@link #toolServiceContext()} instead
      */
-    @Deprecated(since = "1.13.0")
+    @Deprecated
     public List<ToolSpecification> effectiveTools() {
         return toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
     }
@@ -76,7 +86,7 @@ public class AiServiceTokenStreamParameters {
      * @see #effectiveTools()
      * @deprecated use {@link #toolServiceContext()} instead
      */
-    @Deprecated(since = "1.12.0")
+    @Deprecated
     public List<ToolSpecification> toolSpecifications() {
         return effectiveTools();
     }
@@ -89,7 +99,7 @@ public class AiServiceTokenStreamParameters {
      * @see #effectiveTools()
      * @deprecated use {@link #toolServiceContext()} instead
      */
-    @Deprecated(since = "1.13.0")
+    @Deprecated
     public List<ToolSpecification> availableTools() {
         return toolServiceContext != null ? toolServiceContext.availableTools() : null;
     }
@@ -98,7 +108,7 @@ public class AiServiceTokenStreamParameters {
      * @return the tool executors
      * @deprecated use {@link #toolServiceContext()} instead
      */
-    @Deprecated(since = "1.13.0")
+    @Deprecated
     public Map<String, ToolExecutor> toolExecutors() {
         return toolServiceContext != null ? toolServiceContext.toolExecutors() : null;
     }
@@ -188,18 +198,29 @@ public class AiServiceTokenStreamParameters {
     public static class Builder {
 
         private List<ChatMessage> messages;
+
         private ToolServiceContext toolServiceContext;
+
         private ToolArgumentsErrorHandler toolArgumentsErrorHandler;
+
         private ToolExecutionErrorHandler toolExecutionErrorHandler;
+
         private Executor toolExecutor;
+
         private Executor completeResponseProcessingExecutor;
+
         private List<Content> retrievedContents;
+
         private AiServiceContext context;
+
         private InvocationContext invocationContext;
+
         private GuardrailRequestParams commonGuardrailParams;
+
         private Object methodKey;
 
-        protected Builder() {}
+        protected Builder() {
+        }
 
         /**
          * Sets the messages.
@@ -228,12 +249,10 @@ public class AiServiceTokenStreamParameters {
          * @see #availableTools(List)
          * @deprecated use {@link #toolServiceContext(ToolServiceContext)} instead
          */
-        @Deprecated(since = "1.13.0")
+        @Deprecated
         public Builder effectiveTools(List<ToolSpecification> effectiveTools) {
             ensureToolServiceContext();
-            this.toolServiceContext = this.toolServiceContext.toBuilder()
-                    .effectiveTools(effectiveTools)
-                    .build();
+            this.toolServiceContext = this.toolServiceContext.toBuilder().effectiveTools(effectiveTools).build();
             return this;
         }
 
@@ -242,7 +261,7 @@ public class AiServiceTokenStreamParameters {
          *
          * @deprecated use {@link #toolServiceContext(ToolServiceContext)} instead
          */
-        @Deprecated(since = "1.12.0")
+        @Deprecated
         public Builder toolSpecifications(List<ToolSpecification> toolSpecifications) {
             effectiveTools(toolSpecifications);
             availableTools(toolSpecifications);
@@ -255,12 +274,10 @@ public class AiServiceTokenStreamParameters {
          * @see #effectiveTools(List)
          * @deprecated use {@link #toolServiceContext(ToolServiceContext)} instead
          */
-        @Deprecated(since = "1.13.0")
+        @Deprecated
         public Builder availableTools(List<ToolSpecification> availableTools) {
             ensureToolServiceContext();
-            this.toolServiceContext = this.toolServiceContext.toBuilder()
-                    .availableTools(availableTools)
-                    .build();
+            this.toolServiceContext = this.toolServiceContext.toBuilder().availableTools(availableTools).build();
             return this;
         }
 
@@ -269,12 +286,10 @@ public class AiServiceTokenStreamParameters {
          *
          * @deprecated use {@link #toolServiceContext(ToolServiceContext)} instead
          */
-        @Deprecated(since = "1.13.0")
+        @Deprecated
         public Builder toolExecutors(Map<String, ToolExecutor> toolExecutors) {
             ensureToolServiceContext();
-            this.toolServiceContext = this.toolServiceContext.toBuilder()
-                    .toolExecutors(toolExecutors)
-                    .build();
+            this.toolServiceContext = this.toolServiceContext.toBuilder().toolExecutors(toolExecutors).build();
             return this;
         }
 

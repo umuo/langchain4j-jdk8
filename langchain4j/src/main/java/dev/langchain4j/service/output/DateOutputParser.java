@@ -1,7 +1,6 @@
 package dev.langchain4j.service.output;
 
 import dev.langchain4j.Internal;
-
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -11,6 +10,7 @@ import java.util.Date;
 class DateOutputParser implements OutputParser<Date> {
 
     private static final String DATE_PATTERN = "yyyy-MM-dd";
+
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ISO_LOCAL_DATE;
 
     @Override
@@ -22,7 +22,7 @@ class DateOutputParser implements OutputParser<Date> {
             LocalDate localDate = LocalDate.parse(string.trim(), FORMATTER);
             return Date.from(localDate.atStartOfDay(ZoneId.systemDefault()).toInstant());
         } catch (Exception e) {
-            throw new OutputParsingException("Cannot parse '%s' into java.util.Date".formatted(string), e);
+            throw new OutputParsingException(String.format("Cannot parse '%s' into java.util.Date", string), e);
         }
     }
 

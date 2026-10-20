@@ -1,7 +1,6 @@
 package dev.langchain4j.service;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Experimental;
 import dev.langchain4j.invocation.InvocationContext;
 import dev.langchain4j.observability.api.event.CompensationReason;
@@ -18,7 +17,7 @@ import java.util.List;
 
 /**
  * An event emitted by the reactive stream of a non-blocking streaming AI Service — that is, an AI Service method
- * declared to return a {@link java.util.concurrent.Flow.Publisher} of {@code AiServiceStreamingEvent}.
+ * declared to return a {@link org.reactivestreams.Publisher} of {@code AiServiceStreamingEvent}.
  * <p>
  * This is a <b>high-level</b>, AI-Service-scoped vocabulary, deliberately distinct from the low-level,
  * per-LLM-call {@link dev.langchain4j.model.chat.response.ChatModelStreamingEvent} emitted by
@@ -243,10 +242,10 @@ public interface AiServiceStreamingEvent {
     final class ToolCompensatedEvent extends AbstractEvent {
 
         private final ToolExecution toolExecution;
+
         private final CompensationReason reason;
 
-        public ToolCompensatedEvent(
-                ToolExecution toolExecution, CompensationReason reason, InvocationContext invocationContext) {
+        public ToolCompensatedEvent(ToolExecution toolExecution, CompensationReason reason, InvocationContext invocationContext) {
             super(invocationContext);
             this.toolExecution = toolExecution;
             this.reason = reason;
