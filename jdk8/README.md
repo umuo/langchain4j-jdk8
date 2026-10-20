@@ -2,17 +2,18 @@
 
 基于官方提交 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`（1.23.0 开发基线）的独立兼容分支。保留完整上游历史、Java 包名和主要模型 API，使用独立 Maven 坐标，按阶段提交。
 
-## 首期产物
+## 当前产物（第二阶段）
 
-以下模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
+以下六个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
 
 - `langchain4j-core`
 - `langchain4j-http-client`
 - `langchain4j-http-client-okhttp`
 - `langchain4j-reactive-streaming`
 - `langchain4j-open-ai`
+- `langchain4j`（AI Services、会话记忆和工具执行）
 
-这是固定提交的兼容分支，不代表持续同步官方最新版本。AI Services 的 `langchain4j` 主模块、Agentic、MCP、具体向量库、Spring Boot 集成和 Jackson 3 尚未纳入兼容构建。core 中已有的记忆/RAG 接口随 core 编译，但完整高层流程属于后续阶段。
+这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。完整 RAG 流程、Agentic、MCP、具体向量库、Spring Boot 集成和 Jackson 3 不属于本阶段验收范围。
 
 ## 构建与验收
 
@@ -22,7 +23,7 @@
 ./jdk8/build.sh
 ```
 
-脚本检查 `/Volumes/Nas` 挂载，使用现有 JDK 17 构建生产代码（`--release 8`），使用真实 JDK 8 执行独立验收，再用 JDK 17 执行选定的上游测试。成功后安装到外置盘 Maven 仓库、编译独立 BOM 消费示例，审计生产 JAR 并在 Java 8 下执行类链接检查和 loopback 示例。
+脚本检查 `/Volumes/Nas` 挂载，使用现有 JDK 17 构建生产代码（`--release 8`），使用真实 JDK 8 执行独立验收，再用 JDK 17 执行选定的上游测试。成功后安装到外置盘 Maven 仓库、编译独立 AI Services BOM 消费示例，审计生产 JAR 并在 Java 8 下执行类链接检查和 loopback 示例。
 
 可通过 `JAVA17_HOME`、`JAVA8_HOME`、`JDK8_MAVEN`、`JDK8_SETTINGS`、`JDK8_REPOSITORY` 覆盖本机工具路径。默认复用 SDKMAN 的现有 JDK，缓存位于 `/Volumes/Nas/envs/maven/repository`，不会安装或切换全局 JDK。
 
@@ -49,12 +50,29 @@
         <groupId>dev.langchain4j.jdk8</groupId>
         <artifactId>langchain4j-open-ai</artifactId>
     </dependency>
+    <dependency>
+        <groupId>dev.langchain4j.jdk8</groupId>
+        <artifactId>langchain4j</artifactId>
+    </dependency>
 </dependencies>
 ```
 
-Java 导入仍为 `dev.langchain4j.*`。默认 HTTP SPI 已选择 OkHttp，无需引入 JDK HTTP Client。不要在同一应用中混用官方 `dev.langchain4j` 和兼容版同名模块。
+Java 导入仍为 `dev.langchain4j.*`。通过接口创建服务：
+
+```java
+interface Assistant {
+    String chat(String message);
+}
+Assistant assistant = AiServices.create(Assistant.class, model);
+```
+
+其中 `model` 为你显式配置的 `OpenAiChatModel`。默认 HTTP SPI 已选择 OkHttp，无需引入 JDK HTTP Client。不要在同一应用中混用官方 `dev.langchain4j` 和兼容版同名模块。
 
 `jdk8/example` 是不继承本工程父 POM 的独立消费项目，使用本地模拟服务，无需 API Key。真实服务联调应自行显式提供地址、模型名和密钥，本工程不会读取宿主机服务配置。
+
+## 句子分割依赖限制
+
+主模块使用 OpenNLP 1.9.5 和官方 0.35.0 历史中的配套英语句子模型，以满足 Java 8。OpenNLP 1.9.x 已结束维护，且与新版默认模型的分句结果可能不同；不要把本兼容分支理解为消除了旧依赖风险。详见 `COMPATIBILITY.md` 中的来源、验证和边界。
 
 ## 持续推进
 

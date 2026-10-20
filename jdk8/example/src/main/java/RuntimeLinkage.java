@@ -23,8 +23,8 @@ public final class RuntimeLinkage {
                     if (!name.endsWith(".class") || name.startsWith("META-INF/") || name.equals("module-info.class"))
                         continue;
                     name = name.substring(0, name.length() - 6).replace('/', '.');
-                    // OkHttp conditionally loads these two providers only when their optional platform is installed.
-                    if (name.equals("okhttp3.internal.platform.ConscryptPlatform$DisabledHostnameVerifier") || name.equals("okhttp3.internal.platform.android.AndroidCertificateChainCleaner")) {
+                    // Optional platform entrypoints are resolved only when their host platform is installed.
+                    if (name.equals("okhttp3.internal.platform.ConscryptPlatform$DisabledHostnameVerifier") || name.equals("okhttp3.internal.platform.android.AndroidCertificateChainCleaner") || name.equals("opennlp.tools.util.ext.OSGiExtensionLoader")) {
                         optional++;
                         continue;
                     }
@@ -42,6 +42,6 @@ public final class RuntimeLinkage {
         }
         if (!failures.isEmpty())
             throw new AssertionError(failures.toString());
-        System.out.println("Java 8 runtime linkage passed: " + count + " base classes and their member types resolved; " + optional + " optional Android/Conscrypt provider classes excluded.");
+        System.out.println("Java 8 runtime linkage passed: " + count + " base classes and their member types resolved; " + optional + " optional Android/Conscrypt/OSGi integration classes excluded.");
     }
 }

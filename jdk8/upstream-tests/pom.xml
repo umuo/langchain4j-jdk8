@@ -54,6 +54,7 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <testRelease>17</testRelease>
+                    <parameters>false</parameters>
                     <testIncludes combine.self="override">
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/internal/ValidationUtilsTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/internal/UtilsTest.java</testInclude>
@@ -78,7 +79,10 @@
                         <testInclude>langchain4j/src/test/java/dev/langchain4j/data/document/splitter/DocumentBySentenceSplitterTest.java</testInclude>
                         <testInclude>langchain4j-core/src/test/java/dev/langchain4j/model/chat/mock/ChatModelMock.java</testInclude>
                         <testInclude>langchain4j/src/test/java/dev/langchain4j/memory/chat/HitCountChatMemoryStore.java</testInclude>
-                    <testInclude>jdk8/upstream-tests/src/test/java/ReflectiveMetadata17Test.java</testInclude><testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorTest.java</testInclude><testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorLocaleTest.java</testInclude></testIncludes>
+                        <testInclude>jdk8/upstream-tests/src/test/java/ReflectiveMetadata17Test.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorLocaleTest.java</testInclude>
+                    </testIncludes>
                 </configuration>
             </plugin>
             <plugin>
@@ -107,7 +111,10 @@
                         <include>**/EnumOutputParserTest.java</include>
                         <include>**/PolymorphicOutputParserTest.java</include>
                         <include>**/DocumentBySentenceSplitterTest.java</include>
-                    <include>**/ReflectiveMetadata17Test.java</include><include>**/DefaultToolExecutorTest.java</include><include>**/DefaultToolExecutorLocaleTest.java</include></includes>
+                        <include>**/ReflectiveMetadata17Test.java</include>
+                        <include>**/DefaultToolExecutorTest.java</include>
+                        <include>**/DefaultToolExecutorLocaleTest.java</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>

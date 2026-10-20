@@ -8,7 +8,10 @@ import java.nio.charset.StandardCharsets;
  */
 public final class Example {
 
-    public interface Assistant { String chat(String message); }
+    public interface Assistant {
+
+        String chat(String message);
+    }
 
     public static void main(String[] args) throws Exception {
         if (!"1.8".equals(System.getProperty("java.specification.version")))

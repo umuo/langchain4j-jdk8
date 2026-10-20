@@ -7,13 +7,18 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
-/** Invoke an interface default method without recursively invoking the proxy handler. */
+/**
+ * Invoke an interface default method without recursively invoking the proxy handler.
+ */
 @Internal
 public final class DefaultMethodInvoker {
-    private DefaultMethodInvoker() {}
+
+    private DefaultMethodInvoker() {
+    }
 
     public static Object invoke(Object proxy, Method method, Object[] arguments) throws Throwable {
-        if (!method.isDefault()) throw new IllegalArgumentException("Not a default method: " + method);
+        if (!method.isDefault())
+            throw new IllegalArgumentException("Not a default method: " + method);
         Class<?> owner = method.getDeclaringClass();
         MethodHandles.Lookup lookup;
         try {

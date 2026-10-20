@@ -21,8 +21,26 @@
 
 - 验证基线：Jackson 2.18.6、SLF4J 2.0.17、JSpecify 1.0.0、JTokkit 1.1.0、OkHttp 4.12.0。后续升级需重新审计 API、字节码与消费项目。
 - 所有移植生产源码以 JDK 17 `--release 8` 编译。JAR 审计检查基础类版本、禁止类型引用和官方模块泄漏；多版本 JAR 的 `META-INF/versions/` 与 `module-info.class` 按 Java 8 加载规则排除。
-- 真实 Java 8 链接检查加载全部基础运行时类及其成员类型；仅排除 OkHttp 的两个可选 Android/Conscrypt 类，因本环境不安装对应平台。这不是对全部方法体的穷尽链接证明。
+- 真实 Java 8 链接检查加载全部基础运行时类及其成员类型；仅排除 OkHttp 的两个可选 Android/Conscrypt 类和 OpenNLP 的一个可选 OSGi 入口类，因本环境不安装对应平台；OSGi 场景需要宿主框架提供相关 API。这不是对全部方法体的穷尽链接证明。
 - JSpecify 含 `ElementType.MODULE` 元数据，Java 8 API 编译时有两个注解警告；Java 8 运行和测试已验证通过。SLF4J 默认无日志 provider，消费应用可自行配置兼容的日志实现。
 - Java 8 独立验收与 JDK 17 上游选定回归分开执行。上游完整测试集及 Kotlin 测试尚未全量迁移或运行，不以过滤后的结果声称全量通过。
-- 已验证 OpenAI Chat Completions 的同步、异步、回调/响应式流式请求及错误、超时和取消；工具定义/调用结果消息和结构化格式已验证请求与响应转换。AI Services 的自动工具执行循环未纳入首期。
+- 已验证 OpenAI Chat Completions 的同步、异步、回调/响应式流式请求及错误、超时和取消；工具定义/调用结果消息和结构化格式已验证请求与响应转换。第二阶段已验证 AI Services 的自动工具执行循环，包括同步、Future、回调式及响应式流式路径。
 - OpenAI 模块其余能力（Responses API、音视频、图像、真实 embedding、真实服务行为）虽然随模块编译及类加载通过，尚未完成独立业务验收。测试仅使用 loopback 模拟服务，无外部密钥。
+
+
+## 第二阶段：AI Services、记忆与工具（jdk8-m2）
+
+- `langchain4j` 主模块加入兼容 reactor/BOM，仍使用统一的兼容坐标和版本。默认接口方法通过 MethodHandles 调用：Java 8 使用 Lookup 构造路径，较新 JVM 通过反射使用 privateLookupIn；支持继承、非 public 接口、参数和原始异常。受限安全策略仍需允许相关反射操作。
+- 元数据 provider 从 Java 9 ServiceLoader stream/Provider 改为 Java 8 迭代，保留自定义实现优先于默认反射工厂。Java 17 下保留 record 元数据的反射视图，避免在 Java 8 上直接引用 RecordComponent。
+- 支持注解提示词、结构化 POJO、Future、TokenStream、Reactive Streams Publisher，及 MessageWindowChatMemory 的同步/异步会话隔离和 ChatMemoryAccess 查询/清理。异步链路仍要求组件/存储提供原生 async 接口；不会把所有阻塞组件自动伪装成非阻塞实现。
+- 已验证自动工具循环的四条调用路径、结果消息回传、并发工具、工具失败、最大轮次限制，以及 Future/Publisher 取消后 HTTP 调用释放。完整复杂补偿事务、Guardrails、Decision Services 和第三方适配器尚未全量业务验收。
+- 内部 Tube 新增 whenCancelled，与任意终止 whenTerminates 区分；正常完成或错误不会触发取消专用回调。新增公开 record 替代类型保留显式 JSON 字段/构造元数据。
+- 高层 RAG、文档加载器、InMemoryEmbeddingStore 等源码随主模块编译和类链接，但完整 RAG 流程及所有文件系统边界仍留待下一阶段验收。
+- 上游工具测试的输入显式使用 arg0/arg1，因此独立上游回归模块关闭参数名保留以匹配原始测试夹具；生产模块和 Java 8 消费用例继续使用 `-parameters`。未修改或跳过这些原始测试。
+
+### OpenNLP 与英语句子模型
+
+- 实测 OpenNLP 2.3.3 为 Java 17 字节码，2.0.0/2.1.1 为 Java 11；选择基础类为 Java 8 的 OpenNLP 1.9.5。旧依赖只用于满足主模块现有句子分割 API，不代表推荐其用于新 NLP 系统。
+- 原默认模型声明 OpenNLP-Version=2.5.0，1.9.5 明确拒绝加载。兼容分支恢复官方 `0.35.0` tag 的 `opennlp-en-ud-ewt-sentence-1.0-1.9.3.bin`（Git blob `d3a2779233fcd2d3017b5d3de6ca14e8fd3e5cc7`），未伪造模型版本或跳过格式校验。
+- 2.5.0 模型仍保留在源码中便于上游对比，排除在兼容 JAR 资源之外。使用新版/自定义模型时须自行确认与 1.9.5 格式兼容；分句结果可能与新版模型不同。Java 8 实际分句及 6 个原始分割测试通过。
+- OpenNLP 官方已宣布 1.9.x 于 2026-08-10 结束维护，不再提供修复或安全更新，这是 Java 8 分支的具体已知限制。[官方生命周期说明](https://opennlp.apache.org/news/news-2026-08-10.html)

@@ -93,9 +93,11 @@ public final class ZeroPublisher {
             boolean run;
             synchronized (this) {
                 run = cancelled;
-                if (!run && !terminated) cancellationActions.add(action);
+                if (!run && !terminated)
+                    cancellationActions.add(action);
             }
-            if (run) safeRun(action);
+            if (run)
+                safeRun(action);
         }
 
         public boolean cancelled() {
