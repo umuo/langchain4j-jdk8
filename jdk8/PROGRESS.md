@@ -49,12 +49,12 @@
 - 基础 RAG 已通过本地模型和真实 OpenAI HTTP embedding 适配器两种流程验证（服务均为 loopback fixture）；真实远程模型/语义质量、其他 embedding 适配器/向量库、easy-rag 自动下载、复杂重排/多模态 RAG 尚未验收。Guardrails、Decision Services、复杂补偿事务、其余第三方适配器与 OpenAI Responses/音视频/图像仍保留未覆盖声明。
 - 已运行内部 ZeroPublisher 的官方 Publisher TCK（62 通过、14 项官方 untested），未运行所有适配器的 Subscriber/Processor/Flow TCK，不声明全组件规范认证。有限并发测试不是所有线程调度的证明；类链接仍排除三个可选宿主平台入口。
 
-## 下一阶段建议：Guardrails 核心闭环
+## 后续范围：跳过 Guardrails
 
-1. 在现有六模块中验证 AI Services 输入/输出 Guardrails 的同步、Future 和流式行为，覆盖校验失败、改写、重试和错误传播。
-2. 结合已验证的工具/RAG/会话，检查 guardrail 与上下文、取消、资源释放的衔接；使用本地确定性模型及 loopback fixture，不默认访问真实模型。
-3. 延续真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，按可检查单元提交。
-4. MCP、Agentic、具体向量库等另行递进；不自动跟随上游、推送或建立后台任务。
+1. 用户明确要求跳过 Guardrails 代码；后续不开展其专项移植、修复或验收，不将其标为已支持。
+2. 现有源码及已完成的五阶段结果保留；该范围调整不要求删除源码或拆除已有调用路径。
+3. 后续候选仍为其他核心能力、MCP、Agentic 或具体向量库，具体阶段另行确定，不再默认推进 Guardrails。
+4. 继续保留真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，以及按检查点提交的约定；不自动跟随上游、推送或建立后台任务。
 
 ## Git 检查点
 

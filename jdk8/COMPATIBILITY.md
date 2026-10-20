@@ -74,3 +74,7 @@
 - 原始 `Publisher<AiServiceStreamingEvent>` 在 RAG/prologue 尚未交接真实 subscription 时立即拒绝非正 demand 并取消等待任务；onSubscribe 中立即 cancel 不启动检索。DeferredSubscription 对终止信号去重，并在取消/终止时释放 delegate/callback 引用；正常交接后的 demand 仍由实际 subscription 处理。
 - Java 8 并发验收覆盖 100 轮双生产者/双请求者的 1000 元素流、300 轮 complete/fail 竞争、onNext 中 fail/cancel、100 轮非法 demand 与 RAG 失败竞争、完成/错误后的回收。真实 loopback SSE 覆盖无 demand 缓冲溢出和 30 轮 request/cancel 竞争后的 HTTP 释放。
 - 本阶段 TCK 验证对象是内部 ZeroPublisher 的 Publisher/Subscription，未对所有适配器执行 SubscriberWhitebox/Blackbox、Processor 或 Flow TCK；不声明所有生产 Publisher/Subscriber 均获得完整规范认证。有限并发压力测试也不是所有线程调度或无限运行的证明。
+
+## 范围调整：跳过 Guardrails
+
+用户明确要求跳过 Guardrails 代码。后续不开展其专项移植、修复或业务验收；保留现有源码及调用路径，不据此宣称 Guardrails 已支持 Java 8。前五阶段已完成的验证结果保持原有范围。
