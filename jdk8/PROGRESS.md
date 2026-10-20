@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第七阶段 SQLite 会话记忆持久化已完成（2026-10-20）
+## 当前状态：第八阶段 MCP 基础客户端与工具桥接进行中（WIP，2026-10-20）
 
 - 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m7`；历史标记 `jdk8-m1` 至 `jdk8-m6`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
@@ -176,3 +176,11 @@
 - 测试复现并修复窗口记忆消息投影与 addAsync 组合的取消断点，以及 AI Services 等待记忆组装时不传递取消而继续写入排队问题的情况。只修改记忆链路，Guardrails 逻辑未改动。
 - 两个独立 Java 8 进程：memory writer 保存 4 条含工具调用/结果的消息，memory reader 恢复历史后向模型发送 5 条并保存为 6 条，向量及会话共用 DB。
 - 完整 clean 构建已通过：149 个 Java 8、692 个 JDK 17、62 个 Publisher TCK；14 项官方 untested 单独列出。31 JAR/5986 基础类审计、4756 类链接通过；最终快照已保存为 milestone-7.json，阶段标记 jdk8-m7。
+
+## 第八阶段检查点（WIP）
+
+- 从干净的 jdk8-m7 恢复，外置盘挂载、约 69 GiB 可用。Guardrails 继续跳过。
+- 审计固定基线 MCP：主要障碍为 JDK HTTP/WebSocket、Flow、record/sealed、新语法和 Java 9+ Future/Atomic API；不新增生产依赖版本。
+- 目标：第八个生产模块 langchain4j-mcp，保留客户端/工具 provider/executor，HTTP 改为 OkHttp，首轮只验收 MCP 2025-11-25 的 tools/list、tools/call、JSON/非恢复 POST SSE 和 AI Services 工具循环。
+- stdio/WebSocket/Registry 源码保留但不进入兼容产物；modern protocol、GET subsidiary SSE/恢复订阅/自动会话重连和资源/提示词专项验收不在本轮支持声明内。
+- 当前尚未通过真实 Java 8 与最终 clean 验收，已支持范围仍以 m7 为准。
