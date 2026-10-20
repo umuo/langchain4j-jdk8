@@ -63,6 +63,7 @@ public class McpJdk8Test {
     }
     void handle(HttpExchange exchange) throws IOException {
         try {
+            if ("DELETE".equals(exchange.getRequestMethod())) { exchange.getRequestBody().close(); exchange.sendResponseHeaders(405, -1); return; }
             JsonNode request = json.readTree(exchange.getRequestBody());
             messages.add(request); requestHeaders.add(exchange.getRequestHeaders());
             String method = request.path("method").asText();

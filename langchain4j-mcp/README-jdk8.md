@@ -1,18 +1,22 @@
 # Java 8 MCP 工具客户端
 
 兼容坐标 `dev.langchain4j.jdk8:langchain4j-mcp:1.23.0-jdk8-SNAPSHOT`，由兼容 BOM 管理。
-固定源码基线与其他模块一致；生产代码 release 8，没有新增依赖版本，复用 Jackson 2、OkHttp 4.12.0。
+固定源码基线与其他模块一致；生产代码 release 8，复用 Jackson 2、OkHttp 4.12.0，无新增依赖版本。
+范围为 MCP **2025-11-25 HTTP 工具及会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
 
 ```java
+StreamableHttpMcpTransport transport = StreamableHttpMcpTransport.builder()
+        .url("http://127.0.0.1:8080/mcp")
+        .timeout(Duration.ofSeconds(30))
+        .subsidiaryChannel(true)                // 可选 GET SSE，默认 false
+        .reconnectInterval(Duration.ofSeconds(1))
+        .maxReconnectAttempts(5)
+        .closeTimeout(Duration.ofSeconds(3))
+        .customHeaders(Collections.singletonMap("Authorization", "Bearer explicit-token"))
+        .build();
 try (DefaultMcpClient client = DefaultMcpClient.builder()
-        .transport(StreamableHttpMcpTransport.builder()
-                .url("http://127.0.0.1:8080/mcp")
-                .timeout(Duration.ofSeconds(30))
-                .customHeaders(Collections.singletonMap("Authorization", "Bearer explicit-token"))
-                .build())
-        .autoHealthCheck(false)
-        .toolExecutionTimeout(Duration.ofSeconds(20))
-        .build()) {
+        .transport(transport).autoHealthCheck(false)
+        .toolExecutionTimeout(Duration.ofSeconds(20)).build()) {
     McpToolProvider tools = McpToolProvider.builder().mcpClients(client).build();
     Assistant assistant = AiServices.builder(Assistant.class)
             .chatModel(model).toolProvider(tools).build();
@@ -20,27 +24,39 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 }
 ```
 
-示例中的地址、鉴权和模型由调用方配置；默认测试全部使用 loopback 模拟服务。
-独立 BOM 的可运行示例为 `jdk8/example/src/main/java/McpExample.java`，由 `jdk8/build.sh` 在真实 Java 8 下执行。
+地址、鉴权和模型由调用方配置；默认测试全部使用 loopback 服务。独立 BOM 的
+`jdk8/example/src/main/java/McpExample.java` 提供普通模式和 `recovery` 模式，均由 `jdk8/build.sh` 在真实 Java 8 执行。
+恢复模式验证：旧会话 POST 404 明确失败 → 等待新握手 → 应用发起新的 AI Services 调用 → 工具 SSE 断线 → GET 取回原结果 → DELETE 新会话；不是重试旧工具调用。
 
-## 本轮已验收
+## 会话管理
 
-- MCP **2025-11-25 工具子集**：initialize/initialized、版本确认、会话头和协议头、tools/list 分页/缓存及 schema、tools/call 同步/原生异步、工具结果和错误。
-- HTTP JSON 与连续 POST SSE（UTF-8 分片、多行 data、CRLF、通知）；HTTP/RPC/应用错误、缺少匹配 ID、损坏 JSON 和提前 EOF。
-- McpToolProvider/McpToolExecutor 接入 AI Services 同步、Future、TokenStream、Publisher 四条 loopback OpenAI 工具循环；结果正确回传模型。
-- 直接 MCP Future（含 McpToolExecutor Future）的取消通知及 HTTP 释放、工具超时、close、并发请求 ID 隔离。初始化失败自动关闭传输；所有终止路径清理 pending registry。
-- record/sealed 转为 Java 8 类型，保留访问器/值语义/集合复制与 JSON；选定上游协议/结果/工具/schema 回归独立运行于 JDK 17。
+- initialize/initialized 后绑定 session/version；带会话 ID 的 POST 或 GET 收到 404 时，新建会话并共享一次初始化；旧代际在途请求/流明确失败，后续新请求等待新握手。原 POST 不自动重发，也不自动重跑失败的 AI Services 调用。
+- 恢复握手使用独立负数 JSON-RPC ID，与默认客户端非负请求 ID 隔离。成功后更新客户端能力，失效缓存；缓存代际阻止旧查询覆盖新数据，跨代际分页列表失败。无会话 ID 的 404 只是 HTTP 错误。
+- 握手失败/超时会终止等待者，不无限循环。调用方稍后发起的新请求可重新尝试握手；关闭后不再恢复。`sessionInitialization()` 返回共享握手的观察 Future，取消该观察者不会取消其他请求共享的握手。
+- `terminateSession()` 立即停止本地请求、流和重试，异步 DELETE 所有已知会话，返回可观察释放错误的 Future；重复调用共享同一次关闭。删除成功、404（会话已不存在）及 405（服务端不支持）正常完成；其他错误/超时明确失败，本地仍关闭。
+- `close()` 执行同一释放并有界等待，失败写日志；需要判断远端释放结果时显式等待 `terminateSession()`。默认 closeTimeout 3 秒。远端已执行的工具副作用、未收到会话 ID 的服务端分配，以及不支持/拒绝 DELETE 的服务器状态无法由客户端保证回滚/清理。
 
-## 有意差异及未覆盖能力
+## SSE 与取消
 
-- HTTP 传输使用 OkHttp，默认协议版本固定为 2025-11-25，关闭自动 modern 协议探测；HTTP 返回其他版本时明确失败。不是完整 MCP 规范实现或所有上游功能已支持的声明。
-- 新增 builder `httpClient(OkHttpClient)`。调用方拥有该客户端的 executor/pool；transport.close 只中止自己登记的请求。默认创建的客户端由 transport 关闭。自定义客户端时，TLS、超时、重定向和线程调度采用该客户端配置；原 builder `sslContext`/`executor` 未保留，应在 OkHttpClient.Builder 中配置对应能力（TLS 需同时提供匹配的 trust manager）。
-- `timeout` 为默认 OkHttp 的 connect/read/call timeout，客户端 `toolExecutionTimeout` 为工具等待时限；保留上游把工具超时转换为模型可见错误文本的行为。SSE 读取占用 OkHttp dispatcher 线程，不宣称事件循环式非阻塞读取。
-- **AI Services 取消保持上游 drain 语义**：阻止后续模型轮次，但已启动工具执行到完成/工具超时，以保留补偿结果；不会立即取消该工具的 MCP Future。直接调用 MCP/ToolExecutor Future 的 cancel 则发送 notifications/cancelled 并关闭 HTTP。取消通知为尽力而为，不能保证服务器回滚已执行的副作用。
-- stdio、WebSocket、Registry 源码保留，未进入本兼容 JAR；没有启动外部进程或连接真实服务器。
-- resources/prompts/roots/logging/progress/多模态结果与 modern protocol 的协议 DTO/客户端代码可随模块编译，部分转换有上游回归，但没有这些业务路径的端到端支持声明。
-- GET subsidiary SSE、Last-Event-ID/重连/恢复订阅、2026 modern 协议、旧 HTTP+SSE 双端点、会话迁移、404 自动重新初始化和 DELETE 结束会话未实现；`subsidiaryChannel(true)` 明确失败。会话过期会返回 HTTP 错误，调用方需关闭并重新创建客户端。
-- 工具请求不自动重放，避免重复副作用。关闭连接、EOF 和 503 不被解释为服务器未执行工具；由应用决定后续恢复操作。
-- 未验证远程 MCP 服务、TLS/OAuth 自动授权、代理、跨域重定向和服务器行为差异；日志默认关闭，显式启用会包含请求/响应内容。
+- POST 同时接受 JSON 与 SSE。SSE 支持 UTF-8 分片、BOM、多行 data、CR/LF/CRLF、通知和空 data 的游标预告。只有完整事件提交游标；未结束事件不提交，空 id 重置游标，含 NUL 的 id 忽略。
+- POST SSE 断开后，只有具备非空已提交游标才 GET 恢复；所有 GET 都携带当前会话/协议及对应流的 Last-Event-ID。不同工具和后台通道不共享游标。没有游标、损坏 JSON、非法响应类型或重试耗尽时失败，绝不通过 POST 补发请求。
+- 可选 GET 子通道默认关闭；开启后接收服务端通知/请求，支持断线后重连，405 正常禁用。子通道禁止承载其他 POST 的响应；恢复请求自己的 GET 可以接收原结果。`subsidiaryChannelCompletion()` 可观察其完成/错误；取消观察 Future 不会关闭通道，关闭 transport 才停止它。
+- 默认重试间隔 1 秒、每段连续无进展失败最多 5 次恢复，响应中的有效 retry 毫秒值覆盖间隔（包含 0）；超出 Long 范围的值忽略。收到新事件/新非空游标后重置连续失败计数。后台通道可持续工作；单个工具恢复始终受请求总时限约束。GET 429/5xx/网络断线可重试，其他 HTTP 错误终止，带会话 404 则重建会话。
+- transport timeout 默认 60 秒，对每个请求和握手设置总 deadline，覆盖排队/握手等待/全部 SSE 恢复，不因进度重置；也配置默认 HTTP connect/read/call timeout 和 GET 空闲 read timeout。客户端 toolExecutionTimeout 可更短，沿用上游模型可见超时错误文本；显式 HTTP 客户端原有较短超时也可能提前生效。
+- 直接 MCP/ToolExecutor Future 取消或超时，会取消活跃 POST/GET 与重试任务，发送绑定原会话的取消通知。还未发送的请求不发送取消通知；旧会话失败不会把取消通知发到新会话。通知是尽力而为，不能保证服务器停止或回滚工具。
+- AI Services 保留上游 drain 约定：取消停止后续模型轮次，已启动工具继续到完成/超时以保留补偿结果；不会立即取消其 MCP Future。Guardrails 和通用工具/补偿逻辑未改动。
 
-协议依据：[传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。这些链接描述完整协议，本移植的范围以本文件为准。
+## HTTP 客户端所有权与行为差异
+
+- builder `httpClient(OkHttpClient)` 可配置 TLS、连接池、POST dispatcher 等；调用方拥有其 executor/pool，transport 不关闭它们。GET 使用 transport 自己的 dispatcher，避免长连接占满 POST 槽位；关闭时停止该 dispatcher 和恢复调度器。默认创建的 POST 客户端及连接池也由 transport 关闭。
+- 为避免隐式重放，派生客户端关闭连接重试、重定向、认证器自动跟进，POST body 标为 one-shot，覆盖 OkHttp 的 503 Retry-After:0/421 等跟进逻辑；`followRedirects(true)` 明确拒绝。使用最终 URL 和显式鉴权 headers，供应方自定义 interceptor 不应自行重试工具请求。
+- `McpHeadersSupplier` 在无调用上下文的 GET/DELETE 控制请求上收到 null；支持显式 headers 和无参数 Supplier。Session/version/cursor 由 transport 最后设置，不采用供应者的陈旧值。原 builder sslContext/executor 未保留，应在 OkHttp builder 配置 TLS（配套 trust manager）和 dispatcher。
+- SSE 阻塞读取占用 dispatcher 线程；这不是事件循环式读取。`setMcpSessionId` 仅允许没有在途请求/流时显式替换外部 ID，不提供跨进程游标迁移。日志默认关闭，开启后包含协议内容。
+
+## 验证及剩余范围
+
+- 31 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
+- stdio/WebSocket/Registry 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 resources/prompts/roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
+- 完整 clean、独立 BOM 和产物审计结果以 `jdk8/PROGRESS.md` 及阶段快照为准。
+
+协议依据：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。隐式 HTTP 跟进核对：[OkHttp 4.12.0 源码](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)。

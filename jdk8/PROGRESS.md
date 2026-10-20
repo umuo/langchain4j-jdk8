@@ -207,3 +207,11 @@
 - 从干净的 jdk8-m8 恢复，外置盘已挂载、约 69 GiB 可用。继续固定 MCP 2025-11-25；Guardrails 跳过，不连接外部服务器或读取其他凭据。
 - 约束：恢复不重发任何原始 POST；失效会话的在途请求明确失败，新请求等待共享初始化。SSE 恢复只 GET 同一流游标；重试有间隔/次数及请求总时限。关闭停止全部重试并以有界 DELETE 尝试释放已知会话。
 - 当前尚未验收；已支持结果仍以 m8 为准。最终需保留完整 clean 构建、真实 Java 8/上游/TCK、独立 BOM 与产物审计。
+
+### 第九阶段实现检查点（WIP）
+
+- 实现会话代际、共享初始化、404 在途失败/后续新请求等待、能力和缓存失效；使用独立负数恢复请求 ID，不重发原 POST。
+- 新增 SSE 读取器，支持 UTF-8/BOM、CR/LF/CRLF、完整事件游标提交、retry 字段、空/无效/未完成事件；POST 断线仅 GET 恢复，GET 子通道独立游标/dispatcher、405 降级和有界连续失败重试。
+- 新增 terminateSession/有界 DELETE、幂等 close、调用方客户端所有权与自建资源关闭。请求总 deadline 跨恢复生效，取消通知绑定原会话；通过 one-shot body 禁止 OkHttp 503/421 等隐式 POST 重发。
+- 聚焦真实 Java 8：新增 31 项恢复验收和原有 24 项 MCP 均已通过；随后继续补强 close 截止与握手并发收尾，并将独立 BOM 的 MCP 示例增加 recovery 模式，待最终 clean 验收。
+- 记录诊断：成功响应后的 Call.cancel 清理已修正；原生 OkHttp 对照定位另一个 EOF 为 Java 8 HttpServer 空 GET/DELETE 请求体未初始化造成夹具连接关闭，夹具已修复，未以重试 POST 掩盖错误。

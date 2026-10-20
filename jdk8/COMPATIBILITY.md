@@ -117,3 +117,13 @@
 - 协议来源：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。本阶段范围小于完整规范，未实现条目不计为通过。
 
 第八阶段最终 `./jdk8/build.sh -o`：173 个真实 Java 8、850 个 JDK 17、62 个 Publisher TCK 通过，另列 14 个官方 untested；33 JAR/6278 基础类审计、4902 类 Java 8 链接及独立 BOM MCP 示例通过，无新增可选平台排除。结果见 `verification/milestone-8.json`。
+
+## 第九阶段：MCP 会话与 SSE 恢复
+
+- 八模块及依赖版本不变；会话 404 后共享新握手，旧请求明确失败，后续新请求等待。能力/缓存按代际刷新，原 POST 不自动重发。恢复请求使用负数 JSON-RPC ID，默认客户端请求仍使用非负 ID。
+- POST SSE 有已提交游标时通过 GET 恢复；可选 subsidiaryChannel(true) 启用独立 GET SSE 通道，405 正常降级。完整事件提交 Last-Event-ID，不同流/会话隔离，支持 retry、空 id 重置、UTF-8/BOM/CR/LF 和有界重试。损坏协议不作为网络故障重试。
+- 新增 timeout 总 deadline（包括握手等待/全部恢复）、reconnectInterval、maxReconnectAttempts、closeTimeout、sessionInitialization/子通道观察 Future、terminateSession 异步释放；close 同步有界等待。请求取消和超时停止 GET/重试并发原会话取消通知。AI Services 保留已启动工具 drain 语义。
+- terminateSession/close 幂等，停止本地任务并 DELETE 已知会话；成功/404/405 正常完成，其他错误可从 Future 观察。调用方提供的 HTTP 客户端 executor/pool 不关闭，GET dispatcher 和恢复 scheduler 始终由 transport 关闭，自建客户端还关闭 POST executor/pool。
+- 为避免隐式重放，派生 OkHttp 客户端禁用连接重试、重定向和自动认证跟进，POST body 使用 one-shot；followRedirects(true) 现在明确拒绝。显式 headers 提供鉴权，GET/DELETE 的 headers supplier 上下文可为 null。原 HTTP 客户端的自定义 interceptor 仍由调用方负责，不应自行重发工具请求。
+- 新增 31 个 Java 8 故障验收；独立 BOM 示例增加 recovery 模式（404 -> 新握手 -> 应用新调用 -> POST SSE 断线/GET 恢复 -> DELETE），验证工具执行仅一次，未重放失效 POST。完整最终结果待最终快照记录；Guardrails 继续跳过。
+- 恢复与 DELETE 都不能保证服务器撤销已经执行的副作用，也不能清理尚未返回 ID 的远端分配。真实远程服务器/TLS/OAuth/代理、跨进程持久化游标、modern 和 stdio/WebSocket/Registry 范围不变，未声称完整 MCP 或 exactly-once 执行。

@@ -151,6 +151,16 @@ public interface McpTransport extends Closeable {
 
     void onFailure(Runnable actionOnFailure);
 
+    /** Java 8 fork: refresh client capabilities/caches after transport-owned session recovery. */
+    default void onSessionReinitialized(java.util.function.Consumer<String> listener) {}
+
+    /** Java 8 fork: invalidate session-scoped client caches before the next handshake. */
+    default void onSessionInvalidated(Runnable listener) {}
+
+    /** Java 8 fork: transport emits session-bound notifications on request cancellation/timeout. */
+    default boolean handlesRequestCancellation() { return false; }
+
+
     /**
      * Informs the transport whether the modern MCP protocol (2026-07-28 or later) is in use.
      * HTTP-based transports use this to switch between modern headers (MCP-Protocol-Version,
