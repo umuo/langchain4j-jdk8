@@ -2,9 +2,9 @@
 
 基于官方提交 `7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`（1.23.0 开发基线）的独立兼容分支。保留完整上游历史、Java 包名和主要模型 API，使用独立 Maven 坐标，按阶段提交。
 
-## 当前产物（第七阶段）
+## 当前产物（第八阶段）
 
-以下七个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
+以下八个模块已完成 Java 8 生产源码移植，构建版本统一为 `1.23.0-jdk8-SNAPSHOT`：
 
 - `langchain4j-core`
 - `langchain4j-http-client`
@@ -13,8 +13,9 @@
 - `langchain4j-open-ai`
 - `langchain4j`（AI Services、会话记忆、工具执行和基础 RAG）
 - `langchain4j-sqlite`（向量与会话记忆持久化、过滤检索和事务）
+- `langchain4j-mcp`（MCP 2025-11-25 HTTP 工具子集，详见 [范围与示例](../langchain4j-mcp/README-jdk8.md)）
 
-这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。第三阶段新增基础 RAG：文档加载/分段、内存向量存储与恢复、过滤检索、提示词注入与来源、同步/异步/流式调用。第四阶段新增 OpenAI Embeddings HTTP API 的批量、Base64、参数/维度、token usage、错误/重试/超时和取消，并接入四条 RAG 路径。Agentic、MCP、其他 embedding 适配器、具体向量库、Spring Boot 集成及 Jackson 3 尚未业务验收；真实远程模型和语义质量未验证。
+这是固定提交的兼容分支，不代表持续同步官方最新版本。当前已验证 AI Services 默认接口方法、注解提示词、结构化 POJO、Future、TokenStream、Publisher、会话隔离/清理及自动工具循环（含并发、失败、轮次限制和取消）。第三阶段新增基础 RAG：文档加载/分段、内存向量存储与恢复、过滤检索、提示词注入与来源、同步/异步/流式调用。第四阶段新增 OpenAI Embeddings HTTP API 的批量、Base64、参数/维度、token usage、错误/重试/超时和取消，并接入四条 RAG 路径。MCP 目前只验收工具子集，不包含会话恢复、GET SSE、modern、stdio/WebSocket/Registry 等能力。Agentic、其他 embedding 适配器、具体向量库、Spring Boot 集成及 Jackson 3 尚未业务验收；真实远程模型和语义质量未验证。
 
 ## 构建与验收
 
@@ -126,3 +127,5 @@ try (SqliteEmbeddingStore store = SqliteEmbeddingStore.builder()
 支持 String/Integer/Long/UUID 类型隔离的会话 ID，消息使用 core JSON codec 保存，含工具调用和结果；更新原子替换整段会话，删除只影响对应 ID。`evictChatMemory` 只清理实例缓存；删除持久化历史需 `ChatMemory.clear()` 或 `deleteMessages(id)`。同会话并发 turn 仍需应用串行化，取消也不会回滚已经提交的消息。
 
 独立 BOM 示例 `memory-write/read <file>` 由脚本在两个 Java 8 进程运行：先保存 4 条含自动工具调用/结果的消息，再恢复历史进入 5 条模型请求，最终保存为 6 条。第七阶段为 149 个 Java 8 / 692 个 JDK 17 / 62 个 TCK 通过，14 项官方 untested 保留；见 `verification/milestone-7.json`。Guardrails 继续跳过。
+
+第八阶段新增 MCP HTTP 工具与四条 AI Services 工具循环验收；`McpExample` 使用本地模拟端点，无外部密钥。最终构建通过 173 项 Java 8、850 项 JDK 17、62 项 Publisher TCK，14 项官方 untested 单列。具体结果见 `verification/milestone-8.json`。

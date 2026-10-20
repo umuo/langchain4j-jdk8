@@ -1848,19 +1848,11 @@ public class DefaultMcpClient implements McpClient {
         }
 
         /**
-         * Sets the protocol version. If null or empty (the default), the client detects the
-         * server's protocol version, preferring 2026-07-28 over 2025-11-25. If explicitly set
-         * to "2026-07-28", modern protocol is forced. If set to "2025-11-25", legacy protocol
-         * is forced. Any other value triggers detection but uses the given string when
-         * advertising the version to the server.
-         * <p>
-         * Detection costs one extra round trip at startup: the client sends {@code server/discover}
-         * and falls back to the legacy {@code initialize} handshake if the server answers with an
-         * error or does not answer within {@link #protocolDetectionTimeout(Duration)}. Setting the
-         * version explicitly skips the detection round trip entirely, which is also the way out if
-         * a server reacts badly to being sent a method it does not know.
+         * Sets the protocol version. This Java 8 fork defaults to {@code 2025-11-25},
+         * skipping modern discovery. The bundled HTTP transport only supports that version.
+         * An explicitly empty string retains upstream detection for custom transports;
+         * those other protocol paths are outside the Java 8 HTTP acceptance scope.
          */
-        // Java 8 fork defaults to the validated 2025-11-25 tools protocol.
         public Builder protocolVersion(String protocolVersion) {
             this.protocolVersion = protocolVersion;
             return this;
@@ -1881,8 +1873,8 @@ public class DefaultMcpClient implements McpClient {
          * answer within this time is assumed to speak the legacy protocol, and the client falls
          * back to the {@code initialize} handshake.
          * <p>
-         * This only applies while the protocol version is being detected, which is the case when
-         * no explicit {@link #protocolVersion(String)} is set. It defaults to
+         * This only applies when an explicitly empty {@link #protocolVersion(String)}
+         * requests detection; the Java 8 default does not perform detection. It defaults to
          * {@link #initializationTimeout(Duration)}, because a server that is started as a
          * subprocess needs time to boot before it can answer anything, and a detection request
          * that gives up too early makes a modern server look like a legacy one.

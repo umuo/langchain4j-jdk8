@@ -115,3 +115,5 @@
 - stdio/WebSocket/Registry 源码保留但排除出兼容 JAR；GET subsidiary SSE、SSE 恢复、modern 协议/订阅、旧 HTTP+SSE、404 自动重建会话与 DELETE 结束会话未实现。resources/prompts/roots/多模态等仅部分转换回归，业务路径未验收。会话过期后调用方需关闭并重新创建客户端。
 - 独立 BOM 的 McpExample 使用 loopback OpenAI -> AI Services -> MCP 工具 -> 模型完整闭环；无需外部服务和凭据。TLS/OAuth 自动授权、代理、真实服务器互操作未验证。详见 `langchain4j-mcp/README-jdk8.md`。
 - 协议来源：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。本阶段范围小于完整规范，未实现条目不计为通过。
+
+第八阶段最终 `./jdk8/build.sh -o`：173 个真实 Java 8、850 个 JDK 17、62 个 Publisher TCK 通过，另列 14 个官方 untested；33 JAR/6278 基础类审计、4902 类 Java 8 链接及独立 BOM MCP 示例通过，无新增可选平台排除。结果见 `verification/milestone-8.json`。

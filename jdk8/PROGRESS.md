@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第八阶段 MCP 基础客户端与工具桥接进行中（WIP，2026-10-20）
+## 当前状态：第八阶段 MCP 基础客户端与工具桥接已完成（2026-10-20）
 
-- 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m7`；历史标记 `jdk8-m1` 至 `jdk8-m6`。
+- 仓库：`/Volumes/Nas/codex-work/langchain4j-jdk8`；分支 `jdk8/main`；当前完成标记 `jdk8-m8`；历史标记 `jdk8-m1` 至 `jdk8-m7`。
 - 固定上游基线：`7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79`。相邻原始仓库未修改；完整 Git 历史独立保存，不共享对象文件。
-- Maven 坐标：`dev.langchain4j.jdk8:*:1.23.0-jdk8-SNAPSHOT`，兼容 BOM 现覆盖七个生产模块。已安装到外置盘 Maven 缓存；未远程推送或公共发布。
+- Maven 坐标：`dev.langchain4j.jdk8:*:1.23.0-jdk8-SNAPSHOT`，兼容 BOM 现覆盖八个生产模块。已安装到外置盘 Maven 缓存；未远程推送或公共发布。
 
 ## 已完成能力
 
@@ -24,30 +24,33 @@
 14. SQLite 会话记忆：类型隔离 ID、核心消息/工具结果 JSON、整段事务更新/删除、同步和显式 Executor offload，与向量/RAG/四路径 AI Services 共存。
 15. 修复窗口记忆和 AI Services 记忆组装的取消链；独立 JVM 恢复含工具调用/结果的历史，writer 4 条、reader 发 5 条并保存 6 条。
 
+16. MCP 2025-11-25 工具子集：OkHttp HTTP JSON/连续 POST SSE、初始化/会话、工具分页/schema/调用、四条 AI Services 工具循环，以及直接取消/超时/close/并发和独立 BOM 消费。完整范围见 `../langchain4j-mcp/README-jdk8.md`。
+
 ## 最终验证
 
-执行 `./jdk8/build.sh -o`（reactor 离线使用外置盘已缓存依赖），完整 clean install、独立 BOM 消费项目、字节码审计、真实 Java 8 类链接、AI Services 模拟对话、独立 RAG、HTTP embedding RAG 和 SQLite 跨进程示例全部通过。
+执行 `./jdk8/build.sh -o`（reactor 离线使用外置盘已缓存依赖），完整 clean install、独立 BOM 消费项目、字节码审计、真实 Java 8 类链接、AI Services 模拟对话、独立 RAG、HTTP embedding RAG、SQLite 跨进程和 MCP 工具示例全部通过。
 
-| 验证 | 第七阶段结果 |
+| 验证 | 第八阶段结果 |
 |---|---|
-| 七个模块生产源码 | JDK 17 `--release 8` 构建通过 |
-| 真实 Java 8 验收 | 149 个用例，0 失败/错误/跳过；JDK 1.8.0_462 |
-| 选定上游及现代反射回归 | 692 个用例，0 失败/错误/跳过；JDK 17.0.13 |
+| 八个模块生产源码 | JDK 17 `--release 8` 构建通过 |
+| 真实 Java 8 验收 | 173 个用例，0 失败/错误/跳过；JDK 1.8.0_462 |
+| 选定上游及现代反射回归 | 850 个用例，0 失败/错误/跳过；JDK 17.0.13 |
 | 官方 Publisher TCK / Java 8 | 76 项：62 通过、14 官方 untested 跳过；0 失败/错误，无 required/optional 跳过 |
-| 字节码和禁止引用审计 | 31 个 JAR 文件、5986 个基础类通过；含项目构建/安装副本 |
-| Java 8 类及成员类型加载 | 4756 个类通过；3 个可选 Android/Conscrypt/OSGi 入口排除 |
+| 字节码和禁止引用审计 | 33 个 JAR 文件、6278 个基础类通过；含项目构建/安装副本 |
+| Java 8 类及成员类型加载 | 4902 个类通过；3 个可选 Android/Conscrypt/OSGi 入口排除 |
 | 独立 BOM 消费示例 | Java 8 通过 AI Services 返回 `Java 8 OK` |
 | 独立 BOM RAG 示例 | Java 8 返回 `7 yuan` 和对应 apple 文档来源 |
 | 独立 BOM HTTP RAG 示例 | Java 8 返回 `7 yuan`；入库和查询共 2 次 embedding HTTP 请求 |
 | SQLite 跨进程消费 | writer 2 段落持久化；独立 Java 8 reader 查询并返回 `7 yuan`，仅 1 次查询 embedding |
 | SQLite 记忆跨进程消费 | writer 持久化 4 条含工具消息，reader 恢复到模型请求 5 条并保存 6 条 |
+| 独立 BOM MCP 工具消费 | Java 8 OpenAI HTTP -> AI Services -> MCP HTTP 工具 -> 模型返回 `7 yuan`，工具调用 1 次 |
 | SQLite native 引擎 | Xerial 3.53.4.0 / SQLite 3.53.4，Java 8/macOS/aarch64 通过 |
 | 模型资源检查 | 兼容 JAR 只包含配套 1.9.3 模型，未打入 2.5.0 模型 |
 | diff/shell 检查 | `git diff --check`、`sh -n jdk8/build.sh` 通过 |
 
-结果快照：`verification/milestone-7.json`；历史快照保留为 `verification/milestone-6.json`（122 / 627 / 62 TCK）、 `verification/milestone-5.json`（99 / 627 / 62 TCK）、 `verification/milestone-4.json`（89 / 627）、 `verification/milestone-3.json`（70 / 554）、 `verification/milestone-2.json`（51 个 Java 8 / 435 个上游用例）和 `verification/milestone-1.json`（25 / 228）。当前报告位于 `acceptance`、`upstream-tests`、`reactive-tck` 三个模块的 `target/surefire-reports`。这些是选定回归，不代表上游全量/Kotlin 测试已运行。
+结果快照：`verification/milestone-8.json`；历史快照保留为 `verification/milestone-7.json`（149 / 692 / 62 TCK）、 `verification/milestone-6.json`（122 / 627 / 62 TCK）、 `verification/milestone-5.json`（99 / 627 / 62 TCK）、 `verification/milestone-4.json`（89 / 627）、 `verification/milestone-3.json`（70 / 554）、 `verification/milestone-2.json`（51 个 Java 8 / 435 个上游用例）和 `verification/milestone-1.json`（25 / 228）。当前报告位于 `acceptance`、`upstream-tests`、`reactive-tck` 三个模块的 `target/surefire-reports`。这些是选定回归，不代表上游全量/Kotlin 测试已运行。
 
-本阶段新增 27 个 Java 8 记忆/取消/AI Services/RAG 用例；上游消息 codec/ToolExecutionResult/System/Custom 回归新增 65 项，总数 692。官方 Publisher TCK 两组继续保留，独立 JVM 重启示例增加含工具历史的会话记忆。工具夹具按原始 arg0/arg1 参数约定编译，生产参数名保留不变。
+本阶段新增 24 个真实 Java 8 MCP 用例和 23 个上游 MCP 测试类（158 项），保留此前所有验收。总计 1085 项通过，另列 14 项官方 untested；没有失败/错误或其他跳过。Guardrails 继续跳过，未连接外部 MCP 服务器。
 
 ## 已知边界
 
@@ -56,6 +59,7 @@
 - 基础 RAG 已通过本地模型和真实 OpenAI HTTP embedding 适配器两种流程验证（服务均为 loopback fixture）；真实远程模型/语义质量、其他 embedding 适配器/外部向量库、easy-rag 自动下载、复杂重排/多模态 RAG 尚未验收。Guardrails、Decision Services、复杂补偿事务、其余第三方适配器与 OpenAI Responses/音视频/图像仍保留未覆盖声明。
 - SQLite 为精确全表扫描、Java 端过滤及阻塞 JDBC，异步 RAG 必须显式 offload；取消不能保证打断已开始的数据库扫描。未验证其他 JNI 平台、网络文件系统锁、同时多进程写和断电恢复。
 - SQLite 会话更新只保证完整快照原子性，同会话并发 AI Services turn 需应用串行化；取消不回滚已提交历史。记忆 ID 支持 String/Integer/Long/UUID，异步需显式配置调用方 Executor，不承诺任意 Object ID 或原生异步 JDBC。
+- MCP 首轮仅覆盖 2025-11-25 工具子集；会话恢复/GET SSE/modern/stdio/WebSocket/Registry 和资源提示词业务未覆盖。直接 MCP Future 取消会关闭 HTTP；AI Services 则保留已启动工具 drain 到结束/超时的上游约定。
 - 已运行内部 ZeroPublisher 的官方 Publisher TCK（62 通过、14 项官方 untested），未运行所有适配器的 Subscriber/Processor/Flow TCK，不声明全组件规范认证。有限并发测试不是所有线程调度的证明；类链接仍排除三个可选宿主平台入口。
 
 ## 后续范围：跳过 Guardrails
@@ -65,9 +69,9 @@
 3. 第六、七阶段已完成 SQLite 向量和会话记忆持久化；后续可推进 MCP/Agentic/其他集成，不再默认推进 Guardrails。
 4. 继续保留真实 Java 8、JDK 17 选定回归、官方 Publisher TCK、独立 BOM 与产物审计，以及按检查点提交的约定；不自动跟随上游、推送或建立后台任务。
 
-## 下一阶段建议：MCP 基础客户端与工具桥接
+## 下一阶段建议：MCP 会话与传输恢复
 
-先审计当前固定上游源码中 MCP 依赖及 Java 8 障碍，再确定最小传输/工具发现/调用范围，优先通过本地模拟服务验证与 AI Services 工具循环衔接。继续保留七模块已验证能力、SQLite 持久化、取消/资源释放及独立消费回归；不默认连接外部 MCP 服务或读取其他服务凭据。该阶段尚未开始，Guardrails 继续跳过。
+基于已验收的工具子集，优先推进会话过期后的重新初始化、显式生命周期与服务端会话释放、SSE Last-Event-ID/恢复及 GET 通道；结合取消/并发验证，避免自动重放有副作用的工具。协议能力、真实服务互操作和 AI Services 已启动工具的取消策略需独立确定边界，不直接宣称完整 MCP 支持。继续跳过 Guardrails。
 
 ## Git 检查点
 
@@ -99,6 +103,10 @@
 | `e732ea9dd` | 第七阶段会话记忆范围（当时 WIP） |
 | `248c8f71e` | SQLite 会话存储、共享事务、取消修复和跨进程工具历史恢复 |
 | `jdk8-m7` | 第七阶段最终结果：903 项通过，另列 14 项官方 untested；记忆/RAG 重启消费及审计通过 |
+
+| `0a12fe508` | 第八阶段 MCP 工具子集范围（当时 WIP） |
+| `92546d11d` | MCP Java 8 客户端/OkHttp 工具桥接、24 个验收、23 个上游类与独立 BOM 示例 |
+| `jdk8-m8` | 第八阶段最终 clean：1085 项通过、14 项官方 untested；八模块审计及 MCP 消费通过 |
 
 下一轮先读此文件、`COMPATIBILITY.md` 和 `git status`。一次性转换工具只用于原始快照，不能对已移植源码重跑作为升级方案。
 
@@ -177,18 +185,18 @@
 - 两个独立 Java 8 进程：memory writer 保存 4 条含工具调用/结果的消息，memory reader 恢复历史后向模型发送 5 条并保存为 6 条，向量及会话共用 DB。
 - 完整 clean 构建已通过：149 个 Java 8、692 个 JDK 17、62 个 Publisher TCK；14 项官方 untested 单独列出。31 JAR/5986 基础类审计、4756 类链接通过；最终快照已保存为 milestone-7.json，阶段标记 jdk8-m7。
 
-## 第八阶段检查点（WIP）
+## 第八阶段历史检查点（当时 WIP，现已完成）
 
 - 从干净的 jdk8-m7 恢复，外置盘挂载、约 69 GiB 可用。Guardrails 继续跳过。
 - 审计固定基线 MCP：主要障碍为 JDK HTTP/WebSocket、Flow、record/sealed、新语法和 Java 9+ Future/Atomic API；不新增生产依赖版本。
 - 目标：第八个生产模块 langchain4j-mcp，保留客户端/工具 provider/executor，HTTP 改为 OkHttp，首轮只验收 MCP 2025-11-25 的 tools/list、tools/call、JSON/非恢复 POST SSE 和 AI Services 工具循环。
 - stdio/WebSocket/Registry 源码保留但不进入兼容产物；modern protocol、GET subsidiary SSE/恢复订阅/自动会话重连和资源/提示词专项验收不在本轮支持声明内。
-- 当前尚未通过真实 Java 8 与最终 clean 验收，已支持范围仍以 m7 为准。
+- 该检查点当时尚未验收；现已完成上方最终 clean 验收。
 
-### 第八阶段实现检查点（WIP）
+### 第八阶段实现检查点（当时 WIP，现已完成）
 
 - MCP 112 个生产源码文件已使用 --release 8 编译；默认 HTTP 传输以 OkHttp 替换 JDK HTTP，首轮固定 2025-11-25 工具协议。
 - 新增 24 个真实 Java 8 验收用例全部通过：HTTP/SSE、分页/schema、错误、超时/直接取消/close/初始化失败释放、并发 ID、值类 JSON 和四条工具循环。
 - 增加 23 个上游 MCP 测试类，共 158 项；JDK 17 选定回归总计 850 项通过，0 失败/错误/跳过。没有删改这些原始测试。
 - 新增联调用例最初要求 AI Services 立即取消工具，失败后核对源码确认上游有意 drain 已启动工具以保留补偿结果；保留此约定，最终分别验证直接 MCP 取消与 AI Services 取消后不再调用模型。未修改 Guardrails 或通用补偿逻辑。
-- 初始化失败遗留 HTTP 的清理路径已补齐，pending registry 统一终止清理；McpExample 与 BOM 已纳入最终构建，当前待完整 clean/消费/运行时审计。
+- 初始化失败遗留 HTTP 的清理路径已补齐，pending registry 统一终止清理；McpExample 与 BOM 已纳入最终构建，随后完整 clean/消费/运行时审计全部通过，结果见上方和 milestone-8 快照。
