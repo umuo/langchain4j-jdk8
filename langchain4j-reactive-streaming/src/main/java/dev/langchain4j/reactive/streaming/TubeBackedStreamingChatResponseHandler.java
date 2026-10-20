@@ -1,7 +1,6 @@
 package dev.langchain4j.reactive.streaming;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.chat.response.CompleteResponse;
@@ -17,7 +16,7 @@ import dev.langchain4j.model.chat.response.StreamingChatResponseHandler;
 import dev.langchain4j.model.chat.response.ChatModelStreamingEvent;
 import dev.langchain4j.model.chat.response.StreamingHandle;
 import java.util.concurrent.atomic.AtomicReference;
-import mutiny.zero.Tube;
+import dev.langchain4j.internal.reactive.Tube;
 
 /**
  * Bridge from the handler-based {@link StreamingChatResponseHandler} contract to a {@link Tube} of
@@ -30,7 +29,7 @@ import mutiny.zero.Tube;
  * <b>Cancellation.</b> Two provider wirings are supported:
  * <ul>
  *   <li><b>Subscription-based</b> — providers streaming over {@code HttpClient.stream()} (e.g. OpenAI, Anthropic):
- *       the reactive subscriber cancels its {@code Flow.Subscription} from {@code tube.whenTerminates(...)}. This
+ *       the reactive subscriber cancels its {@code Subscription} from {@code tube.whenTerminates(...)}. This
  *       bridge only supplies a non-null {@link #streamingHandle()} for dispatchers that must put one in their
  *       per-callback contexts; its {@code cancel()} is a no-op (cancellation goes through the subscription).</li>
  *   <li><b>Handle-based</b> — providers whose only abort mechanism is a {@link StreamingHandle} threaded through the
@@ -44,7 +43,7 @@ public final class TubeBackedStreamingChatResponseHandler implements StreamingCh
     private final Tube<ChatModelStreamingEvent> tube;
 
     // For subscription-based providers: a non-null handle to place in per-callback contexts. cancel() is a no-op
-    // (they cancel via Flow.Subscription); isCancelled() reflects the tube's state.
+    // (they cancel via Subscription); isCancelled() reflects the tube's state.
     private final StreamingHandle streamingHandle;
 
     // For handle-based providers: the upstream handle, captured lazily from the first per-callback context that
@@ -54,9 +53,10 @@ public final class TubeBackedStreamingChatResponseHandler implements StreamingCh
     public TubeBackedStreamingChatResponseHandler(Tube<ChatModelStreamingEvent> tube) {
         this.tube = ensureNotNull(tube, "tube");
         this.streamingHandle = new StreamingHandle() {
+
             @Override
             public void cancel() {
-                // no-op: subscription-based providers cancel via Flow.Subscription
+                // no-op: subscription-based providers cancel via Subscription
             }
 
             @Override
@@ -68,7 +68,7 @@ public final class TubeBackedStreamingChatResponseHandler implements StreamingCh
 
     /**
      * A non-null {@link StreamingHandle} for dispatchers that must supply one in their per-callback contexts. Its
-     * {@code cancel()} is a no-op; subscription-based providers cancel via {@code Flow.Subscription} instead.
+     * {@code cancel()} is a no-op; subscription-based providers cancel via {@code Subscription} instead.
      */
     public StreamingHandle streamingHandle() {
         return streamingHandle;
