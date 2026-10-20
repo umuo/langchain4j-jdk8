@@ -37,3 +37,5 @@ python3 "$TASK_ROOT/jdk8/audit.py"
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpStdioExample
 # Read-only Registry discovery through the default Java 8 HTTP SPI.
 "$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpRegistryExample
+# WebSocket connection recovery does not replay the lost tool; a new AI Services turn succeeds.
+"$JAVA8_HOME/bin/java" -Xverify:all -cp "$TASK_ROOT/jdk8/example/target/classes:$(cat "$TASK_ROOT/jdk8/example/target/classpath.txt")" McpWebSocketExample

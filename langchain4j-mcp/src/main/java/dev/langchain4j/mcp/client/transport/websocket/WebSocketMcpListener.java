@@ -1,83 +1,32 @@
 package dev.langchain4j.mcp.client.transport.websocket;
 
-import dev.langchain4j.mcp.client.transport.McpOperationHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.net.http.WebSocket;
-import java.nio.ByteBuffer;
-import java.util.concurrent.CompletionStage;
+import java.io.IOException;
+import java.util.function.Consumer;
+import okhttp3.Response;
+import okhttp3.WebSocket;
+import okhttp3.WebSocketListener;
+import okio.ByteString;
 
-
-public class WebSocketMcpListener implements WebSocket.Listener {
-
-    private final McpOperationHandler operationHandler;
-    private final Logger trafficLogger;
-    private final boolean logResponses;
-    private final Runnable onCloseCallback;
-    private final Logger logger = LoggerFactory.getLogger(WebSocketMcpListener.class);
-    private final Runnable onFailureCallback;
-
-
-    public WebSocketMcpListener(McpOperationHandler operationHandler,
-                                Logger trafficLogger,
-                                boolean logResponses,
-                                Runnable onCloseCallback,
-                                Runnable onFailureCallback) {
-        this.operationHandler = operationHandler;
-        this.trafficLogger = trafficLogger;
-        this.logResponses = logResponses;
-        this.onCloseCallback = onCloseCallback;
-        this.onFailureCallback = onFailureCallback;
+/** OkHttp supplies complete messages after frame reassembly, on a serial socket reader. */
+public class WebSocketMcpListener extends WebSocketListener {
+    private final Consumer<WebSocket> opened;
+    private final Consumer<String> received;
+    private final Consumer<Throwable> failed;
+    private final Runnable ended;
+    public WebSocketMcpListener(Consumer<WebSocket> opened, Consumer<String> received,
+            Consumer<Throwable> failed, Runnable ended) {
+        this.opened = opened; this.received = received; this.failed = failed; this.ended = ended;
     }
-
-    @Override
-    public void onOpen(WebSocket webSocket) {
-        logger.debug("Websocket connection opened");
-        webSocket.request(1);
+    @Override public void onOpen(WebSocket socket, Response response) { opened.accept(socket); }
+    @Override public void onMessage(WebSocket socket, String text) { received.accept(text); }
+    @Override public void onMessage(WebSocket socket, ByteString bytes) {
+        failed.accept(new IOException("Binary MCP messages are unsupported")); socket.cancel();
     }
-
-    private volatile StringBuilder receivedMessage = new StringBuilder();
-
-    @Override
-    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-        receivedMessage.append(data);
-        if(last) {
-            String completeMessage = receivedMessage.toString();
-            receivedMessage = new StringBuilder();
-            if (logResponses) {
-                trafficLogger.info("< " + completeMessage);
-            }
-            try {
-                operationHandler.onMessage(completeMessage);
-            } catch (RuntimeException e) {
-                logger.warn("Failed to parse JSON message: {}", completeMessage, e);
-            }
-        }
-        webSocket.request(1);
-        return null;
+    @Override public void onClosing(WebSocket socket, int code, String reason) {
+        socket.close(code, reason); failed.accept(new IOException("WebSocket closing: " + code + " " + reason));
     }
-
-    @Override
-    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-        logger.debug("Websocket connection closed with status {} and reason: {}", statusCode, reason);
-        // Consider all running operations failed - the websocket transport does not have recovery capabilities ATM
-        operationHandler.cancelAllPendingOperations("Status " + statusCode + ", Reason: " + reason);
-        onCloseCallback.run();
-        return null;
+    @Override public void onClosed(WebSocket socket, int code, String reason) { ended.run(); }
+    @Override public void onFailure(WebSocket socket, Throwable error, Response response) {
+        try { failed.accept(error); } finally { if (response != null) response.close(); ended.run(); }
     }
-
-    @Override
-    public void onError(WebSocket webSocket, Throwable error) {
-        logger.warn("WebSocket error", error);
-        onFailureCallback.run();
-    }
-
-    @Override
-    public CompletionStage<?> onBinary(WebSocket webSocket, ByteBuffer data, boolean last) {
-        logger.warn("Received binary data, this is not supported");
-        webSocket.request(1);
-        return null;
-    }
-
-
 }

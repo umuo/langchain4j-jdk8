@@ -89,7 +89,7 @@
 | `langchain4j-local-ai` | model | pending |
 | `langchain4j-mariadb` | vector-store | pending |
 | `langchain4j-mcp-docker` | other-review | pending |
-| `langchain4j-mcp` | mcp | partial-verified-m11 |
+| `langchain4j-mcp` | mcp | partial-verified-m12 |
 | `langchain4j-micrometer-metrics` | other-review | pending |
 | `langchain4j-milvus-v2` | vector-store | pending |
 | `langchain4j-milvus` | vector-store | pending |

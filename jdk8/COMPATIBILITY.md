@@ -154,3 +154,19 @@
 - 新纳入三个完整上游 Registry 测试类共 6 项。McpRegistryModelTest 的原始文件扫描要求目录 CodeSource，首轮加载 JAR 报 Not a directory；测试 harness 改为使用同次生产编译的 MCP target/classes，原始测试断言未改且不跳过。JAR 的独立消费、字节码及链接仍单独验收。
 - 独立 BOM McpRegistryExample 使用默认 HTTP SPI 在实际 Java 8 验证编码查询、详情版本、元数据、ping/health。只读取本地夹具的发现数据，不自动安装或启动 Registry 提供的命令。
 - WebSocket/其他协议及全部后续 Agentic、模型/向量库仍待完成，整体目标保持未完成。最终 clean exit 0：250 Java 8、864 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6354 基础类审计、4940 类链接及全部独立消费通过。快照见 verification/milestone-11.json。
+
+
+## 第十二阶段：MCP WebSocket（jdk8-m12）
+
+- WebSocket 生产源码纳入 MCP 兼容 JAR，使用现有 OkHttp 4.12.0 替换 JDK HTTP/WebSocket，无新增生产依赖。保留传输类名和请求/消息桥接；公开 WebSocketMcpListener 改为 OkHttp WebSocketListener，原 JDK WebSocket.Listener 签名不能保留在 Java 8。
+- builder 的 executor 改为通过 httpClient(OkHttpClient) 配置 dispatcher；原 sslContext(context)/reloadSslContext(context) 改为显式提供匹配 X509TrustManager 的双参数版本，或配置/替换完整 OkHttp 客户端。reloadHttpClient 和 reloadSslContext 只影响后续连接，不打断当前通道。调用方的客户端 executor/pool 不被关闭；自建客户端和 deadline scheduler 由 transport 释放。
+- 一代连接共享一次升级和初始化；断开时清空客户端能力/缓存，失败全部旧在途请求，只有后续新调用才建立共享新连接并重新握手。恢复初始化使用独立负数 ID，取消初始化观察 Future 或一个等待调用不影响其他恢复等待者。不自动重发任何原工具消息；服务端副作用仍可能已发生。
+- timeout 限制升级与 MCP 握手的总时间，requestTimeout 限制单请求（包括等待恢复），closeTimeout 有界等待关闭握手后 cancel。默认分别为 60s/60s/1s。close 幂等且最终关闭，包含未完成升级；远端断开/二进制消息失败旧请求。单条损坏 JSON 沿用上游读取策略，记录后继续。
+- maxPendingRequests 默认 1024；maxQueuedBytes 默认 1MiB，最大 16MiB。发送前检查 UTF-8 字节与现有队列，超限请求明确拒绝，不静默丢弃或重试；重复在途 ID 拒绝且不替换旧 Future。取消/超时只通知仍属于原连接且已发送的请求，服务器取消不回发取消通知。
+- OkHttp 重组分片后在串行 socket reader 上交付完整消息，回调返回后继续读取，没有额外无界应用消息队列。调用方通知/完成回调应快速返回，需要阻塞工作时显式 offload；不能在共享读取回调中同步等待同一连接。出站/在途限制不等于对服务端任意巨大入站帧做预分配前内存上限保护。
+- 真实 Java 8 网络验收包含分片 UTF-8/交错 ping、错误/取消/超时、关闭/二进制/断连、20 在途失败、20 后续调用共享恢复、握手失败/恢复失败后新调用重试、缓存通知、服务器 ping/roots、WSS 和 TLS 热更新、资源所有权及有界队列。WSS 使用仅用于 loopback 的合成 JKS 夹具，口令 synthetic-fixture，证书 2020–2040；不读取宿主服务凭据。
+- 既有 864 项 JDK 17 选定回归保持运行。原始 WebSocketMcpTransportTest 依赖 JDK WebSocket 和被替换的私有字段/单参数 SSL API，未纳入且不计通过；Java 8 网络验收覆盖替代实现的发送失败/成功、自定义 TLS 与热更新。
+- 独立 BOM McpWebSocketExample 验证第一次工具帧断连明确失败，应用新发起 AI Services 调用，在第二连接握手后经 OpenAI HTTP + WebSocket 工具返回 7 yuan（分片响应）；失败工具 1、实际执行 1、正常关闭 1，无自动重放。
+- 当前固定 2025-11-25，其他协议、完整 MCP 能力及后续全部模块仍待推进；不声明标准化 WebSocket MCP 规范或外部服务器互操作全部通过。最终 clean exit 0：276 Java 8、864 JDK 17、62 TCK 通过，14 官方 untested 单列；33 JAR/6364 类审计、4945 类链接及全部 BOM 消费通过，见 verification/milestone-12.json。
+
+依据：[OkHttp 4.12 WebSocket API](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/WebSocket.kt)、[串行消息回调接口](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/WebSocketListener.kt)、[RFC 6455](https://www.rfc-editor.org/rfc/rfc6455)。

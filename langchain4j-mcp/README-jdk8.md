@@ -2,7 +2,7 @@
 
 兼容坐标 `dev.langchain4j.jdk8:langchain4j-mcp:1.23.0-jdk8-SNAPSHOT`，由兼容 BOM 管理。
 固定源码基线与其他模块一致；生产代码 release 8，复用 Jackson 2、OkHttp 4.12.0，无新增依赖版本。
-范围为 MCP **2025-11-25 HTTP/stdio 工具、资源/提示词及 HTTP 会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
+范围为 MCP **2025-11-25 HTTP/stdio/WebSocket 工具、资源/提示词及 HTTP 会话/SSE 恢复**，不是完整 MCP 规范或全部上游功能支持声明。
 
 ```java
 StreamableHttpMcpTransport transport = StreamableHttpMcpTransport.builder()
@@ -56,7 +56,7 @@ try (DefaultMcpClient client = DefaultMcpClient.builder()
 ## 验证及剩余范围
 
 - 32 个新增真实 Java 8 恢复用例，保留此前 24 个 MCP 工具用例：并发失效/共享握手、缓存、新旧会话隔离、GET 通知/405、POST 与 GET 恢复、游标隔离、retry/EOF/UTF-8、取消/超时/重试耗尽、DELETE 成功/404/405/错误/超时、并发 close、所有权、HTTP 503/307/断连不重放。
-- WebSocket 源码保留但不在兼容 JAR；modern 协议、旧 HTTP+SSE 双端点、完整 roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
+- WebSocket 已按下文专项验证；modern 协议、旧 HTTP+SSE 双端点、完整 roots/多模态业务、跨进程恢复和真实远程 TLS/OAuth/代理互操作仍未验收。不是通用 SSE 持久化日志或端到端 exactly-once 工具执行保证。
 - 完整 clean、独立 BOM 和产物审计结果以 `jdk8/PROGRESS.md` 及阶段快照为准。
 
 协议依据：[MCP 2025-11-25 传输](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports)、[生命周期](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle)。隐式 HTTP 跟进核对：[OkHttp 4.12.0 源码](https://github.com/square/okhttp/blob/parent-4.12.0/okhttp/src/main/kotlin/okhttp3/internal/http/RetryAndFollowUpInterceptor.kt)。
@@ -103,3 +103,30 @@ McpGetServerResponse version = registry.getSpecificServerVersion("io.example/ser
 Registry 保留固定基线的 v0/v0.1 路径和六个同步 API；生产 HTTP SPI 为 OkHttp，可通过 httpClient 显式配置超时。查询与路径参数分别编码；headersSupplier 每次请求获取新值并复制，允许不可变 Map。接口不提供原生异步或请求级取消，不会自动启动或安装发现的服务。
 
 `McpRegistryExample` 是实际 Java 8 的独立 BOM 消费；完整 clean 和上游 Registry 模型回归结果见进度与 milestone-11 快照。公共 Registry API 的当前可用性、鉴权和远端互操作未据此验收。
+
+
+## WebSocket
+
+```java
+WebSocketMcpTransport transport = WebSocketMcpTransport.builder()
+        .url("ws://127.0.0.1:8080/mcp")
+        .timeout(Duration.ofSeconds(10))
+        .requestTimeout(Duration.ofSeconds(30))
+        .closeTimeout(Duration.ofSeconds(1))
+        .maxPendingRequests(1024)
+        .maxQueuedBytes(1024 * 1024)
+        .headersSupplier(() -> Collections.singletonMap("Authorization", "Bearer explicit-token"))
+        .build();
+try (DefaultMcpClient client = DefaultMcpClient.builder()
+        .transport(transport).autoHealthCheck(false).build()) {
+    List<ToolSpecification> tools = client.listTools();
+}
+```
+
+保持 2025-11-25 的 initialize/initialized 和 JSON-RPC 消息格式。关闭或断连明确失败在途调用，后续新调用共享一次重连与握手，刷新客户端能力/缓存；不会重发旧工具消息。取消等待者不终止共享握手。timeout 包括升级和 MCP 握手，requestTimeout 包括请求等待恢复，超限/超时都明确失败。
+
+自定义 TLS、dispatcher、代理等可通过 httpClient(OkHttpClient) 提供；调用方保留 executor/pool 所有权。显式 sslContext/reloadSslContext 现在需要 `(SSLContext, X509TrustManager)`，替代原单参数 API；reloadHttpClient 允许替换未来连接的客户端。原 executor builder 迁移到 OkHttp dispatcher 配置。完整接口差异和关闭约定见兼容差异表。
+
+通知和完成回调在串行读路径运行，应快速返回；阻塞工作使用应用 Executor。出站队列/在途请求有界，入站完整消息仍由 OkHttp 重组，不承诺任意大远端帧的预分配内存保护。底层服务已执行的副作用不能靠取消/断连回滚。
+
+独立 BOM 的 McpWebSocketExample 验证真实 Java 8、断连失败/新调用恢复、分片工具结果和 OpenAI -> AI Services 工具循环。原始 JDK WebSocket 私有实现测试不计通过；专项网络证据及所有旧回归以 milestone-12 为准。
