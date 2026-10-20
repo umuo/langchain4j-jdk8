@@ -1,0 +1,509 @@
+{
+  "baseline": "7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79",
+  "milestone": "jdk8-m4",
+  "date": "2026-10-20",
+  "command": "./jdk8/build.sh -o",
+  "test_suites": {
+    "java8_acceptance": [
+      {
+        "name": "AiServicesJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AiServicesOpenAiJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CoreJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "EmbeddingOpenAiJdk8Test",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "HttpJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "OpenAiJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagOpenAiJdk8Test",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ReactiveJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "java17_upstream": [
+      {
+        "name": "ReflectiveMetadata17Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agent.tool.ToolExecutionRequestTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.classinstance.ClassMetadataProviderTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.classinstance.ReflectionBasedClassMetadataProviderFactoryTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.MetadataTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.splitter.DocumentByParagraphSplitterTest",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.splitter.DocumentBySentenceSplitterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.AiMessageTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.http.client.sse.DefaultServerSentEventParserTest",
+        "tests": 33,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.JsonParsingUtilsTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.JsonSchemaElementUtilsTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.UtilsTest",
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.ValidationUtilsTest",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.memory.chat.MessageWindowChatMemoryTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.memory.chat.SingleSlotChatMemoryStoreTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.batch.BatchItemResultTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.decision.response.DecisionResponseTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.DimensionAwareEmbeddingModelTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelListenerTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelRequestResponseTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingRequestResponseTypesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelAsyncRetryTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelAsyncTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingRequestParametersTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.internal.embedding.EmbeddingDeserializationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.DefaultRetrievalAugmentorTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.EmbeddingStoreAsyncRagTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.aggregator.DefaultContentAggregatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.aggregator.ReciprocalRankFuserTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.injector.DefaultContentInjectorTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetrieverAsyncTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetrieverTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.query.router.DefaultQueryRouterTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.query.transformer.DefaultQueryTransformerTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.AiServicesBuilderTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.AiServicesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.EnumOutputParserTest",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.PojoOutputParserTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.PolymorphicOutputParserTest",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.ServiceOutputParserTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.tool.DefaultToolExecutorLocaleTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.tool.DefaultToolExecutorTest",
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStoreFilterRegressionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ]
+  },
+  "runtime_audit": {
+    "jar_files_including_built_and_installed_project_copies": 28,
+    "base_classes_including_copies": 5840,
+    "runtime_linked_classes": 4620,
+    "optional_platform_classes_excluded": [
+      "okhttp3.internal.platform.ConscryptPlatform$DisabledHostnameVerifier",
+      "okhttp3.internal.platform.android.AndroidCertificateChainCleaner",
+      "opennlp.tools.util.ext.OSGiExtensionLoader"
+    ],
+    "independent_ai_services_example_response": "Java 8 OK",
+    "independent_rag_example": "Java 8 RAG OK; answer: 7 yuan; source: apple price is 7 yuan.",
+    "independent_http_rag_example": "Java 8 HTTP RAG OK; answer: 7 yuan; embedding requests: 2"
+  },
+  "sentence_splitter": {
+    "opennlp_version": "1.9.5",
+    "model_origin_tag": "0.35.0",
+    "model_git_blob": "d3a2779233fcd2d3017b5d3de6ca14e8fd3e5cc7",
+    "legacy_dependency_eol_documented": true
+  },
+  "rag": {
+    "embedding_fixture": "OpenAiEmbeddingModel over real OkHttp, loopback keyword-vector fixture",
+    "storage": "InMemoryEmbeddingStore, JSON and file restore",
+    "chat_paths": [
+      "sync",
+      "CompletableFuture",
+      "TokenStream",
+      "Reactive Streams Publisher"
+    ],
+    "transport": "loopback OpenAI HTTP/SSE with synthetic credentials",
+    "cancellation_fixed": [
+      "retriever embedding projection",
+      "AI Services memory read and augmentation composition"
+    ],
+    "external_embedding_provider_tested": false,
+    "production_dependencies_changed": false,
+    "openai_embedding_adapter_tested": true
+  },
+  "implementation_commit": "be774a97e",
+  "embedding": {
+    "fixture": "loopback /v1/embeddings; synthetic credentials",
+    "java8_tests_added": 19,
+    "validation": [
+      "sync and native async batches",
+      "order by response index",
+      "count/index/vector integrity",
+      "base64 little-endian floats",
+      "model/dimensions/user/custom parameters",
+      "auth/organization/project/custom headers/query",
+      "token usage aggregation",
+      "listeners",
+      "400 no retry",
+      "429 retry sync and async",
+      "timeouts",
+      "batch cancellation and sibling error preservation",
+      "independent transport cancellation terminates result",
+      "full four-path RAG and HTTP release"
+    ],
+    "compatibility": {
+      "indexless_responses": "preserve wire order only when all indices are absent",
+      "invalid_response": "reject before embedding store ingestion"
+    },
+    "real_remote_service_tested": false,
+    "semantic_quality_tested": false,
+    "production_dependencies_changed": false
+  }
+}

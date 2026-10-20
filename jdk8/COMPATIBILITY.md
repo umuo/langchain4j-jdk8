@@ -25,7 +25,7 @@
 - JSpecify 含 `ElementType.MODULE` 元数据，Java 8 API 编译时有两个注解警告；Java 8 运行和测试已验证通过。SLF4J 默认无日志 provider，消费应用可自行配置兼容的日志实现。
 - Java 8 独立验收与 JDK 17 上游选定回归分开执行。上游完整测试集及 Kotlin 测试尚未全量迁移或运行，不以过滤后的结果声称全量通过。
 - 已验证 OpenAI Chat Completions 的同步、异步、回调/响应式流式请求及错误、超时和取消；工具定义/调用结果消息和结构化格式已验证请求与响应转换。第二阶段已验证 AI Services 的自动工具执行循环，包括同步、Future、回调式及响应式流式路径。
-- OpenAI 模块其余能力（Responses API、音视频、图像、真实 embedding、真实服务行为）虽然随模块编译及类加载通过，尚未完成独立业务验收。测试仅使用 loopback 模拟服务，无外部密钥。
+- OpenAI 模块其余能力（Responses API、音视频、图像、真实远程服务行为）虽然随模块编译及类加载通过，尚未完成独立业务验收。Embeddings HTTP 适配器的第四阶段验收见后文；测试仅使用 loopback 模拟服务，无外部密钥。
 
 
 ## 第二阶段：AI Services、记忆与工具（jdk8-m2）
@@ -54,3 +54,13 @@
 - 验证 `storeRetrievedContentInChatMemory(false)` 保留问题原文而模型收到检索上下文；默认历史存储约定保持不变。验证 embedding 失败不会写入部分入库结果，检索失败不会继续调用对话模型。
 - 保留原生 async 优先和显式 `offloadBlocking(true)` 的约定，已在真实 Java 8 上验证普通线程回退。示例的关键词向量仅证明流程，不验证真实语义质量。OpenAI embedding HTTP API、第三方向量库、easy-rag 自动模型下载、复杂重排/多模态 RAG 和真实网络服务仍未验收。
 - 本阶段 70 个真实 Java 8 用例和 554 个 JDK 17 选定回归全部通过；增加了原始段落分割、检索器（含 async）、默认 augmentor、注入器、聚合器/融合、路由/查询转换、内存过滤和异步存储 RAG 测试。未删改原始测试或跳过失败用例；完整上游测试集仍不在本报告范围内。
+
+## 第四阶段：OpenAI Embeddings HTTP 与 RAG（jdk8-m4）
+
+- `OpenAiEmbeddingModel` 的同步、原生 async、分批输入与输入顺序、响应 model/token usage 聚合、请求参数覆写、维度、Base64 little-endian float 解码、listener、base URL/鉴权/组织/项目/custom headers/query 均经真实 Java 8 + OkHttp loopback 验证，无新增生产依赖。
+- 同步/异步共用批次响应校验：每个批次必须返回与输入等量的非空向量；有 index 时按 index 恢复输入顺序，拒绝缺失/重复/越界 index，避免向量配错文本。全部省略 index 的兼容提供方仍使用 wire 顺序。相比固定基线，这是有意的行为修复；损坏响应现在尽早抛出 `IllegalArgumentException`，不再返回部分或错位数据。异步通过异常 Future 报错。
+- 此处维度验收验证配置和请求传输及对应 fixture 向量长度，不强制核对所有提供方返回维度，也不证明真实模型的语义质量。
+- HTTP 400 不重试，429 同步/异步按 maxRetries 重试；超时与显式取消释放 OkHttp 调用。任一批次的失败取消兄弟任务并保留原错误；底层 HTTP Future 独立取消也会终止 caller Future，修复原先一直等待的问题，不重试取消。调用方主动 cancel 仍保留取消状态；独立传输取消作为带 CancellationException 原因的异常结果传递。
+- 文档入库和 JSON 恢复后，使用 HTTP embedding 检索、元数据过滤、上下文注入，完成同步/Future/TokenStream/Publisher 四条真实 HTTP/SSE 模拟对话路径；Future/Publisher 在 query embedding 阶段取消会释放 HTTP，避免启动 chat。embedding 查询失败同样不会继续调用 chat；损坏入库响应不会写入部分向量。
+- 独立 BOM `HttpRagExample` 在 Java 8 下验证 embedding 和 chat 两个真实适配器；模拟服务刻意乱序返回向量以验证 index 对齐。显式自定义 OkHttp 的源码示例新增 BOM 管理的 OkHttp 模块编译依赖，默认 OpenAI 传输依赖配置未改变。
+- 89 个真实 Java 8 / 627 个 JDK 17 选定回归全部通过；新增原始 embedding model/request/response/维度/listener、OpenAI 参数/Base64/async/retry 测试。真实远程服务、真实模型质量、其他 embedding 适配器及外部向量库仍未验收。
