@@ -35,7 +35,7 @@
 - 支持注解提示词、结构化 POJO、Future、TokenStream、Reactive Streams Publisher，及 MessageWindowChatMemory 的同步/异步会话隔离和 ChatMemoryAccess 查询/清理。异步链路仍要求组件/存储提供原生 async 接口；不会把所有阻塞组件自动伪装成非阻塞实现。
 - 已验证自动工具循环的四条调用路径、结果消息回传、并发工具、工具失败、最大轮次限制，以及 Future/Publisher 取消后 HTTP 调用释放。完整复杂补偿事务、Guardrails、Decision Services 和第三方适配器尚未全量业务验收。
 - 内部 Tube 新增 whenCancelled，与任意终止 whenTerminates 区分；正常完成或错误不会触发取消专用回调。新增公开 record 替代类型保留显式 JSON 字段/构造元数据。
-- 高层 RAG、文档加载器、InMemoryEmbeddingStore 等源码随主模块编译和类链接，但完整 RAG 流程及所有文件系统边界仍留待下一阶段验收。
+- 第二阶段只验证了高层 RAG、文档加载器和 InMemoryEmbeddingStore 的编译/类链接；第三阶段增加的业务验收见下节。
 - 上游工具测试的输入显式使用 arg0/arg1，因此独立上游回归模块关闭参数名保留以匹配原始测试夹具；生产模块和 Java 8 消费用例继续使用 `-parameters`。未修改或跳过这些原始测试。
 
 ### OpenNLP 与英语句子模型
@@ -44,3 +44,13 @@
 - 原默认模型声明 OpenNLP-Version=2.5.0，1.9.5 明确拒绝加载。兼容分支恢复官方 `0.35.0` tag 的 `opennlp-en-ud-ewt-sentence-1.0-1.9.3.bin`（Git blob `d3a2779233fcd2d3017b5d3de6ca14e8fd3e5cc7`），未伪造模型版本或跳过格式校验。
 - 2.5.0 模型仍保留在源码中便于上游对比，排除在兼容 JAR 资源之外。使用新版/自定义模型时须自行确认与 1.9.5 格式兼容；分句结果可能与新版模型不同。Java 8 实际分句及 6 个原始分割测试通过。
 - OpenNLP 官方已宣布 1.9.x 于 2026-08-10 结束维护，不再提供修复或安全更新，这是 Java 8 分支的具体已知限制。[官方生命周期说明](https://opennlp.apache.org/news/news-2026-08-10.html)
+
+## 第三阶段：基础 RAG（jdk8-m3）
+
+- 沿用六个生产模块、原包名与兼容 BOM；本阶段没有增加生产依赖，也没有修改上游固定基线。
+- 确定性本地 embedding 验证多文档 -> 段落分割 -> index/元数据继承 -> 入库 -> 分数阈值/topK/元数据过滤 -> 提示词注入 -> AI Services 答复和来源。同步、Future、TokenStream、Reactive Streams Publisher 均经过 Java 8 验收，四条路径另有 loopback OpenAI HTTP/SSE 联动与连接释放验证。
+- JSON 和文件恢复保留向量及 TextSegment 元数据，恢复后过滤删除不影响原存储；测试覆盖损坏 JSON。文件加载覆盖正常、空文档、解析失败、缺失路径；批量加载按原接口约定跳过失败项，单文件加载抛出包装异常。不代表全部文件系统/URL/classpath 加载器边界已覆盖。
+- 修复异步检索中 embedding `thenApply` 与 AI Services 的 memory/augmentation 组合链取消断点；Future 和 Publisher 取消能到达支持取消的底层任务。等待异步 memory 读取时取消会取消读取并避免启动后续检索。组件需自行实现实际 I/O 中止，普通 `CompletableFuture.cancel` 无法保证终止阻塞 I/O。
+- 验证 `storeRetrievedContentInChatMemory(false)` 保留问题原文而模型收到检索上下文；默认历史存储约定保持不变。验证 embedding 失败不会写入部分入库结果，检索失败不会继续调用对话模型。
+- 保留原生 async 优先和显式 `offloadBlocking(true)` 的约定，已在真实 Java 8 上验证普通线程回退。示例的关键词向量仅证明流程，不验证真实语义质量。OpenAI embedding HTTP API、第三方向量库、easy-rag 自动模型下载、复杂重排/多模态 RAG 和真实网络服务仍未验收。
+- 本阶段 70 个真实 Java 8 用例和 554 个 JDK 17 选定回归全部通过；增加了原始段落分割、检索器（含 async）、默认 augmentor、注入器、聚合器/融合、路由/查询转换、内存过滤和异步存储 RAG 测试。未删改原始测试或跳过失败用例；完整上游测试集仍不在本报告范围内。
