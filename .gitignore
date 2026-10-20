@@ -61,3 +61,6 @@ CLAUDE.md
 
 # SQLite native extraction stays on the external workspace disk
 /jdk8/native-tmp/
+
+# Local compatibility build diagnostics
+/jdk8/*.log
