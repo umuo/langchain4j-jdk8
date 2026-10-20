@@ -82,6 +82,16 @@
                         <testInclude>jdk8/upstream-tests/src/test/java/ReflectiveMetadata17Test.java</testInclude>
                         <testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorTest.java</testInclude>
                         <testInclude>langchain4j/src/test/java/dev/langchain4j/service/tool/DefaultToolExecutorLocaleTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/rag/EmbeddingStoreAsyncRagTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/store/embedding/inmemory/InMemoryEmbeddingStoreFilterRegressionTest.java</testInclude>
+                        <testInclude>langchain4j/src/test/java/dev/langchain4j/data/document/splitter/DocumentByParagraphSplitterTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/DefaultRetrievalAugmentorTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/retriever/EmbeddingStoreContentRetrieverTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/injector/DefaultContentInjectorTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/aggregator/DefaultContentAggregatorTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/content/aggregator/ReciprocalRankFuserTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/router/DefaultQueryRouterTest.java</testInclude>
+                        <testInclude>langchain4j-core/src/test/java/dev/langchain4j/rag/query/transformer/DefaultQueryTransformerTest.java</testInclude>
                     </testIncludes>
                 </configuration>
             </plugin>
@@ -114,6 +124,16 @@
                         <include>**/ReflectiveMetadata17Test.java</include>
                         <include>**/DefaultToolExecutorTest.java</include>
                         <include>**/DefaultToolExecutorLocaleTest.java</include>
+                        <include>**/EmbeddingStoreAsyncRagTest.java</include>
+                        <include>**/InMemoryEmbeddingStoreFilterRegressionTest.java</include>
+                        <include>**/DocumentByParagraphSplitterTest.java</include>
+                        <include>**/DefaultRetrievalAugmentorTest.java</include>
+                        <include>**/EmbeddingStoreContentRetrieverTest.java</include>
+                        <include>**/DefaultContentInjectorTest.java</include>
+                        <include>**/DefaultContentAggregatorTest.java</include>
+                        <include>**/ReciprocalRankFuserTest.java</include>
+                        <include>**/DefaultQueryRouterTest.java</include>
+                        <include>**/DefaultQueryTransformerTest.java</include>
                     </includes>
                 </configuration>
             </plugin>
