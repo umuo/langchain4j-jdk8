@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新结果见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -40,8 +40,21 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 ## 仍需完成
 
-- 主模块完整原始回归的选择/适配，以及模型 HTTP/SSE、异步/流式 Agent、会话/记忆、取消、超时、关闭/线程和补偿的完整闭环。
+- 主模块剩余 IT/端到端回归，以及模型 HTTP/SSE、异步/流式 Agent、会话/记忆、取消、超时、关闭/线程和补偿的完整闭环。
 - Human-in-the-loop、挂起/恢复/持久化、planner/supervisor 的全部公开策略及错误路径；声明式配置、监控/listener/HTML 等完整能力。
 - patterns 的所有模式、Agentic MCP 的 schema/代理和完整 A2A 任务/租户/上下文/流式能力及其 SDK 依赖。
 - 各模块的兼容 BOM、独立消费、全量产物审计和完整阶段验收。完成这些工作前不创建 `jdk8-m15` 标签或标记 Agentic 已支持。
 - MCP 剩余协议与能力、模型/向量库等整体目标继续保留，排除项仍只有用户指定范围。
+
+
+## 第二个 WIP 单元：全部原始单元回归与真实 Java 8 恢复
+
+- 新增独立 `agentic-upstream-tests` harness，由 `agentic-wip` profile 选择，运行于 JDK 17。固定基线的全部 51 个 `*Test.java` 原始源文件及断言保持不变；包括恢复、supervisor/HITL、补偿、async/streaming、声明式、参数、注册表和监控等单元回归。它不等于运行了全部外部服务 IT。
+- 通过 `./jdk8/audit-agentic-tests.sh` 检查 51 文件选取及原始内容；共享流式夹具仅替换两处 Flow 导入，Invoice 夹具的三个嵌套声明与固定 Git AST 完全一致。没有加载 IT 的 Models 配置，完整 provenance 见 harness README。
+- 新增实际 Java 8 的 supervisor 挂起/恢复：待人工输入时只规划一次，完成响应后再规划两次，LAST 返回最后子 Agent 结果。首次新增断言误把 LAST 期望成 done 的 response；按基线枚举文档修正为最后子 Agent 输出，未改生产行为或删除断言。
+- 新增两个独立真实 Java 8 进程：writer 执行 prepare/ask 后将挂起 scope/checkpoint 存文件并退出；reader 新建工作流、加载并完成响应，继续 finish。文件执行日志严格为 prepare/ask/finish，证明该场景不重放已完成步骤。包含 Unicode、待响应 ID 去重和完成后执行状态清理。
+- 文件 store 是单 writer、String memory ID 的测试夹具，writer 为挂起后正常退出；不宣称通用生产存储、断电/强杀原子性或多进程并发写已验证。与现有真实 Java 8 14 项基础场景合计 16 项。
+- 当前功能证明仍不足以标记完整 Agentic 支持。后续继续真实 HTTP/SSE、async/streaming、记忆/补偿/取消/关闭完整场景及其余三个模块的全部工作。
+
+
+本单元完整 clean 验证通过：真实 Java 8 共 362 项（支持模块 346 + Agentic 16），选定 JDK 17 共 1115 项（既有 864 + 全部 Agentic 单元 251），TCK 62 通过、14 官方 untested；共 1539 通过。API/来源/字节码/实际 Java 8 链接审计及既有独立 BOM 示例通过，尚未新增 Agentic BOM 消费。

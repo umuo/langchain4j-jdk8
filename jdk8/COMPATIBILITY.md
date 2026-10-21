@@ -208,3 +208,13 @@
 - Optional.ifPresentOrElse、Predicate.not、Objects.requireNonNullElse、Class.getPackageName、Files.writeString 使用 Java 8 等价实现。报告默认 UTF-8、覆盖写入和损坏代理项报错；记录 Record 自动值方法 final 属性的首次 API 审计失败及修正，不将失败计作通过。
 - 14 项真实 Java 8 专项包含基础模型 Agent、顺序转换/状态传递、条件、循环上限/退出、并行实际重叠及调用方 executor 所有权、错误恢复、缺参不执行、消息变换、空白/null 状态、完成与 deferred 状态 JSON 恢复，以及报告写入。模型为进程内 stub，不宣称远端互操作；该集合不能代替完整 Agentic 验收。
 - 主模块完整功能、选定上游回归、HITL/挂起恢复、planner/supervisor、声明式/工具/补偿/记忆/可观测性完整场景，以及其余三个 Agentic 模块仍待推进。验证和 API/依赖细节见 AGENTIC-PORT.md 与 verification/agentic-main-wip.json。
+
+
+### Agentic 第二个 WIP 单元：回归与恢复
+
+新增全部 51 个固定基线 `*Test.java` 的 JDK 17 harness，原始断言不变。仅复制的共享 StreamingChatModelMock 将两个 Flow 导入替换为 Reactive Streams；InvoiceFixtureTest 引用的三个嵌套声明从 IT 精确抽取，避免加载模型配置。`audit-agentic-tests.sh` 校验覆盖清单、字节级未修改测试及夹具差异。
+
+实际 Java 8 增加 supervisor/HITL 挂起期间不继续规划，以及两个独立 JVM 的文件检查点恢复、响应去重/Unicode 和已完成步骤不重放。该 store 为单写者测试夹具，挂起后正常退出，不声明断电、强杀或生产存储保证；完整 Agentic 仍 WIP。
+
+
+本 WIP 单元最终 clean exit 0：Java 8 362 项（含 Agentic 16），JDK 17 1115 项（含全部 51 个 Agentic 单元类共 251 项），TCK 62 通过/14 官方 untested；1539 通过。原始测试/夹具来源、API 对照和 208 类附加产物/5154 类链接均通过；BOM 支持仍只有此前八模块。快照见 verification/agentic-recovery-wip.json。
