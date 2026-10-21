@@ -49,6 +49,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
     }
 
     private Object handleAgentFailure(AgentInvocationException e, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args) {
+        InvocationTasks.check(agenticScope);
         ErrorRecoveryResult recoveryResult = agenticScope.handleError(agentInvoker.name(), e);
         switch(recoveryResult.type()) {
             case THROW_EXCEPTION:

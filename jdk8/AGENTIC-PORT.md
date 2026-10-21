@@ -180,3 +180,11 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 内部 API 增项：DefaultAgenticScope.invocationTasks()/cancelPendingTasks(Throwable)、AsyncResponse.isCancelled()，以及新增 InvocationTasks/Registration/Binding 辅助类型；包名及基线签名保持。无新增生产依赖。
 - 验证：完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0。真实 Java 8 464 项（支持模块 346 + 主 Agentic 89 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1711 通过。生产依赖树未变，main 216 类/patterns 22 类均 classfile 52，无禁止引用；main 扩展链接 5162 类、main+patterns 5184 类及既有独立 BOM 消费通过。基线 API/测试来源审计通过，主模块基线可见类型增项累计七个方法。快照 `verification/agentic-cancellation-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
 - 边界：Java 无法强制终止忽略中断的用户代码，直接修改 state() 原始 Map 或外部副作用不受 scope 方法守卫覆盖。网络流取消、同步并行派发失败收尾、成功调用被覆盖任务的完整收尾、失败历史与自动重试仍待完成；不改变全部 Agentic/MCP/模型/向量库与最终交付的长期范围。
+
+
+### 同步并行派发失败收尾（WIP，2026-10-21）
+
+- 三项实际 Java 8 子进程先全部失败：默认/自定义执行器等待六秒慢任务并丢失先发生的失败，第二次派发拒绝后首个任务不被中断。
+- 同步并行派发也注册到当前 root 的 InvocationTasks。全部正常完成仍等待全部结果；任一任务失败即唤醒 root，根调用按既有失败边界取消其他 owned 任务，保留首次观察到的错误。拒绝提交仍抛原始拒绝异常，已提交任务由 root 收尾取消。
+- 继续使用用户提供的 Executor，不关闭调用者执行器；取消后的同步 Agent 异常不再进入恢复处理。直接 inline 执行的 Executor 仍按调用者的同步调度合同执行，不能声称在 executor.execute 返回之前抢占它。
+- 验证：完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0。真实 Java 8 467 项（支持模块 346 + 主 Agentic 92 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1714 通过。API/测试来源审计保持，main 216 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5184 类与全部既有独立 BOM 消费通过，无生产 POM/依赖变化。快照 `verification/agentic-parallel-failure-wip.json`；仍 WIP，无新阶段标签。网络流取消、成功调用被覆盖任务收尾、完整失败历史/自动重试以及所有其余长期范围保持 pending。

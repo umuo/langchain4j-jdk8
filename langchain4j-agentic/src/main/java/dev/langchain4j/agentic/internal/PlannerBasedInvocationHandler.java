@@ -522,9 +522,20 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
 
         private void parallelExecution(List<AgentExecutor> agents) {
             Executor exec = executor != null ? executor : DefaultExecutorProvider.getDefaultExecutor();
-            java.util.concurrent.CompletableFuture[] tasks = agents.stream().map(agentExecutor -> CompletableFuture.supplyAsync(() -> agentExecutor.execute(agenticScope, this), exec)).toArray(CompletableFuture[]::new);
+            if (agents.isEmpty()) return;
+            InvocationTasks ownership = agenticScope.invocationTasks();
+            CompletableFuture<Void> completed = new CompletableFuture<>();
+            java.util.concurrent.atomic.AtomicInteger remaining = new java.util.concurrent.atomic.AtomicInteger(agents.size());
+            for (AgentExecutor agentExecutor : agents) {
+                if (completed.isCompletedExceptionally()) break;
+                new AsyncResponse<>(() -> ownership.call(() -> agentExecutor.execute(agenticScope, this)), ownership, exec)
+                        .completion().whenComplete((value, error) -> {
+                            if (error != null) completed.completeExceptionally(error);
+                            else if (remaining.decrementAndGet() == 0) completed.complete(null);
+                        });
+            }
             try {
-                CompletableFuture.allOf(tasks).get();
+                completed.get();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 throw new RuntimeException(e);

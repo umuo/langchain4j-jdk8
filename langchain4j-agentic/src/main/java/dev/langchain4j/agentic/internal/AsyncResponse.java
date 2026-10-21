@@ -14,11 +14,15 @@ public class AsyncResponse<T> implements DelayedResponse<T> {
     public AsyncResponse(Supplier<T> responseSupplier) { this(responseSupplier, null); }
 
     AsyncResponse(Supplier<T> responseSupplier, InvocationTasks tasks) {
+        this(responseSupplier, tasks, DefaultExecutorProvider.getDefaultExecutor());
+    }
+
+    AsyncResponse(Supplier<T> responseSupplier, InvocationTasks tasks, java.util.concurrent.Executor executor) {
         Objects.requireNonNull(responseSupplier);
         InvocationTasks.Registration registration = tasks == null ? null : tasks.register(this::cancel);
         if (registration != null) futureResponse.whenComplete((value, failure) -> registration.close());
         try {
-            DefaultExecutorProvider.getDefaultExecutor().execute(() -> {
+            executor.execute(() -> {
                 synchronized (workerLock) {
                     if (futureResponse.isCancelled()) return;
                     worker = Thread.currentThread();
@@ -32,6 +36,8 @@ public class AsyncResponse<T> implements DelayedResponse<T> {
             throw failure;
         }
     }
+    CompletableFuture<T> completion() { return futureResponse; }
+
     private void cancel() {
         synchronized (workerLock) {
             futureResponse.cancel(false);
