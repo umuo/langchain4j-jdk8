@@ -1,14 +1,25 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段主 Agentic 异步状态检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段主 Agentic 挂起恢复检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景、32 项网络场景和 10 项状态/重入场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景、32 项网络场景和 18 项状态/重入/挂起场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；再推进 patterns/MCP/A2A 的全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### 末端检查点与异步挂起传播（WIP）
+
+`./jdk8/build.sh -o -Pagentic-wip` 最终完整 clean exit 0；最新快照：[agentic-terminal-suspension-wip.json](verification/agentic-terminal-suspension-wip.json)。
+
+- 保存 planner 已完成、仅等待人工响应的终点检查点，完成响应后直接求值结果，不重新执行最后的提供者；重复等待保持挂起。内部字段 __terminalAwaiting/可选 __terminalResult 为兼容分支扩展。
+- 非 AI wrappers、延迟恢复与根执行器保留受控挂起，不误触发失败恢复/补偿；输出求值之后才清理执行状态。根 planner 展开 async 计算结果以发现人工响应标记。
+- 新增八项真实 Java 8 场景，含同步/异步末端、重复等待、异常式返回、async 消费者、已有 HTTP 工具挂起不补偿且恢复不重放、两个 JVM 的末端检查点写入/恢复。
+- 实际 Java 8 共 412 项（支持模块 346 + Agentic 66），JDK 17 1115 项，TCK 62 通过/14 官方 untested；共 1589 通过，其余测试无失败/错误/跳过。
+- 原 185 类型 API 保留，审计显式报告新增 @Internal DefaultAgenticScope.resolveAsyncStates()；来源/依赖/211 类附加产物/5157 类 Java 8 链接及既有 BOM 示例均通过。
+- 并行/嵌套 async、async supervisor、挂起尝试的历史归一化/延迟持久化及全局取消等继续 pending，其他模块和长期范围不变。未新增完整阶段标签或 Agentic BOM 支持。
 
 ### 异步同键状态、重入与回填检查点（WIP）
 

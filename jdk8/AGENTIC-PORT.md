@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新末端挂起检查点见 [挂起恢复快照](verification/agentic-terminal-suspension-wip.json)，此前状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -100,3 +100,17 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第五单元最终 clean exit 0：实际 Java 8 404 项（Agentic 58）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1581 通过。原基线 API 与测试来源审计通过，生产依赖不变。候选 JAR 211 类全部 classfile 52，无禁止引用；Java 8 链接 5157 类，三个既有可选平台排除不变。既有 BOM 示例通过；新增内部 Frame 工具和全部支持边界见 verification/agentic-deferred-state-wip.json。
+
+
+## 第六个 WIP 单元：末端等待与异步挂起传播
+
+- 五个初始回归均失败，复现末端 HITL 恢复后重新询问、重复等待重复执行、末端 async 响应阻塞，以及 async scope function 的挂起被包装为普通错误；修复后再扩大到 8 项真实 Java 8 场景。
+- planner 已完成但仍有待人工响应时，在该 planner 的执行状态内保存 __terminalAwaiting 和可选 __terminalResult。重复调用继续返回挂起；响应完成后从该终点取结果并清理检查点，不再调用 firstAction 或重发已完成的人工步骤。这两个内部字段是兼容分支的检查点扩展，不声明原始上游能直接恢复它们。
+- 新增 @Internal DefaultAgenticScope.resolveAsyncStates()，用于根 planner 收尾时展开 AsyncResponse 外层计算而不阻塞等待其返回的人工响应标记；按既有身份条件回填保留并发更新。它是一个内部公开辅助方法，原 AgenticScope 接口与原有签名保留，API 审计显式列为新增项。
+- 非 AI action/function 包装器和延迟错误恢复保留 AgenticSystemSuspendedException 的控制流身份；根执行器不将该异常送入失败补偿。输出求值成功之后才清理执行状态，避免输出中发现挂起时丢失恢复点。
+- 未完成的 async 消费者从保存的派发点重新进入，失败恢复处理器不会被调用。测试明确消费者有两次进入、人工提供者只有一次；这是方法级恢复，不是从任意 Java 代码行继续执行。
+- 八项场景包括同步/异步末端、重复等待、普通返回值的异常式挂起、async 人工提供者+async 消费者、工具执行后挂起不补偿且恢复不重放，以及两个独立 Java 8 进程的末端检查点写入/恢复。跨进程夹具为同步 HITL、单 writer 文件 store 和正常退出，不扩大为 async 持久化或断电恢复声明。
+- 并行/嵌套 async 挂起、async supervisor、控制挂起尝试的历史结果归一化与延迟状态持久化、末端流恢复和全局取消仍待专项验收；其余三个 Agentic 模块与完整长期范围保持 pending。
+
+
+第六单元最终 clean exit 0：Java 8 412 项（Agentic 66）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1589 通过。原基线 API 全部保留，单个新增内部 resolveAsyncStates 方法在审计中明确报告；生产依赖和 211 类 classfile 52 产物/5157 类链接、原始测试来源与既有 BOM 示例均通过。结果见 verification/agentic-terminal-suspension-wip.json，完整支持仍未完成。

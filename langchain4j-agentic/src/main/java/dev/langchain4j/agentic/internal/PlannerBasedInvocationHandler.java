@@ -216,6 +216,9 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             Planner planner = plannerSupplier.get();
             planner.init(new InitPlanningContext(currentScope, this, subagents));
             result = new PlannerLoop(planner, currentScope, registry).loop();
+        } catch (AgenticSystemSuspendedException suspended) {
+            // Suspension is control flow, not a failure requiring recovery or compensation.
+            result = new Action.SuspendAction();
         } catch (Exception e) {
             currentScope.compensateAll();
             if (isRootCall()) {
@@ -418,6 +421,14 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
                 restoreCompletedAgents(savedState);
                 planner.restoreExecutionState(savedState);
             }
+            if (Boolean.TRUE.equals(savedState.get("__terminalAwaiting"))) {
+                if (isRootCall()) agenticScope.resolveAsyncStates();
+                if (hasSuspendedResponses(agenticScope)) return planner.suspend();
+                nextAction = planner.done(savedState.get("__terminalResult"));
+                Object completedResult = result();
+                agenticScope.writeState(executionStateId(), null);
+                return completedResult;
+            }
             nextAction = planner.firstAction(new PlanningContext(agenticScope, null));
             nextAction = filterCompletedAgents(nextAction);
             while (nextAction == null || !nextAction.isDone()) {
@@ -446,12 +457,27 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             if (nextAction != null && nextAction.isSuspended()) {
                 return nextAction;
             }
-            if (hasSuspendedResponses(agenticScope)) {
+            try {
+                if (isRootCall()) agenticScope.resolveAsyncStates();
+            } catch (AgenticSystemSuspendedException suspended) {
+                // An async consumer has not completed; resume from its saved dispatch point.
+                saveExecutionState();
                 return planner.suspend();
             }
-            // Clear execution state when planner is done
+            if (hasSuspendedResponses(agenticScope)) {
+                saveTerminalAwaitingState();
+                return planner.suspend();
+            }
+            Object completedResult;
+            try {
+                completedResult = result();
+            } catch (AgenticSystemSuspendedException suspended) {
+                saveTerminalAwaitingState();
+                return planner.suspend();
+            }
+            // Clear only after output evaluation, which can itself discover suspension.
             agenticScope.writeState(executionStateId(), null);
-            return result();
+            return completedResult;
         }
 
         private Action filterCompletedAgents(Action action) {
@@ -506,6 +532,15 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
                 }
             }
             return result;
+        }
+
+        private void saveTerminalAwaitingState() {
+            Map<String, Object> state = new HashMap<>(planner.executionState());
+            state.put("__terminalAwaiting", true);
+            state.put(COMPLETED_AGENTS_KEY, new ArrayList<>(completedAgentIds));
+            if (nextAction != null && nextAction.result() != null) state.put("__terminalResult", nextAction.result());
+            agenticScope.writeState(executionStateId(), state);
+            if (registry != null) agenticScope.checkpoint(registry);
         }
 
         private void saveExecutionState() {

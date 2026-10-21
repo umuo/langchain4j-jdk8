@@ -34,6 +34,28 @@ public class AgenticDeferredStateJdk8Test {
     @Test(timeout = 12000) public void intermediateSseRetryCanUpdateItsOwnInputOutputKey() throws Exception { child("sse-update"); }
     @Test(timeout = 12000) public void asyncHumanResponseFlattensAndSuspendsThenResumes() throws Exception { child("human"); }
 
+    public interface PlainSuspendable extends AgenticScopeAccess { @Agent String run(@MemoryId String id); }
+    @Test(timeout = 12000) public void terminalHumanDoesNotAskAgainAfterResponse() throws Exception { child("terminal"); }
+    @Test(timeout = 12000) public void terminalAsyncHumanSuspendsThenReturnsResponse() throws Exception { child("terminal-async"); }
+    @Test(timeout = 12000) public void terminalHumanRepeatedAwaitDoesNotInvokeProviderAgain() throws Exception { child("terminal-repeat"); }
+    @Test(timeout = 12000) public void plainTerminalHumanUsesSuspensionExceptionAndResumes() throws Exception { child("terminal-plain"); }
+    @Test(timeout = 12000) public void asyncConsumerSuspensionBypassesFailureRecovery() throws Exception { child("async-consumer"); }
+
+    @Test(timeout = 12000) public void terminalAsyncRepeatedAwaitDoesNotAskAgain() throws Exception { child("terminal-async-repeat"); }
+    @Test(timeout = 12000) public void asyncSuspensionDoesNotCompensateOrReplayCompletedHttpTool() throws Exception { child("terminal-tools"); }
+    @Test(timeout = 15000) public void terminalCheckpointResumesInAnotherActualJava8Process() throws Exception {
+        Path directory = Files.createTempDirectory(Paths.get("target"), "terminal-checkpoint-");
+        try {
+            child("terminal-write", directory.toAbsolutePath().toString());
+            child("terminal-read", directory.toAbsolutePath().toString());
+            assertEquals(Collections.singletonList("ask"), Files.readAllLines(directory.resolve("calls.txt"), StandardCharsets.UTF_8));
+        } finally {
+            try (java.util.stream.Stream<Path> files = Files.walk(directory)) {
+                for (Path file : files.sorted(Comparator.reverseOrder()).collect(java.util.stream.Collectors.toList())) Files.delete(file);
+            }
+        }
+    }
+
     @Test(timeout = 6000) public void completedOldReadDoesNotOverwriteNewerState() throws Exception { staleRead(false); }
     @Test(timeout = 6000) public void rootDrainDoesNotOverwriteNewerState() throws Exception { staleRead(true); }
 
@@ -75,11 +97,12 @@ public class AgenticDeferredStateJdk8Test {
         } finally { executor.shutdownNow(); assertTrue(executor.awaitTermination(2, TimeUnit.SECONDS)); }
     }
 
-    static void child(String mode) throws Exception {
+    static void child(String mode, String... extra) throws Exception {
         Path log = Files.createTempFile(Paths.get("target"), "deferred-state-", ".log");
-        Process process = new ProcessBuilder(new File(System.getProperty("java.home"), "bin/java").getAbsolutePath(), "-Xverify:all", "-cp",
-                System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")), AgenticDeferredStateJdk8Test.class.getName(), mode)
-                .redirectErrorStream(true).redirectOutput(log.toFile()).start();
+        List<String> command = new ArrayList<>(Arrays.asList(new File(System.getProperty("java.home"), "bin/java").getAbsolutePath(), "-Xverify:all", "-cp",
+                System.getProperty("surefire.test.class.path", System.getProperty("java.class.path")), AgenticDeferredStateJdk8Test.class.getName(), mode));
+        Collections.addAll(command, extra);
+        Process process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();
         try {
             assertTrue("child self-wait/timeout: " + mode, process.waitFor(5, TimeUnit.SECONDS));
             assertEquals(new String(Files.readAllBytes(log), StandardCharsets.UTF_8), 0, process.exitValue());
@@ -91,6 +114,10 @@ public class AgenticDeferredStateJdk8Test {
 
     public static void main(String[] args) throws Exception {
         assertTrue(System.getProperty("java.version").startsWith("1.8."));
+        if (args[0].equals("terminal-tools")) { terminalTools(); return; }
+        if (args[0].equals("terminal-write") || args[0].equals("terminal-read")) { terminalDurable(args[0], Paths.get(args[1])); return; }
+        if (args[0].startsWith("terminal")) { terminalHuman(args[0]); return; }
+        if (args[0].equals("async-consumer")) { asyncConsumer(); return; }
         if (args[0].equals("human")) { human(); return; }
         if (args[0].startsWith("http") || args[0].startsWith("sse")) { retry(args[0].startsWith("sse"), args[0].endsWith("update")); return; }
         boolean write = args[0].equals("write");
@@ -147,6 +174,87 @@ public class AgenticDeferredStateJdk8Test {
         assertTrue(suspended.suspended()); assertEquals(Collections.singleton("approval"), suspended.agenticScope().pendingResponseIds());
         ResultWithAgenticScope<String> done = suspended.completePendingResponse("approval", "yes");
         assertFalse(done.suspended()); assertEquals("approved:yes", done.result()); assertEquals(1, asks.get());
+    }
+
+    static void terminalHuman(String mode) {
+        AgenticScopePersister.setStore(null); AtomicInteger asks = new AtomicInteger(), errors = new AtomicInteger();
+        Object human = AgenticServices.humanInTheLoopBuilder().async(mode.contains("async")).outputKey("approval")
+                .responseProvider(scope -> { asks.incrementAndGet(); return new SuspendedResponse<String>("approval"); }).build();
+        if (mode.contains("plain")) {
+            PlainSuspendable workflow = AgenticServices.sequenceBuilder(PlainSuspendable.class).subAgents(human).outputKey("approval").build();
+            try { workflow.run("session"); fail("must suspend"); } catch (AgenticSystemSuspendedException expected) { }
+            assertTrue(workflow.getAgenticScope("session").completePendingResponse("approval", "yes"));
+            assertEquals("yes", workflow.run("session"));
+        } else {
+            Suspendable workflow = AgenticServices.sequenceBuilder(Suspendable.class).subAgents(human).outputKey("approval")
+                    .errorHandler(error -> { errors.incrementAndGet(); return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException(); }).build();
+            ResultWithAgenticScope<String> suspended = workflow.run("session"); assertTrue(suspended.suspended());
+            if (mode.contains("repeat")) { assertTrue(workflow.run("session").suspended()); assertEquals(1, asks.get()); }
+            ResultWithAgenticScope<String> done = suspended.completePendingResponse("approval", "yes");
+            assertFalse(done.suspended()); assertEquals("yes", done.result()); assertEquals(0, errors.get());
+            assertTrue(done.agenticScope().state().keySet().stream().noneMatch(k -> k.startsWith("__planner_state_")));
+        }
+        assertEquals(1, asks.get());
+    }
+
+    static void asyncConsumer() {
+        AgenticScopePersister.setStore(null); AtomicInteger asks = new AtomicInteger(), errors = new AtomicInteger(), attempts = new AtomicInteger();
+        CountDownLatch consumer = new CountDownLatch(1);
+        Object human = AgenticServices.humanInTheLoopBuilder().async(true).outputKey("approval").responseProvider(scope -> {
+            await(consumer); asks.incrementAndGet(); return new SuspendedResponse<String>("approval");
+        }).build();
+        Object finish = AgenticServices.nonAiAgentBuilder(scope -> {
+            attempts.incrementAndGet(); consumer.countDown(); return "approved:" + scope.readState("approval", "");
+        }).async(true).outputKey("answer").build();
+        Suspendable workflow = AgenticServices.sequenceBuilder(Suspendable.class).subAgents(human, finish).outputKey("answer")
+                .errorHandler(error -> { errors.incrementAndGet(); return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException(); }).build();
+        ResultWithAgenticScope<String> suspended = workflow.run("session"); assertTrue(suspended.suspended()); assertEquals(0, errors.get());
+        ResultWithAgenticScope<String> done = suspended.completePendingResponse("approval", "yes");
+        assertFalse(done.suspended()); assertEquals("approved:yes", done.result()); assertEquals(1, asks.get());
+        assertEquals(2, attempts.get()); assertEquals(0, errors.get());
+    }
+
+    static void terminalDurable(String mode, Path directory) throws Exception {
+        AgenticScopePersister.setStore(new AgenticRecoveryJdk8Test.FileStore(directory));
+        Object human = AgenticServices.humanInTheLoopBuilder().outputKey("approval").responseProvider(scope -> {
+            if (mode.equals("terminal-read")) throw new AssertionError("persisted terminal step was replayed");
+            try { Files.write(directory.resolve("calls.txt"), "ask\n".getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE, StandardOpenOption.APPEND); }
+            catch (java.io.IOException e) { throw new RuntimeException(e); }
+            return new SuspendedResponse<String>("approval");
+        }).build();
+        Suspendable workflow = AgenticServices.sequenceBuilder(Suspendable.class).subAgents(human).outputKey("approval").build();
+        if (mode.equals("terminal-write")) {
+            ResultWithAgenticScope<String> result = workflow.run("session"); assertTrue(result.suspended());
+            assertTrue(result.agenticScope().state().values().stream().anyMatch(v -> v instanceof Map && Boolean.TRUE.equals(((Map<?, ?>) v).get("__terminalAwaiting"))));
+        } else {
+            AgenticScope scope = workflow.getAgenticScope("session"); assertNotNull(scope);
+            assertTrue(scope.completePendingResponse("approval", "yes"));
+            ResultWithAgenticScope<String> done = workflow.run("session"); assertFalse(done.suspended()); assertEquals("yes", done.result());
+            assertTrue(done.agenticScope().state().keySet().stream().noneMatch(k -> k.startsWith("__planner_state_")));
+        }
+    }
+
+    static void terminalTools() throws Exception {
+        AgenticScopePersister.setStore(null); AgenticHttpJdk8Test fixture = new AgenticHttpJdk8Test(); fixture.start();
+        try {
+            fixture.mode = "tool"; AgenticHttpJdk8Test.Weather weather = new AgenticHttpJdk8Test.Weather();
+            Object writer = AgenticServices.agentBuilder(AgenticHttpJdk8Test.Writer.class).chatModel(fixture.model()).tools(weather).build();
+            CountDownLatch consumer = new CountDownLatch(1); AtomicInteger asks = new AtomicInteger(), errors = new AtomicInteger();
+            Object human = AgenticServices.humanInTheLoopBuilder().async(true).outputKey("approval").responseProvider(scope -> {
+                await(consumer); asks.incrementAndGet(); return new SuspendedResponse<String>("approval");
+            }).build();
+            Object finish = AgenticServices.nonAiAgentBuilder(scope -> { consumer.countDown(); return "approved:" + scope.readState("approval", ""); })
+                    .async(true).outputKey("answer").build();
+            Suspendable workflow = AgenticServices.sequenceBuilder(Suspendable.class).subAgents(writer, human, finish).outputKey("answer")
+                    .beforeCall(scope -> scope.writeState("topic", "云")).compensateOnError(true)
+                    .errorHandler(error -> { errors.incrementAndGet(); return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException(); }).build();
+            ResultWithAgenticScope<String> pending = workflow.run("session"); assertTrue(pending.suspended());
+            assertEquals(1, weather.calls.get()); assertEquals(0, weather.undos.get()); assertEquals(0, errors.get());
+            ResultWithAgenticScope<String> done = pending.completePendingResponse("approval", "yes");
+            assertFalse(done.suspended()); assertEquals("approved:yes", done.result());
+            assertEquals(1, asks.get()); assertEquals(1, weather.calls.get()); assertEquals(0, weather.undos.get());
+            assertEquals(0, errors.get()); assertEquals(2, fixture.requests.size()); fixture.awaitReleased();
+        } finally { fixture.stop(); }
     }
 
     static void await(CountDownLatch latch) {

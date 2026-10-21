@@ -250,3 +250,15 @@ readState 可展开嵌套延迟值；完成旧读取或 root drain 时按 pendin
 
 
 第五单元最终 clean 验证：Java 8 404 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1581 通过。原 API/来源审计及生产树保持，新增内部工具类型明确记录；211 类附加产物和 5157 类 Java 8 链接、既有 BOM 示例通过，详见 verification/agentic-deferred-state-wip.json。Agentic 与完整长期目标继续 WIP。
+
+
+### Agentic 第六个 WIP 单元：末端挂起检查点
+
+已完成 planner 的待人工响应保存为执行状态中的 __terminalAwaiting/可选 __terminalResult；响应完成后在终点返回结果，而非重新执行最后的提供者。重复等待保持挂起。这是兼容分支私有检查点扩展，未承诺原始上游可直接读取。
+
+新增 @Internal public DefaultAgenticScope.resolveAsyncStates() 根 planner 收尾辅助方法，展开 async 外层计算而不等待人工响应本身。原有签名及 AgenticScope 接口不变，API 对照会明确报告这个内部新增方法。非 AI wrappers 和延迟恢复不再包装受控挂起为普通失败；根执行器跳过错误补偿，成功求值输出之后才清理执行状态。
+
+新增八项真实 Java 8 用例，含末端同步/异步/重复等待、异常式挂起、async 消费者恢复、HTTP 工具不补偿/不重放，以及跨 JVM 同步 HITL 文件检查点。未完成的消费者会从方法入口再执行；任意 Java 代码行续跑、所有并行/嵌套 async 组合与延迟持久化不在本单元通过声明内，完整 Agentic 继续 WIP。
+
+
+第六单元最终 clean 验证：Java 8 412 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1589 通过。API 审计保留全部原成员并报告一个内部新增方法；来源、生产依赖、211 类产物/5157 类链接和既有 BOM 示例通过。快照见 verification/agentic-terminal-suspension-wip.json，完整 Agentic/长期目标继续 WIP。

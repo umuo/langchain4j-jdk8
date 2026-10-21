@@ -166,6 +166,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         Throwable failure = initialFailure;
         AgentInvocationArguments currentArgs = args;
         while (true) {
+            if (failure instanceof AgenticSystemSuspendedException) throw (AgenticSystemSuspendedException) failure;
             if (failure instanceof Error) throw (Error) failure;
             AgentInvocationException invocationFailure;
             if (failure instanceof AgentInvocationException) {

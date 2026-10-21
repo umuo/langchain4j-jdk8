@@ -813,6 +813,8 @@ public class AgenticServices {
         public void run() {
             try {
                 runnable.run();
+            } catch (dev.langchain4j.agentic.scope.AgenticSystemSuspendedException suspended) {
+                throw suspended;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -847,6 +849,8 @@ public class AgenticServices {
         public void accept(AgenticScope agenticScope) {
             try {
                 consumer.accept(agenticScope);
+            } catch (dev.langchain4j.agentic.scope.AgenticSystemSuspendedException suspended) {
+                throw suspended;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
@@ -1044,6 +1048,8 @@ public class AgenticServices {
         public T accept(AgenticScope agenticScope) {
             try {
                 return function.apply(agenticScope);
+            } catch (dev.langchain4j.agentic.scope.AgenticSystemSuspendedException suspended) {
+                throw suspended;
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }

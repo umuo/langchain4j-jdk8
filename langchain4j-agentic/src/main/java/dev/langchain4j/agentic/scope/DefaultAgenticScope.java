@@ -294,6 +294,20 @@ public class DefaultAgenticScope implements AgenticScope {
         }
     }
 
+    /** Internal planner barrier: unwrap async computations without waiting on human response markers. */
+    @Internal
+    public void resolveAsyncStates() {
+        new java.util.HashMap<>(state).forEach((key, original) -> {
+            Object value = original;
+            while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>) {
+                Object pending = value;
+                value = ((DelayedResponse<?>) pending).blockingGet();
+                if (value == pending) throw new IllegalStateException("Self-referencing async state: " + key);
+                publishResolvedState(key, pending, value);
+            }
+        });
+    }
+
     @Override
     public Map<String, Object> state() {
         return state;
