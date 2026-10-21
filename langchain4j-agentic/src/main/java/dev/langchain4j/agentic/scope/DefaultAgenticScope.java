@@ -95,6 +95,12 @@ public class DefaultAgenticScope implements AgenticScope {
 
     private final Map<String, Object> state = new ConcurrentHashMap<>();
 
+    // Snapshot metadata only: an in-flight or controlled-suspended async invocation is re-entered
+    // from its method boundary after loading, never restored as a live CompletableFuture.
+    private final Set<String> incompleteAsyncAgentIds = new java.util.concurrent.ConcurrentSkipListSet<>();
+
+    private static final Object UNRESOLVED_ASYNC = new Object();
+
     private final List<AgentInvocation> agentInvocations = Collections.synchronizedList(new ArrayList<>());
 
     private final List<AgentMessage> context = Collections.synchronizedList(new ArrayList<>());
@@ -136,14 +142,45 @@ public class DefaultAgenticScope implements AgenticScope {
      */
     public DefaultAgenticScope serializableCopy() {
         DefaultAgenticScope copy = new DefaultAgenticScope(memoryId, kind);
+        copy.incompleteAsyncAgentIds.addAll(incompleteAsyncAgentIds);
         state.forEach((key, value) -> {
-            if (isSerializable(value)) {
-                copy.state.put(key, value);
+            Object snapshot = checkpointValue(value);
+            if (snapshot != UNRESOLVED_ASYNC && snapshot != null && isSerializable(snapshot)) {
+                copy.state.put(key, snapshot);
             }
         });
-        copy.agentInvocations.addAll(agentInvocations);
+        synchronized (agentInvocations) {
+            for (AgentInvocation invocation : agentInvocations) {
+                Object snapshot = checkpointValue(invocation.rawOutput());
+                if (snapshot == UNRESOLVED_ASYNC) {
+                    copy.incompleteAsyncAgentIds.add(invocation.agentId());
+                    snapshot = null;
+                } else if (invocation.rawOutput() != null || !incompleteAsyncAgentIds.contains(invocation.agentId())) {
+                    copy.incompleteAsyncAgentIds.remove(invocation.agentId());
+                }
+                copy.agentInvocations.add(new AgentInvocation(invocation.agentType(), invocation.agentName(),
+                        invocation.agentId(), invocation.input(), snapshot, invocation.skipReason()));
+            }
+        }
         copy.context.addAll(context);
         return copy;
+    }
+
+    /** Never wait while holding the checkpoint write lock: workers can need scope read locks. */
+    private static Object checkpointValue(Object value) {
+        while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>
+                || value instanceof DeferredResponse<?> && ((DelayedResponse<?>) value).isDone()) {
+            DelayedResponse<?> delayed = (DelayedResponse<?>) value;
+            if (!delayed.isDone()) return UNRESOLVED_ASYNC;
+            try {
+                Object resolved = delayed.blockingGet();
+                if (resolved == value) throw new IllegalStateException("Self-referencing checkpoint value");
+                value = resolved;
+            } catch (AgenticSystemSuspendedException controlled) {
+                return UNRESOLVED_ASYNC;
+            }
+        }
+        return value;
     }
 
     public static boolean isSerializable(Object value) {
@@ -316,7 +353,7 @@ public class DefaultAgenticScope implements AgenticScope {
         synchronized (agentInvocations) {
             for (AgentInvocation invocation : agentInvocations) latest.put(invocation.agentId(), invocation);
         }
-        Set<String> suspended = new java.util.HashSet<>();
+        Set<String> suspended = new java.util.HashSet<>(incompleteAsyncAgentIds);
         latest.forEach((id, invocation) -> {
             Object result = invocation.rawOutput();
             if (result instanceof dev.langchain4j.agentic.internal.AsyncResponse<?> && ((DelayedResponse<?>) result).isDone()) {
@@ -363,6 +400,7 @@ public class DefaultAgenticScope implements AgenticScope {
 
     public void registerAgentInvocation(AgentInvocation agentInvocation, Object agent) {
         withReadLock(() -> {
+            incompleteAsyncAgentIds.remove(agentInvocation.agentId());
             agentInvocations.add(agentInvocation);
             registerContext(agentInvocation, agent);
         });

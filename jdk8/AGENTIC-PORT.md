@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新并行/规划检查点见 [异步规划快照](verification/agentic-async-planning-wip.json)，此前末端挂起检查点见 [挂起恢复快照](verification/agentic-terminal-suspension-wip.json)，此前状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新异步持久化检查点见 [检查点快照](verification/agentic-async-persistence-wip.json)，此前并行/规划检查点见 [异步规划快照](verification/agentic-async-planning-wip.json)，此前末端挂起检查点见 [挂起恢复快照](verification/agentic-terminal-suspension-wip.json)，此前状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -128,3 +128,16 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第七单元完整 clean exit 0：真实 Java 8 418 项（支持模块 346 + Agentic 72）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1595 通过。原 API 成员与测试来源保留，显式记录三个内部新增方法；生产依赖不变，211 类附加产物与 5157 类链接及既有独立 BOM 示例通过。快照见 verification/agentic-async-planning-wip.json；完整 Agentic 与长期目标继续 WIP。
+
+
+## 第八个 WIP 单元：异步检查点值与跨进程恢复
+
+- 新增真实 Java 8 跨 JVM 用例复现 AsyncResponse 留在调用历史、新 JVM 受类型 allowlist 拒绝的问题。未通过放宽 CompletableFuture/AsyncResponse 反序列化限制解决。
+- serializableCopy 对顶层状态和调用输出展开已完成 AsyncResponse/已完成 DeferredResponse；未完成或以受控挂起结束的 async 尝试不写运行时包装器。调用历史以 null 输出保留原调用标识，私有 incompleteAsyncAgentIds 记录需要方法级重入的 Agent。实际活跃 scope/调用历史不被快照改写。
+- 快照不等待计算，避免在 checkpoint 写锁内等待需要 scope 读锁的 worker。内部集合使用带公开无参构造器的 ConcurrentSkipListSet，避免 KeySetView 的反序列化失败；二次快照保留从磁盘恢复的未完成标记，登记新调用后清除该标记。
+- 根流程返回挂起之前再次 checkpoint，保存 async 完成之后才出现的人工响应和最终 planner 恢复位置，避免只留下派发时的快照。
+- 三项新增场景：async 人工响应跨两个实际 Java 8 JVM；async 受控挂起消费者跨两个 JVM；实际持久化写锁下对未完成计算取快照、读取并二次复制，再释放 worker 并验证完成值/历史归一化。执行日志仍严格 prepare/ask/finish，已完成步骤不重放。
+- incompleteAsyncAgentIds 是兼容分支的私有 JSON 检查点扩展；它记录未完成方法，不保存 Java 栈。此单元不证明任意进程强杀时间点、任意 planner 的在途任务调度恢复、外部副作用恰好一次或多 writer 原子性。异步普通失败历史、嵌套容器内用户自放 Future、全局取消和其余 Agentic 功能继续待推进。
+
+
+第八单元完整 clean exit 0：真实 Java 8 421 项（支持模块 346 + Agentic 75）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1598 通过。原基线 API 与三个已记录内部增项保持，测试来源及生产树不变；211 类附加产物、5157 类实际 Java 8 链接及既有 BOM 消费通过。最新快照 verification/agentic-async-persistence-wip.json；完整 Agentic 与长期目标仍未完成。

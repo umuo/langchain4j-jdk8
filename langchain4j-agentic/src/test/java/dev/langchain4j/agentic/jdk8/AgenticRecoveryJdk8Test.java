@@ -87,6 +87,62 @@ public class AgenticRecoveryJdk8Test {
         }
     }
 
+    @Test(timeout = 30000) public void asyncHumanResponsePersistsAcrossActualJava8Processes() throws Exception {
+        Path directory = Files.createDirectories(Paths.get("target", "agentic-async-restart-" + UUID.randomUUID()));
+        try {
+            runChild("async-write", directory);
+            assertEquals(Arrays.asList("prepare", "ask"), Files.readAllLines(directory.resolve("calls.txt"), StandardCharsets.UTF_8));
+            runChild("async-read", directory);
+            assertEquals(Arrays.asList("prepare", "ask", "finish"), Files.readAllLines(directory.resolve("calls.txt"), StandardCharsets.UTF_8));
+        } finally {
+            try (Stream<Path> files = Files.walk(directory)) {
+                for (Path file : files.sorted(Comparator.reverseOrder()).collect(Collectors.toList())) Files.delete(file);
+            }
+        }
+    }
+
+    @Test(timeout = 30000) public void asyncSuspendedConsumerPersistsAcrossActualJava8Processes() throws Exception {
+        Path directory = Files.createDirectories(Paths.get("target", "agentic-consumer-restart-" + UUID.randomUUID()));
+        try {
+            runChild("async-consumer-write", directory);
+            assertEquals(Arrays.asList("prepare", "ask"), Files.readAllLines(directory.resolve("calls.txt"), StandardCharsets.UTF_8));
+            runChild("async-consumer-read", directory);
+            assertEquals(Arrays.asList("prepare", "ask", "finish"), Files.readAllLines(directory.resolve("calls.txt"), StandardCharsets.UTF_8));
+        } finally {
+            try (Stream<Path> files = Files.walk(directory)) {
+                for (Path file : files.sorted(Comparator.reverseOrder()).collect(Collectors.toList())) Files.delete(file);
+            }
+        }
+    }
+
+    @Test(timeout = 10000) public void snapshotDoesNotWaitForRunningAsyncComputation() throws Exception {
+        JsonStore store = new JsonStore(); AgenticScopePersister.setStore(store);
+        AgenticScopeRegistry registry = new AgenticScopeRegistry("running-snapshot");
+        DefaultAgenticScope scope = registry.create("session");
+        java.util.concurrent.CountDownLatch release = new java.util.concurrent.CountDownLatch(1);
+        dev.langchain4j.agentic.internal.AsyncResponse<String> pending = new dev.langchain4j.agentic.internal.AsyncResponse<>(() -> {
+            try { assertTrue(release.await(5, TimeUnit.SECONDS)); scope.writeState("worker", "released"); return "completed"; }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new RuntimeException(e); }
+        });
+        scope.writeState("waiting", pending);
+        scope.registerAgentInvocation(new AgentInvocation(RecoveryWorkflow.class, "waiting", "waiting", Collections.emptyMap(), pending), null);
+        try {
+            scope.checkpoint(registry);
+            assertTrue(store.load(new AgenticScopeKey("running-snapshot", "session")).get().suspendedAsyncAgentIds().contains("waiting"));
+            assertSame(pending, scope.state().get("waiting"));
+            String json = AgenticScopeSerializer.toJson(scope);
+            assertFalse(json.contains("futureResponse")); assertFalse(json.contains("internal.AsyncResponse"));
+            DefaultAgenticScope restored = AgenticScopeSerializer.fromJson(json);
+            assertFalse(restored.hasState("waiting")); assertTrue(restored.suspendedAsyncAgentIds().contains("waiting"));
+            assertNull(restored.agentInvocations().get(0).output());
+            DefaultAgenticScope copiedAgain = AgenticScopeSerializer.fromJson(AgenticScopeSerializer.toJson(restored));
+            assertTrue(copiedAgain.suspendedAsyncAgentIds().contains("waiting"));
+        } finally { release.countDown(); assertEquals("completed", pending.blockingGet()); }
+        DefaultAgenticScope restored = AgenticScopeSerializer.fromJson(AgenticScopeSerializer.toJson(scope));
+        assertEquals("completed", restored.readState("waiting")); assertEquals("completed", restored.agentInvocations().get(0).output());
+        assertTrue(restored.suspendedAsyncAgentIds().isEmpty());
+    }
+
     private static void runChild(String mode, Path directory) throws Exception {
         String classpath = System.getProperty("surefire.test.class.path", System.getProperty("java.class.path"));
         File executable = new File(System.getProperty("java.home"), "bin/java");
@@ -106,8 +162,8 @@ public class AgenticRecoveryJdk8Test {
         assertTrue(System.getProperty("java.version").startsWith("1.8."));
         Path directory = Paths.get(args[1]);
         AgenticScopePersister.setStore(new FileStore(directory));
-        RecoveryWorkflow workflow = workflow(directory);
-        if (args[0].equals("write")) {
+        RecoveryWorkflow workflow = workflow(directory, args[0].startsWith("async-"), args[0].contains("consumer"));
+        if (args[0].endsWith("write")) {
             try { workflow.process("session-1", "输入"); fail("must suspend"); }
             catch (AgenticSystemSuspendedException suspended) {
                 assertEquals(Collections.singleton("approval-1"), suspended.scope().pendingResponseIds());
@@ -126,15 +182,16 @@ public class AgenticRecoveryJdk8Test {
         }
     }
 
-    private static RecoveryWorkflow workflow(Path directory) {
+    private static RecoveryWorkflow workflow(Path directory, boolean asyncHuman, boolean asyncConsumer) {
         Object prepare = AgenticServices.nonAiAgentBuilder(scope -> {
             mark(directory, "prepare"); return "processed:" + scope.readState("input", "");
         }).name("prepare").inputKey(String.class, "input").outputKey("processed").build();
-        HumanInTheLoop human = AgenticServices.humanInTheLoopBuilder().outputKey("approval")
+        HumanInTheLoop human = AgenticServices.humanInTheLoopBuilder().async(asyncHuman).outputKey("approval")
                 .responseProvider(scope -> { mark(directory, "ask"); return new SuspendedResponse<String>("approval-1"); }).build();
         Object finish = AgenticServices.nonAiAgentBuilder(scope -> {
-            mark(directory, "finish"); return scope.readState("processed", "") + "|" + scope.readState("approval", "");
-        }).name("finish").inputKeys(String.class, "processed", String.class, "approval").outputKey("answer").build();
+            String answer = scope.readState("processed", "") + "|" + scope.readState("approval", "");
+            mark(directory, "finish"); return answer;
+        }).name("finish").async(asyncConsumer).outputKey("answer").build();
         return AgenticServices.sequenceBuilder(RecoveryWorkflow.class).subAgents(prepare, human, finish).outputKey("answer").build();
     }
 

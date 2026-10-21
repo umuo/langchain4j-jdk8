@@ -228,6 +228,9 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             throw e;
         }
         if (result instanceof Action && ((Action) result).isSuspended()) {
+            // The last async result can become a human marker after the dispatch checkpoint.
+            // Persist the settled pause, rather than leaving a pre-completion Future snapshot.
+            if (isRootCall()) currentScope.checkpoint(registry);
             onAgenticSystemSuspended(agentListener, currentScope);
             if (isRootCall() && method.getReturnType().equals(ResultWithAgenticScope.class)) {
                 return new ResultWithAgenticScope<>(currentScope, null, true, () -> (ResultWithAgenticScope) executeAgentMethod(registry, method, args));

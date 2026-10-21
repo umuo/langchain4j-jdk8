@@ -271,3 +271,12 @@ readState 可展开嵌套延迟值；完成旧读取或 root drain 时按 pendin
 supervisor 先等待选定异步结果，人工输入未完成时不规划；私有执行状态扩展 awaitingOutputKey/lastResponse，将实际回答带入恢复后的模型请求，executionState 仍返回不可修改 Map。两个并行人工输入的部分完成、重复等待及异步 query 的下一轮规划均由有界 Java 8 子进程验证；不扩大为任意调度、跨进程 async 持久化或全局取消完成声明。
 
 第七单元完整 clean exit 0：真实 Java 8 418 项（支持模块 346 + Agentic 72）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1595 通过。原 API 成员与测试来源保留，显式记录三个内部新增方法；生产依赖不变，211 类附加产物与 5157 类链接及既有独立 BOM 示例通过。快照见 verification/agentic-async-planning-wip.json；完整 Agentic 与长期目标继续 WIP。
+
+
+### Agentic 第八个 WIP 单元：异步持久化
+
+serializableCopy 对顶层状态/调用输出展开已完成 async/deferred 值；运行中或受控挂起的 async 不序列化 Future。历史以 null 输出保留调用身份，私有 JSON 字段 incompleteAsyncAgentIds 记录未完成方法，恢复时参与已有 planner 重入分类。字段在登记新调用后清理，二次快照保持未完成状态；不改变活跃 scope 的原始输出。快照不等待计算，避免 checkpoint 写锁与 worker 读锁互等。原 API 及生产依赖不变。
+
+根流程返回挂起前再次持久化已稳定的人工作答标记与 planner 状态。新格式是兼容分支检查点扩展，不承诺未改造上游直接恢复。三个实际 Java 8 新用例验证 async 人工响应、受控挂起消费者跨进程恢复及运行中非阻塞快照。任意崩溃时间点、任意 planner 在途恢复、外部副作用恰好一次、多 writer 原子性、普通 async 失败历史与用户嵌套容器 Future 仍待验收。
+
+第八单元完整 clean exit 0：真实 Java 8 421 项（支持模块 346 + Agentic 75）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1598 通过。原基线 API 与三个已记录内部增项保持，测试来源及生产树不变；211 类附加产物、5157 类实际 Java 8 链接及既有 BOM 消费通过。最新快照 verification/agentic-async-persistence-wip.json；完整 Agentic 与长期目标仍未完成。
