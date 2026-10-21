@@ -41,7 +41,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
     private Object execute(DefaultAgenticScope agenticScope, PlannerExecutor planner, boolean async) {
         Object invokedAgent = (agent instanceof AgenticScopeOwner ? ((AgenticScopeOwner) agent).withAgenticScope(agenticScope) : agent);
         try {
-            return internalExecute(agenticScope, invokedAgent, planner, async);
+            return agenticScope.invocationTasks().call(() -> internalExecute(agenticScope, invokedAgent, planner, async));
         } catch (PlannerInvocationFailure failure) {
             // Leave the agent-recovery catch before restoring the original public exception.
             throw failure.failure;
@@ -165,7 +165,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
                 } catch (RuntimeException e) {
                     return recoverDeferredFailure(e, agenticScope, invokedAgent, args, consumeStreaming);
                 }
-            }));
+            }), agenticScope.invocationTasks());
         }
         Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
         if (consumeStreaming && response instanceof TokenStream) {
@@ -188,6 +188,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         Throwable failure = initialFailure;
         AgentInvocationArguments currentArgs = args;
         while (true) {
+            InvocationTasks.check(scope);
             if (failure instanceof AgenticSystemSuspendedException) throw (AgenticSystemSuspendedException) failure;
             if (failure instanceof Error) throw (Error) failure;
             AgentInvocationException invocationFailure;

@@ -57,7 +57,7 @@ public class AgenticFailureCleanupJdk8Test {
             assertSame(primary.get(),failure);Throwable cause=failure;while(cause.getCause()!=null)cause=cause.getCause();assertEquals("primary failure",cause.getMessage());
             if(mode.equals("store")||mode.equals("listener")){String expected=mode.equals("store")?"save-cleanup":"listener-cleanup";assertTrue(Arrays.toString(failure.getSuppressed()),Arrays.stream(failure.getSuppressed()).anyMatch(error->expected.equals(error.getMessage())));}
         } finally {release.countDown();}
-        if(mode.equals("inflight"))assertEquals("released",scopeSeen.get().readState("x"));
+        if(mode.equals("inflight")){try {scopeSeen.get().readState("x");fail("owned background must be cancelled");}catch(java.util.concurrent.CancellationException expected){}}
         if(mode.equals("persist")){assertEquals(1,failureSaves.get());assertEquals(Collections.singleton("approval"),store.load(lastKey.get()).get().pendingResponseIds());}
         assertEquals(1,errors.get());assertEquals(1,asks.get());assertNotNull(scopeSeen.get());assertEquals(Collections.singleton("approval"),scopeSeen.get().pendingResponseIds());
         if(mode.equals("listener"))assertTrue(((AgenticScopeOwner)workflow).registry().getAllAgenticScopeKeysInMemory().isEmpty());

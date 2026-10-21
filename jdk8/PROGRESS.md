@@ -1,14 +1,27 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 失败收尾检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic async 取消检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景、3 项异步持久化场景及 8 项失败收尾场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 3 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景、3 项异步持久化场景、8 项失败收尾及 5 项取消场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+
+
+### Root 失败后的 async 任务归属与中断（WIP，2026-10-21）
+
+- 新增五项实际 Java 8 子进程验收先全部失败：错误返回后后台仍运行、输出键覆盖丢失追踪、忽略中断的任务继续写状态、跨 memoryId 隔离，以及等待外部 PendingResponse 的任务不能中断。
+- 每个 root 调用维护内部任务登记，不依赖当前 state 的输出键；AsyncResponse 在提交前登记取消动作，失败 root 在补偿之前取消自己的登记任务并中断执行线程。完成后解除登记；线程引用在归还执行器前清除，避免误中断后续工作。
+- DeferredScopeContext 捕获调用归属并在 finally 恢复 ThreadLocal；取消与 scope 写入共享边界。已取消任务调用 writeState/writeStateIfAbsent/writeStates、发布解析结果或登记调用时抛 CancellationException，外部调用者仍可检查/更新 scope。取消不进入 Agent 错误恢复。
+- owned 任务读取外部 DeferredResponse 时使用既有可中断等待，不取消或伪造外部 marker 的回答；取消后的 AsyncResponse 检查点按未完成处理，不持久化运行时 Future。
+- 原失败收尾 inflight 用例从夹具释放后完成改为要求 owned future 已取消；继续保留原始错误、仅一次恢复和人工 marker 未回答的断言。
+- 内部 API 增项：DefaultAgenticScope.invocationTasks()/cancelPendingTasks(Throwable)、AsyncResponse.isCancelled()，以及新增 InvocationTasks/Registration/Binding 辅助类型；包名及基线签名保持。无新增生产依赖。
+- 验证：完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0。真实 Java 8 464 项（支持模块 346 + 主 Agentic 89 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1711 通过。生产依赖树未变，main 216 类/patterns 22 类均 classfile 52，无禁止引用；main 扩展链接 5162 类、main+patterns 5184 类及既有独立 BOM 消费通过。基线 API/测试来源审计通过，主模块基线可见类型增项累计七个方法。快照 `verification/agentic-cancellation-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
+- 边界：Java 无法强制终止忽略中断的用户代码，直接修改 state() 原始 Map 或外部副作用不受 scope 方法守卫覆盖。网络流取消、同步并行派发失败收尾、成功调用被覆盖任务的完整收尾、失败历史与自动重试仍待完成；不改变全部 Agentic/MCP/模型/向量库与最终交付的长期范围。
 
 ### 失败专用收尾与原始异常（WIP）
 

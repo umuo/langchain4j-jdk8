@@ -1,6 +1,8 @@
 package dev.langchain4j.agentic.scope;
 
 import dev.langchain4j.agentic.internal.DeferredScopeContext;
+import dev.langchain4j.agentic.internal.InvocationTasks;
+import dev.langchain4j.agentic.internal.AsyncResponse;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyDefaultValue;
@@ -99,6 +101,8 @@ public class DefaultAgenticScope implements AgenticScope {
     // from its method boundary after loading, never restored as a live CompletableFuture.
     private final Set<String> incompleteAsyncAgentIds = new java.util.concurrent.ConcurrentSkipListSet<>();
 
+    private transient InvocationTasks invocationTasks = new InvocationTasks(this);
+
     private static final Object UNRESOLVED_ASYNC = new Object();
 
     private final List<AgentInvocation> agentInvocations = Collections.synchronizedList(new ArrayList<>());
@@ -171,7 +175,7 @@ public class DefaultAgenticScope implements AgenticScope {
         while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>
                 || value instanceof DeferredResponse<?> && ((DelayedResponse<?>) value).isDone()) {
             DelayedResponse<?> delayed = (DelayedResponse<?>) value;
-            if (!delayed.isDone()) return UNRESOLVED_ASYNC;
+            if (!delayed.isDone() || delayed instanceof AsyncResponse<?> && ((AsyncResponse<?>) delayed).isCancelled()) return UNRESOLVED_ASYNC;
             try {
                 Object resolved = delayed.blockingGet();
                 if (resolved == value) throw new IllegalStateException("Self-referencing checkpoint value");
@@ -223,6 +227,10 @@ public class DefaultAgenticScope implements AgenticScope {
     @Override
     @SuppressWarnings("unchecked")
     public void writeState(String key, Object value) {
+        InvocationTasks.mutate(this, () -> writeStateOwned(key, value));
+    }
+
+    private void writeStateOwned(String key, Object value) {
         if (DeferredScopeContext.handles(this, key)) {
             Object old = DeferredScopeContext.read();
             DeferredScopeContext.write(value);
@@ -251,6 +259,10 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public void writeStateIfAbsent(String key, Object value) {
+        InvocationTasks.mutate(this, () -> writeStateIfAbsentOwned(key, value));
+    }
+
+    private void writeStateIfAbsentOwned(String key, Object value) {
         if (value != null) {
             if (DeferredScopeContext.handles(this, key)) {
                 if (!hasState(key)) DeferredScopeContext.write(value);
@@ -267,6 +279,10 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public void writeStates(Map<String, Object> newState) {
+        InvocationTasks.mutate(this, () -> writeStatesOwned(newState));
+    }
+
+    private void writeStatesOwned(Map<String, Object> newState) {
         withReadLock(() -> newState.forEach((key, value) -> {
             java.util.Objects.requireNonNull(key);
             java.util.Objects.requireNonNull(value);
@@ -310,12 +326,17 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     private Object readStateBlocking(String key, Object value) {
+        InvocationTasks.check(this);
         while (value instanceof DelayedResponse) {
             if (value instanceof dev.langchain4j.agentic.internal.SuspendedResponse<?> && !((DelayedResponse<?>) value).isDone()) {
                 throw new AgenticSystemSuspendedException(this);
             }
             Object pending = value;
-            value = ((DelayedResponse<?>) pending).blockingGet();
+            if (pending instanceof DeferredResponse<?> && InvocationTasks.bound(this) != null) {
+                try { value = ((DeferredResponse<?>) pending).blockingGet(Long.MAX_VALUE, java.util.concurrent.TimeUnit.NANOSECONDS); }
+                catch (java.util.concurrent.TimeoutException impossible) { throw new IllegalStateException(impossible); }
+            } else value = ((DelayedResponse<?>) pending).blockingGet();
+            InvocationTasks.check(this);
             if (value == pending) throw new IllegalStateException("Self-referencing deferred state: " + key);
             publishResolvedState(key, pending, value);
         }
@@ -323,6 +344,10 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     private void publishResolvedState(String key, Object pending, Object value) {
+        InvocationTasks.mutate(this, () -> publishResolvedStateOwned(key, pending, value));
+    }
+
+    private void publishResolvedStateOwned(String key, Object pending, Object value) {
         if (DeferredScopeContext.handles(this, key)) {
             DeferredScopeContext.write(value);
         } else {
@@ -399,6 +424,10 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     public void registerAgentInvocation(AgentInvocation agentInvocation, Object agent) {
+        InvocationTasks.mutate(this, () -> registerAgentInvocationOwned(agentInvocation, agent));
+    }
+
+    private void registerAgentInvocationOwned(AgentInvocation agentInvocation, Object agent) {
         withReadLock(() -> {
             incompleteAsyncAgentIds.remove(agentInvocation.agentId());
             agentInvocations.add(agentInvocation);
@@ -406,7 +435,17 @@ public class DefaultAgenticScope implements AgenticScope {
         });
     }
 
+    @Internal
+    public InvocationTasks invocationTasks() {
+        InvocationTasks bound = InvocationTasks.bound(this);
+        return bound != null ? bound : invocationTasks;
+    }
+
+    @Internal
+    public void cancelPendingTasks(Throwable primary) { invocationTasks().cancel(primary); }
+
     public void rootCallStarted(AgenticScopeRegistry registry) {
+        if (invocationTasks.finished()) invocationTasks = new InvocationTasks(this);
     }
 
     public void rootCallEnded(AgenticScopeRegistry registry, AgentListener agentListener) {
@@ -423,16 +462,19 @@ public class DefaultAgenticScope implements AgenticScope {
             flush(registry);
         }
         compensableExecutions.clear();
+        invocationTasks().finish();
     }
 
     /** Failure cleanup never waits for external answers or unfinished computations.
      * Successful root completion retains its existing blocking drain contract. */
     @Internal
     public void rootCallFailed(AgenticScopeRegistry registry, AgentListener listener, Throwable primary) {
+        cancelPendingTasks(primary);
         new java.util.HashMap<>(state).forEach((key, original) ->
                 dev.langchain4j.agentic.internal.AgenticJdk8.suppressCleanupFailure(primary, () -> {
                     Object value = original;
                     while (value instanceof DelayedResponse<?> && ((DelayedResponse<?>) value).isDone()) {
+                        if (value instanceof AsyncResponse<?> && ((AsyncResponse<?>) value).isCancelled()) break;
                         Object pending = value;
                         value = ((DelayedResponse<?>) pending).blockingGet();
                         if (value == pending) throw new IllegalStateException("Self-referencing failed-call state: " + key);

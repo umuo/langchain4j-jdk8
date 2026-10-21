@@ -23,10 +23,12 @@ public final class DeferredScopeContext {
     public static final class Frame {
         private final DefaultAgenticScope scope;
         private final String key;
+        private final InvocationTasks tasks;
         private Object value;
 
         public Frame(DefaultAgenticScope scope, String key) {
             this.scope = scope;
+            this.tasks = scope.invocationTasks();
             this.key = key == null || Jdk8.isBlank(key) ? null : key;
             this.value = this.key == null ? null
                     : handles(scope, this.key) ? read() : scope.state().get(this.key);
@@ -36,7 +38,7 @@ public final class DeferredScopeContext {
             Frame previous = CURRENT.get();
             CURRENT.set(this);
             try {
-                return action.get();
+                return tasks.call(action);
             } finally {
                 if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
             }

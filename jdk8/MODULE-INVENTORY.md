@@ -126,3 +126,6 @@
 | `web-search-engines/langchain4j-web-search-engine-google-custom` | other-review | pending |
 | `web-search-engines/langchain4j-web-search-engine-searchapi` | other-review | pending |
 | `web-search-engines/langchain4j-web-search-engine-tavily` | other-review | pending |
+
+
+- 2026-10-21 Agentic async 取消 WIP：main 161 源文件/216 类，patterns 15 基线文件/22 类；完整 clean 共 1711 通过/14 官方 TCK untested。失败 root 按调用登记中断 async 并守卫 scope 方法写入，5 个真实 Java 8 子进程证明取消、输出覆盖、跨 ID 隔离与外部 marker 所有权；快照 verification/agentic-cancellation-wip.json。网络流、同步并行失败收尾、全部四模块完整能力/BOM 与既有其他长期范围仍 pending。

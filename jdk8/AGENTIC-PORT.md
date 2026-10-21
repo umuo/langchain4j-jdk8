@@ -168,3 +168,15 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 
 
 失败收尾检查点完整 clean exit 0：真实 Java 8 459 项（支持模块 346 + 主 Agentic 84 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1706 通过。原基线 API 保留，新增 rootCallFailed 内部方法明确列为第四个 DefaultAgenticScope 增项；来源/生产依赖审计保持，main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-failure-cleanup-wip.json；完整工程仍 WIP，无新阶段标签或 Agentic BOM 支持声明。
+
+
+### Root 失败后的 async 任务归属与中断（WIP，2026-10-21）
+
+- 新增五项实际 Java 8 子进程验收先全部失败：错误返回后后台仍运行、输出键覆盖丢失追踪、忽略中断的任务继续写状态、跨 memoryId 隔离，以及等待外部 PendingResponse 的任务不能中断。
+- 每个 root 调用维护内部任务登记，不依赖当前 state 的输出键；AsyncResponse 在提交前登记取消动作，失败 root 在补偿之前取消自己的登记任务并中断执行线程。完成后解除登记；线程引用在归还执行器前清除，避免误中断后续工作。
+- DeferredScopeContext 捕获调用归属并在 finally 恢复 ThreadLocal；取消与 scope 写入共享边界。已取消任务调用 writeState/writeStateIfAbsent/writeStates、发布解析结果或登记调用时抛 CancellationException，外部调用者仍可检查/更新 scope。取消不进入 Agent 错误恢复。
+- owned 任务读取外部 DeferredResponse 时使用既有可中断等待，不取消或伪造外部 marker 的回答；取消后的 AsyncResponse 检查点按未完成处理，不持久化运行时 Future。
+- 原失败收尾 inflight 用例从夹具释放后完成改为要求 owned future 已取消；继续保留原始错误、仅一次恢复和人工 marker 未回答的断言。
+- 内部 API 增项：DefaultAgenticScope.invocationTasks()/cancelPendingTasks(Throwable)、AsyncResponse.isCancelled()，以及新增 InvocationTasks/Registration/Binding 辅助类型；包名及基线签名保持。无新增生产依赖。
+- 验证：完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0。真实 Java 8 464 项（支持模块 346 + 主 Agentic 89 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1711 通过。生产依赖树未变，main 216 类/patterns 22 类均 classfile 52，无禁止引用；main 扩展链接 5162 类、main+patterns 5184 类及既有独立 BOM 消费通过。基线 API/测试来源审计通过，主模块基线可见类型增项累计七个方法。快照 `verification/agentic-cancellation-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
+- 边界：Java 无法强制终止忽略中断的用户代码，直接修改 state() 原始 Map 或外部副作用不受 scope 方法守卫覆盖。网络流取消、同步并行派发失败收尾、成功调用被覆盖任务的完整收尾、失败历史与自动重试仍待完成；不改变全部 Agentic/MCP/模型/向量库与最终交付的长期范围。
