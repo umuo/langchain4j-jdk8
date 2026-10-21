@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段主 Agentic 异步持久化检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic patterns 基础检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
@@ -8,7 +8,16 @@
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
-- 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；再推进 patterns/MCP/A2A 的全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+- 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### Patterns 基础移植与 router 恢复（WIP）
+
+- 全部 15 个 patterns 生产文件进入 agentic-wip；四个 record（一个公开）和 Java 9+ 语法/API 转为 Java 8。仅依赖兼容主 Agentic，无新增生产库；详见 [PATTERNS-PORT.md](PATTERNS-PORT.md)。
+- 九项真实 Java 8 场景覆盖七个 patterns 的基础流程、Desire 值/工厂合同及 router 人工响应恢复。全部八个原始 Test 类/70 项在独立 JDK 17 harness 执行，九个原始测试/辅助文件逐字校验，不加载外部模型 IT。
+- 首轮两个原始 router 恢复断言失败，复现通用终点检查点冻结 <pending>；对有非空 planner 结果且无外部 output function 的暂停保留 planner 自身的恢复点，重算动态结果。原 null-result 末端不重放合同及主模块 75 项保持通过。
+- 固定 Git 源码对照 API：16 可见类型/109 声明成员/235 继承公开项/一个公开 record 替代，无缺失/改变/增项；提取器文本块对应 annotation 常量逐字节一致。
+- Patterns 基础检查点完整 clean exit 0：真实 Java 8 430 项（支持模块 346 + 主 Agentic 75 + patterns 9）、JDK 17 1185 项（含 patterns 原始 70 项）、TCK 62 通过/14 官方 untested，共 1677 通过。main/patterns API 与原始测试来源审计通过；patterns 22 类均 classfile 52，无禁止引用，扩展链接 5179 类及既有 BOM 消费通过。快照 verification/agentic-patterns-foundation-wip.json；仍属 WIP，无新阶段标签或 BOM 支持声明。
+- patterns 全部策略/IT、模型路由与提取、并发 async/streaming/HITL/生命周期、主 Agentic 剩余能力、Agentic MCP/A2A 及长期范围继续 pending。
 
 ### 异步检查点与跨进程恢复（WIP）
 

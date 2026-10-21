@@ -57,7 +57,8 @@ public class DependencyGraphSearch {
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
-            if (!(o instanceof final Node node)) return false;
+            if (!(o instanceof Node)) return false;
+            final Node node = (Node) o;
             return id.equals(node.id);
         }
 
@@ -75,7 +76,33 @@ public class DependencyGraphSearch {
     /**
      * Represents the state of the search: which nodes have been activated
      */
-    record SearchState(Set<Node> activatedNodes, Node currentNode, int depth) {
+    static final class SearchState {
+        private final Set<Node> activatedNodes;
+        public Set<Node> activatedNodes() { return activatedNodes; }
+        private final Node currentNode;
+        public Node currentNode() { return currentNode; }
+        private final int depth;
+        public int depth() { return depth; }
+        SearchState(Set<Node> activatedNodes, Node currentNode, int depth) {
+            this.activatedNodes = activatedNodes;
+            this.currentNode = currentNode;
+            this.depth = depth;
+        }
+        @Override public final boolean equals(Object other) {
+            if (this == other) return true;
+            if (other == null || other.getClass() != getClass()) return false;
+            SearchState value = (SearchState) other;
+            return java.util.Objects.equals(activatedNodes, value.activatedNodes) && java.util.Objects.equals(currentNode, value.currentNode) && java.util.Objects.equals(depth, value.depth);
+        }
+        @Override public final int hashCode() {
+            int result = 0;
+            result = 31 * result + java.util.Objects.hashCode(activatedNodes);
+            result = 31 * result + java.util.Objects.hashCode(currentNode);
+            result = 31 * result + java.util.Objects.hashCode(depth);
+            return result;
+        }
+        @Override public final String toString() { return "SearchState[" + "activatedNodes=" + activatedNodes + ", " + "currentNode=" + currentNode + ", " + "depth=" + depth + "]"; }
+
         SearchState activateNode(Node node) {
             Set<Node> newActivated = new HashSet<>(activatedNodes);
             newActivated.add(node);
@@ -91,7 +118,29 @@ public class DependencyGraphSearch {
     /**
      * Wrapper for priority queue with f-score
      */
-    record StateScore(SearchState state, double fScore) implements Comparable<StateScore> {
+    static final class StateScore implements Comparable<StateScore> {
+        private final SearchState state;
+        public SearchState state() { return state; }
+        private final double fScore;
+        public double fScore() { return fScore; }
+        StateScore(SearchState state, double fScore) {
+            this.state = state;
+            this.fScore = fScore;
+        }
+        @Override public final boolean equals(Object other) {
+            if (this == other) return true;
+            if (other == null || other.getClass() != getClass()) return false;
+            StateScore value = (StateScore) other;
+            return java.util.Objects.equals(state, value.state) && java.util.Objects.equals(fScore, value.fScore);
+        }
+        @Override public final int hashCode() {
+            int result = 0;
+            result = 31 * result + java.util.Objects.hashCode(state);
+            result = 31 * result + java.util.Objects.hashCode(fScore);
+            return result;
+        }
+        @Override public final String toString() { return "StateScore[" + "state=" + state + ", " + "fScore=" + fScore + "]"; }
+
 
         @Override
         public int compareTo(StateScore other) {

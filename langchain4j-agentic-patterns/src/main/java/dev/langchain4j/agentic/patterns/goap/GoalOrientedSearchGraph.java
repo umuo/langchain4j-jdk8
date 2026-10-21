@@ -16,7 +16,29 @@ public class GoalOrientedSearchGraph {
 
     private static final Logger LOG = LoggerFactory.getLogger(GoalOrientedSearchGraph.class);
 
-    private record NodePair(Node input, Node output) {}
+    private static final class NodePair {
+        private final Node input;
+        public Node input() { return input; }
+        private final Node output;
+        public Node output() { return output; }
+        NodePair(Node input, Node output) {
+            this.input = input;
+            this.output = output;
+        }
+        @Override public final boolean equals(Object other) {
+            if (this == other) return true;
+            if (other == null || other.getClass() != getClass()) return false;
+            NodePair value = (NodePair) other;
+            return java.util.Objects.equals(input, value.input) && java.util.Objects.equals(output, value.output);
+        }
+        @Override public final int hashCode() {
+            int result = 0;
+            result = 31 * result + java.util.Objects.hashCode(input);
+            result = 31 * result + java.util.Objects.hashCode(output);
+            return result;
+        }
+        @Override public final String toString() { return "NodePair[" + "input=" + input + ", " + "output=" + output + "]"; }
+    }
 
     private final Map<String, Node> nodes = new HashMap<>();
     private final Map<NodePair, AgentInstance> edges = new HashMap<>();
@@ -30,7 +52,7 @@ public class GoalOrientedSearchGraph {
             List<Node> inputs = agent.arguments().stream()
                     .map(AgentArgument::name)
                     .map(arg -> nodes.computeIfAbsent(arg, Node::new))
-                    .toList();
+                    .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
             Node output = nodes.computeIfAbsent(agent.outputKey(), Node::new);
 
             inputs.forEach(input -> {
@@ -44,14 +66,14 @@ public class GoalOrientedSearchGraph {
         Node goalNode = nodes.get(goal);
         if (goalNode == null) {
             // no agent produces the goal
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
-        List<Node> nodesPath = DependencyGraphSearch.search(
-                goalNode,
-                preconditions.stream().map(nodes::get).filter(Objects::nonNull).toList());
+        List<Node> initialNodes = preconditions.stream().map(nodes::get).filter(Objects::nonNull)
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+        List<Node> nodesPath = DependencyGraphSearch.search(goalNode, initialNodes);
 
         if (nodesPath == null) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
 
         int preconditionsCounter = 0;
@@ -74,9 +96,9 @@ public class GoalOrientedSearchGraph {
             }
         }
 
-        LOG.info(
-                "Agents path sequence: {}",
-                agentsPath.stream().map(AgentInstance::name).toList());
+        List<String> pathNames = agentsPath.stream().map(AgentInstance::name)
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+        LOG.info("Agents path sequence: {}", pathNames);
 
         return agentsPath;
     }

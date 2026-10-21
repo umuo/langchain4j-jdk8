@@ -129,13 +129,14 @@ public class DebatePlanner implements Planner {
 
     @Override
     public Map<String, Object> executionState() {
-        return Map.of("currentRound", currentRound, "lastDebatersMessages", lastDebatersMessages);
+        return dev.langchain4j.internal.Jdk8.map("currentRound", currentRound, "lastDebatersMessages", lastDebatersMessages);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedRound = state.get("currentRound");
-        if (savedRound instanceof Number n) {
+        if (savedRound instanceof Number) {
+            Number n = (Number) savedRound;
             this.currentRound = n.intValue();
         }
     }

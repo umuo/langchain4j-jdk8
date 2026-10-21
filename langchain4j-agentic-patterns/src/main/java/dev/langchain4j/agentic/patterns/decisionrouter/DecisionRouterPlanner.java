@@ -127,7 +127,7 @@ public class DecisionRouterPlanner implements Planner {
         this.inputKeys = initPlanningContext.plannerAgent().arguments().stream()
                 .map(AgentArgument::name)
                 .filter(name -> !name.startsWith("@"))
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         if (inputKeys.isEmpty()) {
             throw new IllegalArgumentException("DecisionRouterPlanner requires a typed agent interface whose method "
                     + "arguments are the input of the routing decision");
@@ -162,7 +162,7 @@ public class DecisionRouterPlanner implements Planner {
                 choice.option(agent.name(), agent.description());
             }
         }
-        return Map.of(QUESTION_NAME, choice.build());
+        return dev.langchain4j.internal.Jdk8.map(QUESTION_NAME, choice.build());
     }
 
     private static YesNoQuestion relevanceQuestion(AgentInstance agent) {
@@ -172,15 +172,15 @@ public class DecisionRouterPlanner implements Planner {
 
     private void ensureMapResult(Type outputType) {
         // the declared type of the result, without the ResultWithAgenticScope wrapper
-        Type resultType = outputType instanceof ParameterizedType parameterized
-                        && parameterized.getRawType() == ResultWithAgenticScope.class
-                ? parameterized.getActualTypeArguments()[0]
+        Type resultType = outputType instanceof ParameterizedType
+                        && ((ParameterizedType) outputType).getRawType() == ResultWithAgenticScope.class
+                ? ((ParameterizedType) outputType).getActualTypeArguments()[0]
                 : outputType;
-        Type rawType = resultType instanceof ParameterizedType parameterized ? parameterized.getRawType() : resultType;
+        Type rawType = resultType instanceof ParameterizedType ? ((ParameterizedType) resultType).getRawType() : resultType;
         // the result is built as a LinkedHashMap, so accept any type it can be assigned to (Map, Object, HashMap...)
-        if (rawType instanceof Class<?> resultClass
-                && resultClass != void.class
-                && !resultClass.isAssignableFrom(LinkedHashMap.class)) {
+        if (rawType instanceof Class<?>
+                && rawType != void.class
+                && !((Class<?>) rawType).isAssignableFrom(LinkedHashMap.class)) {
             throw new IllegalArgumentException("DecisionRouterPlanner was created with activationThreshold="
                     + activationThreshold + ", so its result is a map from agent name to output, but the router agent "
                     + "returns " + resultType.getTypeName() + ": declare a Map return type, or remove the activation "
@@ -194,20 +194,20 @@ public class DecisionRouterPlanner implements Planner {
         if (activated == null) {
             // only the agents that would run now are offered to the decision model
             List<AgentInstance> candidates =
-                    routes.values().stream().filter(planningContext::isActive).toList();
-            activated = candidates.isEmpty() ? List.of() : decide(planningContext.agenticScope(), candidates);
+                    routes.values().stream().filter(planningContext::isActive).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+            activated = candidates.isEmpty() ? dev.langchain4j.internal.Jdk8.list() : decide(planningContext.agenticScope(), candidates);
         }
 
         List<AgentInstance> pending = activated.stream()
                 .filter(name -> !outputs.containsKey(name))
                 .map(routes::get)
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         return pending.isEmpty() ? done(result(planningContext.agenticScope())) : call(pending);
     }
 
     private List<String> decide(AgenticScope agenticScope, List<AgentInstance> candidates) {
         if (activationThreshold == null && candidates.size() == 1) {
-            return List.of(candidates.get(0).name());
+            return dev.langchain4j.internal.Jdk8.list(candidates.get(0).name());
         }
 
         Map<String, Object> input = new LinkedHashMap<>();
@@ -218,11 +218,11 @@ public class DecisionRouterPlanner implements Planner {
                 .questions(questions(candidates))
                 .build());
         List<String> chosen = activationThreshold == null
-                ? List.of(response.choice(QUESTION_NAME).value())
+                ? dev.langchain4j.internal.Jdk8.list(response.choice(QUESTION_NAME).value())
                 : candidates.stream()
                         .map(AgentInstance::name)
                         .filter(name -> response.yesNo(name).probability() >= activationThreshold)
-                        .toList();
+                        .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         LOG.info("Activating agents {} from the answers {}", chosen, response.answers());
         return chosen;
     }
@@ -234,8 +234,8 @@ public class DecisionRouterPlanner implements Planner {
         // a skipped agent produced no output, so it is left out of the result
         if (!invocation.skipped()) {
             outputs.put(agentName, invocation.output());
-            if (scopeOutput(agentName, planningContext.agenticScope()) instanceof DelayedResponse<?> delayedResponse
-                    && !delayedResponse.isDone()) {
+            Object deferredOutput = scopeOutput(agentName, planningContext.agenticScope());
+            if (deferredOutput instanceof DelayedResponse<?> && !((DelayedResponse<?>) deferredOutput).isDone()) {
                 deferred.add(agentName);
             }
         }
@@ -260,7 +260,7 @@ public class DecisionRouterPlanner implements Planner {
         }
         // a pending output is completed later in the scope, without blocking here if it is still pending
         Object scopeOutput = scopeOutput(agentName, agenticScope);
-        return scopeOutput instanceof DelayedResponse<?> delayedResponse ? delayedResponse.result() : scopeOutput;
+        return scopeOutput instanceof DelayedResponse<?> ? ((DelayedResponse<?>) scopeOutput).result() : scopeOutput;
     }
 
     private Object scopeOutput(String agentName, AgenticScope agenticScope) {
@@ -271,26 +271,32 @@ public class DecisionRouterPlanner implements Planner {
     @Override
     public Map<String, Object> executionState() {
         if (activated == null) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
-        return Map.of(
+        return dev.langchain4j.internal.Jdk8.map(
                 ACTIVATED_STATE_KEY,
                 activated,
                 OUTPUTS_STATE_KEY,
                 new HashMap<>(outputs),
                 DEFERRED_STATE_KEY,
-                List.copyOf(deferred));
+                dev.langchain4j.internal.Jdk8.copyList(deferred));
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
-        if (state.get(ACTIVATED_STATE_KEY) instanceof List<?> activatedNames) {
-            this.activated = activatedNames.stream().map(Object::toString).toList();
+        Object activatedNamesValue = state.get(ACTIVATED_STATE_KEY);
+        if (activatedNamesValue instanceof List<?>) {
+            List<?> activatedNames = (List<?>) activatedNamesValue;
+            this.activated = activatedNames.stream().map(Object::toString).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
-        if (state.get(OUTPUTS_STATE_KEY) instanceof Map<?, ?> savedOutputs) {
+        Object savedOutputsValue = state.get(OUTPUTS_STATE_KEY);
+        if (savedOutputsValue instanceof Map<?, ?>) {
+            Map<?, ?> savedOutputs = (Map<?, ?>) savedOutputsValue;
             savedOutputs.forEach((name, output) -> outputs.put(name.toString(), output));
         }
-        if (state.get(DEFERRED_STATE_KEY) instanceof List<?> deferredNames) {
+        Object deferredNamesValue = state.get(DEFERRED_STATE_KEY);
+        if (deferredNamesValue instanceof List<?>) {
+            List<?> deferredNames = (List<?>) deferredNamesValue;
             deferredNames.forEach(name -> deferred.add(name.toString()));
         }
     }

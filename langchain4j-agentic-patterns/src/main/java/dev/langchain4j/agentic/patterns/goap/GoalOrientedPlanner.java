@@ -28,7 +28,7 @@ public class GoalOrientedPlanner implements Planner {
     public Action firstAction(PlanningContext planningContext) {
         // an agent whose activation condition is false can't be part of the path
         List<AgentInstance> activeAgents =
-                subagents.stream().filter(planningContext::isActive).toList();
+                subagents.stream().filter(planningContext::isActive).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         path = new GoalOrientedSearchGraph(activeAgents)
                 .search(planningContext.agenticScope().state().keySet(), goal);
         if (path.isEmpty()) {

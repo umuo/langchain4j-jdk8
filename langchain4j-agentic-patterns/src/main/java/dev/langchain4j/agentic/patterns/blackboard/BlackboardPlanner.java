@@ -122,7 +122,7 @@ public class BlackboardPlanner implements Planner {
         AgenticScope scope = planningContext.agenticScope();
         List<AgentActivator> ready = agentActivators.values().stream()
                 .filter(a -> a.canActivate(planningContext))
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
 
         if (ready.isEmpty()) {
             LOG.info("No agents can fire — blackboard quiescent after {} invocations", invocationCounter);
@@ -142,7 +142,7 @@ public class BlackboardPlanner implements Planner {
     }
 
     private AgentActivator selectActivator(List<AgentActivator> ready, AgenticScope scope) {
-        List<AgentInstance> candidates = ready.stream().map(a -> a.agent).toList();
+        List<AgentInstance> candidates = ready.stream().map(a -> a.agent).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         AgentInstance selected = conflictResolutionStrategy.resolve(scope, candidates);
         return selected == null ? null : ready.stream()
                 .filter(a -> a.agent == selected)
@@ -152,13 +152,14 @@ public class BlackboardPlanner implements Planner {
 
     @Override
     public Map<String, Object> executionState() {
-        return Map.of("invocationCounter", invocationCounter);
+        return dev.langchain4j.internal.Jdk8.map("invocationCounter", invocationCounter);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedCounter = state.get("invocationCounter");
-        if (savedCounter instanceof Number n) {
+        if (savedCounter instanceof Number) {
+            Number n = (Number) savedCounter;
             this.invocationCounter = n.intValue();
         }
     }
@@ -176,7 +177,7 @@ public class BlackboardPlanner implements Planner {
 
         AgentActivator(AgentInstance agent) {
             this.agent = agent;
-            this.argumentNames = agent.arguments().stream().map(AgentArgument::name).toList();
+            this.argumentNames = agent.arguments().stream().map(AgentArgument::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
 
         private boolean canActivate(PlanningContext planningContext) {

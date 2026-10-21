@@ -1971,8 +1971,8 @@
       "categories": [
         "agentic"
       ],
-      "status": "pending",
-      "production_dependency_audit": "pending; raw declarations only; inherit/resolve versions before migration",
+      "status": "wip",
+      "production_dependency_audit": "WIP runtime tree resolved offline: compatible Agentic/main/core and previously audited Java 8 libraries only; see verification/agentic-patterns-foundation-wip.json",
       "dependencies": [
         {
           "groupId": "dev.langchain4j",
@@ -2030,7 +2030,11 @@
         "AGENTIC-AUDIT.md",
         "AGENTIC-API-INVENTORY.json"
       ],
-      "implementation_status": "pending; declarations inventoried only"
+      "implementation_status": "WIP: all 15 baseline production files release 8; 4 record replacements; 9 actual Java 8 foundation/resume cases, all 8 original Test classes/70 JDK 17 cases; full policies/lifecycle/BOM consumption pending",
+      "implementation_evidence": [
+        "PATTERNS-PORT.md",
+        "verification/agentic-patterns-foundation-wip.json"
+      ]
     },
     {
       "path": "langchain4j-agentic",
@@ -2093,7 +2097,8 @@
         "verification/agentic-deferred-state-wip.json",
         "verification/agentic-terminal-suspension-wip.json",
         "verification/agentic-async-planning-wip.json",
-        "verification/agentic-async-persistence-wip.json"
+        "verification/agentic-async-persistence-wip.json",
+        "verification/agentic-patterns-foundation-wip.json"
       ]
     },
     {

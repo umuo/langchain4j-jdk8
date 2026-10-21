@@ -141,3 +141,8 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第八单元完整 clean exit 0：真实 Java 8 421 项（支持模块 346 + Agentic 75）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1598 通过。原基线 API 与三个已记录内部增项保持，测试来源及生产树不变；211 类附加产物、5157 类实际 Java 8 链接及既有 BOM 消费通过。最新快照 verification/agentic-async-persistence-wip.json；完整 Agentic 与长期目标仍未完成。
+
+
+## Patterns 联动检查点
+
+patterns 基础移植暴露 router 动态结果被通用终点检查点冻结的问题，现保留非空 planner 结果的原恢复逻辑；主 Agentic 75 项及其全部原始 251 项回归保持通过。详见 [PATTERNS-PORT.md](PATTERNS-PORT.md) 与 verification/agentic-patterns-foundation-wip.json。其他主模块缺口仍待推进。

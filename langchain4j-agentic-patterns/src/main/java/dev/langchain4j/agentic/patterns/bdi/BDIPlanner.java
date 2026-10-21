@@ -133,7 +133,7 @@ public class BDIPlanner implements Planner {
                     currentDesire = desire;
                     currentIntention = desire.agentTypes().stream()
                             .map(agentsByType::get)
-                            .toList();
+                            .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
                     intentionCursor = desireProgress.getOrDefault(desire.name(), 0);
                     if (intentionCursor >= currentIntention.size()) {
                         throw new IllegalStateException(
@@ -153,7 +153,7 @@ public class BDIPlanner implements Planner {
 
     @Override
     public Map<String, Object> executionState() {
-        return Map.of("invocationCounter", invocationCounter);
+        return dev.langchain4j.internal.Jdk8.map("invocationCounter", invocationCounter);
     }
 
     /**
@@ -165,7 +165,8 @@ public class BDIPlanner implements Planner {
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedCounter = state.get("invocationCounter");
-        if (savedCounter instanceof Number n) {
+        if (savedCounter instanceof Number) {
+            Number n = (Number) savedCounter;
             this.invocationCounter = n.intValue();
         }
     }

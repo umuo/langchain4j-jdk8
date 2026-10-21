@@ -79,6 +79,6 @@ public final class AgenticBinaryApi {
         System.out.printf("API comparison: %d visible types, %d declared members, %d inherited/public entries, %d public record replacements%n", types, declared, inherited, records);
         for (String value : added) System.out.println("ADDED " + value);
         if (!lost.isEmpty()) throw new AssertionError("Missing/changed API: " + lost);
-        System.out.println("Pinned main Agentic API preserved (Record superclass/metadata intentionally replaced).");
+        System.out.println("Pinned " + (args.length > 3 ? args[3] : "main Agentic") + " API preserved (Record superclass/metadata intentionally replaced).");
     }
 }

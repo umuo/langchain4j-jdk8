@@ -77,7 +77,7 @@ public class P2PPlanner implements Planner {
             Collection<String> variableNames = this.agentActivators.values().stream()
                     .flatMap(agentActivator -> agentActivator.argumentNames().stream())
                     .distinct()
-                    .toList();
+                    .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
 
             Map<String, String> vars =
                     createVariablesExtractorAgent(chatModel).extractVariables(request, variableNames);
@@ -139,7 +139,7 @@ public class P2PPlanner implements Planner {
         AgentActivator(AgentInstance agent) {
             this.agent = agent;
             this.argumentNames =
-                    agent.arguments().stream().map(AgentArgument::name).toList();
+                    agent.arguments().stream().map(AgentArgument::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
 
         private AgentInstance agent() {
@@ -191,13 +191,14 @@ public class P2PPlanner implements Planner {
 
     @Override
     public Map<String, Object> executionState() {
-        return Map.of("invocationCounter", invocationCounter);
+        return dev.langchain4j.internal.Jdk8.map("invocationCounter", invocationCounter);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedCounter = state.get("invocationCounter");
-        if (savedCounter instanceof Number n) {
+        if (savedCounter instanceof Number) {
+            Number n = (Number) savedCounter;
             this.invocationCounter = n.intValue();
         }
     }

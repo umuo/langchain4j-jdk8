@@ -280,3 +280,14 @@ serializableCopy 对顶层状态/调用输出展开已完成 async/deferred 值�
 根流程返回挂起前再次持久化已稳定的人工作答标记与 planner 状态。新格式是兼容分支检查点扩展，不承诺未改造上游直接恢复。三个实际 Java 8 新用例验证 async 人工响应、受控挂起消费者跨进程恢复及运行中非阻塞快照。任意崩溃时间点、任意 planner 在途恢复、外部副作用恰好一次、多 writer 原子性、普通 async 失败历史与用户嵌套容器 Future 仍待验收。
 
 第八单元完整 clean exit 0：真实 Java 8 421 项（支持模块 346 + Agentic 75）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1598 通过。原基线 API 与三个已记录内部增项保持，测试来源及生产树不变；211 类附加产物、5157 类实际 Java 8 链接及既有 BOM 消费通过。最新快照 verification/agentic-async-persistence-wip.json；完整 Agentic 与长期目标仍未完成。
+
+
+### Agentic patterns 基础检查点（WIP）
+
+patterns 全部 15 个基线生产源编译为 release 8；四个 record 改 final 值类（公开 Desire 一个），保留组件访问器/校验/值方法及浅引用合同。Desire 工厂的 List 不可修改，直接构造继续保留调用方 List；显式 JSON 构造元数据不改变公开签名。集合工厂/Stream.toList/模式绑定/文本块降级，P2P 提取器 annotation 常量与基线逐字节相等。原 16 可见类型的 API 对照无遗漏/改变或新增成员。
+
+通用终点等待不再冻结非空 planner 结果而绕过 planner 恢复；Decision Router 可在恢复后按 deferred 列表读取人工实际回答。null-result 的内置终点检查点及方法级恢复合同保持。该变化由两个未改动的原始 router 恢复断言、真实 Java 8 router 用例和既有主 Agentic 回归验证。
+
+Patterns 基础检查点完整 clean exit 0：真实 Java 8 430 项（支持模块 346 + 主 Agentic 75 + patterns 9）、JDK 17 1185 项（含 patterns 原始 70 项）、TCK 62 通过/14 官方 untested，共 1677 通过。main/patterns API 与原始测试来源审计通过；patterns 22 类均 classfile 52，无禁止引用，扩展链接 5179 类及既有 BOM 消费通过。快照 verification/agentic-patterns-foundation-wip.json；仍属 WIP，无新阶段标签或 BOM 支持声明。
+
+全部 policies、模型路由/提取、async/streaming/HITL/取消与资源释放、声明式组合及独立消费仍需后续验收。当前两个 Agentic WIP 模块不进入支持 BOM，其他两个 Agentic 模块和长期范围不缩减。

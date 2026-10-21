@@ -16,22 +16,54 @@ import java.util.function.Predicate;
  * @param satisfied  predicate on {@link dev.langchain4j.agentic.scope.AgenticScope} — has this desire been achieved?
  * @param agentTypes ordered agent classes forming the intention; resolved to instances at init time
  */
-public record Desire(String name, int priority,
-                     Predicate<AgenticScope> achievable,
-                     Predicate<AgenticScope> satisfied,
-                     List<Class<?>> agentTypes) {
-
-    public Desire {
-        if (agentTypes == null || agentTypes.isEmpty()) {
-            throw new IllegalArgumentException("Desire '" + name + "' must have at least one agent type");
+public final class Desire {
+        private final String name;
+        public String name() { return name; }
+        private final int priority;
+        public int priority() { return priority; }
+        private final Predicate<AgenticScope> achievable;
+        public Predicate<AgenticScope> achievable() { return achievable; }
+        private final Predicate<AgenticScope> satisfied;
+        public Predicate<AgenticScope> satisfied() { return satisfied; }
+        private final List<Class<?>> agentTypes;
+        public List<Class<?>> agentTypes() { return agentTypes; }
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public Desire(@com.fasterxml.jackson.annotation.JsonProperty("name") String name,
+                @com.fasterxml.jackson.annotation.JsonProperty("priority") int priority,
+                @com.fasterxml.jackson.annotation.JsonProperty("achievable") Predicate<AgenticScope> achievable,
+                @com.fasterxml.jackson.annotation.JsonProperty("satisfied") Predicate<AgenticScope> satisfied,
+                @com.fasterxml.jackson.annotation.JsonProperty("agentTypes") List<Class<?>> agentTypes) {
+            if (agentTypes == null || agentTypes.isEmpty()) {
+                throw new IllegalArgumentException("Desire '" + name + "' must have at least one agent type");
+            }
+            this.name = name;
+            this.priority = priority;
+            this.achievable = achievable;
+            this.satisfied = satisfied;
+            this.agentTypes = agentTypes;
         }
-    }
+        @Override public final boolean equals(Object other) {
+            if (this == other) return true;
+            if (other == null || other.getClass() != getClass()) return false;
+            Desire value = (Desire) other;
+            return java.util.Objects.equals(name, value.name) && java.util.Objects.equals(priority, value.priority) && java.util.Objects.equals(achievable, value.achievable) && java.util.Objects.equals(satisfied, value.satisfied) && java.util.Objects.equals(agentTypes, value.agentTypes);
+        }
+        @Override public final int hashCode() {
+            int result = 0;
+            result = 31 * result + java.util.Objects.hashCode(name);
+            result = 31 * result + java.util.Objects.hashCode(priority);
+            result = 31 * result + java.util.Objects.hashCode(achievable);
+            result = 31 * result + java.util.Objects.hashCode(satisfied);
+            result = 31 * result + java.util.Objects.hashCode(agentTypes);
+            return result;
+        }
+        @Override public final String toString() { return "Desire[" + "name=" + name + ", " + "priority=" + priority + ", " + "achievable=" + achievable + ", " + "satisfied=" + satisfied + ", " + "agentTypes=" + agentTypes + "]"; }
 
     public static Desire of(String name, int priority,
                             Predicate<AgenticScope> achievable,
                             Predicate<AgenticScope> satisfied,
                             Class<?>... agentTypes) {
-        return new Desire(name, priority, achievable, satisfied, List.of(agentTypes));
+        return new Desire(name, priority, achievable, satisfied, dev.langchain4j.internal.Jdk8.list(agentTypes));
     }
 
     public static Desire of(String name, int priority,
@@ -41,6 +73,6 @@ public record Desire(String name, int priority,
         return new Desire(name, priority,
                 scope -> scope.hasState(achievableStateKey),
                 scope -> scope.hasState(satisfiedStateKey),
-                List.of(agentTypes));
+                dev.langchain4j.internal.Jdk8.list(agentTypes));
     }
 }

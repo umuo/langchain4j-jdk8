@@ -469,7 +469,10 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
                 return planner.suspend();
             }
             if (hasSuspendedResponses(agenticScope)) {
-                saveTerminalAwaitingState();
+                // A planner-provided result may be a snapshot of deferred outputs. Let that
+                // planner restore and recompute it; freezing it can retain "<pending>" forever.
+                if (nextAction.result() != null && output == null) saveExecutionState();
+                else saveTerminalAwaitingState();
                 return planner.suspend();
             }
             Object completedResult;
