@@ -291,3 +291,12 @@ patterns 全部 15 个基线生产源编译为 release 8；四个 record 改 fin
 Patterns 基础检查点完整 clean exit 0：真实 Java 8 430 项（支持模块 346 + 主 Agentic 75 + patterns 9）、JDK 17 1185 项（含 patterns 原始 70 项）、TCK 62 通过/14 官方 untested，共 1677 通过。main/patterns API 与原始测试来源审计通过；patterns 22 类均 classfile 52，无禁止引用，扩展链接 5179 类及既有 BOM 消费通过。快照 verification/agentic-patterns-foundation-wip.json；仍属 WIP，无新阶段标签或 BOM 支持声明。
 
 全部 policies、模型路由/提取、async/streaming/HITL/取消与资源释放、声明式组合及独立消费仍需后续验收。当前两个 Agentic WIP 模块不进入支持 BOM，其他两个 Agentic 模块和长期范围不缩减。
+
+
+### Patterns 异步/流式与错误边界（WIP）
+
+兼容新增类型 AgenticJdk8 增加公开内部 invocationOutput(AgenticScope,AgentInvocation) 方法，等待选定 async 计算与中间流；原基线公开/受保护签名不变。外部 DeferredResponse 标记仍留给 planner 的挂起策略。Voting、Debate position/judge 和 Decision Router 使用实际值，避免占位字符串参与聚合/上下文。
+
+AgentExecutor 私有 PlannerInvocationFailure 只用于跨过当前 Agent 的恢复 catch，在同一执行边界还原原 AgentInvocationException；不新增对外异常类型。planner 读取已失败计算时不再次触发当前 Agent 的恢复处理。非 AI 调用登记不再为了检查聊天上下文而提前求输出。新用例验证一次恢复与原始错误原因链；人工输入/所有补偿和取消组合仍未宣称完成。
+
+Patterns 异步检查点完整 clean exit 0：真实 Java 8 437 项（支持模块 346 + 主 Agentic 76 + patterns 15）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1684 通过。原基线 API/来源和生产依赖不变；新增兼容辅助方法单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-patterns-async-wip.json，仍为 WIP，无新阶段标签或 BOM 支持声明。

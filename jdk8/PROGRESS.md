@@ -1,14 +1,22 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic patterns 基础检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic patterns 异步检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景和 3 项异步持久化场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景和 3 项异步持久化场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
-- 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
+- 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### Patterns 异步/流式与错误边界（WIP）
+
+- 初始两项实际 Java 8 子进程复现 Voting 把 <pending> 当数字，以及 Debate 将占位文本传给 judge；兼容辅助方法 AgenticJdk8.invocationOutput 取得选定计算/中间流的实际值，Voting/Debate/Decision Router 据此使用结果。
+- 新增六项 patterns 实际 Java 8 场景，含并发投票、位置与 judge、默认三轮、router、中间流文本和原始失败原因/一次恢复。恢复最初观测 2 次；私有 planner 异常标记穿过当前 Agent 恢复 catch 后在 AgentExecutor 边界还原，不暴露新异常类型。
+- 非 AI 登记先检查 ChatMessagesAccess 再求输出，避免提前读取已失败的 Future；主模块另增直接验证。原基线 API 对照保持，新增兼容类上的公开内部辅助方法与私有标记类型均单列。
+- Patterns 异步检查点完整 clean exit 0：真实 Java 8 437 项（支持模块 346 + 主 Agentic 76 + patterns 15）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1684 通过。原基线 API/来源和生产依赖不变；新增兼容辅助方法单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-patterns-async-wip.json，仍为 WIP，无新阶段标签或 BOM 支持声明。
+- Voting/Debate 人工挂起、轮次 checkpoint/跨进程恢复、其他 patterns 的异步与生命周期及全部长期范围继续 pending；没有将外部响应标记强行作为普通值处理。
 
 ### Patterns 基础移植与 router 恢复（WIP）
 

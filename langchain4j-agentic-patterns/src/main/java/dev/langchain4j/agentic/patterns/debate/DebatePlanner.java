@@ -84,12 +84,12 @@ public class DebatePlanner implements Planner {
         AgentInvocation invocation = planningContext.previousAgentInvocation();
         if (judgePhase) {
             // the output of a skipped judge is the current value of its output key
-            return done(invocation.output());
+            return done(dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
         }
 
         // a skipped debater keeps its position of the previous round, if any
         if (!invocation.skipped()) {
-            lastDebatersMessages.put(invocation.agentName(), invocation.output());
+            lastDebatersMessages.put(invocation.agentName(), dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
         }
         completedInRound++;
 

@@ -146,3 +146,8 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 ## Patterns 联动检查点
 
 patterns 基础移植暴露 router 动态结果被通用终点检查点冻结的问题，现保留非空 planner 结果的原恢复逻辑；主 Agentic 75 项及其全部原始 251 项回归保持通过。详见 [PATTERNS-PORT.md](PATTERNS-PORT.md) 与 verification/agentic-patterns-foundation-wip.json。其他主模块缺口仍待推进。
+
+
+## Patterns 异步消费与错误边界联动
+
+AgenticJdk8 增加 invocationOutput 内部辅助方法，AgentExecutor 以私有异常标记隔离 planner 回调与 Agent 恢复，再在执行边界还原；非 AI 登记避免提前求失败 Future。主模块 76 项实际 Java 8 与全部 251 项原始 JDK 17 保持通过，新增私有类使候选主 JAR 为 212 类。详见 PATTERNS-PORT.md 与 verification/agentic-patterns-async-wip.json；完整主 Agentic 仍 WIP。

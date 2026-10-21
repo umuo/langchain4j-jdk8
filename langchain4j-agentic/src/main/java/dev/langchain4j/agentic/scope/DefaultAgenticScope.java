@@ -438,7 +438,7 @@ public class DefaultAgenticScope implements AgenticScope {
         ChatMemory chatMemory = agent instanceof ChatMemoryAccess ? ((ChatMemoryAccess) agent).getChatMemory(memoryId) : null;
         if (chatMemory != null) {
             registerContextFromChatMemory(agentInvocation, chatMemory);
-        } else if (agentInvocation.output() != null && agent instanceof ChatMessagesAccess) {
+        } else if (agent instanceof ChatMessagesAccess && agentInvocation.output() != null) {
             context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), ((ChatMessagesAccess) agent).lastUserMessage(memoryId())));
             context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), AiMessage.aiMessage(agentInvocation.output().toString())));
         }

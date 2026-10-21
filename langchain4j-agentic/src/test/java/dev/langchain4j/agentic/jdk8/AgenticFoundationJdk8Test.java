@@ -48,6 +48,18 @@ public class AgenticFoundationJdk8Test {
         return Collections.singletonMap(key, value);
     }
 
+    @Test(timeout=5000) public void nonAiInvocationRegistrationDoesNotEvaluateFailedAsyncOutput() throws Exception {
+        dev.langchain4j.agentic.scope.DefaultAgenticScope scope = dev.langchain4j.agentic.scope.DefaultAgenticScope.ephemeralAgenticScope();
+        dev.langchain4j.agentic.internal.AsyncResponse<Object> failed = new dev.langchain4j.agentic.internal.AsyncResponse<>(() -> {throw new IllegalStateException("already failed");});
+        long deadline = System.nanoTime() + java.util.concurrent.TimeUnit.SECONDS.toNanos(2);
+        while (!failed.isDone() && System.nanoTime() < deadline) Thread.yield();
+        assertTrue(failed.isDone());
+        scope.registerAgentInvocation(new dev.langchain4j.agentic.scope.AgentInvocation(String.class,"non-ai","non-ai",java.util.Collections.emptyMap(),failed),new Object());
+        assertEquals(1,scope.agentInvocations().size());
+        try {scope.agentInvocations().get(0).output();fail("failure must remain available to its consumer");}
+        catch (IllegalStateException expected) {assertEquals("already failed",expected.getMessage());}
+    }
+
     @Test public void runsOnActualJava8() {
         assertTrue(System.getProperty("java.version"), System.getProperty("java.version").startsWith("1.8."));
     }

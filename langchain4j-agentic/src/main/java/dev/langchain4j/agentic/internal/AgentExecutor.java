@@ -40,7 +40,12 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
 
     private Object execute(DefaultAgenticScope agenticScope, PlannerExecutor planner, boolean async) {
         Object invokedAgent = (agent instanceof AgenticScopeOwner ? ((AgenticScopeOwner) agent).withAgenticScope(agenticScope) : agent);
-        return internalExecute(agenticScope, invokedAgent, planner, async);
+        try {
+            return internalExecute(agenticScope, invokedAgent, planner, async);
+        } catch (PlannerInvocationFailure failure) {
+            // Leave the agent-recovery catch before restoring the original public exception.
+            throw failure.failure;
+        }
     }
 
     private Object handleAgentFailure(AgentInvocationException e, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args) {
@@ -111,7 +116,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         Object response = outputKey == null || dev.langchain4j.internal.Jdk8.isBlank(outputKey) ? null : agenticScope.readState(outputKey);
         agentSkipped(agentInvoker.listener(), agenticScope, agentInvoker, reason);
         if (planner != null) {
-            planner.onSubagentInvoked(new AgentInvocation(type(), name(), agentId(), dev.langchain4j.internal.Jdk8.map(), response, reason));
+            notifyPlanner(planner, new AgentInvocation(type(), name(), agentId(), dev.langchain4j.internal.Jdk8.map(), response, reason));
         }
         return response;
     }
@@ -127,9 +132,26 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         AgentInvocation agentInvocation = new AgentInvocation(type(), name(), agentId(), namedArgs, isSerializable(response) ? response : "<unknown>");
         agenticScope.registerAgentInvocation(agentInvocation, invokedAgent);
         if (planner != null) {
-            planner.onSubagentInvoked(agentInvocation);
+            notifyPlanner(planner, agentInvocation);
         }
         return response;
+    }
+
+    private static void notifyPlanner(PlannerExecutor planner, AgentInvocation invocation) {
+        try {
+            planner.onSubagentInvoked(invocation);
+        } catch (AgentInvocationException failure) {
+            // A planner failure is not a new failed attempt of the reporting agent.
+            throw new PlannerInvocationFailure(failure);
+        }
+    }
+
+    private static final class PlannerInvocationFailure extends RuntimeException {
+        final AgentInvocationException failure;
+        PlannerInvocationFailure(AgentInvocationException failure) {
+            super(failure);
+            this.failure = failure;
+        }
     }
 
     private Object agentResponse(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean async) {

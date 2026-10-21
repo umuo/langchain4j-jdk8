@@ -233,7 +233,7 @@ public class DecisionRouterPlanner implements Planner {
         String agentName = invocation.agentName();
         // a skipped agent produced no output, so it is left out of the result
         if (!invocation.skipped()) {
-            outputs.put(agentName, invocation.output());
+            outputs.put(agentName, dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
             Object deferredOutput = scopeOutput(agentName, planningContext.agenticScope());
             if (deferredOutput instanceof DelayedResponse<?> && !((DelayedResponse<?>) deferredOutput).isDone()) {
                 deferred.add(agentName);

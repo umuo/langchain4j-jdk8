@@ -45,7 +45,7 @@ public class VotingPlanner implements Planner {
         AgentInvocation invocation = planningContext.previousAgentInvocation();
         // a skipped voter didn't vote
         if (!invocation.skipped()) {
-            votes.add(invocation.output());
+            votes.add(dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
         }
         completedCount++;
 

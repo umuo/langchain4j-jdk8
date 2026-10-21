@@ -14,6 +14,21 @@ import java.util.function.Consumer;
 public final class AgenticJdk8 {
     private AgenticJdk8() {}
 
+    /** Settle the selected computation/stream before a planner consumes its value.
+     * External responses remain markers so that the planner can retain its suspension policy. */
+    public static Object invocationOutput(dev.langchain4j.agentic.scope.AgenticScope scope,
+                                          dev.langchain4j.agentic.scope.AgentInvocation invocation) {
+        Object value = scope instanceof dev.langchain4j.agentic.scope.DefaultAgenticScope
+                ? ((dev.langchain4j.agentic.scope.DefaultAgenticScope) scope).resolveAsyncState(invocation)
+                : invocation.output();
+        while (value instanceof DelayedResponse<?> && !(value instanceof DeferredResponse<?>)) {
+            Object resolved = ((DelayedResponse<?>) value).blockingGet();
+            if (resolved == value) throw new IllegalStateException("Self-referencing planner output: " + invocation.agentId());
+            value = resolved;
+        }
+        return value;
+    }
+
     public static <T> void ifPresentOrElse(Optional<T> value, Consumer<? super T> action, Runnable emptyAction) {
         if (value.isPresent()) {
             action.accept(value.get());
