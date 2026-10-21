@@ -17,6 +17,12 @@
         <dependency>
             <groupId>junit</groupId><artifactId>junit</artifactId><version>4.13.2</version><scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-open-ai</artifactId><scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-http-client-okhttp</artifactId><scope>test</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

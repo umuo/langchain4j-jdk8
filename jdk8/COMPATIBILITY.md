@@ -218,3 +218,13 @@
 
 
 本 WIP 单元最终 clean exit 0：Java 8 362 项（含 Agentic 16），JDK 17 1115 项（含全部 51 个 Agentic 单元类共 251 项），TCK 62 通过/14 官方 untested；1539 通过。原始测试/夹具来源、API 对照和 208 类附加产物/5154 类链接均通过；BOM 支持仍只有此前八模块。快照见 verification/agentic-recovery-wip.json。
+
+
+### Agentic 第三个 WIP 单元：异步中间 SSE 与网络验收
+
+AgentExecutor 的 async 分支此前返回未消费 TokenStream，真实 HTTP/SSE 测试中的下一文本 Agent 发生 ClassCastException。当前在派发时捕获 streaming 决策，并在异步 worker 内消费中间 SSE 为文本；仅末端流保留 TokenStream 透传。避免根据异步完成时已前进的 planner 状态重新决定透传。公开 API、同步分支、不可变集合及依赖坐标不变。
+
+新增 18 项实际 Java 8 loopback 网络场景：HTTP/SSE、async 交接与确定性 planner 竞争、末端惰性/UTF-8 分段/完成唯一性、显式取消及错误/超时释放、四路径工具循环、结构化 POJO 和显式 @MemoryId 会话隔离/清理。无外部模型调用，OpenAI/OkHttp 仅增加 test 依赖；scope eviction 与 chat memory eviction 仍为独立 API。完整 Agentic/BOM 消费继续 WIP。
+
+
+本次 HTTP/SSE WIP 最终 clean exit 0：实际 Java 8 380 项（Agentic 34），JDK 17 1115 项，TCK 62 通过、14 官方 untested，共 1557 通过。依赖树不变，API/来源/208 类产物/5154 类链接和既有 BOM 消费均通过；结果见 verification/agentic-http-wip.json。中间流全局取消、完整恢复/补偿与异步持久化等仍待验收，不据此标记完整支持。

@@ -1,0 +1,1413 @@
+{
+  "baseline": "7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79",
+  "date": "2026-10-21",
+  "status": "WIP; async intermediate stream handoff fixed, real Java 8 HTTP/SSE/tool/memory validation; full Agentic/BOM acceptance pending",
+  "last_complete_milestone": "jdk8-m14",
+  "command": "./jdk8/build.sh -o -Pagentic-wip",
+  "exit_code": 0,
+  "test_suites": {
+    "supported_java8_acceptance": [
+      {
+        "name": "AiServicesJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AiServicesOpenAiJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CoreJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "EmbeddingOpenAiJdk8Test",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "HttpJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpFeaturesJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpJdk8Test",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernChannelsJdk8Test",
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernHttpJdk8Test",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernWebSocketRecoveryJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpRecoveryJdk8Test",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpRegistryJdk8Test",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpStdioJdk8Test",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpWebSocketJdk8Test",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "MemoryCancellationJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "OpenAiJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagOpenAiJdk8Test",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ReactiveConcurrencyJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ReactiveJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteJdk8Test",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryAiServicesJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryRagJdk8Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteRagJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "agentic_java8_acceptance": [
+      {
+        "name": "dev.langchain4j.agentic.jdk8.AgenticFoundationJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "dev.langchain4j.agentic.jdk8.AgenticHttpJdk8Test",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "dev.langchain4j.agentic.jdk8.AgenticRecoveryJdk8Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "selected_upstream_java17": [
+      {
+        "name": "ReflectiveMetadata17Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agent.tool.ToolExecutionRequestTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.classinstance.ClassMetadataProviderTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.classinstance.ReflectionBasedClassMetadataProviderFactoryTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.MetadataTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.splitter.DocumentByParagraphSplitterTest",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.document.splitter.DocumentBySentenceSplitterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.AiMessageTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.ChatMessageSerializerTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.CustomMessageTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.SystemMessageTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.data.message.ToolExecutionResultMessageTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.http.client.sse.DefaultServerSentEventParserTest",
+        "tests": 33,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.JsonParsingUtilsTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.JsonSchemaElementUtilsTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.UtilsTest",
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.internal.ValidationUtilsTest",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.McpToolExecutorTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.McpToolProviderTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.DefaultMcpToolResultConverterTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.DefaultMcpToolResultExtractorTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpApplicationErrorTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpBlobResourceContentsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpJsonConversionsTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpMetadataParsingTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpPayloadAccessorTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpSchemaCoercionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpToolResultMetaParsingTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.McpUnknownFieldToleranceTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.PromptContentConversionTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.StructuredContentParsingTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.ToolSpecificationHelperLocaleTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.ToolSpecificationHelperTest",
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.logging.McpLogLevelTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.logging.McpLogMessageTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.transport.McpHeaderEncodingTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.transport.McpOperationHandlerRobustnessTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.transport.McpPendingOperationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.client.transport.stdio.ProcessStderrHandlerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.protocol.McpProtocolDtoTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.protocol.McpProtocolSerializationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.registryclient.McpRegistryJsonTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.registryclient.McpRegistryModelTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.registryclient.RegistryClientResponsesParsingTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.mcp.transport.stdio.JsonRpcIoHandlerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.memory.chat.MessageWindowChatMemoryTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.memory.chat.SingleSlotChatMemoryStoreTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.batch.BatchItemResultTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.decision.response.DecisionResponseTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.DimensionAwareEmbeddingModelTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelListenerTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelRequestResponseTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingModelTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.embedding.EmbeddingRequestResponseTypesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelAsyncRetryTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelAsyncTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingModelTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.OpenAiEmbeddingRequestParametersTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.model.openai.internal.embedding.EmbeddingDeserializationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.DefaultRetrievalAugmentorTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.EmbeddingStoreAsyncRagTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.aggregator.DefaultContentAggregatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.aggregator.ReciprocalRankFuserTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.injector.DefaultContentInjectorTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetrieverAsyncTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.content.retriever.EmbeddingStoreContentRetrieverTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.query.router.DefaultQueryRouterTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.rag.query.transformer.DefaultQueryTransformerTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.AiServicesBuilderTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.AiServicesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.EnumOutputParserTest",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.PojoOutputParserTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.PolymorphicOutputParserTest",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.output.ServiceOutputParserTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.tool.DefaultToolExecutorLocaleTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.service.tool.DefaultToolExecutorTest",
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.store.embedding.inmemory.InMemoryEmbeddingStoreFilterRegressionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "agentic_upstream_java17": [
+      {
+        "name": "dev.langchain4j.agentic.ActivationConditionTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentArgumentConversionTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentInstanceFactoryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentInvocationHandlerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentProxyEqualsTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentTokenUsageTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AgentsRegistryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AsyncAgentExceptionParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.AsyncAgentNullReturnParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.CrossAgentCompensationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.DeclarativeActivationConditionTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.ErrorRecoveryResultTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.InvoiceFixtureTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.NonAiAgentBuilderTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.OptionalAgentWithoutOutputKeyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.ParallelAgentExceptionParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.ParallelMapperEmptyInputTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.ParallelMapperSubagentCountTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.PlannerInitFailureTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.RecoverabilityTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.SupplierParameterResolverTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.ToolProviderSupplierConfigurationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.agent.AgentBuilderTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.ActivationConditionsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.AgentUtilTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.AgenticParameterNameResolverTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.ContextTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.DelayedResponseTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.internal.ListenerRegistrarFactorySPITest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.AgentMonitorConcurrencyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.AgentMonitorParallelErrorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.AgentMonitorRetentionTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.AgentMonitorSkipTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.ComposedAgentListenerTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.observability.HtmlReportGeneratorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.AgentInvocationJsonTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.AgentInvocationsTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.AgenticScopeClassLoaderTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.CompletePendingResponseTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.DefaultAgenticScopeRootCallEndedTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.ExecutionContextTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.scope.WriteStateIfAbsentTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorAgentPlanningReplyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorAgentServiceImplTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorArgumentDescriptionTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorGenericArgumentCardTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorHitlSuspensionTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorNonAiAgentTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorPlannerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.supervisor.SupervisorSkippedAgentTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "dev.langchain4j.agentic.workflow.HumanInTheLoopBuilderTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "publisher_tck_java8": [
+      {
+        "name": "TestSuite",
+        "tests": 76,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 14,
+        "java_version": "1.8.0_462"
+      }
+    ]
+  },
+  "binary_api": {
+    "command": "./jdk8/audit-agentic-api.sh",
+    "exit_code": 0,
+    "visible_types": 185,
+    "declared_members": 1317,
+    "inherited_public_entries": 2817,
+    "visible_record_replacements": 22,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 0,
+    "scope": "Main Agentic only; public/protected visible owner chains including internal packages; generic declarations, inherited public members and bridges; explicit Record superclass/metadata replacement"
+  },
+  "runtime_dependencies": {
+    "groupId": "dev.langchain4j.jdk8",
+    "artifactId": "langchain4j-agentic",
+    "version": "1.23.0-jdk8-SNAPSHOT",
+    "type": "jar",
+    "scope": "",
+    "classifier": "",
+    "optional": "false",
+    "children": [
+      {
+        "groupId": "dev.langchain4j.jdk8",
+        "artifactId": "langchain4j",
+        "version": "1.23.0-jdk8-SNAPSHOT",
+        "type": "jar",
+        "scope": "compile",
+        "classifier": "",
+        "optional": "false",
+        "children": [
+          {
+            "groupId": "dev.langchain4j.jdk8",
+            "artifactId": "langchain4j-core",
+            "version": "1.23.0-jdk8-SNAPSHOT",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-annotations",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-core",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-databind",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.slf4j",
+                "artifactId": "slf4j-api",
+                "version": "2.0.17",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.jspecify",
+                "artifactId": "jspecify",
+                "version": "1.0.0",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.reactivestreams",
+                "artifactId": "reactive-streams",
+                "version": "1.0.2",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              }
+            ]
+          },
+          {
+            "groupId": "org.apache.opennlp",
+            "artifactId": "opennlp-tools",
+            "version": "1.9.5",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false"
+          }
+        ]
+      }
+    ]
+  },
+  "artifact_audit": {
+    "supported_runtime_jars": 33,
+    "supported_runtime_base_classes": 6366,
+    "additional_agentic_jar": "langchain4j-agentic/target/langchain4j-agentic-1.23.0-jdk8-SNAPSHOT.jar",
+    "additional_agentic_classes": 208,
+    "additional_agentic_major": 52,
+    "additional_agentic_sha256": "5bd06d1ecd58181a1a3f06c175cb25a00cc4f4dc6c65ed2e0013506c6e0df4bd",
+    "forbidden_class_references": 0,
+    "java8_linkage": "Java 8 runtime linkage passed: 5154 base classes and their member types resolved; 3 optional Android/Conscrypt/OSGi integration classes excluded.",
+    "unchanged_optional_linkage_exclusions": 3
+  },
+  "limitations": [
+    "Agentic remains WIP and absent from default BOM/independent consumers.",
+    "Intermediate stream global cancellation, every error-recovery/compensation policy, async persistent state and complete complex Agentic end-to-end behavior remain pending.",
+    "All 51 main baseline Test classes run on JDK 17; external-model IT suite remains unrun.",
+    "Loopback synthetic fixtures validate protocol behavior, not real remote model interoperability.",
+    "Patterns/MCP/A2A Agentic modules and broader MCP/model/vector delivery scope remain pending."
+  ],
+  "preceding_checkpoint": "5623efe18",
+  "test_fixture_audit": {
+    "command": "./jdk8/audit-agentic-tests.sh",
+    "exit_code": 0,
+    "result": "Agentic upstream fixture audit passed: all 51 baseline Test sources selected, 58 original test/helper sources unchanged; 2 Flow imports adapted; 3 nested Invoice fixture declarations preserved."
+  },
+  "total_passed": 1557,
+  "total_official_untested": 14,
+  "scope_added": [
+    "18 actual Java 8 network cases: sync/async HTTP, intermediate and terminal SSE, deterministic planner advance, Unicode fragments, cancel/timeout/error release, four tool paths, structured state and explicit MemoryId sessions."
+  ],
+  "behavior_change": "Async intermediate TokenStream is consumed to text in the worker using a dispatch-time planner decision; terminal TokenStream stays lazy."
+}

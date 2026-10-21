@@ -2083,11 +2083,12 @@
         "AGENTIC-AUDIT.md",
         "AGENTIC-API-INVENTORY.json"
       ],
-      "implementation_status": "WIP: all main production sources release 8; 16 tests on actual Java 8 incl. two-process checkpoint recovery; all 51 baseline unit classes/251 cases on JDK 17; full capability/BOM/consumer acceptance pending",
+      "implementation_status": "WIP: all main sources release 8; 34 actual Java 8 tests incl. HTTP/SSE/tool/memory/recovery; async intermediate stream fixed; all 51 baseline unit classes/251 JDK 17 cases; full capability/BOM acceptance pending",
       "implementation_evidence": [
         "AGENTIC-PORT.md",
         "verification/agentic-main-wip.json",
-        "verification/agentic-recovery-wip.json"
+        "verification/agentic-recovery-wip.json",
+        "verification/agentic-http-wip.json"
       ]
     },
     {

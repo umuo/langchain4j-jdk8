@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新结果见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -58,3 +58,17 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 本单元完整 clean 验证通过：真实 Java 8 共 362 项（支持模块 346 + Agentic 16），选定 JDK 17 共 1115 项（既有 864 + 全部 Agentic 单元 251），TCK 62 通过、14 官方 untested；共 1539 通过。API/来源/字节码/实际 Java 8 链接审计及既有独立 BOM 示例通过，尚未新增 Agentic BOM 消费。
+
+
+## 第三个 WIP 单元：HTTP/SSE 与异步流式交接
+
+- `AgenticHttpJdk8Test` 在真实 Java 8 上使用随机 loopback 端口与 synthetic-agentic 鉴权，不读取环境变量或外部模型配置。共 18 项网络场景，HTTP 请求和工具结果均经实际 OpenAI/OkHttp 兼容适配器。
+- 首次网络测试复现 async 中间 Agent 将 TokenStream 直接交给下一步文本消费者而发生 ClassCastException。AgentExecutor 现在在调度时捕获中间/末端流决策；异步 worker 内启动并等待中间流的文本，再完成 AsyncResponse，避免嵌套 deferred 值。末端流继续交给调用方，start 前不发 HTTP。
+- 确定性竞争测试令最后一步开始后才允许异步 Agent 创建 TokenStream，验证 planner 前进到 terminated 不改变先前派发 Agent 的中间流身份。原同步分支及公开签名保持不变。
+- 覆盖同步 HTTP、异步 HTTP 与独立下一步重叠、同步/异步中间 SSE 文本、同步/异步末端惰性 TokenStream、UTF-8 跨字节分段、单次完成、显式 StreamingHandle 取消、HTTP 拒绝、同步/异步流超时/错误及 dispatcher/server handler 释放。取消不发送完成/错误回调，符合既有 StreamingHandle 合同；调用方 executor 保留所有权。
+- 四种工具回路（同步/异步 HTTP，同步/异步中间 SSE）各验证实际工具执行一次、两次模型请求、分段工具参数、Unicode 参数和带 call ID 的结果回传；结构化 JSON 转为 POJO 后传给下一 Agent。
+- 会话测试使用子 Agent 显式 @MemoryId 与 chatMemoryProvider，验证同 ID 历史、不同 ID 隔离以及单独清理 chat memory/scope 后重新开始。首次用例遗漏子 Agent 的 @MemoryId 而错误地期望根 scope ID 自动替换默认 AI Services memory ID，现按固定接口显式配置；没有改变生产记忆分配或 scope eviction 语义。
+- OpenAI 与 OkHttp 新增在主 Agentic POM 的 test scope，不改变生产依赖树。剩余网络故障下的完整补偿、所有 error-recovery 策略、异步持久化、复杂 planner/supervisor/声明式/可观测性及其余三个 Agentic 模块继续待推进；当前测试不能代替完整支持或 BOM 独立消费。
+
+
+第三单元最终 clean 验证通过：实际 Java 8 380 项（Agentic 34），选定 JDK 17 1115 项，TCK 62 通过/14 官方 untested，共 1557 通过；API、测试来源、生产依赖、字节码、运行时链接及既有 BOM 消费全部通过。新增 Agentic BOM 独立消费仍 pending，最新结果见 verification/agentic-http-wip.json。

@@ -134,9 +134,17 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
 
     private Object agentResponse(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean async) {
         if (async) {
+            // The planner can advance before this worker returns. Capture this dispatch's
+            // streaming decision so an intermediate stream cannot become a terminal stream.
+            boolean consumeStreaming = planner != null && !planner.propagateStreaming();
             return new AsyncResponse<>(() -> {
                 try {
-                    return agentInvoker.invoke(agenticScope, invokedAgent, args);
+                    Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
+                    // AsyncResponse unwraps one deferred result. Resolve an intermediate stream
+                    // inside that future so state readers receive its text, not a TokenStream.
+                    return consumeStreaming && response instanceof TokenStream
+                            ? new StreamingResponse((TokenStream) response).blockingGet()
+                            : response;
                 } catch (AgentInvocationException e) {
                     return handleAgentFailure(e, agenticScope, invokedAgent, planner, args, true);
                 }
