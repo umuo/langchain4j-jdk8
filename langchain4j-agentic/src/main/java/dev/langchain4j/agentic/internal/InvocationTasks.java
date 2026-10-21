@@ -34,7 +34,7 @@ public final class InvocationTasks {
     public <T> T call(Supplier<T> action) {
         Binding previous = CURRENT.get();
         CURRENT.set(new Binding(this, previous));
-        try { check(scope); return action.get(); }
+        try { return dev.langchain4j.internal.CancellationContext.call(this::register, () -> { check(scope); return action.get(); }); }
         finally { if (previous == null) CURRENT.remove(); else CURRENT.set(previous); }
     }
     public Registration register(Runnable cancel) {
@@ -49,7 +49,7 @@ public final class InvocationTasks {
         synchronized (this) { cancelled = true; pending = new ArrayList<>(tasks); tasks.clear(); }
         for (Registration task : pending) AgenticJdk8.suppressCleanupFailure(primary, task::cancel);
     }
-    public final class Registration implements AutoCloseable {
+    public final class Registration implements dev.langchain4j.internal.CancellationContext.Registration {
         private final Runnable cancel;
         private boolean closed;
         private Registration(Runnable cancel) { this.cancel = cancel; }

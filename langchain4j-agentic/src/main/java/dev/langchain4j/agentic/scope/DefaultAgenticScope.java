@@ -3,6 +3,7 @@ package dev.langchain4j.agentic.scope;
 import dev.langchain4j.agentic.internal.DeferredScopeContext;
 import dev.langchain4j.agentic.internal.InvocationTasks;
 import dev.langchain4j.agentic.internal.AsyncResponse;
+import dev.langchain4j.agentic.internal.OwnedResponse;
 
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyDefaultValue;
@@ -172,10 +173,10 @@ public class DefaultAgenticScope implements AgenticScope {
 
     /** Never wait while holding the checkpoint write lock: workers can need scope read locks. */
     private static Object checkpointValue(Object value) {
-        while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>
+        while (OwnedResponse.isOwned(value)
                 || value instanceof DeferredResponse<?> && ((DelayedResponse<?>) value).isDone()) {
             DelayedResponse<?> delayed = (DelayedResponse<?>) value;
-            if (!delayed.isDone() || delayed instanceof AsyncResponse<?> && ((AsyncResponse<?>) delayed).isCancelled()) return UNRESOLVED_ASYNC;
+            if (!delayed.isDone() || OwnedResponse.isCancelled(delayed)) return UNRESOLVED_ASYNC;
             try {
                 Object resolved = delayed.blockingGet();
                 if (resolved == value) throw new IllegalStateException("Self-referencing checkpoint value");
@@ -359,16 +360,25 @@ public class DefaultAgenticScope implements AgenticScope {
     /** Internal planner barrier: unwrap async computations without waiting on human response markers. */
     @Internal
     public void resolveAsyncStates() {
-        new java.util.HashMap<>(state).forEach((key, original) -> {
-            if (DeferredScopeContext.handles(this, key)) return;
-            Object value = original;
-            while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>) {
-                Object pending = value;
-                value = ((DelayedResponse<?>) pending).blockingGet();
-                if (value == pending) throw new IllegalStateException("Self-referencing async state: " + key);
-                publishResolvedState(key, pending, value);
+        AgenticSystemSuspendedException suspended = null;
+        for (Map.Entry<String, Object> entry : new java.util.HashMap<>(state).entrySet()) {
+            String key = entry.getKey();
+            if (DeferredScopeContext.handles(this, key)) continue;
+            Object value = entry.getValue();
+            try {
+                while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>) {
+                    Object pending = value;
+                    value = ((DelayedResponse<?>) pending).blockingGet();
+                    if (value == pending) throw new IllegalStateException("Self-referencing async state: " + key);
+                    publishResolvedState(key, pending, value);
+                }
+            } catch (AgenticSystemSuspendedException controlled) {
+                // Settle other human providers before exposing this pause to the caller.
+                // An ordinary failed computation still escapes immediately.
+                if (suspended == null) suspended = controlled;
             }
-        });
+        }
+        if (suspended != null) throw suspended;
     }
 
     /** Internal resume classification, using the latest published invocation per agent. */
@@ -474,7 +484,7 @@ public class DefaultAgenticScope implements AgenticScope {
                 dev.langchain4j.agentic.internal.AgenticJdk8.suppressCleanupFailure(primary, () -> {
                     Object value = original;
                     while (value instanceof DelayedResponse<?> && ((DelayedResponse<?>) value).isDone()) {
-                        if (value instanceof AsyncResponse<?> && ((AsyncResponse<?>) value).isCancelled()) break;
+                        if (OwnedResponse.isCancelled(value)) break;
                         Object pending = value;
                         value = ((DelayedResponse<?>) pending).blockingGet();
                         if (value == pending) throw new IllegalStateException("Self-referencing failed-call state: " + key);

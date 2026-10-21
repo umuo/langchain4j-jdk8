@@ -131,3 +131,5 @@
 - 2026-10-21 Agentic async 取消 WIP：main 161 源文件/216 类，patterns 15 基线文件/22 类；完整 clean 共 1711 通过/14 官方 TCK untested。失败 root 按调用登记中断 async 并守卫 scope 方法写入，5 个真实 Java 8 子进程证明取消、输出覆盖、跨 ID 隔离与外部 marker 所有权；快照 verification/agentic-cancellation-wip.json。网络流、同步并行失败收尾、全部四模块完整能力/BOM 与既有其他长期范围仍 pending。
 
 - 2026-10-21 同步并行失败收尾 WIP：新增 3 个真实 Java 8 子进程覆盖默认/自定义执行器 fail-fast 与派发拒绝后已提交任务取消；主 Agentic 92 项、完整 clean 1714 通过/14 官方 TCK untested，API/来源/链接审计通过。快照 verification/agentic-parallel-failure-wip.json。网络流、完整生命周期及其余四模块/BOM/长期范围仍 pending。
+
+- 2026-10-21 中间流网络取消 WIP：7 个实际 Java 8 socket 场景证明默认 OkHttp 在响应头前、首段后及默认工具续传时关闭对应 Call、终止等待者并排空 dispatcher；新增确定性双人工 marker 结算回归和 3 项上下文测试。最终 clean 1725 通过/14 官方 TCK untested，API/来源/字节码/链接及既有 BOM 消费通过，无生产依赖变化。main 162 文件/217 类，patterns 15 基线文件/22 类。快照 verification/agentic-network-cancellation-wip.json；terminal 流、HTTP 回调 scope 归属、异步工具、自定义传输、完整生命周期与其余长期范围仍 pending。

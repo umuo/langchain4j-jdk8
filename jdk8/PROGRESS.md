@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 并行失败收尾检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic 中间流网络取消检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 3 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消及 3 项同步并行失败场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败及 7 项网络取消场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -13,6 +13,19 @@
 
 
 
+
+
+
+### 中间流与 OkHttp 调用取消（WIP，2026-10-21）
+
+- 改造前五个真实 Java 8 socket 子进程均显示 root 失败后连接未关闭，覆盖同步/异步中间流在响应头前/首段之后，以及异步普通对话在响应头前。
+- core 新增内部 CancellationContext，将资源登记者显式绑定到调用及 OkHttp callback，finally 恢复原上下文；不向无关 executor 任务隐式传播。OkHttp 同步/异步/SSE 请求在执行或 enqueue 之前登记 Call.cancel，终止后解除登记；callback 内的默认工具续传仍沿用原 owner，不关闭共享客户端/执行器。
+- StreamingResponse 和框架 RecoverableStream 登记 future 取消，忽略取消后的终止/恢复结果；OwnedResponse 区分框架任务与外部回答，取消值在失败收尾中不替换原错误，检查点不持久化 future。
+- 七个网络场景以 server socket EOF、dispatcher running/queued=0、结果已终止且抛 CancellationException、仅一次错误恢复为证据。额外验证直接 HTTP executeAsync 以及 SSE 工具结果触发第二请求后的取消，默认工具只执行一次。夹具清理 cancelAll 在断言之后，不将夹具关闭当作成功证据。
+- 首轮全量回归暴露双人工 marker 偶发缺失，新增确定性实际 Java 8 用例在旧逻辑失败：先结算到受控挂起就退出。现先结算其余 async provider，再返回受控挂起；普通失败立即抛出，不直接等待外部 marker 的回答。
+- 三项支持模块 Java 8 用例验证无 owner 不取消资源、嵌套/异常恢复和 executor 回调的显式捕获/线程复用无泄漏。生产不新增外部依赖；StreamingResponse.isCancelled() 为内部 API 增项，AsyncResponse/StreamingResponse 保留基线直接 DelayedResponse 接口声明，由内部 OwnedResponse 辅助判断取消状态；不放宽接口审计。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：实际 Java 8 478 项（支持模块 349 + 主 Agentic 100 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1725 通过。33 JAR/6372 基础类条目审计，默认链接 4949 类；main 217 类/patterns 22 类均 classfile 52，扩展链接 5188 类及全部既有 BOM 消费通过。严格基线 API 和测试来源审计通过，主模块增项累计八个内部方法，无新增生产依赖。快照 `verification/agentic-network-cancellation-wip.json`；仍 WIP，无新完整阶段标签或 Agentic BOM 支持声明。
+- 边界：本单元覆盖默认 OkHttp 与框架消费的中间流；terminal TokenStream、任意自定义模型/传输、HTTP 回调的 scope 写入归属和异步工具执行器的取消/上下文传播仍需验收。资源 registrar 不等于恢复全部 Agentic ThreadLocal。成功调用被覆盖任务收尾、完整失败历史/自动重试、scope guard 与用户同步回调的阻塞边界，以及全部其余 Agentic/MCP/模型/向量库范围继续 pending。
 
 ### 同步并行派发失败收尾（WIP，2026-10-21）
 

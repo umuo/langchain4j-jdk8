@@ -9,11 +9,23 @@ public class StreamingResponse implements DelayedResponse<String> {
     private final CompletableFuture<ChatResponse> futureResponse = new CompletableFuture<>();
 
     public StreamingResponse(TokenStream tokenStream) {
-        tokenStream
-                .onCompleteResponse(futureResponse::complete)
-                .onError(futureResponse::completeExceptionally)
-                .start();
+        dev.langchain4j.internal.CancellationContext.Registration registration =
+                dev.langchain4j.internal.CancellationContext.register(() -> futureResponse.cancel(false));
+        futureResponse.whenComplete((value, error) -> registration.close());
+        try {
+            if (futureResponse.isCancelled()) return;
+            tokenStream
+                    .onCompleteResponse(futureResponse::complete)
+                    .onError(futureResponse::completeExceptionally)
+                    .start();
+        } catch (RuntimeException | Error failure) {
+            futureResponse.completeExceptionally(failure);
+            throw failure;
+        }
     }
+
+    @dev.langchain4j.Internal
+    public boolean isCancelled() { return futureResponse.isCancelled(); }
 
     @Override
     public boolean isDone() {

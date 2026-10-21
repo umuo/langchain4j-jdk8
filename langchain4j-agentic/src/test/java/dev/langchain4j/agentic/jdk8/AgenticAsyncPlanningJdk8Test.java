@@ -29,6 +29,19 @@ public class AgenticAsyncPlanningJdk8Test {
     @Test(timeout = 12000) public void twoParallelHumanResponsesStayVisibleAcrossPartialCompletion() throws Exception { child("parallel-two"); }
     @Test(timeout = 12000) public void supervisorWaitsForAsyncQueryBeforeNextPlan() throws Exception { child("supervisor-query"); }
 
+    @Test(timeout = 5000) public void completedHumanMarkerSettlesAfterEarlierConsumerSuspension() {
+        assertTrue(System.getProperty("java.version").startsWith("1.8."));
+        DefaultAgenticScope scope = DefaultAgenticScope.ephemeralAgenticScope();
+        dev.langchain4j.agentic.internal.AsyncResponse<String> consumer = new dev.langchain4j.agentic.internal.AsyncResponse<>(() -> { throw new AgenticSystemSuspendedException(scope); });
+        dev.langchain4j.agentic.internal.AsyncResponse<Object> human = new dev.langchain4j.agentic.internal.AsyncResponse<>(() -> new SuspendedResponse<String>("visible"));
+        try { consumer.blockingGet(); fail("must suspend"); } catch (AgenticSystemSuspendedException expected) { }
+        Object marker = human.blockingGet();
+        scope.writeState("a", consumer); scope.writeState("z", human);
+        try { scope.resolveAsyncStates(); fail("must suspend"); } catch (AgenticSystemSuspendedException expected) { }
+        assertSame(marker, scope.state().get("z"));
+        assertEquals(Collections.singleton("visible"), scope.pendingResponseIds());
+    }
+
     static void child(String mode) throws Exception {
         Path log = Files.createTempFile(Paths.get("target"), "async-planning-", ".log");
         Process process = new ProcessBuilder(new File(System.getProperty("java.home"), "bin/java").getAbsolutePath(), "-Xverify:all", "-cp",

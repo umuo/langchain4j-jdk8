@@ -14,6 +14,7 @@ import dev.langchain4j.http.client.sse.ServerSentEvent;
 import dev.langchain4j.http.client.sse.ServerSentEventContext;
 import dev.langchain4j.http.client.sse.ServerSentEventListener;
 import dev.langchain4j.http.client.sse.ServerSentEventParser;
+import dev.langchain4j.internal.CancellationContext;
 import dev.langchain4j.internal.reactive.BackpressureStrategy;
 import dev.langchain4j.internal.reactive.TubeConfiguration;
 import dev.langchain4j.internal.reactive.ZeroPublisher;
@@ -62,7 +63,9 @@ public class OkHttpClient implements HttpClient {
     @Override
     public SuccessfulHttpResponse execute(HttpRequest request) throws HttpException {
         Request okRequest = toOkHttpRequest(request);
-        try (Response response = client.newCall(okRequest).execute()) {
+        Call call = client.newCall(okRequest);
+        try (CancellationContext.Registration ownership = CancellationContext.register(call::cancel);
+             Response response = call.execute()) {
             if (!response.isSuccessful()) {
                 throw new HttpException(response.code(), readBody(response));
             }
@@ -79,31 +82,35 @@ public class OkHttpClient implements HttpClient {
         Request okRequest = toOkHttpRequest(request);
         CompletableFuture<SuccessfulHttpResponse> future = new CompletableFuture<>();
         Call call = client.newCall(okRequest);
-        call.enqueue(new Callback() {
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                try (Response closeableResponse = response) {
-                    if (!response.isSuccessful()) {
-                        future.completeExceptionally(new HttpException(response.code(), readBody(response)));
-                    } else {
-                        future.complete(fromOkHttpResponse(response));
-                    }
-                } catch (Exception e) {
-                    future.completeExceptionally(e);
-                }
-            }
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                future.completeExceptionally(e instanceof SocketTimeoutException ? new TimeoutException(e) : e);
-            }
+        CancellationContext.Registrar owner = CancellationContext.current();
+        CancellationContext.Registration registration = CancellationContext.register(() -> {
+            future.cancel(false);
+            call.cancel();
         });
         future.whenComplete((response, error) -> {
-            if (future.isCancelled()) {
-                call.cancel();
-            }
+            if (future.isCancelled()) call.cancel();
+            registration.close();
         });
+        try {
+            call.enqueue(new Callback() {
+                @Override
+                public void onResponse(Call call, Response response) {
+                    CancellationContext.run(owner, () -> {
+                        try (Response closeableResponse = response) {
+                            if (!response.isSuccessful()) future.completeExceptionally(new HttpException(response.code(), readBody(response)));
+                            else future.complete(fromOkHttpResponse(response));
+                        } catch (Exception e) { future.completeExceptionally(e); }
+                    });
+                }
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    CancellationContext.run(owner, () -> future.completeExceptionally(e instanceof SocketTimeoutException ? new TimeoutException(e) : e));
+                }
+            });
+        } catch (RuntimeException | Error failure) {
+            future.completeExceptionally(failure);
+            throw failure;
+        }
         return future;
     }
 
@@ -172,38 +179,44 @@ public class OkHttpClient implements HttpClient {
     private Call enqueueServerSentEvents(HttpRequest request, ServerSentEventParser parser, ServerSentEventListener listener) {
         Request okRequest = toOkHttpRequest(request);
         Call call = client.newCall(okRequest);
-        call.enqueue(new Callback() {
-
-            @Override
-            public void onResponse(Call call, Response response) {
-                try (Response closeableResponse = response) {
-                    if (!response.isSuccessful()) {
-                        HttpException exception = new HttpException(response.code(), readBody(response));
-                        ignoringExceptions(() -> listener.onError(exception));
-                        return;
-                    }
-                    SuccessfulHttpResponse successResponse = fromOkHttpResponse(response, null);
-                    ignoringExceptions(() -> listener.onOpen(successResponse));
-                    try (InputStream inputStream = getInputStream(response)) {
-                        parser.parse(inputStream, listener);
-                        ignoringExceptions(listener::onClose);
-                    } catch (Exception e) {
-                        ignoringExceptions(() -> listener.onError(e));
-                    }
-                } catch (Exception e) {
-                    ignoringExceptions(() -> listener.onError(e));
+        CancellationContext.Registrar owner = CancellationContext.current();
+        CancellationContext.Registration registration = CancellationContext.register(call::cancel);
+        try {
+            call.enqueue(new Callback() {
+                @Override
+                public void onResponse(Call call, Response response) {
+                    CancellationContext.run(owner, () -> {
+                        try (Response closeableResponse = response) {
+                            if (!response.isSuccessful()) {
+                                HttpException exception = new HttpException(response.code(), readBody(response));
+                                ignoringExceptions(() -> listener.onError(exception));
+                                return;
+                            }
+                            SuccessfulHttpResponse successResponse = fromOkHttpResponse(response, null);
+                            ignoringExceptions(() -> listener.onOpen(successResponse));
+                            try (InputStream inputStream = getInputStream(response)) {
+                                parser.parse(inputStream, listener);
+                                ignoringExceptions(listener::onClose);
+                            } catch (Exception e) { ignoringExceptions(() -> listener.onError(e)); }
+                        } catch (Exception e) { ignoringExceptions(() -> listener.onError(e)); }
+                        finally { registration.close(); }
+                    });
                 }
-            }
-
-            @Override
-            public void onFailure(Call call, IOException e) {
-                if (e instanceof SocketTimeoutException) {
-                    ignoringExceptions(() -> listener.onError(new TimeoutException(e)));
-                } else {
-                    ignoringExceptions(() -> listener.onError(e));
+                @Override
+                public void onFailure(Call call, IOException e) {
+                    CancellationContext.run(owner, () -> {
+                        try {
+                            if (e instanceof SocketTimeoutException) ignoringExceptions(() -> listener.onError(new TimeoutException(e)));
+                            else ignoringExceptions(() -> listener.onError(e));
+                        } finally { registration.close(); }
+                    });
                 }
-            }
-        });
+            });
+        } catch (RuntimeException | Error failure) {
+            registration.close();
+            call.cancel();
+            throw failure;
+        }
         return call;
     }
 

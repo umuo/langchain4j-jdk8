@@ -355,3 +355,15 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 - 同步并行派发也注册到当前 root 的 InvocationTasks。全部正常完成仍等待全部结果；任一任务失败即唤醒 root，根调用按既有失败边界取消其他 owned 任务，保留首次观察到的错误。拒绝提交仍抛原始拒绝异常，已提交任务由 root 收尾取消。
 - 继续使用用户提供的 Executor，不关闭调用者执行器；取消后的同步 Agent 异常不再进入恢复处理。直接 inline 执行的 Executor 仍按调用者的同步调度合同执行，不能声称在 executor.execute 返回之前抢占它。
 - 验证：完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0。真实 Java 8 467 项（支持模块 346 + 主 Agentic 92 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1714 通过。API/测试来源审计保持，main 216 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5184 类与全部既有独立 BOM 消费通过，无生产 POM/依赖变化。快照 `verification/agentic-parallel-failure-wip.json`；仍 WIP，无新阶段标签。网络流取消、成功调用被覆盖任务收尾、完整失败历史/自动重试以及所有其余长期范围保持 pending。
+
+
+### 中间流与 OkHttp 调用取消（WIP，2026-10-21）
+
+- 改造前五个真实 Java 8 socket 子进程均显示 root 失败后连接未关闭，覆盖同步/异步中间流在响应头前/首段之后，以及异步普通对话在响应头前。
+- core 新增内部 CancellationContext，将资源登记者显式绑定到调用及 OkHttp callback，finally 恢复原上下文；不向无关 executor 任务隐式传播。OkHttp 同步/异步/SSE 请求在执行或 enqueue 之前登记 Call.cancel，终止后解除登记；callback 内的默认工具续传仍沿用原 owner，不关闭共享客户端/执行器。
+- StreamingResponse 和框架 RecoverableStream 登记 future 取消，忽略取消后的终止/恢复结果；OwnedResponse 区分框架任务与外部回答，取消值在失败收尾中不替换原错误，检查点不持久化 future。
+- 七个网络场景以 server socket EOF、dispatcher running/queued=0、结果已终止且抛 CancellationException、仅一次错误恢复为证据。额外验证直接 HTTP executeAsync 以及 SSE 工具结果触发第二请求后的取消，默认工具只执行一次。夹具清理 cancelAll 在断言之后，不将夹具关闭当作成功证据。
+- 首轮全量回归暴露双人工 marker 偶发缺失，新增确定性实际 Java 8 用例在旧逻辑失败：先结算到受控挂起就退出。现先结算其余 async provider，再返回受控挂起；普通失败立即抛出，不直接等待外部 marker 的回答。
+- 三项支持模块 Java 8 用例验证无 owner 不取消资源、嵌套/异常恢复和 executor 回调的显式捕获/线程复用无泄漏。生产不新增外部依赖；StreamingResponse.isCancelled() 为内部 API 增项，AsyncResponse/StreamingResponse 保留基线直接 DelayedResponse 接口声明，由内部 OwnedResponse 辅助判断取消状态；不放宽接口审计。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：实际 Java 8 478 项（支持模块 349 + 主 Agentic 100 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1725 通过。33 JAR/6372 基础类条目审计，默认链接 4949 类；main 217 类/patterns 22 类均 classfile 52，扩展链接 5188 类及全部既有 BOM 消费通过。严格基线 API 和测试来源审计通过，主模块增项累计八个内部方法，无新增生产依赖。快照 `verification/agentic-network-cancellation-wip.json`；仍 WIP，无新完整阶段标签或 Agentic BOM 支持声明。
+- 边界：本单元覆盖默认 OkHttp 与框架消费的中间流；terminal TokenStream、任意自定义模型/传输、HTTP 回调的 scope 写入归属和异步工具执行器的取消/上下文传播仍需验收。资源 registrar 不等于恢复全部 Agentic ThreadLocal。成功调用被覆盖任务收尾、完整失败历史/自动重试、scope guard 与用户同步回调的阻塞边界，以及全部其余 Agentic/MCP/模型/向量库范围继续 pending。

@@ -223,14 +223,21 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
     }
 
     /** Intermediate streaming recovery runs off the HTTP reader, including retry I/O. */
-    private static final class RecoverableStream implements DelayedResponse<Object> {
+    private static final class RecoverableStream implements OwnedResponse<Object> {
         private final java.util.concurrent.CompletableFuture<Object> result = new java.util.concurrent.CompletableFuture<>();
         private final java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
         private final java.util.function.Function<Throwable, Object> recovery;
 
         private RecoverableStream(TokenStream stream, java.util.function.Function<Throwable, Object> recovery) {
             this.recovery = recovery;
+            dev.langchain4j.internal.CancellationContext.Registration registration =
+                    dev.langchain4j.internal.CancellationContext.register(() -> {
+                        terminal.set(true);
+                        result.cancel(false);
+                    });
+            result.whenComplete((value, error) -> registration.close());
             try {
+                if (result.isCancelled()) return;
                 stream.onCompleteResponse(response -> {
                     try {
                         String text = response.aiMessage().text();
@@ -259,6 +266,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
             }
         }
 
+        @Override public boolean isCancelled() { return result.isCancelled(); }
         @Override public boolean isDone() { return result.isDone(); }
         @Override public Object blockingGet() { return DelayedResponse.join(result); }
         @Override public String toString() { return String.valueOf(result()); }
