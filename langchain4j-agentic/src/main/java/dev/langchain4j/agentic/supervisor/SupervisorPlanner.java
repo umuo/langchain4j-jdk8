@@ -57,6 +57,8 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     private String lastResponse = "";
 
+    private String awaitingOutputKey;
+
     private ResponseAgent responseAgent;
 
     private final SupervisorContextStrategy contextStrategy;
@@ -114,10 +116,23 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
         // planner via onSubagentInvoked. Sequential planners must still advance their cursor here;
         // the supervisor must not call the LLM with lastResponse="<pending:…>" — that burns a turn,
         // pollutes chat memory, and commonly re-selects the same ask-user agent after resume.
+        dev.langchain4j.agentic.scope.AgentInvocation previousInvocation = planningContext.previousAgentInvocation();
+        if (previousInvocation != null && !previousInvocation.skipped()
+                && planningContext.agenticScope() instanceof dev.langchain4j.agentic.scope.DefaultAgenticScope) {
+            ((dev.langchain4j.agentic.scope.DefaultAgenticScope) planningContext.agenticScope()).resolveAsyncState(previousInvocation);
+        }
         if (hasIncompleteSuspendedResponse(planningContext.agenticScope())) {
+            if (previousInvocation != null) {
+                AgentInstance previousAgent = agents.get(previousInvocation.agentId());
+                if (previousAgent != null) awaitingOutputKey = previousAgent.outputKey();
+            }
             return suspend();
         }
-        dev.langchain4j.agentic.scope.AgentInvocation previousInvocation = planningContext.previousAgentInvocation();
+        if (awaitingOutputKey != null) {
+            Object response = planningContext.agenticScope().readState(awaitingOutputKey);
+            lastResponse = response == null ? "" : response.toString();
+            awaitingOutputKey = null;
+        }
         if (previousInvocation != null && !previousInvocation.skipped()) {
             lastResponse = previousInvocation.output() == null ? "" : previousInvocation.output().toString();
         }
@@ -351,11 +366,19 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     @Override
     public Map<String, Object> executionState() {
-        return dev.langchain4j.internal.Jdk8.map("loopCount", loopCount);
+        Map<String, Object> state = new java.util.HashMap<>();
+        state.put("loopCount", loopCount);
+        if (!lastResponse.isEmpty()) state.put("lastResponse", lastResponse);
+        if (awaitingOutputKey != null) state.put("awaitingOutputKey", awaitingOutputKey);
+        return dev.langchain4j.internal.Jdk8.copyMap(state);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
+        Object response = state.get("lastResponse");
+        if (response instanceof String) lastResponse = (String) response;
+        Object awaiting = state.get("awaitingOutputKey");
+        if (awaiting instanceof String) awaitingOutputKey = (String) awaiting;
         Object savedLoopCount = state.get("loopCount");
         if (savedLoopCount instanceof Number) {
             this.loopCount = ((Number) savedLoopCount).intValue();

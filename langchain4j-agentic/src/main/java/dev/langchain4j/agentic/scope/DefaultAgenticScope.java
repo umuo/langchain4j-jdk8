@@ -298,6 +298,7 @@ public class DefaultAgenticScope implements AgenticScope {
     @Internal
     public void resolveAsyncStates() {
         new java.util.HashMap<>(state).forEach((key, original) -> {
+            if (DeferredScopeContext.handles(this, key)) return;
             Object value = original;
             while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>) {
                 Object pending = value;
@@ -306,6 +307,49 @@ public class DefaultAgenticScope implements AgenticScope {
                 publishResolvedState(key, pending, value);
             }
         });
+    }
+
+    /** Internal resume classification, using the latest published invocation per agent. */
+    @Internal
+    public Set<String> suspendedAsyncAgentIds() {
+        Map<String, AgentInvocation> latest = new java.util.LinkedHashMap<>();
+        synchronized (agentInvocations) {
+            for (AgentInvocation invocation : agentInvocations) latest.put(invocation.agentId(), invocation);
+        }
+        Set<String> suspended = new java.util.HashSet<>();
+        latest.forEach((id, invocation) -> {
+            Object result = invocation.rawOutput();
+            if (result instanceof dev.langchain4j.agentic.internal.AsyncResponse<?> && ((DelayedResponse<?>) result).isDone()) {
+                try {
+                    ((DelayedResponse<?>) result).blockingGet();
+                } catch (AgenticSystemSuspendedException controlled) {
+                    suspended.add(id);
+                } catch (RuntimeException failure) {
+                    // Ordinary failure remains on its existing failure/recovery path.
+                }
+            }
+        });
+        return suspended;
+    }
+
+    /** Await only the selected async invocation, without draining unrelated parallel work. */
+    @Internal
+    public Object resolveAsyncState(AgentInvocation invocation) {
+        Object value = invocation.rawOutput();
+        while (value instanceof dev.langchain4j.agentic.internal.AsyncResponse<?>) {
+            Object pending = value;
+            value = ((DelayedResponse<?>) pending).blockingGet();
+            if (value == pending) throw new IllegalStateException("Self-referencing async invocation: " + invocation.agentId());
+            Object resolved = value;
+            new java.util.HashMap<>(state).forEach((key, current) -> {
+                if (DeferredScopeContext.handles(this, key)) {
+                    if (DeferredScopeContext.read() == pending) publishResolvedState(key, pending, resolved);
+                } else if (current == pending) {
+                    publishResolvedState(key, pending, resolved);
+                }
+            });
+        }
+        return value;
     }
 
     @Override

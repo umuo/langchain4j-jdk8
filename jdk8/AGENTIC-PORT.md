@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新末端挂起检查点见 [挂起恢复快照](verification/agentic-terminal-suspension-wip.json)，此前状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新并行/规划检查点见 [异步规划快照](verification/agentic-async-planning-wip.json)，此前末端挂起检查点见 [挂起恢复快照](verification/agentic-terminal-suspension-wip.json)，此前状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -114,3 +114,17 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第六单元最终 clean exit 0：Java 8 412 项（Agentic 66）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1589 通过。原基线 API 全部保留，单个新增内部 resolveAsyncStates 方法在审计中明确报告；生产依赖和 211 类 classfile 52 产物/5157 类链接、原始测试来源与既有 BOM 示例均通过。结果见 verification/agentic-terminal-suspension-wip.json，完整支持仍未完成。
+
+
+## 第七个 WIP 单元：并行/嵌套恢复与异步 supervisor
+
+- 初始三个真实 Java 8 场景复现并行消费者恢复被跳过、嵌套流程误存为末端等待，以及 supervisor 未等异步人工输入就继续规划的问题。修复后扩大到六项，增加重复等待、两个并行输入的部分完成和异步 query 的下一轮规划。
+- scope 使用每个 Agent 最新的原始调用结果识别以受控挂起结束的 async 尝试；恢复 planner 时从已完成集合移除这些子 Agent，只重入未完成方法。并行副作用与人工提供者均只执行一次；消费者在响应完成后第二次进入，不声明任意代码行恢复。
+- 输出求值发现本 planner 的未完成 async 子 Agent 时保存常规执行状态，而不是已完成的终点检查点；嵌套流程从未完成的步骤恢复。async barrier 跳过当前 worker 自己拥有的 output key，避免等待自身。
+- supervisor 只等待被选中的上一调用，不 drain 其他并行任务。人工响应未完成时不调用规划模型；检查点保存 awaitingOutputKey/lastResponse，恢复后将实际回答传给模型。异步 query 结果在下一规划请求之前就绪；executionState 保留不可修改 Map 合同。
+- AgentInvocation 新增包内 rawOutput；DefaultAgenticScope 新增两个公开 @Internal 辅助方法 suspendedAsyncAgentIds/resolveAsyncState，API 审计显式报告与既有 resolveAsyncStates 合计三项新增。原 AgenticScope 接口不变。
+- 六项用例在有界真实 Java 8 子进程内验证，超时后强制回收；显式 parallel executor 关闭并等待终止。多个人工输入均可见，完成一个仍挂起且不提前重入消费者，全部完成后两消费者各重入一次。
+- 此单元不证明所有并发调度或跨进程 async 恢复；异常 Future 调用历史归一化、延迟持久化、全局取消、其余 Agentic 策略及其他三个模块继续 pending，BOM 尚不纳入 Agentic。
+
+
+第七单元完整 clean exit 0：真实 Java 8 418 项（支持模块 346 + Agentic 72）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1595 通过。原 API 成员与测试来源保留，显式记录三个内部新增方法；生产依赖不变，211 类附加产物与 5157 类链接及既有独立 BOM 示例通过。快照见 verification/agentic-async-planning-wip.json；完整 Agentic 与长期目标继续 WIP。

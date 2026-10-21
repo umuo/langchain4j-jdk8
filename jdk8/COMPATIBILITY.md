@@ -262,3 +262,12 @@ readState 可展开嵌套延迟值；完成旧读取或 root drain 时按 pendin
 
 
 第六单元最终 clean 验证：Java 8 412 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1589 通过。API 审计保留全部原成员并报告一个内部新增方法；来源、生产依赖、211 类产物/5157 类链接和既有 BOM 示例通过。快照见 verification/agentic-terminal-suspension-wip.json，完整 Agentic/长期目标继续 WIP。
+
+
+### Agentic 第七个 WIP 单元：并行恢复与 supervisor 规划
+
+原始 AgenticScope 接口和已有 API 保留；DefaultAgenticScope 新增公开 @Internal suspendedAsyncAgentIds()/resolveAsyncState(AgentInvocation)，与已有 resolveAsyncStates 合计三项内部方法新增。AgentInvocation.rawOutput 为包内方法。未完成 async 消费者按最新调用结果从 planner 完成集合移除，只在人工输入完成后从方法入口重入；已完成副作用不重放。
+
+supervisor 先等待选定异步结果，人工输入未完成时不规划；私有执行状态扩展 awaitingOutputKey/lastResponse，将实际回答带入恢复后的模型请求，executionState 仍返回不可修改 Map。两个并行人工输入的部分完成、重复等待及异步 query 的下一轮规划均由有界 Java 8 子进程验证；不扩大为任意调度、跨进程 async 持久化或全局取消完成声明。
+
+第七单元完整 clean exit 0：真实 Java 8 418 项（支持模块 346 + Agentic 72）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1595 通过。原 API 成员与测试来源保留，显式记录三个内部新增方法；生产依赖不变，211 类附加产物与 5157 类链接及既有独立 BOM 示例通过。快照见 verification/agentic-async-planning-wip.json；完整 Agentic 与长期目标继续 WIP。

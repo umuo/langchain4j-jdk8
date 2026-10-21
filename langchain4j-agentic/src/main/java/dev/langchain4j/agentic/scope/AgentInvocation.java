@@ -28,6 +28,8 @@ public final class AgentInvocation {
         return skipReason != null;
     }
 
+    Object rawOutput() { return output; }
+
     public Object output() {
         return output instanceof DelayedResponse<?> ? ((DelayedResponse<?>) output).result() : output;
     }

@@ -419,6 +419,7 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             Map<String, Object> savedState = agenticScope.readState(executionStateId(), dev.langchain4j.internal.Jdk8.map());
             if (!savedState.isEmpty()) {
                 restoreCompletedAgents(savedState);
+                completedAgentIds.removeAll(suspendedSubagentIds());
                 planner.restoreExecutionState(savedState);
             }
             if (Boolean.TRUE.equals(savedState.get("__terminalAwaiting"))) {
@@ -472,12 +473,20 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             try {
                 completedResult = result();
             } catch (AgenticSystemSuspendedException suspended) {
-                saveTerminalAwaitingState();
+                if (suspendedSubagentIds().isEmpty()) saveTerminalAwaitingState();
+                else saveExecutionState();
                 return planner.suspend();
             }
             // Clear only after output evaluation, which can itself discover suspension.
             agenticScope.writeState(executionStateId(), null);
             return completedResult;
+        }
+
+        private java.util.Set<String> suspendedSubagentIds() {
+            java.util.Set<String> suspended = agenticScope.suspendedAsyncAgentIds();
+            java.util.Set<String> local = new java.util.HashSet<>();
+            for (AgentInstance agent : subagents) if (suspended.contains(agent.agentId())) local.add(agent.agentId());
+            return local;
         }
 
         private Action filterCompletedAgents(Action action) {
