@@ -38,3 +38,17 @@ Patterns 基础检查点完整 clean exit 0：真实 Java 8 430 项（支持模�
 
 
 Patterns 异步检查点完整 clean exit 0：真实 Java 8 437 项（支持模块 346 + 主 Agentic 76 + patterns 15）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1684 通过。原基线 API/来源和生产依赖不变；新增兼容辅助方法单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-patterns-async-wip.json，仍为 WIP，无新阶段标签或 BOM 支持声明。
+
+
+## 第三个 WIP 单元：Voting 人工输入与检查点
+
+- 最初五项实际 Java 8 恢复场景均超时，由有界子进程终止回收。Voting 只有计数和临时 List，没有可恢复的票与 skipped 状态；外部响应标记不能交给数字聚合策略。
+- 票按 Agent ID 保存，另保存已完成 ID（包括 skipped）。firstAction 仅派发未完成投票；若全部已派发完成，直接尝试聚合。受控挂起的 async 消费者只有真正取得结果之后才加入完成集合，因此可按既有方法级恢复规则重入。
+- 聚合遇到延迟票时，通过定义的 output key 读取当前 scope 值；持久化后的 marker 与 scope 中响应对象可能是不同 JSON 实例，不能只等待旧 marker。未回答的 SuspendedResponse 发出受控挂起，PendingResponse 的原阻塞合同保留。所有值就绪后才调用用户 strategy；空票仍返回 null。
+- executionState/restoreExecutionState 为既有 Planner 默认方法的公开覆盖实现，签名不变；内部状态字段 completed/votes 为兼容分支扩展。顶层执行状态 Map 不可修改，子集合按快照复制，不包含 voter 实例或模型配置。
+- API 比较器对继承的 public dispatch 项使用可见 owner 比较，并忽略接口 default 与合法类覆盖之间的关键字差异；参数、返回、泛型、throws 与其他修饰仍比较。声明项仍显式报告两个覆盖方法为新增声明。新增 audit-api-comparator.sh 证明合法覆盖通过，而参数变化/泛型返回变化仍被拒绝，不以放宽签名检查掩盖差异。
+- 七项实际 Java 8 场景覆盖同步/异步人工票、重复等待、两个人工票部分完成、async 消费者重入、两个 JVM 的普通票恢复、两个 JVM 的 async 消费者恢复、两个 JVM 的 skipped 状态恢复。文件夹具为单 writer、String memory ID、正常挂起退出；不宣称断电/多 writer 或外部副作用恰好一次。
+- Debate 的轮次/人工输入状态、普通失败伴随未完成外部响应时的清理、完整取消/补偿与其他所有未验收范围继续待推进。
+
+
+Voting 恢复检查点完整 clean exit 0：真实 Java 8 444 项（支持模块 346 + 主 Agentic 76 + patterns 22）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1691 通过。原基线 API 保留，两个 Voting 检查点覆盖声明显式单列；比较器兼容/反向验证和来源/依赖审计通过；main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-voting-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。

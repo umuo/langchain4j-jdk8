@@ -19,8 +19,18 @@ public final class AgenticBinaryApi {
         Set<String> result = new TreeSet<>();
         Method[] methods = inherited ? type.getMethods() : type.getDeclaredMethods();
         for (Method method : methods) {
-            if (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers()))
-                result.add(method.toGenericString());
+            if (Modifier.isPublic(method.getModifiers()) || Modifier.isProtected(method.getModifiers())) {
+                String signature = method.toGenericString();
+                if (inherited) {
+                    // The same public dispatch signature can legally move from an inherited
+                    // interface default to a class override. Preserve all parameter/return/
+                    // generic/throws information while comparing it on the visible owner.
+                    signature = signature.replace(method.getDeclaringClass().getName() + "." + method.getName() + "(",
+                            type.getName() + "." + method.getName() + "(");
+                    signature = signature.replace("public default ", "public ");
+                }
+                result.add(signature);
+            }
         }
         if (!inherited) {
             for (Constructor<?> ctor : type.getDeclaredConstructors()) {

@@ -2030,11 +2030,12 @@
         "AGENTIC-AUDIT.md",
         "AGENTIC-API-INVENTORY.json"
       ],
-      "implementation_status": "WIP: all 15 baseline production files release 8; 15 actual Java 8 foundation/async/stream/error cases; all 8 original Test classes/70 JDK 17 cases; HITL/round checkpoint/lifecycle/BOM consumption pending",
+      "implementation_status": "WIP: all 15 baseline production files release 8; 22 actual Java 8 cases incl. human voting/checkpoints/cross-JVM unfinished consumers and skipped IDs; all 8 original Test classes/70 JDK 17 cases; Debate/lifecycle/BOM consumption pending",
       "implementation_evidence": [
         "PATTERNS-PORT.md",
         "verification/agentic-patterns-foundation-wip.json",
-        "verification/agentic-patterns-async-wip.json"
+        "verification/agentic-patterns-async-wip.json",
+        "verification/agentic-voting-recovery-wip.json"
       ]
     },
     {

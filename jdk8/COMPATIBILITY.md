@@ -300,3 +300,16 @@ Patterns 基础检查点完整 clean exit 0：真实 Java 8 430 项（支持模�
 AgentExecutor 私有 PlannerInvocationFailure 只用于跨过当前 Agent 的恢复 catch，在同一执行边界还原原 AgentInvocationException；不新增对外异常类型。planner 读取已失败计算时不再次触发当前 Agent 的恢复处理。非 AI 调用登记不再为了检查聊天上下文而提前求输出。新用例验证一次恢复与原始错误原因链；人工输入/所有补偿和取消组合仍未宣称完成。
 
 Patterns 异步检查点完整 clean exit 0：真实 Java 8 437 项（支持模块 346 + 主 Agentic 76 + patterns 15）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1684 通过。原基线 API/来源和生产依赖不变；新增兼容辅助方法单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-patterns-async-wip.json，仍为 WIP，无新阶段标签或 BOM 支持声明。
+
+
+### Voting 人工输入/检查点（WIP）
+
+Voting 新增 executionState/restoreExecutionState 的类实现，覆盖原 Planner 默认方法，既有调用签名保留。内部状态 completed 保存含 skipped 的完成 Agent ID，votes 保存按完成顺序的非 skipped 票；顶层 Map 不可修改，集合取快照。恢复后仅派发缺失票，受控挂起消费者未完成而可重入。
+
+持久化 marker 与 scope 响应可能是不同实例，聚合以 voter.outputKey 读取当前 scope 值，未完成 SuspendedResponse 继续受控挂起；不改变 PendingResponse 的阻塞约定。完成票与条件为 false 的 skipped voter 不重放，全部值就绪才调用 strategy。completed/votes 是兼容分支内部检查点字段，不承诺未经改造上游读取。
+
+API 比较器将继承的 dispatch 项规范为可见 owner，并允许接口 default 被类方法覆盖；声明项仍报告两个覆盖新增，所有参数/返回/泛型/throws 和其他修饰保留检查。新增兼容覆盖与两种签名破坏夹具分别通过/拒绝，范围见审计快照。
+
+Voting 恢复检查点完整 clean exit 0：真实 Java 8 444 项（支持模块 346 + 主 Agentic 76 + patterns 22）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1691 通过。原基线 API 保留，两个 Voting 检查点覆盖声明显式单列；比较器兼容/反向验证和来源/依赖审计通过；main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-voting-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。
+
+三个跨 JVM 场景均为单 writer 文件夹具、String memory ID 和正常挂起退出，不证明任意强杀时间点、多 writer 原子性或外部副作用恰好一次；Debate 和其他未完成能力继续推进。
