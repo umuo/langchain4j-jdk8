@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -72,3 +72,17 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第三单元最终 clean 验证通过：实际 Java 8 380 项（Agentic 34），选定 JDK 17 1115 项，TCK 62 通过/14 官方 untested，共 1557 通过；API、测试来源、生产依赖、字节码、运行时链接及既有 BOM 消费全部通过。新增 Agentic BOM 独立消费仍 pending，最新结果见 verification/agentic-http-wip.json。
+
+
+## 第四个 WIP 单元：延迟错误恢复、重试与网络工具补偿
+
+- 新增 14 项真实 Java 8 网络用例。先复现四个中间 SSE 恢复/重试失败和异步 HTTP 重试多登记一次调用的问题，再修复；不将最初失败的运行计为通过。
+- 中间流的 HTTP/SSE 错误包装为 AgentInvocationException，进入同一 AgenticScope error handler。RETURN_RESULT 完成延迟状态，THROW_EXCEPTION 保留原因并传播，只有显式 RETRY 才重新执行尝试。重新解析输入，使处理器对普通输入键的更新进入下一请求。
+- 已发布的延迟操作在重试时不再调用 completeAgentInvocation，不重复写入调用历史或向 planner 发送成功通知；保留一次逻辑 Agent 调用。错误回调在 HTTP reader 之外恢复，单线程 dispatcher 测试验证重试不会阻塞同一个 reader。
+- 私有 RecoverableStream 统一中间流结果与恢复 Future，以原子终止标志保护回调，并将恢复处理器自身异常传入结果。重试循环处理多次失败后返回回退值，不增加嵌套的流恢复任务。末端 TokenStream 的显式回调和取消合同保持原样。
+- 用例覆盖同步/异步 SSE 的回退与重试、同步 HTTP 回退、异步 HTTP 重试记录、重试修改输入、三次失败后的回退以及恢复处理器抛错；处理后的请求/dispatcher/server handler 均释放。
+- 实际网络工具通过同步/异步 HTTP 和同步/异步中间 SSE 执行后，后续 Agent 失败时各补偿一次。两个异步 SSE 工具的执行日志为 do:first/do:second/undo:second/undo:first；错误被恢复为正常结果时，不补偿之前成功的工具。
+- 不新增生产依赖或公开签名；新桥接类为 AgentExecutor 的私有嵌套类型。不是所有恢复/补偿能力的完成声明：输入与输出同键的重试、自引用 async scope function、挂起与异步恢复组合、持久化延迟结果、末端流恢复和全局中间流取消仍需专项验证；也未覆盖所有补偿失败与并行调度。
+
+
+第四单元最终 clean exit 0：Java 8 394 项（Agentic 48），JDK 17 1115 项，TCK 62 通过/14 官方 untested，共 1571 通过。API/来源审计无回退，生产依赖树不变；附加 JAR 209 个 classfile 52 类无禁止引用，实际 Java 8 扩展链接 5155 类，仍保留原三个可选平台排除。全部既有 BOM 示例通过；新桥接为私有类型，完整 Agentic 与其独立消费继续 pending。

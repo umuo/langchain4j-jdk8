@@ -228,3 +228,15 @@ AgentExecutor 的 async 分支此前返回未消费 TokenStream，真实 HTTP/SS
 
 
 本次 HTTP/SSE WIP 最终 clean exit 0：实际 Java 8 380 项（Agentic 34），JDK 17 1115 项，TCK 62 通过、14 官方 untested，共 1557 通过。依赖树不变，API/来源/208 类产物/5154 类链接和既有 BOM 消费均通过；结果见 verification/agentic-http-wip.json。中间流全局取消、完整恢复/补偿与异步持久化等仍待验收，不据此标记完整支持。
+
+
+### Agentic 第四个 WIP 单元：延迟错误恢复与补偿
+
+真实 Java 8 用例复现中间 SSE 的 error handler 被绕过、异步 HTTP 重试重复记录的问题。AgentExecutor 现在将中间流失败作为 AgentInvocationException 交给 scope 恢复策略，延迟操作的 RETRY 只执行新尝试、不重新发布操作或通知 planner。普通输入键在重试前重新解析。显式 retry() 可再次发送请求；默认异常传播不发起重试，不据此承诺副作用恰好一次。
+
+中间同步流使用私有 RecoverableStream，恢复/重试 offload 到已有默认 executor，避免占用 HTTP 读取线程；结果、恢复异常及回调终止通过同一个 Future 交付。异步 Agent 的错误恢复同样在已发布的 Future 内完成。末端流仍按原 TokenStream 回调/取消 API 交给调用方。公开 API 与生产依赖不变。
+
+新增 14 个真实 Java 8 网络场景，包括回退/重试与历史唯一性、单 HTTP reader、处理器失败、输入更新，以及四路径工具补偿、逆序补偿和恢复成功不补偿。部分复杂恢复/补偿、同键输入输出/自引用、异步持久化与挂起组合等仍待验收，Agentic 整体继续 WIP。
+
+
+第四个 WIP 单元最终 clean 验证：Java 8 394 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested；1571 通过。API 和原始测试来源审计、无变化的生产树、209 类附加产物及 5155 类 Java 8 链接、既有 BOM 示例均通过。结果见 verification/agentic-error-recovery-wip.json；Agentic 整体及 BOM 消费仍未完成。

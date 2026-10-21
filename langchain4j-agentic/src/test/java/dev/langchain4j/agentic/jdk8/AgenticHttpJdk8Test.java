@@ -53,10 +53,18 @@ public class AgenticHttpJdk8Test {
         Person extract(@V("topic") String topic);
     }
     public static class Weather {
-        final AtomicInteger calls = new AtomicInteger();
+        final AtomicInteger calls = new AtomicInteger(), undos = new AtomicInteger();
+        List<String> log;
+        String label;
+        Weather() { }
+        Weather(List<String> log, String label) { this.log = log; this.label = label; }
         @dev.langchain4j.agent.tool.Tool("Weather")
         public String weather(@dev.langchain4j.agent.tool.P(name = "city") String city) {
-            assertEquals("云城", city); calls.incrementAndGet(); return "晴";
+            assertEquals("云城", city); calls.incrementAndGet(); if (log != null) log.add("do:" + label); return "晴";
+        }
+        @dev.langchain4j.agent.tool.CompensateFor("weather")
+        public void undoWeather(String city) {
+            assertEquals("云城", city); undos.incrementAndGet(); if (log != null) log.add("undo:" + label);
         }
     }
 
@@ -284,6 +292,110 @@ public class AgenticHttpJdk8Test {
         assertEquals(1, requests.size()); awaitReleased();
     }
 
+    @Test(timeout = 10000) public void syncIntermediateSseCanRecoverWithFallback() throws Exception { fallback(true, false); }
+    @Test(timeout = 10000) public void asyncIntermediateSseCanRecoverWithFallback() throws Exception { fallback(true, true); }
+    @Test(timeout = 10000) public void syncHttpCanRecoverWithFallback() throws Exception { fallback(false, false); }
+    @Test(timeout = 10000) public void syncIntermediateSseRetriesWithoutDuplicateInvocation() throws Exception { retry(true, false); }
+    @Test(timeout = 10000) public void asyncIntermediateSseRetriesWithoutDuplicateInvocation() throws Exception { retry(true, true); }
+    @Test(timeout = 10000) public void asyncHttpRetriesWithoutDuplicateInvocation() throws Exception { retry(false, true); }
+
+    void fallback(boolean stream, boolean async) throws Exception {
+        mode = "error"; AtomicInteger recovered = new AtomicInteger();
+        Object writer = stream
+                ? AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(async).build()
+                : AgenticServices.agentBuilder(Writer.class).chatModel(model()).async(async).build();
+        UntypedAgent workflow = AgenticServices.sequenceBuilder().subAgents(writer, formatter()).outputKey("answer")
+                .errorHandler(error -> {
+                    assertEquals("write", error.agentName()); assertTrue(causes(error.exception()).contains("synthetic rejection"));
+                    recovered.incrementAndGet(); return dev.langchain4j.agentic.agent.ErrorRecoveryResult.result("fallback");
+                }).build();
+        dev.langchain4j.agentic.scope.ResultWithAgenticScope<String> result = workflow.invokeWithAgenticScope(Collections.singletonMap("topic", "云"));
+        assertEquals("final:fallback", result.result()); assertEquals(1, recovered.get());
+        assertEquals(2, result.agenticScope().agentInvocations().size()); assertEquals(1, requests.size()); awaitReleased();
+    }
+
+    void retry(boolean stream, boolean async) throws Exception {
+        mode = "failOnce"; AtomicInteger recovered = new AtomicInteger();
+        // Recovery must not block this sole HTTP reader while waiting for a new SSE request.
+        dispatcher = new okhttp3.Dispatcher(Executors.newSingleThreadExecutor());
+        Object writer = stream
+                ? AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(async).build()
+                : AgenticServices.agentBuilder(Writer.class).chatModel(model()).async(async).build();
+        UntypedAgent workflow = AgenticServices.sequenceBuilder().subAgents(writer, formatter()).outputKey("answer")
+                .errorHandler(error -> {
+                    assertEquals(1, recovered.incrementAndGet()); error.agenticScope().writeState("topic", "retry-topic");
+                    return dev.langchain4j.agentic.agent.ErrorRecoveryResult.retry();
+                }).build();
+        dev.langchain4j.agentic.scope.ResultWithAgenticScope<String> result = workflow.invokeWithAgenticScope(Collections.singletonMap("topic", "云"));
+        assertEquals("final:你好", result.result()); assertEquals(1, recovered.get()); assertEquals(2, requests.size());
+        assertTrue(requests.get(1).path("messages").toString().contains("retry-topic"));
+        assertEquals(2, result.agenticScope().agentInvocations().size()); awaitReleased();
+    }
+
+    @Test(timeout = 10000) public void failedLaterAgentCompensatesHttpTool() throws Exception { compensation(false, false, false); }
+    @Test(timeout = 10000) public void failedLaterAgentCompensatesAsyncHttpTool() throws Exception { compensation(false, true, false); }
+    @Test(timeout = 10000) public void failedLaterAgentCompensatesSseTool() throws Exception { compensation(true, false, false); }
+    @Test(timeout = 10000) public void failedLaterAgentCompensatesAsyncSseTool() throws Exception { compensation(true, true, false); }
+    @Test(timeout = 10000) public void recoveredLaterAgentKeepsSuccessfulToolExecution() throws Exception { compensation(true, true, true); }
+
+    void compensation(boolean stream, boolean async, boolean recover) throws Exception {
+        mode = "tool"; Weather weather = new Weather();
+        Object writer = stream
+                ? AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(async).tools(weather).build()
+                : AgenticServices.agentBuilder(Writer.class).chatModel(model()).async(async).tools(weather).build();
+        Object fail = AgenticServices.nonAiAgentBuilder(scope -> { throw new IllegalStateException("later agent failed"); })
+                .inputKey(String.class, "draft").outputKey("answer").build();
+        UntypedAgent workflow = AgenticServices.sequenceBuilder().subAgents(writer, fail).compensateOnError(true).outputKey("answer")
+                .errorHandler(error -> recover ? dev.langchain4j.agentic.agent.ErrorRecoveryResult.result("recovered")
+                        : dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException()).build();
+        if (recover) assertEquals("recovered", workflow.invoke(Collections.singletonMap("topic", "云")));
+        else {
+            try { workflow.invoke(Collections.singletonMap("topic", "云")); fail("failure expected"); }
+            catch (RuntimeException expected) { assertTrue(causes(expected).contains("later agent failed")); }
+        }
+        assertEquals(1, weather.calls.get()); assertEquals(recover ? 0 : 1, weather.undos.get());
+        assertEquals(2, requests.size()); awaitReleased();
+    }
+
+    @Test(timeout = 10000) public void asynchronousSseToolsCompensateInReverseExecutionOrder() throws Exception {
+        mode = "tool"; List<String> log = new CopyOnWriteArrayList<>();
+        Weather first = new Weather(log, "first"), second = new Weather(log, "second");
+        StreamWriter a = AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(true)
+                .name("first").tools(first).outputKey("one").build();
+        Object barrier = AgenticServices.agentAction(scope -> assertEquals("你好", scope.readState("one")));
+        StreamWriter b = AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(true)
+                .name("second").tools(second).outputKey("two").build();
+        Object fail = AgenticServices.nonAiAgentBuilder(scope -> { throw new IllegalStateException("after both tools"); })
+                .inputKey(String.class, "two").build();
+        try { AgenticServices.sequenceBuilder().subAgents(a, barrier, b, fail).compensateOnError(true).build()
+                .invoke(Collections.singletonMap("topic", "云")); fail("failure expected"); }
+        catch (RuntimeException expected) { assertTrue(causes(expected).contains("after both tools")); }
+        assertEquals(Arrays.asList("do:first", "do:second", "undo:second", "undo:first"), log);
+        assertEquals(4, requests.size()); awaitReleased();
+    }
+
+    @Test(timeout = 10000) public void intermediateSseRepeatedFailureCanEventuallyReturnFallback() throws Exception {
+        mode = "error"; AtomicInteger errors = new AtomicInteger();
+        dispatcher = new okhttp3.Dispatcher(Executors.newSingleThreadExecutor());
+        StreamWriter writer = AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).build();
+        UntypedAgent workflow = AgenticServices.sequenceBuilder().subAgents(writer, formatter()).outputKey("answer")
+                .errorHandler(error -> errors.incrementAndGet() < 3 ? dev.langchain4j.agentic.agent.ErrorRecoveryResult.retry()
+                        : dev.langchain4j.agentic.agent.ErrorRecoveryResult.result("last resort")).build();
+        dev.langchain4j.agentic.scope.ResultWithAgenticScope<String> result = workflow.invokeWithAgenticScope(Collections.singletonMap("topic", "云"));
+        assertEquals("final:last resort", result.result()); assertEquals(3, errors.get()); assertEquals(3, requests.size());
+        assertEquals(2, result.agenticScope().agentInvocations().size()); awaitReleased();
+    }
+
+    @Test(timeout = 10000) public void throwingStreamRecoveryHandlerTerminatesAndReleasesCall() throws Exception {
+        mode = "error"; AtomicInteger errors = new AtomicInteger();
+        StreamWriter writer = AgenticServices.agentBuilder(StreamWriter.class).streamingChatModel(streaming()).async(true).build();
+        UntypedAgent workflow = AgenticServices.sequenceBuilder().subAgents(writer, formatter()).outputKey("answer")
+                .errorHandler(error -> { errors.incrementAndGet(); throw new IllegalStateException("recovery failed"); }).build();
+        try { workflow.invoke(Collections.singletonMap("topic", "云")); fail("handler failure expected"); }
+        catch (RuntimeException expected) { assertTrue(causes(expected).contains("recovery failed")); }
+        assertEquals(1, errors.get()); assertEquals(1, requests.size()); awaitReleased();
+    }
+
     static String causes(Throwable error) {
         StringBuilder value = new StringBuilder();
         for (Throwable current = error; current != null; current = current.getCause()) value.append(current).append('\n');
@@ -299,7 +411,7 @@ public class AgenticHttpJdk8Test {
         try {
             JsonNode request = mapper.readTree(Jdk8.readAllBytes(exchange.getRequestBody())); requests.add(request);
             authorization.set(exchange.getRequestHeaders().getFirst("Authorization")); arrived.countDown();
-            if (mode.equals("error")) { json(exchange, 400, "{\"error\":{\"message\":\"synthetic rejection\",\"type\":\"invalid_request_error\"}}"); return; }
+            if (mode.equals("error") || mode.equals("failOnce") && requests.size() == 1) { json(exchange, 400, "{\"error\":{\"message\":\"synthetic rejection\",\"type\":\"invalid_request_error\"}}"); return; }
             if (mode.equals("hold")) awaitGate();
             boolean hasToolResult = false;
             for (JsonNode message : request.path("messages")) if (message.path("role").asText().equals("tool")) hasToolResult = true;

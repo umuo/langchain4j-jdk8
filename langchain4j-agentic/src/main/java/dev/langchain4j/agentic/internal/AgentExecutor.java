@@ -43,7 +43,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         return internalExecute(agenticScope, invokedAgent, planner, async);
     }
 
-    private Object handleAgentFailure(AgentInvocationException e, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean plannerAlreadyNotified) {
+    private Object handleAgentFailure(AgentInvocationException e, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args) {
         ErrorRecoveryResult recoveryResult = agenticScope.handleError(agentInvoker.name(), e);
         switch(recoveryResult.type()) {
             case THROW_EXCEPTION:
@@ -54,7 +54,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
             case RETRY:
                 return internalExecute(agenticScope, invokedAgent, planner, false);
             case RETURN_RESULT:
-                return plannerAlreadyNotified ? recoveryResult.result() : completeAgentInvocation(recoveryResult.result(), agenticScope, invokedAgent, planner, args);
+                return completeAgentInvocation(recoveryResult.result(), agenticScope, invokedAgent, planner, args);
             default:
                 throw new IllegalStateException("Unexpected enum value");
         }
@@ -86,7 +86,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
             }
             return null;
         } catch (AgentInvocationException e) {
-            return handleAgentFailure(e, agenticScope, invokedAgent, planner, args, false);
+            return handleAgentFailure(e, agenticScope, invokedAgent, planner, args);
         }
     }
 
@@ -133,28 +133,109 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
     }
 
     private Object agentResponse(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean async) {
+        // Capture this dispatch's decision before the planner advances on another thread.
+        boolean consumeStreaming = planner != null && !planner.propagateStreaming();
         if (async) {
-            // The planner can advance before this worker returns. Capture this dispatch's
-            // streaming decision so an intermediate stream cannot become a terminal stream.
-            boolean consumeStreaming = planner != null && !planner.propagateStreaming();
             return new AsyncResponse<>(() -> {
                 try {
-                    Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
-                    // AsyncResponse unwraps one deferred result. Resolve an intermediate stream
-                    // inside that future so state readers receive its text, not a TokenStream.
-                    return consumeStreaming && response instanceof TokenStream
-                            ? new StreamingResponse((TokenStream) response).blockingGet()
-                            : response;
-                } catch (AgentInvocationException e) {
-                    return handleAgentFailure(e, agenticScope, invokedAgent, planner, args, true);
+                    return invokeDeferredAttempt(agenticScope, invokedAgent, args, consumeStreaming);
+                } catch (RuntimeException e) {
+                    return recoverDeferredFailure(e, agenticScope, invokedAgent, args, consumeStreaming);
                 }
             });
         }
         Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
-        if (planner != null && response instanceof TokenStream) {
-            return planner.propagateStreaming() ? ((TokenStream) response) : new StreamingResponse(((TokenStream) response));
+        if (consumeStreaming && response instanceof TokenStream) {
+            return new RecoverableStream((TokenStream) response,
+                    error -> recoverDeferredFailure(error, agenticScope, invokedAgent, args, true));
         }
         return response;
+    }
+
+    private Object invokeDeferredAttempt(DefaultAgenticScope scope, Object invokedAgent, AgentInvocationArguments args, boolean consumeStreaming) {
+        Object response = agentInvoker.invoke(scope, invokedAgent, args);
+        return consumeStreaming && response instanceof TokenStream
+                ? new StreamingResponse((TokenStream) response).blockingGet()
+                : response;
+    }
+
+    /** A deferred operation was already published; attempts must not publish it again. */
+    private Object recoverDeferredFailure(Throwable initialFailure, DefaultAgenticScope scope, Object invokedAgent,
+                                          AgentInvocationArguments args, boolean consumeStreaming) {
+        Throwable failure = initialFailure;
+        AgentInvocationArguments currentArgs = args;
+        while (true) {
+            if (failure instanceof Error) throw (Error) failure;
+            AgentInvocationException invocationFailure;
+            if (failure instanceof AgentInvocationException) {
+                invocationFailure = (AgentInvocationException) failure;
+            } else {
+                invocationFailure = new AgentInvocationException("Failed to consume response of agent '" + name() + "'",
+                        failure instanceof Exception ? (Exception) failure : new RuntimeException(failure));
+                agentError(agentInvoker.listener(), scope, agentInvoker, currentArgs.namedArgs(), invocationFailure);
+            }
+            ErrorRecoveryResult recovery = scope.handleError(name(), invocationFailure);
+            switch (recovery.type()) {
+                case THROW_EXCEPTION:
+                    ActivationConditions.clearActivation(this, scope);
+                    throw invocationFailure;
+                case RETURN_RESULT:
+                    return recovery.result();
+                case RETRY:
+                    try {
+                        // A recovery handler can update arguments in the scope for the next attempt.
+                        currentArgs = agentInvoker.toInvocationArguments(scope);
+                        return invokeDeferredAttempt(scope, invokedAgent, currentArgs, consumeStreaming);
+                    } catch (RuntimeException nextFailure) {
+                        failure = nextFailure;
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected recovery type: " + recovery.type());
+            }
+        }
+    }
+
+    /** Intermediate streaming recovery runs off the HTTP reader, including retry I/O. */
+    private static final class RecoverableStream implements DelayedResponse<Object> {
+        private final java.util.concurrent.CompletableFuture<Object> result = new java.util.concurrent.CompletableFuture<>();
+        private final java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
+        private final java.util.function.Function<Throwable, Object> recovery;
+
+        private RecoverableStream(TokenStream stream, java.util.function.Function<Throwable, Object> recovery) {
+            this.recovery = recovery;
+            try {
+                stream.onCompleteResponse(response -> {
+                    try {
+                        String text = response.aiMessage().text();
+                        if (terminal.compareAndSet(false, true)) result.complete(text);
+                    } catch (RuntimeException invalidResponse) {
+                        failed(invalidResponse);
+                    }
+                }).onError(this::failed).start();
+            } catch (RuntimeException error) {
+                failed(error);
+            }
+        }
+
+        private void failed(Throwable error) {
+            if (!terminal.compareAndSet(false, true)) return;
+            try {
+                dev.langchain4j.internal.DefaultExecutorProvider.getDefaultExecutor().execute(() -> {
+                    try {
+                        result.complete(recovery.apply(error));
+                    } catch (Throwable failure) {
+                        result.completeExceptionally(failure);
+                    }
+                });
+            } catch (RuntimeException rejected) {
+                result.completeExceptionally(rejected);
+            }
+        }
+
+        @Override public boolean isDone() { return result.isDone(); }
+        @Override public Object blockingGet() { return DelayedResponse.join(result); }
+        @Override public String toString() { return String.valueOf(result()); }
     }
 
     @Override

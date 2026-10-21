@@ -4,11 +4,22 @@
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 1 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景和 18 项网络场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 1 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景和 32 项网络场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；再推进 patterns/MCP/A2A 的全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### 延迟错误恢复、重试与补偿检查点（WIP）
+
+`./jdk8/build.sh -o -Pagentic-wip` 最终完整 clean exit 0；最新快照：[agentic-error-recovery-wip.json](verification/agentic-error-recovery-wip.json)。
+
+- 修复中间 SSE 错误绕过 scope 恢复策略、异步 HTTP 重试重复登记的问题。中间流错误转换为 AgentInvocationException；重试在已发布的延迟操作内执行，普通输入更新会带到下一请求，逻辑调用历史不重复。
+- 私有 RecoverableStream 在 HTTP reader 外执行恢复/重试，原子保护终止并传递恢复处理器自身异常；保留末端 TokenStream 和同步普通调用合同。无新增生产依赖或公开签名。
+- 新增 14 项实际 Java 8 网络用例：回退/重试与输入更新、单 HTTP reader、重复失败后的回退、处理器抛错、四路径工具补偿、逆序补偿和恢复成功不补偿。
+- 真实 Java 8 共 394 项（支持模块 346 + Agentic 48），JDK 17 1115 项，TCK 62 通过/14 官方 untested；共 1571 通过，其余测试无失败/错误/跳过。
+- 185 可见类型 API 对照、51 单元选择/58 原始源文件与夹具来源、209 类附加 JAR 的 classfile/API 引用和 5155 类实际 Java 8 链接及既有 BOM 示例均通过。
+- 同键重试、自引用异步 scope function、延迟持久化、async/HITL、末端流恢复及全局中间流取消等仍需专项验收；其余三个 Agentic 模块和整个长期范围保留。当前无新阶段标签或 Agentic BOM 支持声明。
 
 ### HTTP/SSE 与异步流交接检查点（WIP）
 
