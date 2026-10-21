@@ -15,6 +15,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.LinkedHashSet;
+import dev.langchain4j.agentic.internal.DelayedResponse;
+import dev.langchain4j.agentic.internal.SuspendedResponse;
+import dev.langchain4j.agentic.scope.AgenticSystemSuspendedException;
 import java.util.stream.Collectors;
 
 /**
@@ -40,9 +45,11 @@ public class DebatePlanner implements Planner {
     private AgentInstance judge;
 
     private int currentRound = 1;
-    private int completedInRound = 0;
+    private final Set<String> completedInRound = new LinkedHashSet<>();
     private final Map<String, Object> lastDebatersMessages = new HashMap<>();
     private boolean judgePhase = false;
+    private boolean judgeCompleted;
+    private Object judgeOutput;
 
     public DebatePlanner() {
         this(DEFAULT_MAX_ROUNDS, ConvergenceStrategy.unanimous());
@@ -74,31 +81,42 @@ public class DebatePlanner implements Planner {
 
     @Override
     public Action firstAction(PlanningContext planningContext) {
-        planningContext.agenticScope().writeState(DEBATE_CONTEXT_KEY, "");
-        LOG.info("Starting debate round 1 with {} debaters", debaters.size());
-        return call(debaters);
+        AgenticScope scope = planningContext.agenticScope();
+        if (judgePhase) return judgeCompleted ? done(resolveOutput(judge, judgeOutput, scope)) : call(judge);
+        if (currentRound == 1 && completedInRound.isEmpty() && lastDebatersMessages.isEmpty()) {
+            scope.writeState(DEBATE_CONTEXT_KEY, "");
+        }
+        List<AgentInstance> pending = new ArrayList<>();
+        debaters.stream().filter(agent -> !completedInRound.contains(agent.agentId())).forEach(pending::add);
+        return pending.isEmpty() ? finishRound(scope) : call(pending);
     }
 
     @Override
     public Action nextAction(PlanningContext planningContext) {
         AgentInvocation invocation = planningContext.previousAgentInvocation();
-        if (judgePhase) {
-            // the output of a skipped judge is the current value of its output key
-            return done(dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
-        }
-
-        // a skipped debater keeps its position of the previous round, if any
-        if (!invocation.skipped()) {
-            lastDebatersMessages.put(invocation.agentName(), dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(planningContext.agenticScope(), invocation));
-        }
-        completedInRound++;
-
-        if (completedInRound < debaters.size()) {
-            return noOp();
-        }
-
         AgenticScope scope = planningContext.agenticScope();
+        if (judgePhase) {
+            judgeOutput = dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(scope, invocation);
+            judgeCompleted = true;
+            return done(resolveOutput(judge, judgeOutput, scope));
+        }
+        // A skipped debater retains its previous position, but has completed this round.
+        if (!invocation.skipped()) {
+            Object value = dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(scope, invocation);
+            lastDebatersMessages.put(invocation.agentName(), value);
+        }
+        completedInRound.add(invocation.agentId());
+        return completedInRound.size() < debaters.size() ? noOp() : finishRound(scope);
+    }
 
+    private Action finishRound(AgenticScope scope) {
+        Map<String, Object> resolved = new HashMap<>();
+        for (AgentInstance debater : debaters) {
+            if (lastDebatersMessages.containsKey(debater.name())) {
+                resolved.put(debater.name(), resolveOutput(debater, lastDebatersMessages.get(debater.name()), scope));
+            }
+        }
+        lastDebatersMessages.putAll(resolved);
         if (convergenceStrategy.hasConverged(lastDebatersMessages.values())) {
             LOG.info("Convergence reached after {} rounds", currentRound);
             judgePhase = true;
@@ -107,17 +125,30 @@ public class DebatePlanner implements Planner {
             LOG.info("Max rounds ({}) reached without convergence, invoking judge", maxRounds);
             judgePhase = true;
         }
-
         if (judgePhase) {
             writeDebateContext(scope);
             return call(judge);
         }
-
         currentRound++;
-        completedInRound = 0;
+        completedInRound.clear();
         writeDebateContext(scope);
         LOG.info("Starting debate round {}", currentRound);
         return call(debaters);
+    }
+
+    private Object resolveOutput(AgentInstance agent, Object value, AgenticScope scope) {
+        if (value instanceof DelayedResponse<?> && agent.outputKey() != null && scope.hasState(agent.outputKey())) {
+            value = scope.readState(agent.outputKey());
+        }
+        while (value instanceof DelayedResponse<?>) {
+            if (value instanceof SuspendedResponse<?> && !((DelayedResponse<?>) value).isDone()) {
+                throw new AgenticSystemSuspendedException(scope);
+            }
+            Object next = ((DelayedResponse<?>) value).blockingGet();
+            if (next == value) throw new IllegalStateException("Self-referencing debate output: " + agent.agentId());
+            value = next;
+        }
+        return value;
     }
 
     private void writeDebateContext(AgenticScope scope) {
@@ -129,16 +160,28 @@ public class DebatePlanner implements Planner {
 
     @Override
     public Map<String, Object> executionState() {
-        return dev.langchain4j.internal.Jdk8.map("currentRound", currentRound, "lastDebatersMessages", lastDebatersMessages);
+        Map<String, Object> state = new HashMap<>();
+        state.put(dev.langchain4j.agentic.internal.AgenticJdk8.PLANNER_MANAGES_RESUME, true);
+        state.put("currentRound", currentRound);
+        state.put("lastDebatersMessages", new HashMap<>(lastDebatersMessages));
+        state.put("completedInRound", new ArrayList<>(completedInRound));
+        state.put("judgePhase", judgePhase);
+        state.put("judgeCompleted", judgeCompleted);
+        if (judgeOutput != null) state.put("judgeOutput", judgeOutput);
+        return dev.langchain4j.internal.Jdk8.copyMap(state);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedRound = state.get("currentRound");
-        if (savedRound instanceof Number) {
-            Number n = (Number) savedRound;
-            this.currentRound = n.intValue();
-        }
+        if (savedRound instanceof Number) this.currentRound = ((Number) savedRound).intValue();
+        Object messages = state.get("lastDebatersMessages");
+        if (messages instanceof Map<?, ?>) ((Map<?, ?>) messages).forEach((name, value) -> lastDebatersMessages.put(name.toString(), value));
+        Object completed = state.get("completedInRound");
+        if (completed instanceof List<?>) ((List<?>) completed).forEach(id -> completedInRound.add(id.toString()));
+        judgePhase = Boolean.TRUE.equals(state.get("judgePhase"));
+        judgeCompleted = Boolean.TRUE.equals(state.get("judgeCompleted"));
+        judgeOutput = state.get("judgeOutput");
     }
 
     @Override

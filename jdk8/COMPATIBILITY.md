@@ -313,3 +313,14 @@ API 比较器将继承的 dispatch 项规范为可见 owner，并允许接口 de
 Voting 恢复检查点完整 clean exit 0：真实 Java 8 444 项（支持模块 346 + 主 Agentic 76 + patterns 22）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1691 通过。原基线 API 保留，两个 Voting 检查点覆盖声明显式单列；比较器兼容/反向验证和来源/依赖审计通过；main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-voting-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。
 
 三个跨 JVM 场景均为单 writer 文件夹具、String memory ID 和正常挂起退出，不证明任意强杀时间点、多 writer 原子性或外部副作用恰好一次；Debate 和其他未完成能力继续推进。
+
+
+### Debate 轮次/人工输入/judge 检查点（WIP）
+
+既有 executionState/restoreExecutionState 签名保留，内部增加 completedInRound/judgePhase/judgeCompleted/可选 judgeOutput，并实际恢复 lastDebatersMessages。上下文仅在新流程初始化时清空，位置全部可用后才推进轮次或 judge；skipped 辩论者保留上一轮冻结位置。
+
+兼容辅助类 AgenticJdk8 新增公开内部常量 PLANNER_MANAGES_RESUME（__plannerManagesResume）。Debate 执行状态带该 true 标记，明确由自身恢复完整 phase/dispatch 集合；通用完成过滤不再误删下一轮的同一 Agent。未声明标记的 planner 继续使用原规则，Planner 接口没有新方法。此标记及新状态字段是本分支内部检查点协议，不承诺未经改造上游或旧 WIP 不完整检查点可直接恢复。
+
+人工 marker 通过 output key 从当前 scope 读取实际响应；PendingResponse 保持阻塞合同。跨 JVM 用例为单 writer/String ID、正常挂起退出，验证不重跑第一轮/已完成辩论者或重复询问 judge；不证明任意强杀点、多 writer 原子性及外部副作用恰好一次。
+
+Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块 346 + 主 Agentic 76 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1698 通过。原基线 API/来源和生产依赖保持；新增内部恢复标记常量单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类与既有 BOM 消费通过。快照 verification/agentic-debate-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。

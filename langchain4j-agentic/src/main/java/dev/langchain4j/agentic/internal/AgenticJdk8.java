@@ -14,6 +14,9 @@ import java.util.function.Consumer;
 public final class AgenticJdk8 {
     private AgenticJdk8() {}
 
+    /** Internal checkpoint marker: this planner restores its own phase and dispatch set. */
+    public static final String PLANNER_MANAGES_RESUME = "__plannerManagesResume";
+
     /** Settle the selected computation/stream before a planner consumes its value.
      * External responses remain markers so that the planner can retain its suspension policy. */
     public static Object invocationOutput(dev.langchain4j.agentic.scope.AgenticScope scope,

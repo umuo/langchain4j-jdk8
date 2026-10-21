@@ -52,3 +52,16 @@ Patterns 异步检查点完整 clean exit 0：真实 Java 8 437 项（支持模�
 
 
 Voting 恢复检查点完整 clean exit 0：真实 Java 8 444 项（支持模块 346 + 主 Agentic 76 + patterns 22）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1691 通过。原基线 API 保留，两个 Voting 检查点覆盖声明显式单列；比较器兼容/反向验证和来源/依赖审计通过；main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-voting-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。
+
+## 第四个 WIP 单元：Debate 轮次、人工辩论者与 judge
+
+- 新增七项实际 Java 8 场景最初全部失败：恢复结果为 null 或上一轮 debateContext 被清空。原实现仅恢复 currentRound，忽略消息/本轮完成集合/judge 阶段。
+- 现保存/恢复 currentRound、lastDebatersMessages、completedInRound（Agent ID）、judgePhase、judgeCompleted 和可选 judgeOutput。本轮完成前只派发缺失步骤；全部位置可用后才判断收敛/轮次上限并生成上下文。skipped 辩论者保留上一轮冻结位置，仍计入当前轮完成集合。
+- 人工辩论者的 DeferredResponse 通过定义的 output key 读取当前 scope 值，未回答时受控挂起；人工 judge 已返回 marker 时保存 judgeCompleted，恢复直接读取回答，不重复询问或重跑辩论者。PendingResponse 的原阻塞合同不变。新的状态 Map 不可修改，集合取快照。
+- AgenticJdk8 新增公开内部常量 PLANNER_MANAGES_RESUME，值为 __plannerManagesResume。Debate 将该布尔字段写入执行状态，明确由自身恢复完整的 phase/dispatch 集合；通用 Root 的完成 ID 不能区分轮次，不再过滤这个 planner 合法重复调用的 Agent。未声明该内部能力的 planner 继续使用原过滤规则，不改变 Planner 接口。
+- 七项场景包含同步/异步人工辩论者、同步/异步人工 judge、第二轮两个尚未成功绑定参数的消费者、跨两个 JVM 的第二轮恢复和跨两个 JVM 的异步人工 judge。第二轮前保留第一轮上下文，最后的 judge 只接收第二轮实际位置；固定执行日志验证第一轮未重放，人工提供者未被额外询问。
+- 跨 JVM 使用既有单 writer/String ID 文件夹具和正常挂起退出，不证明任意进程强杀点、多 writer 原子性或外部副作用恰好一次。之前未完整保存这些字段的 WIP Debate 检查点不在新格式的恢复声明内。
+- 普通失败伴随未完成外部响应时的清理、全局取消、完整补偿/观测，以及其他 patterns、Agentic MCP/A2A 和整个长期范围继续待推进。
+
+
+Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块 346 + 主 Agentic 76 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1698 通过。原基线 API/来源和生产依赖保持；新增内部恢复标记常量单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类与既有 BOM 消费通过。快照 verification/agentic-debate-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。

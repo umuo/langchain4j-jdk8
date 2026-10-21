@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic Voting 恢复检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic Debate 恢复检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
@@ -9,6 +9,14 @@
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### Debate 轮次、人工辩论者与 judge（WIP）
+
+- 最初七个实际 Java 8 场景均失败，包含恢复结果 null 和清空上一轮上下文。现在恢复轮次、消息、本轮完成 ID、judge 阶段/完成标志/结果；只有本轮位置全部可用后才推进收敛判断和下一阶段。
+- 人工 judge 返回 marker 之后不会重复询问；人工辩论者完成响应后使用当前 scope 值，保留此前完成的位置。两个消费者在第二轮参数绑定时挂起，恢复后都执行，第一轮不重放。
+- 新内部 __plannerManagesResume 标记声明 planner 自身恢复完整阶段/派发集合，避免不区分轮次的通用完成 ID 误删下一轮同一 Agent 调用；普通 planner 默认过滤不变，Planner 接口不新增方法。
+- 七项场景含同步/异步辩论者、同步/异步 judge、第二轮和两个 writer/reader JVM 组合，记录执行次数与上下文内容。Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块 346 + 主 Agentic 76 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1698 通过。原基线 API/来源和生产依赖保持；新增内部恢复标记常量单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类与既有 BOM 消费通过。快照 verification/agentic-debate-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。
+- 失败时未完成外部响应的清理、全局取消/完整补偿/观测，以及其余所有长期范围继续 pending。
 
 ### Voting 人工输入与检查点（WIP）
 

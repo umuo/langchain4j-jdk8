@@ -499,6 +499,9 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             if (completedAgentIds.isEmpty() || !(action instanceof Action.AgentCallAction) || ((Action.AgentCallAction) action).agentsToCall().size() <= 1) {
                 return action;
             }
+            // Agent IDs alone cannot distinguish rounds. A planner with a complete phase/
+            // dispatch checkpoint must be allowed to schedule the same agent in its next round.
+            if (Boolean.TRUE.equals(planner.executionState().get(AgenticJdk8.PLANNER_MANAGES_RESUME))) return action;
             List<AgentExecutor> remaining = ((Action.AgentCallAction) action).agentsToCall().stream().filter(a -> !completedAgentIds.contains(a.agentId())).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
             return remaining.isEmpty() ? planner.done() : new Action.AgentCallAction(remaining);
         }

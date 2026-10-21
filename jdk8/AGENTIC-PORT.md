@@ -151,3 +151,8 @@ patterns 基础移植暴露 router 动态结果被通用终点检查点冻结的
 ## Patterns 异步消费与错误边界联动
 
 AgenticJdk8 增加 invocationOutput 内部辅助方法，AgentExecutor 以私有异常标记隔离 planner 回调与 Agent 恢复，再在执行边界还原；非 AI 登记避免提前求失败 Future。主模块 76 项实际 Java 8 与全部 251 项原始 JDK 17 保持通过，新增私有类使候选主 JAR 为 212 类。详见 PATTERNS-PORT.md 与 verification/agentic-patterns-async-wip.json；完整主 Agentic 仍 WIP。
+
+
+## Debate 恢复调度联动
+
+AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对显式声明自己管理完整恢复调度的 planner 让权。普通并行/条件等既有过滤不变，原 Planner 接口和主模块 76 项 Java 8/251 项原始 JDK 17 回归保持。详见 PATTERNS-PORT.md 与 verification/agentic-debate-recovery-wip.json；完整主 Agentic 仍 WIP。
