@@ -425,6 +425,27 @@ public class DefaultAgenticScope implements AgenticScope {
         compensableExecutions.clear();
     }
 
+    /** Failure cleanup never waits for external answers or unfinished computations.
+     * Successful root completion retains its existing blocking drain contract. */
+    @Internal
+    public void rootCallFailed(AgenticScopeRegistry registry, AgentListener listener, Throwable primary) {
+        new java.util.HashMap<>(state).forEach((key, original) ->
+                dev.langchain4j.agentic.internal.AgenticJdk8.suppressCleanupFailure(primary, () -> {
+                    Object value = original;
+                    while (value instanceof DelayedResponse<?> && ((DelayedResponse<?>) value).isDone()) {
+                        Object pending = value;
+                        value = ((DelayedResponse<?>) pending).blockingGet();
+                        if (value == pending) throw new IllegalStateException("Self-referencing failed-call state: " + key);
+                        publishResolvedState(key, pending, value);
+                    }
+                }));
+        dev.langchain4j.agentic.internal.AgenticJdk8.suppressCleanupFailure(primary, () -> {
+            if (kind == Kind.EPHEMERAL) registry.evict(memoryId, listener);
+            else if (kind == Kind.PERSISTENT) flush(registry);
+        });
+        compensableExecutions.clear();
+    }
+
     private void flush(AgenticScopeRegistry registry) {
         lock.writeLock().lock();
         try {

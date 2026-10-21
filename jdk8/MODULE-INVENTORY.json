@@ -2090,7 +2090,7 @@
         "AGENTIC-AUDIT.md",
         "AGENTIC-API-INVENTORY.json"
       ],
-      "implementation_status": "WIP: 160 main sources release 8; 76 actual Java 8 cases; isolated planner callback errors, lazy non-AI invocation registration; all 51 baseline unit classes/251 JDK 17 cases; full capability/BOM acceptance pending",
+      "implementation_status": "WIP: 160 main sources release 8; 84 actual Java 8 cases incl. nonblocking failed-root cleanup/primary error suppression; all 51 baseline unit classes/251 JDK 17 cases; global cancellation/failure history/full capability/BOM acceptance pending",
       "implementation_evidence": [
         "AGENTIC-PORT.md",
         "verification/agentic-main-wip.json",
@@ -2103,7 +2103,8 @@
         "verification/agentic-async-persistence-wip.json",
         "verification/agentic-patterns-foundation-wip.json",
         "verification/agentic-patterns-async-wip.json",
-        "verification/agentic-debate-recovery-wip.json"
+        "verification/agentic-debate-recovery-wip.json",
+        "verification/agentic-failure-cleanup-wip.json"
       ]
     },
     {

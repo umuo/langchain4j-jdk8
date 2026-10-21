@@ -156,3 +156,15 @@ AgenticJdk8 增加 invocationOutput 内部辅助方法，AgentExecutor 以私有
 ## Debate 恢复调度联动
 
 AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对显式声明自己管理完整恢复调度的 planner 让权。普通并行/条件等既有过滤不变，原 Planner 接口和主模块 76 项 Java 8/251 项原始 JDK 17 回归保持。详见 PATTERNS-PORT.md 与 verification/agentic-debate-recovery-wip.json；完整主 Agentic 仍 WIP。
+
+## 失败专用收尾检查点（WIP）
+
+- 初始六项有界 Java 8 场景中，四项在失败后等待人工/外部响应而超时，listener 的 AssertionError 另替换了原始失败；async 人工 marker 的一层展开为对照。
+- 新增 @Internal DefaultAgenticScope.rootCallFailed(registry, listener, primary)，只展开已完成的 DelayedResponse，未完成的响应/计算不等待。成功的 rootCallEnded 保持原有等待合同；此单元不把错误返回等同于所有后台工作已取消。
+- 失败收尾仍尝试 ephemeral scope eviction 或持久化；registered/persistent scope 保留可观察状态，人工 marker 不被伪造完成。从收尾步骤逃逸的异常附加为 suppressed，保留原始异常对象、类型和原因。已发生的同一异常不重复附加，也不自我 suppressed。
+- AgenticJdk8 新增公开内部 suppressCleanupFailure(Throwable,Runnable)，Root 的补偿、错误通知、失败收尾分别保护，某一步失败不阻止后一步。原补偿动作/普通 listener 异常的上游日志处理合同不变；新增方法不修改原 Planner 或 AgenticScope 接口。
+- 八项真实 Java 8 子进程验证：SuspendedResponse、PendingResponse、async 人工响应、async 失败、保存错误/原始异常、listener Error/临时 scope eviction、错误返回先于未完成计算、失败后保存仍未回答的 marker。未完成计算夹具在接到原始错误后才显式释放并等待结果，说明当前没有假称取消已完成。
+- 不承诺失败历史的完整持久化/失败后自动重试、所有补偿失败组合或后台网络工作取消。普通同步 store/listener 的自定义阻塞行为也没有被改造成异步超时接口；全局取消与任务/流生命周期继续待推进。
+
+
+失败收尾检查点完整 clean exit 0：真实 Java 8 459 项（支持模块 346 + 主 Agentic 84 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1706 通过。原基线 API 保留，新增 rootCallFailed 内部方法明确列为第四个 DefaultAgenticScope 增项；来源/生产依赖审计保持，main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-failure-cleanup-wip.json；完整工程仍 WIP，无新阶段标签或 Agentic BOM 支持声明。

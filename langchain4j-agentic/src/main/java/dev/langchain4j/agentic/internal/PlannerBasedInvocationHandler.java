@@ -220,10 +220,10 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             // Suspension is control flow, not a failure requiring recovery or compensation.
             result = new Action.SuspendAction();
         } catch (Exception e) {
-            currentScope.compensateAll();
+            AgenticJdk8.suppressCleanupFailure(e, currentScope::compensateAll);
             if (isRootCall()) {
-                agentError(agentListener, currentScope, this, namedArgs, e);
-                currentScope.rootCallEnded(registry, agentListener);
+                AgenticJdk8.suppressCleanupFailure(e, () -> agentError(agentListener, currentScope, this, namedArgs, e));
+                AgenticJdk8.suppressCleanupFailure(e, () -> currentScope.rootCallFailed(registry, agentListener, e));
             }
             throw e;
         }

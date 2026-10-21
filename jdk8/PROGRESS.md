@@ -1,14 +1,22 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic Debate 恢复检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic 失败收尾检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景和 3 项异步持久化场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、6 项异步规划场景、3 项异步持久化场景及 8 项失败收尾场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### 失败专用收尾与原始异常（WIP）
+
+- 初始六项场景中四项等待人工/外部响应超时，listener Error 另替换原始失败。现在 Root 普通失败走 rootCallFailed，仅结算已完成值，不等未回答的 marker 或未完成计算；成功收尾的等待合同不变。
+- 补偿、错误通知、失败收尾分别保护，逃逸的次级异常以 suppressed 附加，保留原始异常对象/类型/原因；临时 scope 仍尝试移除，持久化仍尝试保存观察状态，不伪造人工回答。
+- 八项实际 Java 8 子进程含 Pending/Suspended/async 人工响应、async 失败、保存错误、listener Error/临时移除、错误先于 gated 后台计算结束及失败后保存未回答 marker。后台任务在夹具接到错误后由夹具显式释放，不把返回错误冒充取消完成。
+- 失败收尾检查点完整 clean exit 0：真实 Java 8 459 项（支持模块 346 + 主 Agentic 84 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1706 通过。原基线 API 保留，新增 rootCallFailed 内部方法明确列为第四个 DefaultAgenticScope 增项；来源/生产依赖审计保持，main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-failure-cleanup-wip.json；完整工程仍 WIP，无新阶段标签或 Agentic BOM 支持声明。
+- 后台任务/网络流取消、完整失败历史与自动重试、补偿/观测及全部长期未完成范围继续 pending。
 
 ### Debate 轮次、人工辩论者与 judge（WIP）
 

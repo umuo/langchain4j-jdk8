@@ -17,6 +17,19 @@ public final class AgenticJdk8 {
     /** Internal checkpoint marker: this planner restores its own phase and dispatch set. */
     public static final String PLANNER_MANAGES_RESUME = "__plannerManagesResume";
 
+    /** Preserve the primary operation error when best-effort failure cleanup also fails. */
+    public static void suppressCleanupFailure(Throwable primary, Runnable cleanup) {
+        Objects.requireNonNull(primary, "primary");
+        Objects.requireNonNull(cleanup, "cleanup");
+        try {
+            cleanup.run();
+        } catch (Throwable secondary) {
+            if (secondary == primary) return;
+            for (Throwable existing : primary.getSuppressed()) if (existing == secondary) return;
+            primary.addSuppressed(secondary);
+        }
+    }
+
     /** Settle the selected computation/stream before a planner consumes its value.
      * External responses remain markers so that the planner can retain its suspension policy. */
     public static Object invocationOutput(dev.langchain4j.agentic.scope.AgenticScope scope,

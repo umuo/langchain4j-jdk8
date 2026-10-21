@@ -324,3 +324,14 @@ Voting 恢复检查点完整 clean exit 0：真实 Java 8 444 项（支持模块
 人工 marker 通过 output key 从当前 scope 读取实际响应；PendingResponse 保持阻塞合同。跨 JVM 用例为单 writer/String ID、正常挂起退出，验证不重跑第一轮/已完成辩论者或重复询问 judge；不证明任意强杀点、多 writer 原子性及外部副作用恰好一次。
 
 Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块 346 + 主 Agentic 76 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1698 通过。原基线 API/来源和生产依赖保持；新增内部恢复标记常量单列，main 212 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5180 类与既有 BOM 消费通过。快照 verification/agentic-debate-recovery-wip.json；完整工程仍 WIP，不新增阶段标签或 Agentic BOM 支持声明。
+
+
+### 失败专用收尾（WIP）
+
+新增 @Internal DefaultAgenticScope.rootCallFailed(AgenticScopeRegistry,AgentListener,Throwable)，原有签名和成功 rootCallEnded 等待合同不变。失败仅展开已完成 DelayedResponse，未回答标记保持未完成，未完成计算不等待；尝试 ephemeral eviction 或持久化观察状态，并清理补偿登记。
+
+兼容辅助类型 AgenticJdk8 新增 suppressCleanupFailure(Throwable,Runnable)，收尾步骤逃逸的错误不替换原始操作异常，而以 suppressed 保留；同一对象不重复附加，也不自我 suppressed。原普通 listener/补偿动作的日志处理约定不改动。失败后返回错误不代表后台任务已取消，后者仍待专项实现；同步用户 SPI 的自定义阻塞行为没有变成带超时的异步接口。
+
+失败收尾检查点完整 clean exit 0：真实 Java 8 459 项（支持模块 346 + 主 Agentic 84 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1706 通过。原基线 API 保留，新增 rootCallFailed 内部方法明确列为第四个 DefaultAgenticScope 增项；来源/生产依赖审计保持，main 212 类/patterns 22 类均 classfile 52，扩展链接 5180 类及既有 BOM 消费通过。快照 verification/agentic-failure-cleanup-wip.json；完整工程仍 WIP，无新阶段标签或 Agentic BOM 支持声明。
+
+新用例验证失败后保存未回答 marker 与 gated 计算的先后关系，不承诺失败后通用自动重试/完整错误历史持久化或全局网络资源取消。
