@@ -135,19 +135,20 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
     private Object agentResponse(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean async) {
         // Capture this dispatch's decision before the planner advances on another thread.
         boolean consumeStreaming = planner != null && !planner.propagateStreaming();
+        DeferredScopeContext.Frame binding = new DeferredScopeContext.Frame(agenticScope, outputKey());
         if (async) {
-            return new AsyncResponse<>(() -> {
+            return new AsyncResponse<>(() -> binding.call(() -> {
                 try {
                     return invokeDeferredAttempt(agenticScope, invokedAgent, args, consumeStreaming);
                 } catch (RuntimeException e) {
                     return recoverDeferredFailure(e, agenticScope, invokedAgent, args, consumeStreaming);
                 }
-            });
+            }));
         }
         Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
         if (consumeStreaming && response instanceof TokenStream) {
             return new RecoverableStream((TokenStream) response,
-                    error -> recoverDeferredFailure(error, agenticScope, invokedAgent, args, true));
+                    error -> binding.call(() -> recoverDeferredFailure(error, agenticScope, invokedAgent, args, true)));
         }
         return response;
     }

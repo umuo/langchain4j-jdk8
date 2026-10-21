@@ -1,6 +1,6 @@
 # Agentic 主模块基础移植（WIP）
 
-这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
+这是第十五阶段的可检查增量，尚未完成 Agentic 的全部验收。最新状态绑定检查点见 [异步状态快照](verification/agentic-deferred-state-wip.json)，此前恢复/补偿检查点见 [错误恢复快照](verification/agentic-error-recovery-wip.json)，此前网络检查点见 [HTTP/SSE 快照](verification/agentic-http-wip.json)，上一单元见 [恢复与单元回归快照](verification/agentic-recovery-wip.json)，初始基础检查点见 [agentic-main-wip.json](verification/agentic-main-wip.json)。上一完整阶段标签为 `jdk8-m14`；默认八个支持模块和兼容 BOM 不变。
 
 ## 已有实现与证据
 
@@ -86,3 +86,17 @@ mvn -o -B -s /Volumes/Nas/envs/maven/settings.xml \
 
 
 第四单元最终 clean exit 0：Java 8 394 项（Agentic 48），JDK 17 1115 项，TCK 62 通过/14 官方 untested，共 1571 通过。API/来源审计无回退，生产依赖树不变；附加 JAR 209 个 classfile 52 类无禁止引用，实际 Java 8 扩展链接 5155 类，仍保留原三个可选平台排除。全部既有 BOM 示例通过；新桥接为私有类型，完整 Agentic 与其独立消费继续 pending。
+
+
+## 第五个 WIP 单元：异步输出绑定、同键重试与延迟状态回填
+
+- 新增 `@Internal` 的 internal.DeferredScopeContext/Frame，以调用内绑定保存 output key 的派发输入。异步执行体和中间流恢复在该绑定内运行；同一输出键的 readState/writeState/writeStateIfAbsent/writeStates 访问调用内值，其他消费者仍等待共享 pending 结果。其他键维持原 scope 行为。
+- 错误处理器可读取初始输入，也可更新同键输入供下一次模型请求使用，不会等待自身 Future 或把中间输入提前泄漏给下游。state() 仍为原始共享状态 Map，未改为自动解包视图；这里的绑定应用于 scope 的状态读写方法。
+- Frame 按 scope 实例隔离，支持嵌套恢复，finally 恢复上层/移除 ThreadLocal。单线程池的异常嵌套与复用测试验证不残留上次调用的绑定。内部工具类型增加不代表原 API 签名变化；二进制对照计数指固定基线可见类型，不是候选 JAR 的全部类型数。
+- readState 递归展开嵌套 DelayedResponse，但只在共享值仍为原 pending 对象时回填；rootCallEnded 的 drain 同样使用条件替换。旧等待者可取得其旧结果，而后来的赋值/新 pending 不被旧读取或 root drain 覆盖。
+- scope 展开 AsyncResponse 后遇到未完成 SuspendedResponse 时发出 AgenticSystemSuspendedException，进入 planner 已有的受控挂起路径，避免直接 blockingGet 等待人工输入。直接调用 SuspendedResponse.blockingGet 的原始阻塞 API 不变。
+- 测试用有界真实 Java 8 子进程隔离自等待回归；子进程超时会被终止并等待回收，不把永远等待的 worker 留在测试 JVM。覆盖自引用非 AI async scope function、私有中间写入、同键 HTTP/SSE 重试及更新、async HITL 后接同步消费者的挂起恢复、陈旧读/drain 和线程池上下文生命周期。
+- 本单元不证明任意并行共享键的事务语义。末端 async HITL、并发异步挂起/错误恢复组合、原始 state Map 的自等待用法、延迟状态持久化和全局取消仍待专项验收；全部 Agentic 支持与独立 BOM 消费仍 pending。
+
+
+第五单元最终 clean exit 0：实际 Java 8 404 项（Agentic 58）、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1581 通过。原基线 API 与测试来源审计通过，生产依赖不变。候选 JAR 211 类全部 classfile 52，无禁止引用；Java 8 链接 5157 类，三个既有可选平台排除不变。既有 BOM 示例通过；新增内部 Frame 工具和全部支持边界见 verification/agentic-deferred-state-wip.json。

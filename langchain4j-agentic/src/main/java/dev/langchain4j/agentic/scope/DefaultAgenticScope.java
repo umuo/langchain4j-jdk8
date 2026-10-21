@@ -1,5 +1,7 @@
 package dev.langchain4j.agentic.scope;
 
+import dev.langchain4j.agentic.internal.DeferredScopeContext;
+
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyDefaultValue;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyName;
@@ -184,6 +186,14 @@ public class DefaultAgenticScope implements AgenticScope {
     @Override
     @SuppressWarnings("unchecked")
     public void writeState(String key, Object value) {
+        if (DeferredScopeContext.handles(this, key)) {
+            Object old = DeferredScopeContext.read();
+            DeferredScopeContext.write(value);
+            if (old instanceof DeferredResponse<?> && !((DeferredResponse<?>) old).isDone()) {
+                ((DeferredResponse<Object>) old).complete(value);
+            }
+            return;
+        }
         withReadLock(() -> {
             Object old;
             if (value == null) {
@@ -205,6 +215,10 @@ public class DefaultAgenticScope implements AgenticScope {
     @Override
     public void writeStateIfAbsent(String key, Object value) {
         if (value != null) {
+            if (DeferredScopeContext.handles(this, key)) {
+                if (!hasState(key)) DeferredScopeContext.write(value);
+                return;
+            }
             withReadLock(() -> state.compute(key, (k, v) -> hasState(k) ? v : value));
         }
     }
@@ -216,12 +230,17 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public void writeStates(Map<String, Object> newState) {
-        withReadLock(() -> state.putAll(newState));
+        withReadLock(() -> newState.forEach((key, value) -> {
+            java.util.Objects.requireNonNull(key);
+            java.util.Objects.requireNonNull(value);
+            if (DeferredScopeContext.handles(this, key)) DeferredScopeContext.write(value);
+            else state.put(key, value);
+        }));
     }
 
     @Override
     public boolean hasState(String key) {
-        Object value = state.get(key);
+        Object value = stateValue(key);
         if (value == null) {
             return false;
         }
@@ -235,12 +254,13 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public Object readState(String key) {
-        return readStateBlocking(key, state.get(key));
+        return readStateBlocking(key, stateValue(key));
     }
 
     @Override
     public <T> T readState(String key, T defaultValue) {
-        return (T) readStateBlocking(key, state.getOrDefault(key, defaultValue));
+        Object value = stateValue(key);
+        return (T) readStateBlocking(key, value != null ? value : defaultValue);
     }
 
     @Override
@@ -248,12 +268,30 @@ public class DefaultAgenticScope implements AgenticScope {
         return readState(keyName(key), keyDefaultValue(key));
     }
 
-    private Object readStateBlocking(String key, Object state) {
-        if (state instanceof DelayedResponse) {
-            state = ((DelayedResponse) state).blockingGet();
-            writeState(key, state);
+    private Object stateValue(String key) {
+        return DeferredScopeContext.handles(this, key) ? DeferredScopeContext.read() : state.get(key);
+    }
+
+    private Object readStateBlocking(String key, Object value) {
+        while (value instanceof DelayedResponse) {
+            if (value instanceof dev.langchain4j.agentic.internal.SuspendedResponse<?> && !((DelayedResponse<?>) value).isDone()) {
+                throw new AgenticSystemSuspendedException(this);
+            }
+            Object pending = value;
+            value = ((DelayedResponse<?>) pending).blockingGet();
+            if (value == pending) throw new IllegalStateException("Self-referencing deferred state: " + key);
+            publishResolvedState(key, pending, value);
         }
-        return state;
+        return value;
+    }
+
+    private void publishResolvedState(String key, Object pending, Object value) {
+        if (DeferredScopeContext.handles(this, key)) {
+            DeferredScopeContext.write(value);
+        } else {
+            // An older waiter must not overwrite a newer assignment or pending operation.
+            withReadLock(() -> state.compute(key, (k, current) -> current == pending ? value : current));
+        }
     }
 
     @Override
@@ -279,7 +317,7 @@ public class DefaultAgenticScope implements AgenticScope {
         // ensure that all pending async operations are completed before ending the root call
         dev.langchain4j.internal.Jdk8.copyMap(state).forEach((key, value) -> {
             if (value instanceof DelayedResponse<?>) {
-                writeState(key, ((DelayedResponse<?>) value).blockingGet());
+                publishResolvedState(key, value, ((DelayedResponse<?>) value).blockingGet());
             }
         });
         if (kind == Kind.EPHEMERAL) {

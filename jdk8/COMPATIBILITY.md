@@ -240,3 +240,13 @@ AgentExecutor 的 async 分支此前返回未消费 TokenStream，真实 HTTP/SS
 
 
 第四个 WIP 单元最终 clean 验证：Java 8 394 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested；1571 通过。API 和原始测试来源审计、无变化的生产树、209 类附加产物及 5155 类 Java 8 链接、既有 BOM 示例均通过。结果见 verification/agentic-error-recovery-wip.json；Agentic 整体及 BOM 消费仍未完成。
+
+
+### Agentic 第五个 WIP 单元：异步同键状态与重入
+
+新增内部 DeferredScopeContext/Frame：派发异步操作及中间流恢复时保留自身 output key 的输入，调用内 scope 读写不等待自身 pending，也不向外提前发布中间值；绑定在 finally 恢复/释放。其他键和原始 state() Map 行为保持原样，未引入全量状态事务。新增类型带 @Internal，原有公开/受保护签名保留。
+
+readState 可展开嵌套延迟值；完成旧读取或 root drain 时按 pending 对象身份进行条件回填，保留更新的赋值。scope 读取未完成 SuspendedResponse 发出受控挂起；直接 blockingGet API 仍按其文档阻塞。真实 Java 8 子进程用例验证同键 HTTP/SSE 重试、恢复更新输入、自引用 async scope function 与中间写、async HITL+同步消费者、过期回填和线程池上下文清理。其余复杂组合、延迟持久化、末端挂起和全局取消继续 WIP。
+
+
+第五单元最终 clean 验证：Java 8 404 项、JDK 17 1115 项、TCK 62 通过/14 官方 untested，共 1581 通过。原 API/来源审计及生产树保持，新增内部工具类型明确记录；211 类附加产物和 5157 类 Java 8 链接、既有 BOM 示例通过，详见 verification/agentic-deferred-state-wip.json。Agentic 与完整长期目标继续 WIP。

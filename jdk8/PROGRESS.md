@@ -1,14 +1,25 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段主 Agentic 基础移植检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段主 Agentic 异步状态检查点（WIP，2026-10-21）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 1 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景和 32 项网络场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 2 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为、2 项恢复场景、32 项网络场景和 10 项状态/重入场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；再推进 patterns/MCP/A2A 的全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### 异步同键状态、重入与回填检查点（WIP）
+
+`./jdk8/build.sh -o -Pagentic-wip` 最终完整 clean exit 0；最新快照：[agentic-deferred-state-wip.json](verification/agentic-deferred-state-wip.json)。
+
+- 调用内 output key 绑定修复异步 scope function 与同键重试等待自身 Future，以及中间写入提前交付的问题。恢复处理器可更新同键输入供下一请求使用，绑定按 scope 实例隔离并在 finally 恢复/清理。
+- readState 与 root drain 按 pending 对象身份条件回填，旧等待者不覆盖更新的状态。递归展开 async 返回的延迟响应，scope 遇到未完成 SuspendedResponse 进入受控挂起；验证 async HITL 后接同步消费者完成后仅执行一次人工请求。
+- 新增 10 项真实 Java 8 场景，自等待回归放入有界子进程并回收；覆盖同键 HTTP/SSE 重试/更新、自引用读写、root drain 竞争、嵌套异常与线程池复用。
+- 实际 Java 8 共 404 项（支持模块 346 + Agentic 58），JDK 17 1115 项，TCK 62 通过/14 官方 untested；共 1581 通过，其余测试无失败/错误/跳过。
+- 原 185 类型 API 与测试来源审计通过；新增 @Internal DeferredScopeContext/Frame，不修改原公开签名或生产依赖。附加 JAR 211 类均 classfile 52，无禁止引用；实际 Java 8 扩展链接 5157 类，原三个可选平台排除不变，既有 BOM 示例通过。
+- 原始 state() Map 不改为事务视图；末端/并发 async HITL、延迟持久化、全局取消及其余模块和长期范围继续 pending。无新阶段标签，Agentic 尚未加入默认 BOM。
 
 ### 延迟错误恢复、重试与补偿检查点（WIP）
 
