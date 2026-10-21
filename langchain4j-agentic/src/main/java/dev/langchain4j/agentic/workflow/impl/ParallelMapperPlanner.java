@@ -1,7 +1,6 @@
 package dev.langchain4j.agentic.workflow.impl;
 
 import static java.util.Arrays.copyOf;
-
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import dev.langchain4j.agentic.internal.MapperAgentInvoker;
 import dev.langchain4j.agentic.planner.Action;
@@ -18,13 +17,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class ParallelMapperPlanner implements Planner {
 
     private final String itemsProvider;
+
     private final boolean isArrayResult;
+
     private final Class<? extends Object[]> arrayclass;
 
     private AgentExecutor subagent;
+
     private String outputKey;
+
     private String resultKeyPrefix;
+
     private int itemCount;
+
     private final AtomicInteger completedCount = new AtomicInteger();
 
     public ParallelMapperPlanner(String itemsProvider, boolean isArrayResult, Class<? extends Object[]> arrayclass) {
@@ -45,38 +50,31 @@ public class ParallelMapperPlanner implements Planner {
         if (collectionObj == null) {
             return done();
         }
-
         List<?> items = collectItems(collectionObj);
-
         if (items.isEmpty()) {
-            return doneWithResults(planningContext, List.of());
+            return doneWithResults(planningContext, dev.langchain4j.internal.Jdk8.list());
         }
-
         this.itemCount = items.size();
         this.resultKeyPrefix = subagent.agentInvoker().outputKey();
-
         List<AgentInstance> instances = new ArrayList<>(items.size());
         for (int i = 0; i < items.size(); i++) {
             Object item = items.get(i);
             MapperAgentInvoker instanceInvoker = new MapperAgentInvoker(subagent.agentInvoker(), item, i);
             instances.add(new AgentExecutor(instanceInvoker, subagent.agent()));
         }
-
         return call(instances);
     }
 
     private List<?> collectItems(Object collectionObj) {
         List<?> items;
-        if (collectionObj instanceof List<?> list) {
-            items = list;
-        } else if (collectionObj instanceof Collection<?> collection) {
-            items = new ArrayList<>(collection);
+        if (collectionObj instanceof List<?>) {
+            items = ((List<?>) collectionObj);
+        } else if (collectionObj instanceof Collection<?>) {
+            items = new ArrayList<>(((Collection<?>) collectionObj));
         } else if (collectionObj.getClass().isArray()) {
             items = java.util.Arrays.asList((Object[]) collectionObj);
         } else {
-            throw new IllegalArgumentException(
-                    "The value for itemsProvider '" + itemsProvider + "' must be a Collection or array, but was: "
-                            + collectionObj.getClass().getName());
+            throw new IllegalArgumentException("The value for itemsProvider '" + itemsProvider + "' must be a Collection or array, but was: " + collectionObj.getClass().getName());
         }
         return items;
     }
@@ -96,7 +94,7 @@ public class ParallelMapperPlanner implements Planner {
 
     private Action doneWithResults(PlanningContext planningContext, List<Object> results) {
         Object result = isArrayResult ? copyOf(results.toArray(), results.size(), arrayclass) : results;
-        if (outputKey != null && !outputKey.isBlank()) {
+        if (outputKey != null && !dev.langchain4j.internal.Jdk8.isBlank(outputKey)) {
             planningContext.agenticScope().writeState(outputKey, result);
         }
         return done(result);

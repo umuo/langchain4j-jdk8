@@ -17,14 +17,19 @@ import java.util.Optional;
 public class AgentInvocation {
 
     private final List<AgentInvocation> nestedInvocations = Collections.synchronizedList(new ArrayList<>());
+
     private final List<ToolExecution> toolExecutions = Collections.synchronizedList(new ArrayList<>());
 
     private final AgentRequest agentRequest;
+
     private final LocalDateTime startTime;
 
     private AgentResponse agentResponse;
+
     private LocalDateTime finishTime;
+
     private int iterationIndex = -1;
+
     private String skipReason;
 
     AgentInvocation(AgentRequest agentRequest) {
@@ -36,9 +41,8 @@ public class AgentInvocation {
      * Creates the finished, zero-duration invocation of an agent that was skipped instead of being invoked.
      */
     static AgentInvocation skipped(AgentSkipped agentSkipped) {
-        AgentInvocation invocation =
-                new AgentInvocation(new AgentRequest(agentSkipped.agenticScope(), agentSkipped.agent(), Map.of()));
-        invocation.agentResponse = new AgentResponse(agentSkipped.agenticScope(), agentSkipped.agent(), Map.of(), null);
+        AgentInvocation invocation = new AgentInvocation(new AgentRequest(agentSkipped.agenticScope(), agentSkipped.agent(), dev.langchain4j.internal.Jdk8.map()));
+        invocation.agentResponse = new AgentResponse(agentSkipped.agenticScope(), agentSkipped.agent(), dev.langchain4j.internal.Jdk8.map(), null);
         invocation.finishTime = invocation.startTime;
         invocation.skipReason = agentSkipped.reason();
         return invocation;
@@ -118,9 +122,7 @@ public class AgentInvocation {
         if (!done()) {
             throw new IllegalStateException("Agent call is not finished yet");
         }
-        return Optional.ofNullable(agentResponse.chatResponse())
-                .map(ChatResponse::metadata)
-                .map(ChatResponseMetadata::tokenUsage);
+        return Optional.ofNullable(agentResponse.chatResponse()).map(ChatResponse::metadata).map(ChatResponseMetadata::tokenUsage);
     }
 
     /**
@@ -148,17 +150,7 @@ public class AgentInvocation {
     }
 
     private String toString(String prefix) {
-        StringBuilder sb = new StringBuilder(prefix + "AgentInvocation{" +
-                "agent=" + agent().name() +
-                (iterationIndex >= 0 ? ", iteration=" + iterationIndex : "") +
-                (skipped() ? ", skipped=" + skipReason : "") +
-                ", startTime=" + startTime +
-                ", finishTime=" + finishTime +
-                ", duration=" + (done() ? duration().toMillis() + " ms" : "in progress") +
-                ", tokens=" + (done() ? totalTokenCount() : "in progress") +
-                ", inputs=" + shortToString(inputs()) +
-                ", output=" + (done() ? shortToString(output()) : "in progress") +
-                '}');
+        StringBuilder sb = new StringBuilder(prefix + "AgentInvocation{" + "agent=" + agent().name() + (iterationIndex >= 0 ? ", iteration=" + iterationIndex : "") + (skipped() ? ", skipped=" + skipReason : "") + ", startTime=" + startTime + ", finishTime=" + finishTime + ", duration=" + (done() ? duration().toMillis() + " ms" : "in progress") + ", tokens=" + (done() ? totalTokenCount() : "in progress") + ", inputs=" + shortToString(inputs()) + ", output=" + (done() ? shortToString(output()) : "in progress") + '}');
         if (!toolExecutions.isEmpty()) {
             String toolPrefix = prefix.isEmpty() ? "|-> " : "    " + prefix;
             for (ToolExecution toolExec : toolExecutions) {
@@ -186,11 +178,10 @@ public class AgentInvocation {
         if (map.isEmpty()) {
             return "{}";
         }
-
         boolean first = true;
         StringBuilder sb = new StringBuilder();
         sb.append('{');
-        for (Map.Entry<?,?> e : map.entrySet()) {
+        for (Map.Entry<?, ?> e : map.entrySet()) {
             if (first) {
                 first = false;
             } else {

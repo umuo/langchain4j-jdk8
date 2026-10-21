@@ -6,7 +6,6 @@ import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.afterAg
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.agentError;
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.beforeAgentInvocation;
 import static dev.langchain4j.agentic.scope.DefaultAgenticScope.ephemeralAgenticScope;
-
 import dev.langchain4j.agentic.internal.AgenticScopeOwner;
 import dev.langchain4j.agentic.internal.InternalAgent;
 import dev.langchain4j.agentic.observability.AfterAgentToolExecution;
@@ -56,48 +55,77 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
     private static final Logger LOGGER = LoggerFactory.getLogger(AgentInvocationHandler.class);
 
     private final AiServiceContext context;
+
     private final AgentBuilder<?, ?> builder;
+
     private final Object agent;
+
     private final boolean agenticScopeDependent;
+
     private final Function<AgenticScope, ChatModel> chatModelProvider;
+
     private final Function<AgenticScope, StreamingChatModel> streamingChatModelProvider;
+
     private String agentId;
+
     private InternalAgent parent;
+
     private AgentListener agentListener;
+
     private boolean crossAgentCompensationEnabled;
 
     private final Map<Object, LastResponse> lastResponses = new ConcurrentHashMap<>();
 
-    private record LastResponse(AiServiceResponseReceivedEvent event, TokenUsage tokenUsage) {
+    private final static class LastResponse {
 
         static LastResponse first(AiServiceResponseReceivedEvent event) {
             return new LastResponse(event, event.response().metadata().tokenUsage());
         }
 
         LastResponse next(AiServiceResponseReceivedEvent nextEvent) {
-            if (!Objects.equals(
-                    event.invocationContext().invocationId(),
-                    nextEvent.invocationContext().invocationId())) {
+            if (!Objects.equals(event.invocationContext().invocationId(), nextEvent.invocationContext().invocationId())) {
                 return first(nextEvent);
             }
-            return new LastResponse(
-                    nextEvent,
-                    TokenUsage.sum(tokenUsage, nextEvent.response().metadata().tokenUsage()));
+            return new LastResponse(nextEvent, TokenUsage.sum(tokenUsage, nextEvent.response().metadata().tokenUsage()));
         }
 
         ChatResponse chatResponse() {
             ChatResponse response = event.response();
-            return ChatResponse.builder()
-                    .aiMessage(response.aiMessage())
-                    .metadata(response.metadata().toBuilder()
-                            .tokenUsage(tokenUsage)
-                            .build())
-                    .build();
+            return ChatResponse.builder().aiMessage(response.aiMessage()).metadata(response.metadata().toBuilder().tokenUsage(tokenUsage).build()).build();
+        }
+
+        private final AiServiceResponseReceivedEvent event;
+
+        public AiServiceResponseReceivedEvent event() {
+            return event;
+        }
+
+        private final TokenUsage tokenUsage;
+
+        public TokenUsage tokenUsage() {
+            return tokenUsage;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public LastResponse(@com.fasterxml.jackson.annotation.JsonProperty("event") AiServiceResponseReceivedEvent event, @com.fasterxml.jackson.annotation.JsonProperty("tokenUsage") TokenUsage tokenUsage) {
+            this.event = event;
+            this.tokenUsage = tokenUsage;
+        }
+
+        public final boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(event, ((LastResponse) obj).event) && java.util.Objects.equals(tokenUsage, ((LastResponse) obj).tokenUsage));
+        }
+
+        public final int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(event)) + java.util.Objects.hashCode(tokenUsage));
+        }
+
+        public final String toString() {
+            return "LastResponse[" + "event=" + event + ", tokenUsage=" + tokenUsage + "]";
         }
     }
 
-    public AgentInvocationHandler(
-            AiServiceContext context, Object agent, AgentBuilder<?, ?> builder, boolean agenticScopeDependent) {
+    public AgentInvocationHandler(AiServiceContext context, Object agent, AgentBuilder<?, ?> builder, boolean agenticScopeDependent) {
         this.context = context;
         this.agent = agent;
         this.builder = builder;
@@ -110,26 +138,21 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
-        if (method.getDeclaringClass() == AiServiceListener.class
-                || method.getDeclaringClass() == AiServiceResponseReceivedListener.class) {
-            return switch (method.getName()) {
-                case "getEventClass" -> AiServiceResponseReceivedEvent.class;
-                case "onEvent" -> {
-                    AiServiceResponseReceivedEvent event = (AiServiceResponseReceivedEvent) args[0];
-                    AgenticScope agenticScope = (AgenticScope)
-                            event.invocationContext().managedParameters().get(AgenticScope.class);
-                    lastResponses.compute(
-                            agenticScope.memoryId(),
-                            (memoryId, previous) ->
-                                    previous == null ? LastResponse.first(event) : previous.next(event));
-                    yield null;
-                }
-                default ->
-                    throw new UnsupportedOperationException(
-                            "Unknown method on AiServiceResponseReceivedListener class : " + method.getName());
-            };
+        if (method.getDeclaringClass() == AiServiceListener.class || method.getDeclaringClass() == AiServiceResponseReceivedListener.class) {
+            switch(method.getName()) {
+                case "getEventClass":
+                    return AiServiceResponseReceivedEvent.class;
+                case "onEvent":
+                    {
+                        AiServiceResponseReceivedEvent event = (AiServiceResponseReceivedEvent) args[0];
+                        AgenticScope agenticScope = (AgenticScope) event.invocationContext().managedParameters().get(AgenticScope.class);
+                        lastResponses.compute(agenticScope.memoryId(), (memoryId, previous) -> previous == null ? LastResponse.first(event) : previous.next(event));
+                        return null;
+                    }
+                default:
+                    throw new UnsupportedOperationException("Unknown method on AiServiceResponseReceivedListener class : " + method.getName());
+            }
         }
-
         if (method.getDeclaringClass() == ChatMessagesAccess.class) {
             if ("removeLastResponseEvent".equals(method.getName())) {
                 lastResponses.remove(args[0]);
@@ -139,52 +162,45 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
             if (lastResponse == null) {
                 return null;
             }
-            return switch (method.getName()) {
-                case "lastUserMessage" ->
-                    lastUserMessage(lastResponse.event().request().messages()).orElse(null);
-                case "lastChatRequest" -> lastResponse.event().request();
-                case "lastChatResponse" -> lastResponse.chatResponse();
-                default ->
-                    throw new UnsupportedOperationException(
-                            "Unknown method on AgenticScopeOwner class : " + method.getName());
-            };
+            switch(method.getName()) {
+                case "lastUserMessage":
+                    return lastUserMessage(lastResponse.event().request().messages()).orElse(null);
+                case "lastChatRequest":
+                    return lastResponse.event().request();
+                case "lastChatResponse":
+                    return lastResponse.chatResponse();
+                default:
+                    throw new UnsupportedOperationException("Unknown method on AgenticScopeOwner class : " + method.getName());
+            }
         }
-
         if (method.getDeclaringClass() == AgenticScopeOwner.class) {
-            return switch (method.getName()) {
-                case "withAgenticScope" -> {
-                    if (!agenticScopeDependent) {
-                        yield proxy;
+            switch(method.getName()) {
+                case "withAgenticScope":
+                    {
+                        if (!agenticScopeDependent) {
+                            return proxy;
+                        }
+                        Object agentProxy = ((DefaultAgenticScope) args[0]).getOrCreateAgent(agentId, builder::build);
+                        ((InternalAgent) agentProxy).setParent(parent);
+                        ((InternalAgent) agentProxy).setAgentId(agentId);
+                        return agentProxy;
                     }
-                    Object agentProxy = ((DefaultAgenticScope) args[0]).getOrCreateAgent(agentId, builder::build);
-                    ((InternalAgent) agentProxy).setParent(parent);
-                    ((InternalAgent) agentProxy).setAgentId(agentId);
-                    yield agentProxy;
-                }
-                case "registry" ->
-                    throw new UnsupportedOperationException(
-                            "AgenticScopeOwner's registry method can be used only on the root agent of an agentic system.");
-                default ->
-                    throw new UnsupportedOperationException(
-                            "Unknown method on AgenticScopeOwner class : " + method.getName());
-            };
+                case "registry":
+                    throw new UnsupportedOperationException("AgenticScopeOwner's registry method can be used only on the root agent of an agentic system.");
+                default:
+                    throw new UnsupportedOperationException("Unknown method on AgenticScopeOwner class : " + method.getName());
+            }
         }
-
         if (method.getDeclaringClass() == ChatMemoryAccess.class) {
-            return switch (method.getName()) {
-                case "getChatMemory" ->
-                    context.hasChatMemory()
-                                    && (ChatMemoryService.DEFAULT.equals(args[0]) || builder.hasNonDefaultChatMemory())
-                            ? context.chatMemoryService.getChatMemory(args[0])
-                            : null;
-                case "evictChatMemory" ->
-                    context.hasChatMemory() && context.chatMemoryService.evictChatMemory(args[0]) != null;
-                default ->
-                    throw new UnsupportedOperationException(
-                            "Unknown method on ChatMemoryAccess class : " + method.getName());
-            };
+            switch(method.getName()) {
+                case "getChatMemory":
+                    return context.hasChatMemory() && (ChatMemoryService.DEFAULT.equals(args[0]) || builder.hasNonDefaultChatMemory()) ? context.chatMemoryService.getChatMemory(args[0]) : null;
+                case "evictChatMemory":
+                    return context.hasChatMemory() && context.chatMemoryService.evictChatMemory(args[0]) != null;
+                default:
+                    throw new UnsupportedOperationException("Unknown method on ChatMemoryAccess class : " + method.getName());
+            }
         }
-
         if (method.getDeclaringClass() == AgentInstance.class || method.getDeclaringClass() == InternalAgent.class) {
             try {
                 return method.invoke(this, args);
@@ -192,21 +208,21 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
                 throw e.getCause() != null ? (Exception) e.getCause() : e;
             }
         }
-
         if (method.getDeclaringClass() == MonitoredAgent.class) {
             return listenerOfType(agentListener, AgentMonitor.class);
         }
-
         if (method.getDeclaringClass() == Object.class) {
-            return switch (method.getName()) {
-                case "equals" -> proxy == args[0];
-                case "toString" -> "Agent<" + builder.agentServiceClass.getSimpleName() + ">";
-                case "hashCode" -> System.identityHashCode(agent);
-                default ->
+            switch(method.getName()) {
+                case "equals":
+                    return proxy == args[0];
+                case "toString":
+                    return "Agent<" + builder.agentServiceClass.getSimpleName() + ">";
+                case "hashCode":
+                    return System.identityHashCode(agent);
+                default:
                     throw new UnsupportedOperationException("Unknown method on Object class : " + method.getName());
-            };
+            }
         }
-
         AgenticScope agenticScope = LangChain4jManaged.current(AgenticScope.class);
         if (agenticScope != null) {
             if (chatModelProvider != null) {
@@ -225,35 +241,23 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
     }
 
     private Object invokeStandaloneAgent(Method method, Object[] args) {
-        LOGGER.warn(
-                "Improper invocation of a standalone agent outside of an agentic system, consider using AiServices instead.");
-
+        LOGGER.warn("Improper invocation of a standalone agent outside of an agentic system, consider using AiServices instead.");
         AgenticScope standaloneAgenticScope = ephemeralAgenticScope();
-        LangChain4jManaged.setCurrent(Map.of(AgenticScope.class, standaloneAgenticScope));
-
+        LangChain4jManaged.setCurrent(dev.langchain4j.internal.Jdk8.map(AgenticScope.class, standaloneAgenticScope));
         Map<String, Object> namedArgs = argToMap(method, args);
         beforeAgentInvocation(agentListener, standaloneAgenticScope, this, namedArgs);
-
         Object result = null;
         try {
             result = method.invoke(agent, args);
         } catch (Exception e) {
-            AgentInvocationException invocationException =
-                    new AgentInvocationException("Failed to invoke agent method: " + method, e);
+            AgentInvocationException invocationException = new AgentInvocationException("Failed to invoke agent method: " + method, e);
             agentError(agentListener, standaloneAgenticScope, this, namedArgs, invocationException);
             throw invocationException;
         } finally {
             LangChain4jManaged.removeCurrent();
             LastResponse lastResponse = lastResponses.remove(standaloneAgenticScope.memoryId());
             if (result != null) {
-                afterAgentInvocation(
-                        agentListener,
-                        standaloneAgenticScope,
-                        this,
-                        namedArgs,
-                        result,
-                        lastResponse == null ? null : lastResponse.event().request(),
-                        lastResponse == null ? null : lastResponse.chatResponse());
+                afterAgentInvocation(agentListener, standaloneAgenticScope, this, namedArgs, result, lastResponse == null ? null : lastResponse.event().request(), lastResponse == null ? null : lastResponse.chatResponse());
             }
         }
         return result;
@@ -264,7 +268,7 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
             return (Map<String, Object>) args[0];
         }
         if (args == null || args.length == 0) {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
         Map<String, Object> namedArgs = new HashMap<>();
         for (int i = 0; i < args.length; i++) {
@@ -275,10 +279,7 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
 
     private static Optional<UserMessage> lastUserMessage(Collection<ChatMessage> messages) {
         // TODO replace with UserMessage.findLast(messages)
-        return messages.stream()
-                .filter(UserMessage.class::isInstance)
-                .map(UserMessage.class::cast)
-                .reduce((first, second) -> second);
+        return messages.stream().filter(UserMessage.class::isInstance).map(UserMessage.class::cast).reduce((first, second) -> second);
     }
 
     @Override
@@ -294,8 +295,7 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
     @Override
     public void setParent(InternalAgent parent) {
         if (builder.hasChatMemory() && parent != null && !parent.allowChatMemory()) {
-            throw new AgenticSystemConfigurationException(
-                    "Agents with chat memory can't be a subagent of " + parent.type());
+            throw new AgenticSystemConfigurationException("Agents with chat memory can't be a subagent of " + parent.type());
         }
         this.parent = parent;
         if (parent != null) {
@@ -313,21 +313,20 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
         }
         crossAgentCompensationEnabled = true;
         context.toolService.onCompensableToolExecution((toolExecution, compensatingAction) -> {
-            var managed = toolExecution.invocationContext().managedParameters();
+            java.util.Map<java.lang.Class<? extends dev.langchain4j.invocation.LangChain4jManaged>, dev.langchain4j.invocation.LangChain4jManaged> managed = toolExecution.invocationContext().managedParameters();
             if (managed != null) {
-                var scopeManaged = managed.get(AgenticScope.class);
-                if (scopeManaged instanceof DefaultAgenticScope das) {
-                    das.registerCompensableExecution(toolExecution, compensatingAction);
+                dev.langchain4j.invocation.LangChain4jManaged scopeManaged = managed.get(AgenticScope.class);
+                if (scopeManaged instanceof DefaultAgenticScope) {
+                    ((DefaultAgenticScope) scopeManaged).registerCompensableExecution(toolExecution, compensatingAction);
                 }
             }
         });
-
         context.toolService.onToolExecutionError(invocationContext -> {
-            var managed = invocationContext.managedParameters();
+            java.util.Map<java.lang.Class<? extends dev.langchain4j.invocation.LangChain4jManaged>, dev.langchain4j.invocation.LangChain4jManaged> managed = invocationContext.managedParameters();
             if (managed != null) {
-                var scopeManaged = managed.get(AgenticScope.class);
-                if (scopeManaged instanceof DefaultAgenticScope das) {
-                    das.compensateAll();
+                dev.langchain4j.invocation.LangChain4jManaged scopeManaged = managed.get(AgenticScope.class);
+                if (scopeManaged instanceof DefaultAgenticScope) {
+                    ((DefaultAgenticScope) scopeManaged).compensateAll();
                 }
             }
         });
@@ -335,14 +334,10 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
 
     @Override
     public void registerInheritedParentListener(AgentListener parentListener) {
-        if (parentListener != null
-                && parentListener.inheritedBySubagents()
-                && isNewListener(agentListener, parentListener)) {
+        if (parentListener != null && parentListener.inheritedBySubagents() && isNewListener(agentListener, parentListener)) {
             agentListener = composeWithInherited(agentListener, parentListener);
-            context.toolService.beforeToolExecution(beforeToolExecution ->
-                    agentListener.beforeAgentToolExecution(new BeforeAgentToolExecution(this, beforeToolExecution)));
-            context.toolService.afterToolExecution(toolExecution ->
-                    agentListener.afterAgentToolExecution(new AfterAgentToolExecution(this, toolExecution)));
+            context.toolService.beforeToolExecution(beforeToolExecution -> agentListener.beforeAgentToolExecution(new BeforeAgentToolExecution(this, beforeToolExecution)));
+            context.toolService.afterToolExecution(toolExecution -> agentListener.afterAgentToolExecution(new AfterAgentToolExecution(this, toolExecution)));
         }
     }
 
@@ -350,8 +345,8 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
         if (newListener == currentListener) {
             return false;
         }
-        if (currentListener instanceof ComposedAgentListener composed) {
-            return !composed.contains(newListener);
+        if (currentListener instanceof ComposedAgentListener) {
+            return !((ComposedAgentListener) currentListener).contains(newListener);
         }
         return true;
     }
@@ -433,7 +428,7 @@ public class AgentInvocationHandler implements InvocationHandler, InternalAgent 
 
     @Override
     public List<AgentInstance> subagents() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     @Override

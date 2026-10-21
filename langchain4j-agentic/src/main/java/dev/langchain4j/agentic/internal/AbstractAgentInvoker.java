@@ -16,7 +16,9 @@ import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.agentic.scope.DefaultAgenticScope;
 
 public abstract class AbstractAgentInvoker implements AgentInvoker, InternalAgent {
+
     protected final Method method;
+
     protected final InternalAgent agent;
 
     protected AbstractAgentInvoker(Method method, InternalAgent agent) {
@@ -121,11 +123,12 @@ public abstract class AbstractAgentInvoker implements AgentInvoker, InternalAgen
 
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) return true;
-        if (obj == null || obj.getClass() != this.getClass()) return false;
-        var that = (AbstractAgentInvoker) obj;
-        return Objects.equals(this.method, that.method) &&
-                Objects.equals(this.agent, that.agent);
+        if (obj == this)
+            return true;
+        if (obj == null || obj.getClass() != this.getClass())
+            return false;
+        dev.langchain4j.agentic.internal.AbstractAgentInvoker that = (AbstractAgentInvoker) obj;
+        return Objects.equals(this.method, that.method) && Objects.equals(this.agent, that.agent);
     }
 
     @Override
@@ -135,9 +138,7 @@ public abstract class AbstractAgentInvoker implements AgentInvoker, InternalAgen
 
     @Override
     public String toString() {
-        return "MethodAgentInvoker[" +
-                "method=" + method + ", " +
-                "agentInstance=" + agent + ']';
+        return "MethodAgentInvoker[" + "method=" + method + ", " + "agentInstance=" + agent + ']';
     }
 
     @Override

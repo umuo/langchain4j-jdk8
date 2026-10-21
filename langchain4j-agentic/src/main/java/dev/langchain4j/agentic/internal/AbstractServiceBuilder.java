@@ -5,7 +5,6 @@ import static dev.langchain4j.agentic.internal.AgentUtil.buildAgent;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyName;
 import static dev.langchain4j.agentic.observability.ComposedAgentListener.listenerOfType;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
-
 import dev.langchain4j.agentic.Agent;
 import dev.langchain4j.agentic.agent.ErrorContext;
 import dev.langchain4j.agentic.agent.ErrorRecoveryResult;
@@ -32,16 +31,21 @@ import java.util.function.Supplier;
 
 public abstract class AbstractServiceBuilder<T, S> {
 
-    private static final Consumer<AgenticScope> DEFAULT_INIT_FUNCTION = agenticScope -> {};
+    private static final Consumer<AgenticScope> DEFAULT_INIT_FUNCTION = agenticScope -> {
+    };
 
     protected final Class<T> agentServiceClass;
+
     protected final Method agenticMethod;
 
     protected Consumer<AgenticScope> beforeCall = DEFAULT_INIT_FUNCTION;
 
     protected String name;
+
     protected String description;
+
     protected String outputKey;
+
     protected Function<AgenticScope, Object> output;
 
     protected AgentListener agentListener;
@@ -75,7 +79,6 @@ public abstract class AbstractServiceBuilder<T, S> {
         if (agent == null) {
             return;
         }
-
         if (!isNullOrBlank(agent.name())) {
             this.name = agent.name();
         } else {
@@ -123,7 +126,7 @@ public abstract class AbstractServiceBuilder<T, S> {
     }
 
     public S subAgents(Object... agents) {
-        return subAgents(List.of(agents));
+        return subAgents(dev.langchain4j.internal.Jdk8.list(agents));
     }
 
     public S subAgents(Collection<?> agents) {

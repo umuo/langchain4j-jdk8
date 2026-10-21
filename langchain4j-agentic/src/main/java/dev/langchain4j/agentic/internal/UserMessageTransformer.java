@@ -13,15 +13,11 @@ public interface UserMessageTransformer extends BiFunction<ChatRequest, Object, 
     default ChatRequest apply(ChatRequest chatRequest, Object memoryId) {
         List<ChatMessage> messages = chatRequest.messages();
         for (int i = messages.size() - 1; i >= 0; i--) {
-            if (messages.get(i) instanceof UserMessage userMessage) {
-                UserMessage transformedMessage = UserMessage.from(transformUserMessage(userMessage.singleText(), memoryId));
-                List<ChatMessage> modifiedMessages = chatRequest.messages().stream()
-                        .map(message -> message == userMessage ? transformedMessage : message)
-                        .toList();
-                return ChatRequest.builder()
-                        .messages(modifiedMessages)
-                        .parameters(chatRequest.parameters())
-                        .build();
+            if (messages.get(i) instanceof UserMessage) {
+                UserMessage originalMessage = (UserMessage) messages.get(i);
+                UserMessage transformedMessage = UserMessage.from(transformUserMessage(originalMessage.singleText(), memoryId));
+                List<ChatMessage> modifiedMessages = chatRequest.messages().stream().map(message -> message == originalMessage ? transformedMessage : message).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
+                return ChatRequest.builder().messages(modifiedMessages).parameters(chatRequest.parameters()).build();
             }
         }
         return chatRequest;

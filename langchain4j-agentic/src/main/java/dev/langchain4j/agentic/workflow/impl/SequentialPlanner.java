@@ -12,6 +12,7 @@ import java.util.Map;
 public class SequentialPlanner implements Planner {
 
     private List<AgentInstance> agents;
+
     private int agentCursor = 0;
 
     @Override
@@ -39,14 +40,14 @@ public class SequentialPlanner implements Planner {
         // Save cursor - 1: the agent that was just scheduled for execution.
         // On recovery, firstAction() delegates to nextAction() which calls agents.get(agentCursor++),
         // so the restored cursor must point to the agent that needs to be (re-)executed.
-        return agentCursor > 0 ? Map.of("cursor", agentCursor - 1) : Map.of();
+        return agentCursor > 0 ? dev.langchain4j.internal.Jdk8.map("cursor", agentCursor - 1) : dev.langchain4j.internal.Jdk8.map();
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedCursor = state.get("cursor");
-        if (savedCursor instanceof Number n) {
-            this.agentCursor = n.intValue();
+        if (savedCursor instanceof Number) {
+            this.agentCursor = ((Number) savedCursor).intValue();
         }
     }
 }

@@ -15,14 +15,17 @@ import dev.langchain4j.agentic.workflow.LoopAgentInstance;
 public class LoopPlanner implements Planner {
 
     private final int maxIterations;
+
     private int iterationsCounter = 1;
 
     private final boolean testExitAtLoopEnd;
 
     private final BiPredicate<AgenticScope, Integer> exitCondition;
+
     private final String exitConditionDescription;
 
     private List<AgentInstance> agents;
+
     private int agentCursor = 0;
 
     public LoopPlanner(int maxIterations, boolean testExitAtLoopEnd, BiPredicate<AgenticScope, Integer> exitCondition, String exitConditionDescription) {
@@ -44,7 +47,7 @@ public class LoopPlanner implements Planner {
 
     @Override
     public Action nextAction(PlanningContext planningContext) {
-        agentCursor = (agentCursor+1) % agents.size();
+        agentCursor = (agentCursor + 1) % agents.size();
         if (agentCursor == 0) {
             if (iterationsCounter >= maxIterations || exitCondition.test(planningContext.agenticScope(), iterationsCounter)) {
                 return done();
@@ -86,18 +89,18 @@ public class LoopPlanner implements Planner {
         // Save the current cursor and iteration counter.
         // LoopPlanner's firstAction() does NOT advance state (it just calls agents.get(agentCursor)),
         // so the saved values can be restored directly.
-        return Map.of("cursor", agentCursor, "iteration", iterationsCounter);
+        return dev.langchain4j.internal.Jdk8.map("cursor", agentCursor, "iteration", iterationsCounter);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedCursor = state.get("cursor");
-        if (savedCursor instanceof Number n) {
-            this.agentCursor = n.intValue();
+        if (savedCursor instanceof Number) {
+            this.agentCursor = ((Number) savedCursor).intValue();
         }
         Object savedIteration = state.get("iteration");
-        if (savedIteration instanceof Number n) {
-            this.iterationsCounter = n.intValue();
+        if (savedIteration instanceof Number) {
+            this.iterationsCounter = ((Number) savedIteration).intValue();
         }
     }
 }

@@ -28,10 +28,13 @@ public class AgentMonitor implements AgentListener {
     private static final int DEFAULT_MAX_RETAINED_SESSIONS = 100;
 
     private volatile int maxRetainedSessions = DEFAULT_MAX_RETAINED_SESSIONS;
+
     private AgentInstance rootAgent;
 
     private final Map<Object, List<MonitoredExecution>> successfulExecutions;
+
     private final Map<Object, List<MonitoredExecution>> failedExecutions;
+
     private final Map<Object, MonitoredExecution> ongoingExecutions = new ConcurrentHashMap<>();
 
     public AgentMonitor() {
@@ -74,7 +77,7 @@ public class AgentMonitor implements AgentListener {
 
     private static void trimToSize(Map<Object, ?> map, int maxSize) {
         synchronized (map) {
-            var it = map.entrySet().iterator();
+            java.util.Iterator<? extends java.util.Map.Entry<java.lang.Object, ?>> it = map.entrySet().iterator();
             while (map.size() > maxSize && it.hasNext()) {
                 it.next();
                 it.remove();
@@ -83,7 +86,8 @@ public class AgentMonitor implements AgentListener {
     }
 
     private Map<Object, List<MonitoredExecution>> createBoundedMap() {
-        return new LinkedHashMap<>() {
+        return new LinkedHashMap<java.lang.Object, java.util.List<dev.langchain4j.agentic.observability.MonitoredExecution>>() {
+
             @Override
             protected boolean removeEldestEntry(Map.Entry<Object, List<MonitoredExecution>> eldest) {
                 return size() > maxRetainedSessions;
@@ -130,8 +134,7 @@ public class AgentMonitor implements AgentListener {
 
     @Override
     public void onAgentSkipped(AgentSkipped agentSkipped) {
-        MonitoredExecution execution =
-                ongoingExecutions.get(agentSkipped.agenticScope().memoryId());
+        MonitoredExecution execution = ongoingExecutions.get(agentSkipped.agenticScope().memoryId());
         if (execution != null) {
             execution.onAgentSkipped(agentSkipped);
         }
@@ -146,15 +149,11 @@ public class AgentMonitor implements AgentListener {
         }
         if (execution.done()) {
             synchronized (successfulExecutions) {
-                successfulExecutions
-                        .computeIfAbsent(memoryId, k -> new ArrayList<>())
-                        .add(execution);
+                successfulExecutions.computeIfAbsent(memoryId, k -> new ArrayList<>()).add(execution);
             }
         } else {
             synchronized (failedExecutions) {
-                failedExecutions
-                        .computeIfAbsent(memoryId, k -> new ArrayList<>())
-                        .add(execution);
+                failedExecutions.computeIfAbsent(memoryId, k -> new ArrayList<>()).add(execution);
             }
         }
     }
@@ -187,7 +186,7 @@ public class AgentMonitor implements AgentListener {
 
     public List<MonitoredExecution> successfulExecutions() {
         synchronized (successfulExecutions) {
-            return successfulExecutions.values().stream().flatMap(List::stream).toList();
+            return successfulExecutions.values().stream().flatMap(List::stream).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
     }
 
@@ -197,13 +196,13 @@ public class AgentMonitor implements AgentListener {
 
     public List<MonitoredExecution> successfulExecutionsFor(Object memoryId) {
         synchronized (successfulExecutions) {
-            return List.copyOf(successfulExecutions.getOrDefault(memoryId, List.of()));
+            return dev.langchain4j.internal.Jdk8.copyList(successfulExecutions.getOrDefault(memoryId, dev.langchain4j.internal.Jdk8.list()));
         }
     }
 
     public List<MonitoredExecution> failedExecutions() {
         synchronized (failedExecutions) {
-            return failedExecutions.values().stream().flatMap(List::stream).toList();
+            return failedExecutions.values().stream().flatMap(List::stream).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         }
     }
 
@@ -213,7 +212,7 @@ public class AgentMonitor implements AgentListener {
 
     public List<MonitoredExecution> failedExecutionsFor(Object memoryId) {
         synchronized (failedExecutions) {
-            return List.copyOf(failedExecutions.getOrDefault(memoryId, List.of()));
+            return dev.langchain4j.internal.Jdk8.copyList(failedExecutions.getOrDefault(memoryId, dev.langchain4j.internal.Jdk8.list()));
         }
     }
 

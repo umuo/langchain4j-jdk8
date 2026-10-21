@@ -6,7 +6,6 @@ import static dev.langchain4j.agentic.declarative.DeclarativeUtil.configureOutpu
 import static dev.langchain4j.agentic.declarative.DeclarativeUtil.invokeStatic;
 import static dev.langchain4j.agentic.internal.AgentUtil.getAnnotatedMethodOnClass;
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
-
 import java.lang.reflect.Method;
 import java.util.function.Supplier;
 import dev.langchain4j.agentic.declarative.PlannerSupplier;
@@ -44,14 +43,9 @@ public class PlannerBasedServiceImpl<T> extends AbstractServiceBuilder<T, Planne
     private void configurePlanner(Class<T> agentServiceClass) {
         configureOutput(agentServiceClass, this);
         buildAgentFeatures(agentServiceClass, this);
-
-        getAnnotatedMethodOnClass(agentServiceClass, PlannerSupplier.class)
-                .ifPresentOrElse(
-                        method -> {
-                            checkReturnType(method, Planner.class);
-                            planner(() -> invokeStatic(method));
-                        },
-                        () -> new IllegalArgumentException(
-                                "A planner agent requires a method annotated with @PlannerSupplier that returns the Planner instance."));
+        dev.langchain4j.agentic.internal.AgenticJdk8.ifPresentOrElse(getAnnotatedMethodOnClass(agentServiceClass, PlannerSupplier.class), method -> {
+            checkReturnType(method, Planner.class);
+            planner(() -> invokeStatic(method));
+        }, () -> new IllegalArgumentException("A planner agent requires a method annotated with @PlannerSupplier that returns the Planner instance."));
     }
 }

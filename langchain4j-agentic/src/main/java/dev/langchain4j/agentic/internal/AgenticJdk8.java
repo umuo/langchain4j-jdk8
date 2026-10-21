@@ -1,0 +1,48 @@
+package dev.langchain4j.agentic.internal;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Consumer;
+
+/** Java 8 equivalents used by the Agentic implementation. */
+@dev.langchain4j.Internal
+public final class AgenticJdk8 {
+    private AgenticJdk8() {}
+
+    public static <T> void ifPresentOrElse(Optional<T> value, Consumer<? super T> action, Runnable emptyAction) {
+        if (value.isPresent()) {
+            action.accept(value.get());
+        } else {
+            emptyAction.run();
+        }
+    }
+
+    public static <T> T requireNonNullElse(T value, T fallback) {
+        return value != null ? value : Objects.requireNonNull(fallback, "defaultObj");
+    }
+
+    public static String packageName(Class<?> type) {
+        while (type.isArray()) {
+            type = type.getComponentType();
+        }
+        if (type.isPrimitive()) {
+            return "java.lang";
+        }
+        String name = type.getName();
+        int dot = name.lastIndexOf('.');
+        return dot < 0 ? "" : name.substring(0, dot);
+    }
+
+    public static Path writeString(Path path, CharSequence text) throws IOException {
+        // The encoder reports malformed surrogate pairs, as Files.writeString does.
+        ByteBuffer encoded = StandardCharsets.UTF_8.newEncoder().encode(java.nio.CharBuffer.wrap(text));
+        byte[] bytes = new byte[encoded.remaining()];
+        encoded.get(bytes);
+        return Files.write(path, bytes);
+    }
+}

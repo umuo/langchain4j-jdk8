@@ -7,7 +7,6 @@ import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
 import static dev.langchain4j.agentic.observability.ComposedAgentListener.listenerOfType;
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
 import static java.util.Arrays.asList;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolExecutionRequest;
 import dev.langchain4j.agent.tool.ToolSpecification;
@@ -69,68 +68,105 @@ import java.util.function.UnaryOperator;
 public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
 
     private static final ChatModel PLACEHOLDER_CHAT_MODEL = new ChatModel() {
+
         @Override
         public ChatResponse doChat(ChatRequest chatRequest) {
-            throw new IllegalStateException("Placeholder ChatModel should never be invoked. "
-                    + "The actual model is provided dynamically via the chatModel(Function) provider.");
+            throw new IllegalStateException("Placeholder ChatModel should never be invoked. " + "The actual model is provided dynamically via the chatModel(Function) provider.");
         }
     };
 
     private static final StreamingChatModel PLACEHOLDER_STREAMING_CHAT_MODEL = new StreamingChatModel() {
+
         @Override
         public void doChat(ChatRequest chatRequest, StreamingChatResponseHandler handler) {
-            throw new IllegalStateException("Placeholder StreamingChatModel should never be invoked. "
-                    + "The actual model is provided dynamically via the streamingChatModel(Function) provider.");
+            throw new IllegalStateException("Placeholder StreamingChatModel should never be invoked. " + "The actual model is provided dynamically via the streamingChatModel(Function) provider.");
         }
     };
 
     final Class<T> agentServiceClass;
+
     final Method agenticMethod;
+
     final Class<?> agentReturnType;
+
     List<AgentArgument> arguments;
 
     String name;
+
     String description;
+
     String outputKey;
+
     boolean async;
+
     boolean optional;
+
     AgentCondition activationCondition;
 
     private final Map<String, Object> defaultValues = new HashMap<>();
 
     private ChatModel model;
+
     private StreamingChatModel streamingChatModel;
+
     Function<AgenticScope, ChatModel> chatModelProvider;
+
     Function<AgenticScope, StreamingChatModel> streamingChatModelProvider;
+
     private Object contextSummarizerModel;
+
     private Context.ContextSummarizer contextSummarizer;
+
     private ChatMemory chatMemory;
+
     private ChatMemoryProvider chatMemoryProvider;
+
     private Function<AgenticScope, String> contextProvider;
+
     private String[] contextProvidingAgents;
+
     private ContentRetriever contentRetriever;
+
     private RetrievalAugmentor retrievalAugmentor;
+
     private Function<Object, String> systemMessageProvider;
+
     private BiFunction<String, InvocationContext, String> systemMessageTransformer;
+
     private Function<Object, String> userMessageProvider;
 
     private InputGuardrailsConfig inputGuardrailsConfig;
+
     private OutputGuardrailsConfig outputGuardrailsConfig;
+
     private Class<? extends InputGuardrail>[] inputGuardrailClasses;
+
     private Class<? extends OutputGuardrail>[] outputGuardrailClasses;
+
     private InputGuardrail[] inputGuardrails;
+
     private OutputGuardrail[] outputGuardrails;
 
     private Object[] objectsWithTools;
+
     private Map<ToolSpecification, ToolExecutor> toolsMap;
+
     private Set<String> immediateReturnToolNames;
+
     private final List<ToolProvider> toolProviders = new ArrayList<>();
+
     private Integer maxToolCallingRoundTrips;
+
     private Function<ToolExecutionRequest, ToolExecutionResultMessage> hallucinatedToolNameStrategy;
+
     private boolean executeToolsConcurrently;
+
     private Executor concurrentToolsExecutor;
+
     private ToolArgumentsErrorHandler toolArgumentsErrorHandler;
+
     private ToolExecutionErrorHandler toolExecutionErrorHandler;
+
     boolean compensateOnError;
 
     java.util.function.Function<InternalAgent, Object> agentInstanceFactory;
@@ -150,26 +186,20 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
         this.agentServiceClass = agentServiceClass;
         this.agenticMethod = validateAgentClass(agentServiceClass);
         this.agentReturnType = agenticMethod.getReturnType();
-
         Agent agent = agenticMethod.getAnnotation(Agent.class);
         if (agent == null) {
             throw new IllegalArgumentException("Method " + agenticMethod + " is not annotated with @Agent");
         }
-
         if (configureDeclarativeAgent) {
             configureAgent(agentServiceClass, this);
         }
-
         this.name = !isNullOrBlank(agent.name()) ? agent.name() : agenticMethod.getName();
-
         if (!isNullOrBlank(agent.description())) {
             this.description = agent.description();
         } else if (!isNullOrBlank(agent.value())) {
             this.description = agent.value();
         }
-
         this.outputKey = AgentUtil.outputKey(agent.outputKey(), agent.typedOutputKey());
-
         this.async = agent.async();
         this.optional = agent.optional();
         this.compensateOnError = agent.compensateOnError();
@@ -186,12 +216,9 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
         if (this.arguments == null) {
             this.arguments = argumentsFromMethod(agenticMethod, defaultValues);
         }
-
         AiServiceContext context = AiServiceContext.create(agentServiceClass);
         AiServices<T> aiServices = AiServices.builder(context);
-
         configureChatModel(aiServices);
-
         if (chatMemory != null) {
             aiServices.chatMemory(chatMemory);
         }
@@ -213,79 +240,52 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
         if (systemMessageTransformer != null) {
             aiServices.systemMessageTransformer(systemMessageTransformer);
         }
-
         setupGuardrails(aiServices);
         setupTools(aiServices);
-
-        boolean agenticScopeDependent =
-                contextProvider != null || (contextProvidingAgents != null && contextProvidingAgents.length > 0);
+        boolean agenticScopeDependent = contextProvider != null || (contextProvidingAgents != null && contextProvidingAgents.length > 0);
         if (agenticScope != null && agenticScopeDependent) {
             if (contextProvider != null) {
-                aiServices.chatRequestTransformer(
-                        new Context.AgenticScopeContextGenerator(agenticScope, contextProvider));
+                aiServices.chatRequestTransformer(new Context.AgenticScopeContextGenerator(agenticScope, contextProvider));
             } else {
                 if (model != null || streamingChatModel != null) {
-                    aiServices.chatRequestTransformer(Context.Summarizer.withSummarizer(
-                            agenticScope, contextSummarizer(), contextProvidingAgents));
+                    aiServices.chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer(), contextProvidingAgents));
                 } else if (chatModelProvider != null) {
-                    aiServices.chatRequestTransformer(Context.Summarizer.withChatModelProvider(
-                            agenticScope, chatModelProvider, contextProvidingAgents));
+                    aiServices.chatRequestTransformer(Context.Summarizer.withChatModelProvider(agenticScope, chatModelProvider, contextProvidingAgents));
                 } else if (streamingChatModelProvider != null) {
-                    aiServices.chatRequestTransformer(Context.Summarizer.withStreamingChatModelProvider(
-                            agenticScope, streamingChatModelProvider, contextProvidingAgents));
+                    aiServices.chatRequestTransformer(Context.Summarizer.withStreamingChatModelProvider(agenticScope, streamingChatModelProvider, contextProvidingAgents));
                 }
             }
         }
-
         AgentMonitor monitor = listenerOfType(agentListener, AgentMonitor.class);
         if (MonitoredAgent.class.isAssignableFrom(agentServiceClass) && monitor == null) {
             monitor = new AgentMonitor();
             listener(monitor);
         }
-
         build(agenticScope, context, aiServices);
-
-        AgentInvocationHandler handler =
-                new AgentInvocationHandler(context, aiServices.build(), this, agenticScopeDependent);
-
+        AgentInvocationHandler handler = new AgentInvocationHandler(context, aiServices.build(), this, agenticScopeDependent);
         AgentInstance agent;
         if (agentInstanceFactory != null) {
             agent = (AgentInstance) agentInstanceFactory.apply(handler);
         } else {
-            agent = (AgentInstance) Proxy.newProxyInstance(
-                    agentServiceClass.getClassLoader(), interfacesToImplement(agentServiceClass), handler);
+            agent = (AgentInstance) Proxy.newProxyInstance(agentServiceClass.getClassLoader(), interfacesToImplement(agentServiceClass), handler);
         }
-
         aiServices.registerListener((AiServiceResponseReceivedListener) agent);
-
         if (monitor != null) {
             monitor.setRootAgent(agent);
         }
-
         if (agentListener != null) {
-            aiServices.beforeToolExecution(beforeToolExecution ->
-                    agentListener.beforeAgentToolExecution(new BeforeAgentToolExecution(agent, beforeToolExecution)));
-            aiServices.afterToolExecution(afterToolExecution ->
-                    agentListener.afterAgentToolExecution(new AfterAgentToolExecution(agent, afterToolExecution)));
+            aiServices.beforeToolExecution(beforeToolExecution -> agentListener.beforeAgentToolExecution(new BeforeAgentToolExecution(agent, beforeToolExecution)));
+            aiServices.afterToolExecution(afterToolExecution -> agentListener.afterAgentToolExecution(new AfterAgentToolExecution(agent, afterToolExecution)));
         }
-
         if (compensateOnError) {
             ((InternalAgent) agent).enableCrossAgentCompensation();
         }
-
         return (T) agent;
     }
 
     @SuppressWarnings("rawtypes")
     public static Class[] interfacesToImplement(Class clazz) {
-        return new Class<?>[] {
-            clazz,
-            InternalAgent.class,
-            AgenticScopeOwner.class,
-            ChatMemoryAccess.class,
-            ChatMessagesAccess.class,
-            AiServiceResponseReceivedListener.class
-        };
+        return new Class<?>[] { clazz, InternalAgent.class, AgenticScopeOwner.class, ChatMemoryAccess.class, ChatMessagesAccess.class, AiServiceResponseReceivedListener.class };
     }
 
     private void configureChatModel(AiServices<T> aiServices) {
@@ -304,26 +304,20 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
     }
 
     private void validateChatModel() {
-        int modelConfigCount = (model != null ? 1 : 0)
-                + (streamingChatModel != null ? 1 : 0)
-                + (chatModelProvider != null ? 1 : 0)
-                + (streamingChatModelProvider != null ? 1 : 0);
+        int modelConfigCount = (model != null ? 1 : 0) + (streamingChatModel != null ? 1 : 0) + (chatModelProvider != null ? 1 : 0) + (streamingChatModelProvider != null ? 1 : 0);
         if (modelConfigCount != 1) {
-            throw new AgenticSystemConfigurationException(
-                    "One and only one of chatModel, streamingChatModel, or their Function variants can be set for agent '"
-                            + this.name + "'.");
+            throw new AgenticSystemConfigurationException("One and only one of chatModel, streamingChatModel, or their Function variants can be set for agent '" + this.name + "'.");
         }
     }
 
-    protected void build(DefaultAgenticScope agenticScope, AiServiceContext context, AiServices<T> aiServices) {}
+    protected void build(DefaultAgenticScope agenticScope, AiServiceContext context, AiServices<T> aiServices) {
+    }
 
     private synchronized Context.ContextSummarizer contextSummarizer() {
         Object summarizerModel = model != null ? model : streamingChatModel;
         if (contextSummarizer == null || contextSummarizerModel != summarizerModel) {
             contextSummarizerModel = summarizerModel;
-            contextSummarizer = model != null
-                    ? Context.createSummarizer(model)
-                    : Context.createStreamingSummarizer(streamingChatModel);
+            contextSummarizer = model != null ? Context.createSummarizer(model) : Context.createStreamingSummarizer(streamingChatModel);
         }
         return contextSummarizer;
     }
@@ -536,8 +530,10 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
         return (B) this;
     }
 
-    /** @deprecated Use {@link #maxToolCallingRoundTrips(int)} instead. */
-    @Deprecated(since = "1.15.0")
+    /**
+     * @deprecated Use {@link #maxToolCallingRoundTrips(int)} instead.
+     */
+    @Deprecated
     public B maxSequentialToolsInvocations(int maxSequentialToolsInvocations) {
         return maxToolCallingRoundTrips(maxSequentialToolsInvocations);
     }
@@ -548,8 +544,7 @@ public class AgentBuilder<T, B extends AgentBuilder<T, ?>> {
      * @param hallucinatedToolNameStrategy the function that produces a result message for the hallucinated tool call
      * @return {@code this}
      */
-    public B hallucinatedToolNameStrategy(
-            Function<ToolExecutionRequest, ToolExecutionResultMessage> hallucinatedToolNameStrategy) {
+    public B hallucinatedToolNameStrategy(Function<ToolExecutionRequest, ToolExecutionResultMessage> hallucinatedToolNameStrategy) {
         this.hallucinatedToolNameStrategy = hallucinatedToolNameStrategy;
         return (B) this;
     }

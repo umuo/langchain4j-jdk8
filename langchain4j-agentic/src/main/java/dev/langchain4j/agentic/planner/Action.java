@@ -2,7 +2,6 @@ package dev.langchain4j.agentic.planner;
 
 import dev.langchain4j.agentic.internal.AgentExecutor;
 import java.util.List;
-import java.util.stream.Stream;
 
 /**
  * Represents the outcome of a {@link Planner} decision. Each action tells the execution loop
@@ -92,7 +91,15 @@ public interface Action {
         private final List<AgentExecutor> agents;
 
         public AgentCallAction(AgentInstance... agents) {
-            this(Stream.of(agents).map(AgentExecutor.class::cast).toList());
+            this(toExecutors(agents));
+        }
+
+        private static List<AgentExecutor> toExecutors(AgentInstance[] agents) {
+            List<AgentExecutor> result = new java.util.ArrayList<>();
+            for (AgentInstance agent : agents) {
+                result.add(AgentExecutor.class.cast(agent));
+            }
+            return java.util.Collections.unmodifiableList(result);
         }
 
         public AgentCallAction(List<AgentExecutor> agents) {
@@ -119,6 +126,7 @@ public interface Action {
      * Used by planners that need to wait for an external event before deciding the next step.
      */
     class NoOpAction extends AgentCallAction {
+
         static final Action INSTANCE = new NoOpAction();
     }
 

@@ -4,7 +4,7 @@ import dev.langchain4j.agentic.internal.ActivationConditions;
 import dev.langchain4j.agentic.scope.AgentInvocation;
 import dev.langchain4j.agentic.scope.AgenticScope;
 
-public record PlanningContext(AgenticScope agenticScope, AgentInvocation previousAgentInvocation) {
+public final class PlanningContext {
 
     /**
      * Tells whether the given subagent would run if it were invoked now, according to its
@@ -22,5 +22,35 @@ public record PlanningContext(AgenticScope agenticScope, AgentInvocation previou
      */
     public boolean isActive(AgentInstance agent) {
         return ActivationConditions.isActive(agent, agenticScope);
+    }
+
+    private final AgenticScope agenticScope;
+
+    public AgenticScope agenticScope() {
+        return agenticScope;
+    }
+
+    private final AgentInvocation previousAgentInvocation;
+
+    public AgentInvocation previousAgentInvocation() {
+        return previousAgentInvocation;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public PlanningContext(@com.fasterxml.jackson.annotation.JsonProperty("agenticScope") AgenticScope agenticScope, @com.fasterxml.jackson.annotation.JsonProperty("previousAgentInvocation") AgentInvocation previousAgentInvocation) {
+        this.agenticScope = agenticScope;
+        this.previousAgentInvocation = previousAgentInvocation;
+    }
+
+    public final boolean equals(Object obj) {
+        return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(agenticScope, ((PlanningContext) obj).agenticScope) && java.util.Objects.equals(previousAgentInvocation, ((PlanningContext) obj).previousAgentInvocation));
+    }
+
+    public final int hashCode() {
+        return (31 * (31 * 0 + java.util.Objects.hashCode(agenticScope)) + java.util.Objects.hashCode(previousAgentInvocation));
+    }
+
+    public final String toString() {
+        return "PlanningContext[" + "agenticScope=" + agenticScope + ", previousAgentInvocation=" + previousAgentInvocation + "]";
     }
 }

@@ -124,7 +124,7 @@ public class AgenticScopeSerializer {
      * <p>
      * This is equivalent to calling:
      * <pre>{@code
-     * AgenticScopeSerializer.allowDeserializationPackagePrefix(type.getPackageName() + ".");
+     * AgenticScopeSerializer.allowDeserializationPackagePrefix(dev.langchain4j.agentic.internal.AgenticJdk8.packageName(type) + ".");
      * AgenticScopeSerializer.withClassLoader(type.getClassLoader());
      * }</pre>
      * <p>
@@ -144,7 +144,7 @@ public class AgenticScopeSerializer {
      * @see #withClassLoader(ClassLoader)
      */
     public static void registerForDeserializationPackageOf(Class<?> type) {
-        allowDeserializationPackagePrefix(type.getPackageName() + ".");
+        allowDeserializationPackagePrefix(dev.langchain4j.agentic.internal.AgenticJdk8.packageName(type) + ".");
         withClassLoader(type.getClassLoader());
     }
 

@@ -28,7 +28,8 @@ package dev.langchain4j.agentic.observability;
  * return A2AStreamingClientListenerResult.stopWithResponse("Task accepted");
  * </pre>
  */
-public record A2AStreamingClientListenerResult(boolean stop, String response, boolean withCurrentArtifacts) {
+public final class A2AStreamingClientListenerResult {
+
     /**
      * Creates a result that signals the streaming process should continue.
      *
@@ -61,5 +62,42 @@ public record A2AStreamingClientListenerResult(boolean stop, String response, bo
      */
     public static A2AStreamingClientListenerResult stopWithCurrentArtifacts() {
         return new A2AStreamingClientListenerResult(true, null, true);
+    }
+
+    private final boolean stop;
+
+    public boolean stop() {
+        return stop;
+    }
+
+    private final String response;
+
+    public String response() {
+        return response;
+    }
+
+    private final boolean withCurrentArtifacts;
+
+    public boolean withCurrentArtifacts() {
+        return withCurrentArtifacts;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public A2AStreamingClientListenerResult(@com.fasterxml.jackson.annotation.JsonProperty("stop") boolean stop, @com.fasterxml.jackson.annotation.JsonProperty("response") String response, @com.fasterxml.jackson.annotation.JsonProperty("withCurrentArtifacts") boolean withCurrentArtifacts) {
+        this.stop = stop;
+        this.response = response;
+        this.withCurrentArtifacts = withCurrentArtifacts;
+    }
+
+    public final boolean equals(Object obj) {
+        return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(stop, ((A2AStreamingClientListenerResult) obj).stop) && java.util.Objects.equals(response, ((A2AStreamingClientListenerResult) obj).response) && java.util.Objects.equals(withCurrentArtifacts, ((A2AStreamingClientListenerResult) obj).withCurrentArtifacts));
+    }
+
+    public final int hashCode() {
+        return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(stop)) + java.util.Objects.hashCode(response)) + java.util.Objects.hashCode(withCurrentArtifacts));
+    }
+
+    public final String toString() {
+        return "A2AStreamingClientListenerResult[" + "stop=" + stop + ", response=" + response + ", withCurrentArtifacts=" + withCurrentArtifacts + "]";
     }
 }

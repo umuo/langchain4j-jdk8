@@ -19,7 +19,7 @@ assert actual == expected, (expected - actual, actual - expected)
 lines = ['# Agentic 移植前审计（WIP）', '',
          f"固定基线 `{data['baseline']}` 的四模块声明级快照；{len(actual)} 个生产 Java 文件全部成功解析并与 Git 树逐文件核对。",
          '机器清单见 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)，可用 `./jdk8/audit-agentic.sh` 从固定 Git 对象重建，不读取已改造源码作为基线。', '',
-         '**尚未实现或验收 Agentic。** 声明、语言障碍候选及依赖声明不代替功能；继承/合成/bridge API、完整行为与有效传递依赖仍待编译及运行验证。record 隐式组件访问器/构造器由组件列表记录，不算入显式成员数量。', '',
+         '**这是固定基线声明快照，不是当前移植状态。** 当前 WIP 改造与验证见 [AGENTIC-PORT.md](AGENTIC-PORT.md) 和 PROGRESS.md；全部 Agentic 尚未完成验收。record 隐式组件访问器/构造器由组件列表记录，不算入显式成员数量。', '',
          '| 模块 | Java 文件 | 声明类型（含内部） | 显式候选成员 | 实现/功能验收 |', '|---|---:|---:|---:|---|']
 for module in data['modules']:
     files = module['files']
@@ -50,7 +50,7 @@ lines += ['', '## 全部生产包', '', '| 模块/包 | 文件数 |', '|---|---:
 for module in data['modules']:
     for package, count in sorted(collections.Counter(f['package'] for f in module['files']).items()):
         lines.append(f"| `{module['module']}` / `{package}` | {count} |")
-lines += ['', '## 功能验收清单（全部待实现/验证）', '',
+lines += ['', '## 完整功能验收清单（状态见 AGENTIC-PORT.md）', '',
           '- 基础 Agent、typed/untyped/non-AI/action 构建器、声明式 AgenticServices 与注解代理、参数与返回值映射、配置/钩子。',
           '- 顺序、条件、并行、parallel mapper、循环工作流；并行状态隔离、汇合、循环退出和失败传播。',
           '- Human-in-the-loop、planner-based 与 supervisor 系统、路由/规划/响应策略，不能用简单顺序工作流替代。',

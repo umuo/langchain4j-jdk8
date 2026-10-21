@@ -3,7 +3,6 @@ package dev.langchain4j.agentic.scope;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyDefaultValue;
 import static dev.langchain4j.agentic.internal.AgentUtil.keyName;
-
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -50,29 +49,65 @@ public class DefaultAgenticScope implements AgenticScope {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultAgenticScope.class);
 
     @JsonInclude(NON_NULL)
-    public record AgentMessage(
-            @JsonProperty("agentName") String agentName,
-            @JsonProperty("agentId") String agentId,
-            @JsonProperty("message") ChatMessage message) {}
+    public final static class AgentMessage {
+
+        private final String agentName;
+
+        public String agentName() {
+            return agentName;
+        }
+
+        private final String agentId;
+
+        public String agentId() {
+            return agentId;
+        }
+
+        private final ChatMessage message;
+
+        public ChatMessage message() {
+            return message;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public AgentMessage(@JsonProperty("agentName") String agentName, @JsonProperty("agentId") String agentId, @JsonProperty("message") ChatMessage message) {
+            this.agentName = agentName;
+            this.agentId = agentId;
+            this.message = message;
+        }
+
+        public final boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(agentName, ((AgentMessage) obj).agentName) && java.util.Objects.equals(agentId, ((AgentMessage) obj).agentId) && java.util.Objects.equals(message, ((AgentMessage) obj).message));
+        }
+
+        public final int hashCode() {
+            return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(agentName)) + java.util.Objects.hashCode(agentId)) + java.util.Objects.hashCode(message));
+        }
+
+        public final String toString() {
+            return "AgentMessage[" + "agentName=" + agentName + ", agentId=" + agentId + ", message=" + message + "]";
+        }
+    }
 
     private final Object memoryId;
+
     private final Map<String, Object> state = new ConcurrentHashMap<>();
+
     private final List<AgentInvocation> agentInvocations = Collections.synchronizedList(new ArrayList<>());
+
     private final List<AgentMessage> context = Collections.synchronizedList(new ArrayList<>());
 
     private final transient Map<String, Object> agents = new ConcurrentHashMap<>();
-    private final transient Map<String, Object> executionContexts = new ConcurrentHashMap<>();
-    private final transient List<CompensableExecution> compensableExecutions =
-            Collections.synchronizedList(new ArrayList<>());
 
-    private static final Function<ErrorContext, ErrorRecoveryResult> DEFAULT_ERROR_RECOVERY =
-            errorContext -> ErrorRecoveryResult.throwException();
+    private final transient Map<String, Object> executionContexts = new ConcurrentHashMap<>();
+
+    private final transient List<CompensableExecution> compensableExecutions = Collections.synchronizedList(new ArrayList<>());
+
+    private static final Function<ErrorContext, ErrorRecoveryResult> DEFAULT_ERROR_RECOVERY = errorContext -> ErrorRecoveryResult.throwException();
 
     private transient Function<ErrorContext, ErrorRecoveryResult> errorHandler = DEFAULT_ERROR_RECOVERY;
 
-    private static Predicate<Object> serializableStateFilter = Predicate.not(DefaultAgenticScope::isProxy)
-            .and(Predicate.not(DefaultAgenticScope::isTokenStream))
-            .and(Predicate.not(DefaultAgenticScope::isFuture));
+    private static Predicate<Object> serializableStateFilter = ((Predicate<Object>) DefaultAgenticScope::isProxy).negate().and(((Predicate<Object>) DefaultAgenticScope::isTokenStream).negate()).and(((Predicate<Object>) DefaultAgenticScope::isFuture).negate());
 
     private static boolean isProxy(Object obj) {
         return Proxy.isProxyClass(obj.getClass());
@@ -87,9 +122,8 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     public enum Kind {
-        EPHEMERAL,
-        REGISTERED,
-        PERSISTENT
+
+        EPHEMERAL, REGISTERED, PERSISTENT
     }
 
     private final Kind kind;
@@ -157,8 +191,8 @@ public class DefaultAgenticScope implements AgenticScope {
             } else {
                 old = state.put(key, value);
             }
-            if (old instanceof DeferredResponse<?> pending && !pending.isDone()) {
-                ((DeferredResponse<Object>) pending).complete(value);
+            if (old instanceof DeferredResponse<?> && !((DeferredResponse<?>) old).isDone()) {
+                ((DeferredResponse<Object>) ((DeferredResponse<?>) old)).complete(value);
             }
         });
     }
@@ -191,7 +225,7 @@ public class DefaultAgenticScope implements AgenticScope {
         if (value == null) {
             return false;
         }
-        return value instanceof String s ? !s.isBlank() : true;
+        return value instanceof String ? !dev.langchain4j.internal.Jdk8.isBlank(((String) value)) : true;
     }
 
     @Override
@@ -215,8 +249,8 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     private Object readStateBlocking(String key, Object state) {
-        if (state instanceof DelayedResponse asyncResponse) {
-            state = asyncResponse.blockingGet();
+        if (state instanceof DelayedResponse) {
+            state = ((DelayedResponse) state).blockingGet();
             writeState(key, state);
         }
         return state;
@@ -238,23 +272,22 @@ public class DefaultAgenticScope implements AgenticScope {
         });
     }
 
-    public void rootCallStarted(AgenticScopeRegistry registry) {}
+    public void rootCallStarted(AgenticScopeRegistry registry) {
+    }
 
     public void rootCallEnded(AgenticScopeRegistry registry, AgentListener agentListener) {
         // ensure that all pending async operations are completed before ending the root call
-        Map.copyOf(state).forEach((key, value) -> {
-            if (value instanceof DelayedResponse<?> pending) {
-                writeState(key, pending.blockingGet());
+        dev.langchain4j.internal.Jdk8.copyMap(state).forEach((key, value) -> {
+            if (value instanceof DelayedResponse<?>) {
+                writeState(key, ((DelayedResponse<?>) value).blockingGet());
             }
         });
-
         if (kind == Kind.EPHEMERAL) {
             // Ephemeral agenticScope are for single-use and can be evicted immediately
             registry.evict(memoryId, agentListener);
         } else if (kind == Kind.PERSISTENT) {
             flush(registry);
         }
-
         compensableExecutions.clear();
     }
 
@@ -268,22 +301,15 @@ public class DefaultAgenticScope implements AgenticScope {
     }
 
     private void registerContext(AgentInvocation agentInvocation, Object agent) {
-        ChatMemory chatMemory =
-                agent instanceof ChatMemoryAccess agentWithMemory ? agentWithMemory.getChatMemory(memoryId) : null;
+        ChatMemory chatMemory = agent instanceof ChatMemoryAccess ? ((ChatMemoryAccess) agent).getChatMemory(memoryId) : null;
         if (chatMemory != null) {
             registerContextFromChatMemory(agentInvocation, chatMemory);
-        } else if (agentInvocation.output() != null && agent instanceof ChatMessagesAccess chatMessagesAccess) {
-            context.add(new AgentMessage(
-                    agentInvocation.agentName(),
-                    agentInvocation.agentId(),
-                    chatMessagesAccess.lastUserMessage(memoryId())));
-            context.add(new AgentMessage(
-                    agentInvocation.agentName(),
-                    agentInvocation.agentId(),
-                    AiMessage.aiMessage(agentInvocation.output().toString())));
+        } else if (agentInvocation.output() != null && agent instanceof ChatMessagesAccess) {
+            context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), ((ChatMessagesAccess) agent).lastUserMessage(memoryId())));
+            context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), AiMessage.aiMessage(agentInvocation.output().toString())));
         }
-        if (agent instanceof ChatMessagesAccess chatMessagesAccess) {
-            chatMessagesAccess.removeLastResponseEvent(memoryId());
+        if (agent instanceof ChatMessagesAccess) {
+            ((ChatMessagesAccess) agent).removeLastResponseEvent(memoryId());
         }
     }
 
@@ -292,18 +318,17 @@ public class DefaultAgenticScope implements AgenticScope {
         if (Utils.isNullOrEmpty(agentMessages)) {
             return;
         }
-
         ChatMessage lastMessage = agentMessages.get(agentMessages.size() - 1);
-        if (!(lastMessage instanceof AiMessage aiMessage)) {
+        if (!(lastMessage instanceof AiMessage)) {
             return;
         }
-
         for (int i = agentMessages.size() - 1; i >= 0; i--) {
-            if (agentMessages.get(i) instanceof UserMessage userMessage) {
+            ChatMessage candidate = agentMessages.get(i);
+            if (candidate instanceof UserMessage) {
                 // Only add to the agenticScope's context the last UserMessage ...
-                context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), userMessage));
+                context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), ((UserMessage) candidate)));
                 // ... and last AiMessage response, all other messages are local to the invoked agent internals
-                context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), aiMessage));
+                context.add(new AgentMessage(agentInvocation.agentName(), agentInvocation.agentId(), ((AiMessage) lastMessage)));
                 return;
             }
         }
@@ -315,20 +340,13 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public String contextAsConversation(Object... agents) {
-        Predicate<String> agentFilter = agents != null && agents.length > 0
-                ? Arrays.stream(agents)
-                        .filter(AgentInstance.class::isInstance)
-                        .map(AgentInstance.class::cast)
-                        .map(AgentInstance::name)
-                        .toList()::contains
-                : agent -> true;
+        Predicate<String> agentFilter = agents != null && agents.length > 0 ? Arrays.stream(agents).filter(AgentInstance.class::isInstance).map(AgentInstance.class::cast).map(AgentInstance::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList))::contains : agent -> true;
         return contextAsConversation(agentFilter);
     }
 
     @Override
     public String contextAsConversation(String... agentNames) {
-        Predicate<String> agentFilter =
-                agentNames != null && agentNames.length > 0 ? List.of(agentNames)::contains : agent -> true;
+        Predicate<String> agentFilter = agentNames != null && agentNames.length > 0 ? dev.langchain4j.internal.Jdk8.list(agentNames)::contains : agent -> true;
         return contextAsConversation(agentFilter);
     }
 
@@ -339,16 +357,12 @@ public class DefaultAgenticScope implements AgenticScope {
                 continue;
             }
             ChatMessage message = agentMessage.message();
-            if (message instanceof UserMessage userMessage) {
-                sb.append("User: \"").append(userMessage.singleText()).append("\"\n");
-            } else if (message instanceof AiMessage aiMessage) {
-                sb.append(agentMessage.agentName())
-                        .append(" agent: \"")
-                        .append(aiMessage.text())
-                        .append("\"\n");
+            if (message instanceof UserMessage) {
+                sb.append("User: \"").append(((UserMessage) message).singleText()).append("\"\n");
+            } else if (message instanceof AiMessage) {
+                sb.append(agentMessage.agentName()).append(" agent: \"").append(((AiMessage) message).text()).append("\"\n");
             }
         }
-
         String contextAsConversation = sb.toString();
         LOG.trace("AgenticScope context as conversation: '{}'", contextAsConversation);
         return contextAsConversation;
@@ -361,25 +375,21 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public List<AgentInvocation> agentInvocations(String agentName) {
-        return agentInvocations.stream()
-                .filter(inv -> inv.agentName().equals(agentName))
-                .toList();
+        return agentInvocations.stream().filter(inv -> inv.agentName().equals(agentName)).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     @Override
     public List<AgentInvocation> agentInvocations(Class<?> agentType) {
-        return agentInvocations.stream()
-                .filter(inv -> inv.agentType().equals(agentType))
-                .toList();
+        return agentInvocations.stream().filter(inv -> inv.agentType().equals(agentType)).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     @Override
     public String toString() {
-        StringBuilder sb =
-                new StringBuilder("AgenticScope{memoryId='").append(memoryId).append("', state={");
+        StringBuilder sb = new StringBuilder("AgenticScope{memoryId='").append(memoryId).append("', state={");
         boolean first = true;
         for (Map.Entry<String, Object> e : state.entrySet()) {
-            if (!first) sb.append(", ");
+            if (!first)
+                sb.append(", ");
             first = false;
             sb.append(e.getKey()).append('=');
             // Guard against circular references (e.g. ResultWithAgenticScope holding this scope)
@@ -417,18 +427,44 @@ public class DefaultAgenticScope implements AgenticScope {
         return errorHandler.apply(new ErrorContext(agentName, this, exception));
     }
 
-    private record CompensableExecution(ToolExecution toolExecution, Consumer<ToolExecution> compensatingAction) {
+    private final static class CompensableExecution {
 
         public void compensate() {
             try {
                 compensatingAction.accept(toolExecution());
             } catch (Exception e) {
-                LOG.warn(
-                        "Cross-agent compensating action failed for tool '{}': {}",
-                        toolExecution().request().name(),
-                        e.getMessage(),
-                        e);
+                LOG.warn("Cross-agent compensating action failed for tool '{}': {}", toolExecution().request().name(), e.getMessage(), e);
             }
+        }
+
+        private final ToolExecution toolExecution;
+
+        public ToolExecution toolExecution() {
+            return toolExecution;
+        }
+
+        private final Consumer<ToolExecution> compensatingAction;
+
+        public Consumer<ToolExecution> compensatingAction() {
+            return compensatingAction;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public CompensableExecution(@com.fasterxml.jackson.annotation.JsonProperty("toolExecution") ToolExecution toolExecution, @com.fasterxml.jackson.annotation.JsonProperty("compensatingAction") Consumer<ToolExecution> compensatingAction) {
+            this.toolExecution = toolExecution;
+            this.compensatingAction = compensatingAction;
+        }
+
+        public final boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(toolExecution, ((CompensableExecution) obj).toolExecution) && java.util.Objects.equals(compensatingAction, ((CompensableExecution) obj).compensatingAction));
+        }
+
+        public final int hashCode() {
+            return (31 * (31 * 0 + java.util.Objects.hashCode(toolExecution)) + java.util.Objects.hashCode(compensatingAction));
+        }
+
+        public final String toString() {
+            return "CompensableExecution[" + "toolExecution=" + toolExecution + ", compensatingAction=" + compensatingAction + "]";
         }
     }
 
@@ -442,7 +478,6 @@ public class DefaultAgenticScope implements AgenticScope {
             snapshot = new ArrayList<>(compensableExecutions);
             compensableExecutions.clear();
         }
-
         for (int i = snapshot.size() - 1; i >= 0; i--) {
             snapshot.get(i).compensate();
         }
@@ -465,8 +500,12 @@ public class DefaultAgenticScope implements AgenticScope {
     @SuppressWarnings("unchecked")
     public boolean completePendingResponse(String responseId, Object value) {
         for (Map.Entry<String, Object> entry : state.entrySet()) {
-            if (entry.getValue() instanceof DeferredResponse<?> deferred
-                    && deferred.responseId().equals(responseId)) {
+            Object candidate = entry.getValue();
+            if (candidate instanceof DeferredResponse<?>) {
+                DeferredResponse<?> deferred = (DeferredResponse<?>) candidate;
+                if (!deferred.responseId().equals(responseId)) {
+                    continue;
+                }
                 boolean completed = ((DeferredResponse<Object>) deferred).complete(value);
                 if (completed) {
                     writeState(entry.getKey(), value);
@@ -479,18 +518,15 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Override
     public Set<String> pendingResponseIds() {
-        return state.values().stream()
-                .filter(DeferredResponse.class::isInstance)
-                .map(DeferredResponse.class::cast)
-                .filter(p -> !p.isDone())
-                .map(DeferredResponse::responseId)
-                .collect(Collectors.toSet());
+        return state.values().stream().filter(DeferredResponse.class::isInstance).map(DeferredResponse.class::cast).filter(p -> !p.isDone()).map(DeferredResponse::responseId).collect(Collectors.toSet());
     }
 
     @Override
     public void writeExecutionContext(final String key, final Object context) {
-        if (key == null) throw new IllegalArgumentException("key cannot be null");
-        if (context == null) throw new IllegalArgumentException("context cannot be null");
+        if (key == null)
+            throw new IllegalArgumentException("key cannot be null");
+        if (context == null)
+            throw new IllegalArgumentException("context cannot be null");
         this.executionContexts.put(key, context);
     }
 

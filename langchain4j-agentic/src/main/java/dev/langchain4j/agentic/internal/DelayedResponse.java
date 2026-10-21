@@ -26,11 +26,11 @@ public interface DelayedResponse<T> {
             return future.join();
         } catch (CompletionException e) {
             Throwable cause = e.getCause();
-            if (cause instanceof RuntimeException runtimeException) {
-                throw runtimeException;
+            if (cause instanceof RuntimeException) {
+                throw ((RuntimeException) cause);
             }
-            if (cause instanceof Error error) {
-                throw error;
+            if (cause instanceof Error) {
+                throw ((Error) cause);
             }
             throw e;
         }

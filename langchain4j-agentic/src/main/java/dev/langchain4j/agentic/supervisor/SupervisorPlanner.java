@@ -1,7 +1,6 @@
 package dev.langchain4j.agentic.supervisor;
 
 import static java.util.stream.Collectors.toMap;
-
 import dev.langchain4j.agentic.internal.Context;
 import dev.langchain4j.agentic.internal.SuspendedResponse;
 import dev.langchain4j.agentic.planner.Action;
@@ -41,22 +40,27 @@ import org.slf4j.LoggerFactory;
 public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(SupervisorPlanner.class);
+
     public static final String SUPERVISOR_CONTEXT_KEY = "supervisorContext";
-    public static final String SUPERVISOR_CONTEXT_PREFIX = "Use the following supervisor context to better understand "
-            + "constraints, policies or preferences when creating the plan ";
+
+    public static final String SUPERVISOR_CONTEXT_PREFIX = "Use the following supervisor context to better understand " + "constraints, policies or preferences when creating the plan ";
 
     private final ChatModel chatModel;
+
     private final Context.ContextSummarizer contextSummarizer;
 
     private final ChatMemoryProvider chatMemoryProvider;
 
     private final int maxAgentsInvocations;
+
     private int loopCount = 0;
+
     private String lastResponse = "";
 
     private ResponseAgent responseAgent;
 
     private final SupervisorContextStrategy contextStrategy;
+
     private final SupervisorResponseStrategy responseStrategy;
 
     private final Function<AgenticScope, String> requestGenerator;
@@ -66,6 +70,7 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
     private final Function<AgenticScope, Object> output;
 
     private Map<String, AgentInstance> agents;
+
     private List<AgentInstance> subagents;
 
     private String request;
@@ -78,19 +83,9 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
      *         strategy other than {@link SupervisorContextStrategy#CHAT_MEMORY}) and
      *         {@code contextSummarizer} is {@code null}
      */
-    SupervisorPlanner(
-            ChatModel chatModel,
-            ChatMemoryProvider chatMemoryProvider,
-            int maxAgentsInvocations,
-            SupervisorContextStrategy contextStrategy,
-            SupervisorResponseStrategy responseStrategy,
-            Function<AgenticScope, String> requestGenerator,
-            String outputKey,
-            Function<AgenticScope, Object> output,
-            Context.ContextSummarizer contextSummarizer) {
+    SupervisorPlanner(ChatModel chatModel, ChatMemoryProvider chatMemoryProvider, int maxAgentsInvocations, SupervisorContextStrategy contextStrategy, SupervisorResponseStrategy responseStrategy, Function<AgenticScope, String> requestGenerator, String outputKey, Function<AgenticScope, Object> output, Context.ContextSummarizer contextSummarizer) {
         if (contextStrategy != SupervisorContextStrategy.CHAT_MEMORY && contextSummarizer == null) {
-            throw new IllegalConfigurationException(
-                    "A ContextSummarizer is required for the " + contextStrategy + " context strategy.");
+            throw new IllegalConfigurationException("A ContextSummarizer is required for the " + contextStrategy + " context strategy.");
         }
         this.chatModel = chatModel;
         this.contextSummarizer = contextSummarizer;
@@ -105,16 +100,11 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     @Override
     public void init(final InitPlanningContext initPlanningContext) {
-        this.agents =
-                initPlanningContext.subagents().stream().collect(toMap(AgentInstance::agentId, Function.identity()));
+        this.agents = initPlanningContext.subagents().stream().collect(toMap(AgentInstance::agentId, Function.identity()));
         this.subagents = initPlanningContext.subagents();
-
-        this.request = requestGenerator != null
-                ? requestGenerator.apply(initPlanningContext.agenticScope())
-                : initPlanningContext.agenticScope().readState("request", "");
+        this.request = requestGenerator != null ? requestGenerator.apply(initPlanningContext.agenticScope()) : initPlanningContext.agenticScope().readState("request", "");
         if (responseStrategy == SupervisorResponseStrategy.SCORED) {
-            this.responseAgent =
-                    AiServices.builder(ResponseAgent.class).chatModel(chatModel).build();
+            this.responseAgent = AiServices.builder(ResponseAgent.class).chatModel(chatModel).build();
         }
     }
 
@@ -127,40 +117,30 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
         if (hasIncompleteSuspendedResponse(planningContext.agenticScope())) {
             return suspend();
         }
-
         dev.langchain4j.agentic.scope.AgentInvocation previousInvocation = planningContext.previousAgentInvocation();
         if (previousInvocation != null && !previousInvocation.skipped()) {
-            lastResponse = previousInvocation.output() == null
-                    ? ""
-                    : previousInvocation.output().toString();
+            lastResponse = previousInvocation.output() == null ? "" : previousInvocation.output().toString();
         }
-
         if (loopCount++ >= maxAgentsInvocations) {
             return doneAction(planningContext.agenticScope(), lastResponse, null);
         }
         // a skipped agent produced no response, so the model is told why instead
-        String plannerResponse = previousInvocation != null && previousInvocation.skipped()
-                ? "agent '" + previousInvocation.agentName() + "' was skipped: " + previousInvocation.skipReason()
-                : lastResponse;
+        String plannerResponse = previousInvocation != null && previousInvocation.skipped() ? "agent '" + previousInvocation.agentName() + "' was skipped: " + previousInvocation.skipReason() : lastResponse;
         return nextSubagent(planningContext, plannerResponse, lastResponse);
     }
 
     private static boolean hasIncompleteSuspendedResponse(AgenticScope agenticScope) {
-        return agenticScope.state().values().stream()
-                .anyMatch(v -> v instanceof SuspendedResponse<?> sr && !sr.isDone());
+        return agenticScope.state().values().stream().anyMatch(v -> v instanceof SuspendedResponse<?> && !((SuspendedResponse<?>) v).isDone());
     }
 
     private static String toCard(AgentInstance agent) {
-        List<String> agentArguments = agent.arguments().stream()
-                .filter(a -> !a.name().equals("@MemoryId"))
-                .map(SupervisorPlanner::argumentDescription)
-                .toList();
+        List<String> agentArguments = agent.arguments().stream().filter(a -> !a.name().equals("@MemoryId")).map(SupervisorPlanner::argumentDescription).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
         return "{'" + agent.agentId() + "', '" + agent.description() + "', " + agentArguments + "}";
     }
 
     private static String argumentDescription(AgentArgument arg) {
         String description = arg.description();
-        if (description != null && !description.isBlank()) {
+        if (description != null && !dev.langchain4j.internal.Jdk8.isBlank(description)) {
             return argumentDescription(arg.type(), arg.name()) + " - " + description;
         }
         return argumentDescription(arg.type(), arg.name());
@@ -179,74 +159,50 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
         if (name == null) {
             return "";
         }
-
         return name + ": " + typeDescription(type);
     }
 
     private static String typeDescription(Type type) {
-        if (type instanceof GenericArrayType genericArrayType) {
-            return typeDescription(genericArrayType.getGenericComponentType()) + "[]";
+        if (type instanceof GenericArrayType) {
+            return typeDescription(((GenericArrayType) type).getGenericComponentType()) + "[]";
         }
-
-        if (type instanceof ParameterizedType parameterizedType) {
-            Class<?> rawType = (Class<?>) parameterizedType.getRawType();
+        if (type instanceof ParameterizedType) {
+            Class<?> rawType = (Class<?>) ((ParameterizedType) type).getRawType();
             if (Collection.class.isAssignableFrom(rawType) || Map.class.isAssignableFrom(rawType)) {
-                return typeName(parameterizedType);
+                return typeName(((ParameterizedType) type));
             }
             return objectDescription(rawType);
         }
-
-        if (!(type instanceof Class<?> clazz)) {
+        if (!(type instanceof Class<?>)) {
             return type.getTypeName();
         }
-
-        if (clazz.isArray()) {
-            return typeDescription(clazz.getComponentType()) + "[]";
+        if (((Class<?>) type).isArray()) {
+            return typeDescription(((Class<?>) type).getComponentType()) + "[]";
         }
-
-        if (isSimpleType(clazz)
-                || clazz == Object.class
-                || Collection.class.isAssignableFrom(clazz)
-                || Map.class.isAssignableFrom(clazz)) {
-            return clazz.getSimpleName();
+        if (isSimpleType(((Class<?>) type)) || ((Class<?>) type) == Object.class || Collection.class.isAssignableFrom(((Class<?>) type)) || Map.class.isAssignableFrom(((Class<?>) type))) {
+            return ((Class<?>) type).getSimpleName();
         }
-
-        return objectDescription(clazz);
+        return objectDescription(((Class<?>) type));
     }
 
     private static boolean isSimpleType(Class<?> type) {
-        return type.isPrimitive()
-                || type.isEnum()
-                || type == String.class
-                || type == Boolean.class
-                || Number.class.isAssignableFrom(type);
+        return type.isPrimitive() || type.isEnum() || type == String.class || type == Boolean.class || Number.class.isAssignableFrom(type);
     }
 
     private static String objectDescription(Class<?> type) {
-        String fieldsDescription = type.isRecord()
-                ? Stream.of(type.getDeclaredConstructors()[0].getParameters())
-                        .map(p -> argumentDescription(p.getParameterizedType(), ParameterNameResolver.name(p)))
-                        .collect(Collectors.joining(", "))
-                : fieldsIncludingInherited(type).stream()
-                        .map(f -> argumentDescription(f.getGenericType(), f.getName()))
-                        .collect(Collectors.joining(", "));
-
+        String fieldsDescription = dev.langchain4j.internal.Jdk8.isRecord(type) ? Stream.of(type.getDeclaredConstructors()[0].getParameters()).map(p -> argumentDescription(p.getParameterizedType(), ParameterNameResolver.name(p))).collect(Collectors.joining(", ")) : fieldsIncludingInherited(type).stream().map(f -> argumentDescription(f.getGenericType(), f.getName())).collect(Collectors.joining(", "));
         return "{" + fieldsDescription + "}";
     }
 
     private static String typeName(Type type) {
-        if (type instanceof Class<?> clazz) {
-            return clazz.isArray() ? typeName(clazz.getComponentType()) + "[]" : clazz.getSimpleName();
+        if (type instanceof Class<?>) {
+            return ((Class<?>) type).isArray() ? typeName(((Class<?>) type).getComponentType()) + "[]" : ((Class<?>) type).getSimpleName();
         }
-        if (type instanceof GenericArrayType genericArrayType) {
-            return typeName(genericArrayType.getGenericComponentType()) + "[]";
+        if (type instanceof GenericArrayType) {
+            return typeName(((GenericArrayType) type).getGenericComponentType()) + "[]";
         }
-        if (type instanceof ParameterizedType parameterizedType) {
-            return typeName(parameterizedType.getRawType()) + "<"
-                    + Stream.of(parameterizedType.getActualTypeArguments())
-                            .map(SupervisorPlanner::typeName)
-                            .collect(Collectors.joining(", "))
-                    + ">";
+        if (type instanceof ParameterizedType) {
+            return typeName(((ParameterizedType) type).getRawType()) + "<" + Stream.of(((ParameterizedType) type).getActualTypeArguments()).map(SupervisorPlanner::typeName).collect(Collectors.joining(", ")) + ">";
         }
         return type.getTypeName();
     }
@@ -254,7 +210,7 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
     private static List<Field> fieldsIncludingInherited(Class<?> type) {
         List<Field> fields = new ArrayList<>();
         collectFields(type, fields);
-        return List.copyOf(fields);
+        return dev.langchain4j.internal.Jdk8.copyList(fields);
     }
 
     /**
@@ -277,39 +233,24 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
     private Action nextSubagent(PlanningContext planningContext, String plannerResponse, String lastResponse) {
         AgenticScope agenticScope = planningContext.agenticScope();
         // only the agents that would run now are offered to the model
-        String agentsList = subagents.stream()
-                .filter(planningContext::isActive)
-                .map(SupervisorPlanner::toCard)
-                .collect(Collectors.joining(", "));
-        String supervisorContext = agenticScope.hasState(SUPERVISOR_CONTEXT_KEY)
-                ? SUPERVISOR_CONTEXT_PREFIX + "'" + agenticScope.readState(SUPERVISOR_CONTEXT_KEY, "") + "'."
-                : "";
-
-        AgentInvocation agentInvocation = withAgenticScope(
-                agenticScope,
-                () -> planner(agenticScope)
-                        .plan(agenticScope.memoryId(), agentsList, request, plannerResponse, supervisorContext));
+        String agentsList = subagents.stream().filter(planningContext::isActive).map(SupervisorPlanner::toCard).collect(Collectors.joining(", "));
+        String supervisorContext = agenticScope.hasState(SUPERVISOR_CONTEXT_KEY) ? SUPERVISOR_CONTEXT_PREFIX + "'" + agenticScope.readState(SUPERVISOR_CONTEXT_KEY, "") + "'." : "";
+        AgentInvocation agentInvocation = withAgenticScope(agenticScope, () -> planner(agenticScope).plan(agenticScope.memoryId(), agentsList, request, plannerResponse, supervisorContext));
         LOG.info("Agent Invocation: {}", agentInvocation);
-
         if (agentInvocation.getAgentName() == null) {
             throw new IllegalStateException("No agent name in the planning reply");
         }
-
         if (agentInvocation.getAgentName().equalsIgnoreCase("done")) {
             return doneAction(agenticScope, lastResponse, agentInvocation);
         }
-
         AgentInstance agent = findAgentByName(agentInvocation.getAgentName());
-
-        Map<String, Object> arguments = Objects.requireNonNullElse(agentInvocation.getArguments(), Map.of());
-        arguments.entrySet().stream()
-                .filter(entry -> writeArgumentToScope(agenticScope, agent, entry.getKey(), entry.getValue()))
-                .forEach(entry -> agenticScope.writeState(entry.getKey(), entry.getValue()));
+        Map<String, Object> arguments = dev.langchain4j.agentic.internal.AgenticJdk8.requireNonNullElse(agentInvocation.getArguments(), dev.langchain4j.internal.Jdk8.map());
+        arguments.entrySet().stream().filter(entry -> writeArgumentToScope(agenticScope, agent, entry.getKey(), entry.getValue())).forEach(entry -> agenticScope.writeState(entry.getKey(), entry.getValue()));
         return call(agent);
     }
 
     private static <T> T withAgenticScope(AgenticScope agenticScope, Supplier<T> supplier) {
-        LangChain4jManaged.setCurrent(Map.of(AgenticScope.class, agenticScope));
+        LangChain4jManaged.setCurrent(dev.langchain4j.internal.Jdk8.map(AgenticScope.class, agenticScope));
         try {
             return supplier.get();
         } finally {
@@ -320,9 +261,7 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
     private AgentInstance findAgentByName(String agentName) {
         AgentInstance agent = agents.get(agentName);
         if (agent == null) {
-            List<AgentInstance> candidateAgents = agents.values().stream()
-                    .filter(a -> a.name().equals(agentName))
-                    .toList();
+            List<AgentInstance> candidateAgents = agents.values().stream().filter(a -> a.name().equals(agentName)).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
             if (candidateAgents.size() == 1) {
                 agent = candidateAgents.get(0);
             }
@@ -335,17 +274,12 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     private boolean writeArgumentToScope(AgenticScope agenticScope, AgentInstance agent, String key, Object value) {
         if (agenticScope.hasState(key)) {
-            Class<?> argType = agent.arguments().stream()
-                    .filter(arg -> arg.name().equals(key))
-                    .findFirst()
-                    .map(AgentArgument::rawType)
-                    .orElse(null);
+            Class<?> argType = agent.arguments().stream().filter(arg -> arg.name().equals(key)).findFirst().map(AgentArgument::rawType).orElse(null);
             if (argType != null) {
                 Object existingValue = agenticScope.readState(key);
                 // avoid overwriting a structured state with an unstructured argument generated from supervisor's LLM
                 // response
-                return !argType.isAssignableFrom(existingValue.getClass())
-                        || argType.isAssignableFrom(value.getClass());
+                return !argType.isAssignableFrom(existingValue.getClass()) || argType.isAssignableFrom(value.getClass());
             }
         }
         return true;
@@ -368,21 +302,24 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
             return lastResponse;
         }
         String doneResponse = done.getArguments().get("response").toString();
-
-        return switch (responseStrategy) {
-            case LAST -> lastResponse;
-            case SUMMARY -> doneResponse;
-            case SCORED -> {
-                ResponseScore score = withAgenticScope(
-                        agenticScope, () -> responseAgent.scoreResponses(request, lastResponse, doneResponse));
-                LOG.info("Response scores: {}", score);
-                yield score.getScore2() > score.getScore1() ? doneResponse : lastResponse;
-            }
-        };
+        switch(responseStrategy) {
+            case LAST:
+                return lastResponse;
+            case SUMMARY:
+                return doneResponse;
+            case SCORED:
+                {
+                    ResponseScore score = withAgenticScope(agenticScope, () -> responseAgent.scoreResponses(request, lastResponse, doneResponse));
+                    LOG.info("Response scores: {}", score);
+                    return score.getScore2() > score.getScore1() ? doneResponse : lastResponse;
+                }
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
     private PlannerAgent buildPlannerAgent(AgenticScope agenticScope) {
-        var builder = AiServices.builder(PlannerAgent.class).chatModel(chatModel);
+        dev.langchain4j.service.AiServices<dev.langchain4j.agentic.supervisor.PlannerAgent> builder = AiServices.builder(PlannerAgent.class).chatModel(chatModel);
         configureMemoryAndContext(agenticScope, builder);
         return builder.build();
     }
@@ -394,17 +331,15 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
                 builder.chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer));
             }
         } else {
-            switch (contextStrategy) {
+            switch(contextStrategy) {
                 case CHAT_MEMORY:
                     builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(20));
                     break;
                 case SUMMARIZATION:
-                    builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(2))
-                            .chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer));
+                    builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(2)).chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer));
                     break;
                 case CHAT_MEMORY_AND_SUMMARIZATION:
-                    builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(20))
-                            .chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer));
+                    builder.chatMemoryProvider(memoryId -> MessageWindowChatMemory.withMaxMessages(20)).chatRequestTransformer(Context.Summarizer.withSummarizer(agenticScope, contextSummarizer));
                     break;
             }
         }
@@ -416,14 +351,14 @@ public class SupervisorPlanner implements Planner, ChatMemoryAccessProvider {
 
     @Override
     public Map<String, Object> executionState() {
-        return Map.of("loopCount", loopCount);
+        return dev.langchain4j.internal.Jdk8.map("loopCount", loopCount);
     }
 
     @Override
     public void restoreExecutionState(Map<String, Object> state) {
         Object savedLoopCount = state.get("loopCount");
-        if (savedLoopCount instanceof Number n) {
-            this.loopCount = n.intValue();
+        if (savedLoopCount instanceof Number) {
+            this.loopCount = ((Number) savedLoopCount).intValue();
         }
     }
 

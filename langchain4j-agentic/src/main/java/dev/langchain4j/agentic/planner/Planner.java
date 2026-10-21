@@ -16,7 +16,8 @@ import java.util.Map;
  */
 public interface Planner {
 
-    default void init(InitPlanningContext initPlanningContext) { }
+    default void init(InitPlanningContext initPlanningContext) {
+    }
 
     /**
      * Returns the planner's current execution state as a map of serializable values.
@@ -31,7 +32,7 @@ public interface Planner {
      * @return a map of state entries to persist, or an empty map if no state needs saving
      */
     default Map<String, Object> executionState() {
-        return Map.of();
+        return dev.langchain4j.internal.Jdk8.map();
     }
 
     /**
@@ -41,7 +42,8 @@ public interface Planner {
      *
      * @param state the previously saved execution state
      */
-    default void restoreExecutionState(Map<String, Object> state) { }
+    default void restoreExecutionState(Map<String, Object> state) {
+    }
 
     /**
      * Returns the first action to execute when the planner starts (or resumes).

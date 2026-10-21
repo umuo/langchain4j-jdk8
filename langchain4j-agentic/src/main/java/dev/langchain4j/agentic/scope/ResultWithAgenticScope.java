@@ -17,8 +17,11 @@ import java.util.function.Supplier;
 public final class ResultWithAgenticScope<T> {
 
     private final AgenticScope agenticScope;
+
     private final T result;
+
     private final boolean suspended;
+
     private final transient Supplier<ResultWithAgenticScope<T>> resumeCallback;
 
     public ResultWithAgenticScope(AgenticScope agenticScope, T result) {
@@ -29,8 +32,7 @@ public final class ResultWithAgenticScope<T> {
         this(agenticScope, result, suspended, null);
     }
 
-    public ResultWithAgenticScope(AgenticScope agenticScope, T result, boolean suspended,
-                                  Supplier<ResultWithAgenticScope<T>> resumeCallback) {
+    public ResultWithAgenticScope(AgenticScope agenticScope, T result, boolean suspended, Supplier<ResultWithAgenticScope<T>> resumeCallback) {
         this.agenticScope = agenticScope;
         this.result = result;
         this.suspended = suspended;
@@ -77,29 +79,27 @@ public final class ResultWithAgenticScope<T> {
             throw new IllegalStateException("Cannot complete a pending response on a non-suspended result");
         }
         if (resumeCallback == null) {
-            throw new IllegalStateException(
-                    "No resume callback available. After a crash/restart, use AgenticScope.completePendingResponse() and re-invoke the agent method directly.");
+            throw new IllegalStateException("No resume callback available. After a crash/restart, use AgenticScope.completePendingResponse() and re-invoke the agent method directly.");
         }
         agenticScope.completePendingResponse(responseId, value);
         return resumeCallback.get();
     }
 
     private String singlePendingResponseId() {
-        var ids = agenticScope.pendingResponseIds();
+        java.util.Set<java.lang.String> ids = agenticScope.pendingResponseIds();
         if (ids.size() != 1) {
-            throw new IllegalStateException(
-                    "Expected exactly 1 pending response, but found " + ids.size() + ": " + ids);
+            throw new IllegalStateException("Expected exactly 1 pending response, but found " + ids.size() + ": " + ids);
         }
         return ids.iterator().next();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof ResultWithAgenticScope<?> that)) return false;
-        return suspended == that.suspended
-                && Objects.equals(agenticScope, that.agenticScope)
-                && Objects.equals(result, that.result);
+        if (this == o)
+            return true;
+        if (!(o instanceof ResultWithAgenticScope<?>))
+            return false;
+        return suspended == ((ResultWithAgenticScope<?>) o).suspended && Objects.equals(agenticScope, ((ResultWithAgenticScope<?>) o).agenticScope) && Objects.equals(result, ((ResultWithAgenticScope<?>) o).result);
     }
 
     @Override
@@ -109,9 +109,6 @@ public final class ResultWithAgenticScope<T> {
 
     @Override
     public String toString() {
-        return "ResultWithAgenticScope[agenticScope="
-                + (agenticScope != null ? "AgenticScope(memoryId=" + agenticScope.memoryId() + ")" : "null")
-                + ", result=" + result
-                + ", suspended=" + suspended + "]";
+        return "ResultWithAgenticScope[agenticScope=" + (agenticScope != null ? "AgenticScope(memoryId=" + agenticScope.memoryId() + ")" : "null") + ", result=" + result + ", suspended=" + suspended + "]";
     }
 }

@@ -204,8 +204,7 @@ public interface AgenticScope extends LangChain4jManaged {
     default boolean completePendingResponse(Object value) {
         Set<String> ids = pendingResponseIds();
         if (ids.size() != 1) {
-            throw new IllegalStateException(
-                    "Expected exactly 1 pending response, but found " + ids.size() + ": " + ids);
+            throw new IllegalStateException("Expected exactly 1 pending response, but found " + ids.size() + ": " + ids);
         }
         return completePendingResponse(ids.iterator().next(), value);
     }
@@ -217,7 +216,7 @@ public interface AgenticScope extends LangChain4jManaged {
      * @return a set of pending response identifiers
      */
     default Set<String> pendingResponseIds() {
-        return Set.of();
+        return dev.langchain4j.internal.Jdk8.set();
     }
 
     /**

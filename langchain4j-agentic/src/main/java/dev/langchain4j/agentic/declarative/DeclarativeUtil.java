@@ -5,7 +5,6 @@ import static dev.langchain4j.agentic.internal.AgentUtil.agentInvocationArgument
 import static dev.langchain4j.agentic.internal.AgentUtil.argumentFromParameter;
 import static dev.langchain4j.agentic.internal.AgentUtil.argumentsFromMethod;
 import static dev.langchain4j.agentic.internal.AgentUtil.getAnnotatedMethodOnClass;
-
 import dev.langchain4j.Internal;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.agentic.AgenticServices;
@@ -50,26 +49,18 @@ public class DeclarativeUtil {
 
     private static final List<SupplierParameterResolver> supplierParameterResolvers = new CopyOnWriteArrayList<>();
 
-    private DeclarativeUtil() {}
+    private DeclarativeUtil() {
+    }
 
     public static void configureAgent(Class<?> agentType, AgentBuilder<?, ?> agentBuilder) {
         configureAgent(agentType, null, true, agentBuilder, AgenticServices.AgentConfigurator.empty());
     }
 
-    public static void configureAgent(
-            Class<?> agentType,
-            ChatModel chatModel,
-            AgentBuilder<?, ?> agentBuilder,
-            AgenticServices.AgentConfigurator agentConfigurator) {
+    public static void configureAgent(Class<?> agentType, ChatModel chatModel, AgentBuilder<?, ?> agentBuilder, AgenticServices.AgentConfigurator agentConfigurator) {
         configureAgent(agentType, chatModel, false, agentBuilder, agentConfigurator);
     }
 
-    private static void configureAgent(
-            Class<?> agentType,
-            ChatModel chatModel,
-            boolean allowNullChatModel,
-            AgentBuilder<?, ?> agentBuilder,
-            AgenticServices.AgentConfigurator agentConfigurator) {
+    private static void configureAgent(Class<?> agentType, ChatModel chatModel, boolean allowNullChatModel, AgentBuilder<?, ?> agentBuilder, AgenticServices.AgentConfigurator agentConfigurator) {
         getAnnotatedMethodOnClass(agentType, ToolsSupplier.class).ifPresent(method -> {
             Object tools = invokeSupplierWithResolvers(agentType, method, Object.class);
             if (tools instanceof Map) {
@@ -80,133 +71,101 @@ public class DeclarativeUtil {
                 agentBuilder.tools(tools);
             }
         });
-
         getAnnotatedMethodOnClass(agentType, ToolProviderSupplier.class).ifPresent(method -> {
             checkReturnType(method, ToolProvider.class);
             agentBuilder.toolProvider(invokeSupplierWithResolvers(agentType, method, ToolProvider.class));
         });
-
         getAnnotatedMethodOnClass(agentType, ContentRetrieverSupplier.class).ifPresent(method -> {
             checkReturnType(method, ContentRetriever.class);
             agentBuilder.contentRetriever(invokeSupplierWithResolvers(agentType, method, ContentRetriever.class));
         });
-
         getAnnotatedMethodOnClass(agentType, RetrievalAugmentorSupplier.class).ifPresent(method -> {
             checkReturnType(method, RetrievalAugmentor.class);
             agentBuilder.retrievalAugmentor(invokeSupplierWithResolvers(agentType, method, RetrievalAugmentor.class));
         });
-
         getAnnotatedMethodOnClass(agentType, ChatMemoryProviderSupplier.class).ifPresent(method -> {
             checkReturnType(method, ChatMemory.class);
             if (method.getParameterCount() == 0) {
-                throw new IllegalArgumentException(
-                        "Method " + method + " must have at least 1 argument: [class java.lang.Object]");
+                throw new IllegalArgumentException("Method " + method + " must have at least 1 argument: [class java.lang.Object]");
             }
             if (method.getParameterCount() == 1) {
                 checkArguments(method, Object.class);
                 agentBuilder.chatMemoryProvider(memoryId -> invokeStatic(method, memoryId));
             } else {
                 agentBuilder.chatMemoryProvider(memoryId -> {
-                    Function<AgenticScope, ChatMemory> fn =
-                            agenticScopeFunctionWithSupplierParameterResolver(agentType, method, ChatMemory.class);
+                    Function<AgenticScope, ChatMemory> fn = agenticScopeFunctionWithSupplierParameterResolver(agentType, method, ChatMemory.class);
                     return fn.apply(null);
                 });
             }
         });
-
         getAnnotatedMethodOnClass(agentType, ChatMemorySupplier.class).ifPresent(method -> {
             checkReturnType(method, ChatMemory.class);
             agentBuilder.chatMemory(invokeSupplierWithResolvers(agentType, method, ChatMemory.class));
         });
-
-        getAnnotatedMethodOnClass(agentType, ChatModelSupplier.class)
-                .ifPresentOrElse(
-                        method -> {
-                            if (method.getParameterCount() > 0) {
-                                Function<AgenticScope, ChatModel> scopeFunction =
-                                        agenticScopeFunctionWithSupplierParameterResolver(
-                                                agentType, method, ChatModel.class);
-                                Function<AgenticScope, ChatModel> provider = scope -> {
-                                    if (scope == null) {
-                                        return invokeStatic(method, new Object[method.getParameterCount()]);
-                                    }
-                                    return scopeFunction.apply(scope);
-                                };
-                                agentBuilder.chatModel(provider);
-                            } else {
-                                agentBuilder.chatModel((ChatModel) invokeStatic(method));
-                            }
-                        },
-                        () -> getAnnotatedMethodOnClass(agentType, StreamingChatModelSupplier.class)
-                                .ifPresentOrElse(
-                                        method -> {
-                                            if (method.getParameterCount() > 0) {
-                                                Function<AgenticScope, StreamingChatModel> scopeFunction =
-                                                        agenticScopeFunctionWithSupplierParameterResolver(
-                                                                agentType, method, StreamingChatModel.class);
-                                                Function<AgenticScope, StreamingChatModel> provider = scope -> {
-                                                    if (scope == null) {
-                                                        return invokeStatic(
-                                                                method, new Object[method.getParameterCount()]);
-                                                    }
-                                                    return scopeFunction.apply(scope);
-                                                };
-                                                agentBuilder.streamingChatModel(provider);
-                                            } else {
-                                                agentBuilder.streamingChatModel(
-                                                        (StreamingChatModel) invokeStatic(method));
-                                            }
-                                        },
-                                        () -> {
-                                            if (chatModel == null && !allowNullChatModel) {
-                                                throw new IllegalArgumentException(
-                                                        "ChatModel not provided for subagent " + agentType.getName()
-                                                                + ". Please provide one either with a static method annotated with @ChatModelSupplier "
-                                                                + "or @StreamingChatModelSupplier, or through the parent agent's chatModel parameter.");
-                                            }
-                                            agentBuilder.chatModel(chatModel);
-                                        }));
-
+        dev.langchain4j.agentic.internal.AgenticJdk8.ifPresentOrElse(getAnnotatedMethodOnClass(agentType, ChatModelSupplier.class), method -> {
+            if (method.getParameterCount() > 0) {
+                Function<AgenticScope, ChatModel> scopeFunction = agenticScopeFunctionWithSupplierParameterResolver(agentType, method, ChatModel.class);
+                Function<AgenticScope, ChatModel> provider = scope -> {
+                    if (scope == null) {
+                        return invokeStatic(method, new Object[method.getParameterCount()]);
+                    }
+                    return scopeFunction.apply(scope);
+                };
+                agentBuilder.chatModel(provider);
+            } else {
+                agentBuilder.chatModel((ChatModel) invokeStatic(method));
+            }
+        }, () -> dev.langchain4j.agentic.internal.AgenticJdk8.ifPresentOrElse(getAnnotatedMethodOnClass(agentType, StreamingChatModelSupplier.class), method -> {
+            if (method.getParameterCount() > 0) {
+                Function<AgenticScope, StreamingChatModel> scopeFunction = agenticScopeFunctionWithSupplierParameterResolver(agentType, method, StreamingChatModel.class);
+                Function<AgenticScope, StreamingChatModel> provider = scope -> {
+                    if (scope == null) {
+                        return invokeStatic(method, new Object[method.getParameterCount()]);
+                    }
+                    return scopeFunction.apply(scope);
+                };
+                agentBuilder.streamingChatModel(provider);
+            } else {
+                agentBuilder.streamingChatModel((StreamingChatModel) invokeStatic(method));
+            }
+        }, () -> {
+            if (chatModel == null && !allowNullChatModel) {
+                throw new IllegalArgumentException("ChatModel not provided for subagent " + agentType.getName() + ". Please provide one either with a static method annotated with @ChatModelSupplier " + "or @StreamingChatModelSupplier, or through the parent agent's chatModel parameter.");
+            }
+            agentBuilder.chatModel(chatModel);
+        }));
         getAnnotatedMethodOnClass(agentType, AgentListenerSupplier.class).ifPresent(listenerMethod -> {
             checkReturnType(listenerMethod, AgentListener.class);
             agentBuilder.listener(invokeSupplierWithResolvers(agentType, listenerMethod, AgentListener.class));
         });
-
-        getAnnotatedMethodOnClass(agentType, SystemMessageProviderSupplier.class)
-                .ifPresent(method -> {
-                    checkReturnType(method, String.class);
-                    checkArguments(method, Object.class);
-                    agentBuilder.systemMessageProvider(memoryId -> invokeStatic(method, memoryId));
-                });
-
+        getAnnotatedMethodOnClass(agentType, SystemMessageProviderSupplier.class).ifPresent(method -> {
+            checkReturnType(method, String.class);
+            checkArguments(method, Object.class);
+            agentBuilder.systemMessageProvider(memoryId -> invokeStatic(method, memoryId));
+        });
         getAnnotatedMethodOnClass(agentType, UserMessageProviderSupplier.class).ifPresent(method -> {
             checkReturnType(method, String.class);
             checkArguments(method, Object.class);
             agentBuilder.userMessageProvider(memoryId -> invokeStatic(method, memoryId));
         });
-
         AgentCondition activationCondition = activationCondition(agentType);
         if (activationCondition != null) {
             agentBuilder.activationCondition(activationCondition.description(), activationCondition.predicate());
         }
-
         if (agentConfigurator.agentInstanceFactory() != null) {
             agentBuilder.agentInstanceFactory(agentConfigurator.agentInstanceFactory());
         }
-
         agentConfigurator.configurator().accept(new DefaultDeclarativeAgentCreationContext(agentType, agentBuilder));
     }
 
     public static void checkArguments(Method method, Class<?>... expected) {
         Class<?>[] actual = method.getParameterTypes();
         if (actual.length != expected.length) {
-            throw new IllegalArgumentException(
-                    "Method " + method + " must have " + expected.length + " arguments: " + Arrays.toString(expected));
+            throw new IllegalArgumentException("Method " + method + " must have " + expected.length + " arguments: " + Arrays.toString(expected));
         }
         for (int i = 0; i < expected.length; i++) {
             if (!expected[i].isAssignableFrom(actual[i])) {
-                throw new IllegalArgumentException(
-                        "Method " + method + " argument " + (i + 1) + " must be of type " + expected[i].getName());
+                throw new IllegalArgumentException("Method " + method + " argument " + (i + 1) + " must be of type " + expected[i].getName());
             }
         }
     }
@@ -226,15 +185,11 @@ public class DeclarativeUtil {
     }
 
     public static <T> void configureOutput(Class<T> agentServiceClass, AgenticService<?, ?> builder) {
-        selectMethod(agentServiceClass, method -> method.isAnnotationPresent(Output.class))
-                .map(m -> agenticScopeFunction(m, Object.class))
-                .ifPresent(builder::output);
+        selectMethod(agentServiceClass, method -> method.isAnnotationPresent(Output.class)).map(m -> agenticScopeFunction(m, Object.class)).ifPresent(builder::output);
     }
 
     public static Optional<Method> predicateMethod(Class<?> agentServiceClass, Predicate<Method> methodSelector) {
-        return selectMethod(
-                agentServiceClass,
-                methodSelector.and(m -> (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)));
+        return selectMethod(agentServiceClass, methodSelector.and(m -> (m.getReturnType() == boolean.class || m.getReturnType() == Boolean.class)));
     }
 
     public static void buildAgentFeatures(Class<?> agentServiceClass, AgenticService<?, ?> builder) {
@@ -258,40 +213,27 @@ public class DeclarativeUtil {
      *         boolean, or if a condition with a value is declared on a class that is not a conditional agent
      */
     public static AgentCondition activationCondition(Class<?> agentClass) {
-        boolean conditionalAgent =
-                getAnnotatedMethodOnClass(agentClass, ConditionalAgent.class).isPresent();
+        boolean conditionalAgent = getAnnotatedMethodOnClass(agentClass, ConditionalAgent.class).isPresent();
         Method conditionMethod = null;
         for (Method method : staticMethodsAnnotatedWith(agentClass, ActivationCondition.class)) {
             if (method.getAnnotation(ActivationCondition.class).value().length > 0) {
                 if (!conditionalAgent) {
-                    throw new AgenticSystemConfigurationException("The @ActivationCondition method " + method
-                            + " names the subagents it activates, but " + agentClass.getName()
-                            + " is not a @ConditionalAgent. Remove its value to make it the activation condition of "
-                            + agentClass.getSimpleName() + " itself.");
+                    throw new AgenticSystemConfigurationException("The @ActivationCondition method " + method + " names the subagents it activates, but " + agentClass.getName() + " is not a @ConditionalAgent. Remove its value to make it the activation condition of " + agentClass.getSimpleName() + " itself.");
                 }
                 continue;
             }
             if (conditionalAgent) {
-                throw new AgenticSystemConfigurationException("The @ActivationCondition method " + method
-                        + " has no value, but on the @ConditionalAgent " + agentClass.getName()
-                        + " every activation condition must name the subagents it activates.");
+                throw new AgenticSystemConfigurationException("The @ActivationCondition method " + method + " has no value, but on the @ConditionalAgent " + agentClass.getName() + " every activation condition must name the subagents it activates.");
             }
             if (method.getReturnType() != boolean.class && method.getReturnType() != Boolean.class) {
-                throw new AgenticSystemConfigurationException(
-                        "The @ActivationCondition method " + method + " must return a boolean");
+                throw new AgenticSystemConfigurationException("The @ActivationCondition method " + method + " must return a boolean");
             }
             if (conditionMethod != null) {
-                throw new AgenticSystemConfigurationException("Only one @ActivationCondition method without value is "
-                        + "allowed in " + agentClass.getName() + ", but found " + conditionMethod.getName() + " and "
-                        + method.getName());
+                throw new AgenticSystemConfigurationException("Only one @ActivationCondition method without value is " + "allowed in " + agentClass.getName() + ", but found " + conditionMethod.getName() + " and " + method.getName());
             }
             conditionMethod = method;
         }
-        return conditionMethod == null
-                ? null
-                : new AgentCondition(
-                        conditionMethod.getAnnotation(ActivationCondition.class).description(),
-                        agenticScopeFunction(conditionMethod, Boolean.class, false)::apply);
+        return conditionMethod == null ? null : new AgentCondition(conditionMethod.getAnnotation(ActivationCondition.class).description(), agenticScopeFunction(conditionMethod, Boolean.class, false)::apply);
     }
 
     private static Set<Method> staticMethodsAnnotatedWith(Class<?> type, Class<? extends Annotation> annotation) {
@@ -300,8 +242,7 @@ public class DeclarativeUtil {
         return methods;
     }
 
-    private static void collectStaticMethodsAnnotatedWith(
-            Class<?> type, Class<? extends Annotation> annotation, Set<Method> methods) {
+    private static void collectStaticMethodsAnnotatedWith(Class<?> type, Class<? extends Annotation> annotation, Set<Method> methods) {
         for (Method method : type.getMethods()) {
             if (method.isAnnotationPresent(annotation) && Modifier.isStatic(method.getModifiers())) {
                 methods.add(method);
@@ -316,33 +257,25 @@ public class DeclarativeUtil {
     }
 
     private static Optional<Consumer<AgenticScope>> buildBeforeCall(Class<?> agentServiceClass) {
-        return selectMethod(agentServiceClass, method -> method.isAnnotationPresent(BeforeCall.class))
-                .map(m -> {
-                    checkReturnType(m, void.class);
-                    return agenticScopeFunction(m, Object.class)::apply;
-                });
+        return selectMethod(agentServiceClass, method -> method.isAnnotationPresent(BeforeCall.class)).map(m -> {
+            checkReturnType(m, void.class);
+            return agenticScopeFunction(m, Object.class)::apply;
+        });
     }
 
     public static Optional<Executor> parallelExecutor(Class<?> agentServiceClass) {
-        return selectMethod(
-                        agentServiceClass,
-                        method -> method.isAnnotationPresent(ParallelExecutor.class)
-                                && Executor.class.isAssignableFrom(method.getReturnType()))
-                .map(method -> invokeParallelExecutor(agentServiceClass, method));
+        return selectMethod(agentServiceClass, method -> method.isAnnotationPresent(ParallelExecutor.class) && Executor.class.isAssignableFrom(method.getReturnType())).map(method -> invokeParallelExecutor(agentServiceClass, method));
     }
 
-    private static <T> Optional<Function<ErrorContext, ErrorRecoveryResult>> buildErrorHandler(
-            Class<T> agentServiceClass) {
-        return selectMethod(agentServiceClass, method -> method.isAnnotationPresent(ErrorHandler.class))
-                .map(m -> errorContext -> invokeStatic(m, errorContext));
+    private static <T> Optional<Function<ErrorContext, ErrorRecoveryResult>> buildErrorHandler(Class<T> agentServiceClass) {
+        return selectMethod(agentServiceClass, method -> method.isAnnotationPresent(ErrorHandler.class)).map(m -> errorContext -> invokeStatic(m, errorContext));
     }
 
     private static void buildListener(Class<?> agentServiceClass, AgenticService<?, ?> builder) {
-        getAnnotatedMethodOnClass(agentServiceClass, AgentListenerSupplier.class)
-                .ifPresent(listenerMethod -> {
-                    checkReturnType(listenerMethod, AgentListener.class);
-                    builder.listener(invokeStatic(listenerMethod));
-                });
+        getAnnotatedMethodOnClass(agentServiceClass, AgentListenerSupplier.class).ifPresent(listenerMethod -> {
+            checkReturnType(listenerMethod, AgentListener.class);
+            builder.listener(invokeStatic(listenerMethod));
+        });
     }
 
     public static Optional<Method> selectMethod(Class<?> agentServiceClass, Predicate<Method> methodSelector) {
@@ -367,8 +300,7 @@ public class DeclarativeUtil {
     }
 
     public static Predicate<AgenticScope> agenticScopePredicate(Method predicateMethod) {
-        return agenticScope ->
-                agenticScopeFunction(predicateMethod, boolean.class).apply(agenticScope);
+        return agenticScope -> agenticScopeFunction(predicateMethod, boolean.class).apply(agenticScope);
     }
 
     public static <T> T invokeSupplierWithResolvers(Class<?> agentType, Method method, Class<T> targetClass) {
@@ -379,27 +311,22 @@ public class DeclarativeUtil {
         if (resolvers.isEmpty()) {
             return invokeStatic(method, new Object[method.getParameterCount()]);
         }
-        Function<AgenticScope, T> fn =
-                agenticScopeFunctionWithSupplierParameterResolver(agentType, method, targetClass);
+        Function<AgenticScope, T> fn = agenticScopeFunctionWithSupplierParameterResolver(agentType, method, targetClass);
         return fn.apply(null);
     }
 
-    private static <T> Function<AgenticScope, T> agenticScopeFunctionWithSupplierParameterResolver(
-            Class<?> agentType, Method functionMethod, Class<T> targetClass) {
+    private static <T> Function<AgenticScope, T> agenticScopeFunctionWithSupplierParameterResolver(Class<?> agentType, Method functionMethod, Class<T> targetClass) {
         List<SupplierParameterResolver> resolvers = getSupplierParameterResolvers();
         if (resolvers.isEmpty()) {
             return agenticScopeFunction(functionMethod, targetClass);
         }
-
         Parameter[] parameters = functionMethod.getParameters();
         List<AgentArgument> unresolvedAgentArguments = new ArrayList<>(parameters.length);
         List<Integer> unresolvedParameterIndexes = new ArrayList<>(parameters.length);
-
         SupplierParameterResolver.Context[] contexts = new SupplierParameterResolver.Context[parameters.length];
         SupplierParameterResolver[] paramResolvers = new SupplierParameterResolver[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
-            SupplierParameterResolver.Context ctx =
-                    new DefaultSupplierParameterResolverContext(agentType, functionMethod, parameters[i]);
+            SupplierParameterResolver.Context ctx = new DefaultSupplierParameterResolverContext(agentType, functionMethod, parameters[i]);
             for (SupplierParameterResolver resolver : resolvers) {
                 if (resolver.supports(ctx)) {
                     contexts[i] = ctx;
@@ -412,7 +339,6 @@ public class DeclarativeUtil {
                 unresolvedParameterIndexes.add(i);
             }
         }
-
         return agenticScope -> {
             try {
                 Object[] args = new Object[parameters.length];
@@ -423,9 +349,7 @@ public class DeclarativeUtil {
                 }
                 Map<String, Object> additionalArgs = new HashMap<>();
                 additionalArgs.put(AGENTIC_SCOPE_ARG_NAME, agenticScope);
-                Object[] unresolvedArgs = agentInvocationArguments(
-                                agenticScope, unresolvedAgentArguments, additionalArgs)
-                        .positionalArgs();
+                Object[] unresolvedArgs = agentInvocationArguments(agenticScope, unresolvedAgentArguments, additionalArgs).positionalArgs();
                 for (int i = 0; i < unresolvedArgs.length; i++) {
                     args[unresolvedParameterIndexes.get(i)] = unresolvedArgs[i];
                 }
@@ -444,12 +368,10 @@ public class DeclarativeUtil {
         if (resolvers.isEmpty()) {
             throw missingSupplierParameterResolver(method, method.getParameters()[0]);
         }
-
         Parameter[] parameters = method.getParameters();
         Object[] args = new Object[parameters.length];
         for (int i = 0; i < parameters.length; i++) {
-            SupplierParameterResolver.Context ctx =
-                    new DefaultSupplierParameterResolverContext(agentType, method, parameters[i]);
+            SupplierParameterResolver.Context ctx = new DefaultSupplierParameterResolverContext(agentType, method, parameters[i]);
             SupplierParameterResolver resolver = null;
             for (SupplierParameterResolver candidate : resolvers) {
                 if (candidate.supports(ctx)) {
@@ -465,27 +387,19 @@ public class DeclarativeUtil {
         return invokeStatic(method, args);
     }
 
-    private static AgenticSystemConfigurationException missingSupplierParameterResolver(
-            Method method, Parameter parameter) {
-        return new AgenticSystemConfigurationException("No SupplierParameterResolver is registered for parameter "
-                + parameter + " of @ParallelExecutor method " + method + ".");
+    private static AgenticSystemConfigurationException missingSupplierParameterResolver(Method method, Parameter parameter) {
+        return new AgenticSystemConfigurationException("No SupplierParameterResolver is registered for parameter " + parameter + " of @ParallelExecutor method " + method + ".");
     }
 
     public static <T> Function<AgenticScope, T> agenticScopeFunction(Method functionMethod, Class<T> targetClass) {
         return agenticScopeFunction(functionMethod, targetClass, true);
     }
 
-    private static <T> Function<AgenticScope, T> agenticScopeFunction(
-            Method functionMethod, Class<T> targetClass, boolean writeConvertedArguments) {
+    private static <T> Function<AgenticScope, T> agenticScopeFunction(Method functionMethod, Class<T> targetClass, boolean writeConvertedArguments) {
         List<AgentArgument> agentArguments = argumentsFromMethod(functionMethod);
         return agenticScope -> {
             try {
-                Object[] args = agentInvocationArguments(
-                                agenticScope,
-                                agentArguments,
-                                Map.of(AGENTIC_SCOPE_ARG_NAME, agenticScope),
-                                writeConvertedArguments)
-                        .positionalArgs();
+                Object[] args = agentInvocationArguments(agenticScope, agentArguments, dev.langchain4j.internal.Jdk8.map(AGENTIC_SCOPE_ARG_NAME, agenticScope), writeConvertedArguments).positionalArgs();
                 return (T) functionMethod.invoke(null, args);
             } catch (Exception e) {
                 throw new RuntimeException("Error invoking method: " + functionMethod.getName(), e);
@@ -501,7 +415,43 @@ public class DeclarativeUtil {
         return supplierParameterResolvers;
     }
 
-    private record DefaultSupplierParameterResolverContext(
-            Class<?> declaringAgentClass, Method supplierMethod, Parameter parameter)
-            implements SupplierParameterResolver.Context {}
+    private final static class DefaultSupplierParameterResolverContext implements SupplierParameterResolver.Context {
+
+        private final Class<?> declaringAgentClass;
+
+        public Class<?> declaringAgentClass() {
+            return declaringAgentClass;
+        }
+
+        private final Method supplierMethod;
+
+        public Method supplierMethod() {
+            return supplierMethod;
+        }
+
+        private final Parameter parameter;
+
+        public Parameter parameter() {
+            return parameter;
+        }
+
+        @com.fasterxml.jackson.annotation.JsonCreator
+        public DefaultSupplierParameterResolverContext(@com.fasterxml.jackson.annotation.JsonProperty("declaringAgentClass") Class<?> declaringAgentClass, @com.fasterxml.jackson.annotation.JsonProperty("supplierMethod") Method supplierMethod, @com.fasterxml.jackson.annotation.JsonProperty("parameter") Parameter parameter) {
+            this.declaringAgentClass = declaringAgentClass;
+            this.supplierMethod = supplierMethod;
+            this.parameter = parameter;
+        }
+
+        public final boolean equals(Object obj) {
+            return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(declaringAgentClass, ((DefaultSupplierParameterResolverContext) obj).declaringAgentClass) && java.util.Objects.equals(supplierMethod, ((DefaultSupplierParameterResolverContext) obj).supplierMethod) && java.util.Objects.equals(parameter, ((DefaultSupplierParameterResolverContext) obj).parameter));
+        }
+
+        public final int hashCode() {
+            return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(declaringAgentClass)) + java.util.Objects.hashCode(supplierMethod)) + java.util.Objects.hashCode(parameter));
+        }
+
+        public final String toString() {
+            return "DefaultSupplierParameterResolverContext[" + "declaringAgentClass=" + declaringAgentClass + ", supplierMethod=" + supplierMethod + ", parameter=" + parameter + "]";
+        }
+    }
 }

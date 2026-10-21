@@ -5,7 +5,6 @@ import static dev.langchain4j.agentic.declarative.DeclarativeUtil.configureOutpu
 import static dev.langchain4j.agentic.declarative.DeclarativeUtil.parallelExecutor;
 import static dev.langchain4j.agentic.internal.AgentUtil.argumentsFromMethod;
 import static dev.langchain4j.agentic.internal.AgentUtil.validateAgentClass;
-
 import dev.langchain4j.agentic.UntypedAgent;
 import dev.langchain4j.agentic.declarative.ParallelMapperAgent;
 import dev.langchain4j.agentic.internal.AbstractServiceBuilder;
@@ -16,8 +15,7 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 
-public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, ParallelMapperService<T>>
-        implements ParallelMapperService<T> {
+public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, ParallelMapperService<T>> implements ParallelMapperService<T> {
 
     public static final String SERVICE_TYPE = "ParallelMapper";
 
@@ -37,41 +35,32 @@ public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, Para
     @Override
     public T build() {
         if (subagents.size() != 1) {
-            throw new AgenticSystemConfigurationException(
-                    "A parallel mapper service requires exactly one subagent, but " + subagents.size()
-                            + " were provided.");
+            throw new AgenticSystemConfigurationException("A parallel mapper service requires exactly one subagent, but " + subagents.size() + " were provided.");
         }
         boolean isArrayResult = isArrayResult();
-        Class<? extends Object[]> arrayclass =
-                isArrayResult ? (Class<? extends Object[]>) agenticMethod.getReturnType() : null;
+        Class<? extends Object[]> arrayclass = isArrayResult ? (Class<? extends Object[]>) agenticMethod.getReturnType() : null;
         return build(() -> new ParallelMapperPlanner(itemsProvider(), isArrayResult, arrayclass));
     }
 
     private String itemsProvider() {
-        if (itemsProvider != null && !itemsProvider.isBlank()) {
+        if (itemsProvider != null && !dev.langchain4j.internal.Jdk8.isBlank(itemsProvider)) {
             return itemsProvider;
         }
         if (agenticMethod == null) {
-            throw new AgenticSystemConfigurationException(
-                    "It is mandatory to declare an itemsProvider using an untyped parallel mapper.");
+            throw new AgenticSystemConfigurationException("It is mandatory to declare an itemsProvider using an untyped parallel mapper.");
         }
-
         AgentArgument itemsArgument = null;
         List<AgentArgument> agentArguments = argumentsFromMethod(agenticMethod);
         for (AgentArgument agentArgument : agentArguments) {
-            if (Collection.class.isAssignableFrom(agentArgument.rawType())
-                    || agentArgument.rawType().isArray()) {
+            if (Collection.class.isAssignableFrom(agentArgument.rawType()) || agentArgument.rawType().isArray()) {
                 if (itemsArgument != null) {
-                    throw new AgenticSystemConfigurationException("Multiple collection arguments found in class "
-                            + agentServiceClass.getName() + ", please disambiguate specifying the itemsProvider.");
+                    throw new AgenticSystemConfigurationException("Multiple collection arguments found in class " + agentServiceClass.getName() + ", please disambiguate specifying the itemsProvider.");
                 }
                 itemsArgument = agentArgument;
             }
         }
-
         if (itemsArgument == null) {
-            throw new AgenticSystemConfigurationException("Class " + agentServiceClass.getName()
-                    + " doesn't have a collection argument on which to iterate.");
+            throw new AgenticSystemConfigurationException("Class " + agentServiceClass.getName() + " doesn't have a collection argument on which to iterate.");
         }
         return itemsArgument.name();
     }
@@ -87,8 +76,7 @@ public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, Para
         if (Collection.class.isAssignableFrom(returnType) || output != null) {
             return false;
         }
-        throw new AgenticSystemConfigurationException(
-                "The return type of " + agentServiceClass.getName() + " must be either a collection or an array.");
+        throw new AgenticSystemConfigurationException("The return type of " + agentServiceClass.getName() + " must be either a collection or an array.");
     }
 
     public static ParallelMapperServiceImpl<UntypedAgent> builder() {
@@ -96,8 +84,7 @@ public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, Para
     }
 
     public static <T> ParallelMapperServiceImpl<T> builder(Class<T> agentServiceClass) {
-        return new ParallelMapperServiceImpl<>(
-                agentServiceClass, validateAgentClass(agentServiceClass, false, ParallelMapperAgent.class));
+        return new ParallelMapperServiceImpl<>(agentServiceClass, validateAgentClass(agentServiceClass, false, ParallelMapperAgent.class));
     }
 
     @Override
@@ -108,7 +95,6 @@ public class ParallelMapperServiceImpl<T> extends AbstractServiceBuilder<T, Para
     private void configureParallelMapper(Class<T> agentServiceClass) {
         configureOutput(agentServiceClass, this);
         buildAgentFeatures(agentServiceClass, this);
-
         parallelExecutor(agentServiceClass).ifPresent(this::executor);
     }
 }

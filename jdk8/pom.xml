@@ -124,6 +124,13 @@
         </plugins>
     </build>
     <profiles>
+        <!-- Compile checkpoint only; not yet a supported/BOM module. -->
+        <profile>
+            <id>agentic-wip</id>
+            <modules>
+                <module>../langchain4j-agentic</module>
+            </modules>
+        </profile>
         <profile>
             <id>upstream-tests</id>
             <modules>

@@ -1,7 +1,6 @@
 package dev.langchain4j.agentic.internal;
 
 import static dev.langchain4j.internal.Utils.isNullOrBlank;
-
 import dev.langchain4j.agentic.scope.AgenticScope;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -13,12 +12,7 @@ import java.util.function.Function;
 
 public class Context {
 
-    private static final String SUMMARIZER_PROMPT = """
-            Create a short summary of the following conversation between one or more AI agents and a user.
-            Mention all the agents involved in the conversation.
-            Do not provide any additional information, just the summary.
-            The user conversation is: '%s'.
-            """;
+    private static final String SUMMARIZER_PROMPT = "Create a short summary of the following conversation between one or more AI agents and a user.\nMention all the agents involved in the conversation.\nDo not provide any additional information, just the summary.\nThe user conversation is: '%s'.\n";
 
     public interface ContextSummarizer {
 
@@ -51,6 +45,7 @@ public class Context {
         return conversation -> {
             CompletableFuture<ChatResponse> futureResponse = new CompletableFuture<>();
             streamingChatModel.chat(summarizationPrompt(conversation), new StreamingChatResponseHandler() {
+
                 @Override
                 public void onCompleteResponse(ChatResponse completeResponse) {
                     futureResponse.complete(completeResponse);
@@ -66,11 +61,13 @@ public class Context {
     }
 
     private static String summarizationPrompt(String conversation) {
-        return SUMMARIZER_PROMPT.formatted(conversation);
+        return String.format(SUMMARIZER_PROMPT, conversation);
     }
 
     public static class AgenticScopeContextGenerator implements UserMessageTransformer {
+
         private final AgenticScope agenticScope;
+
         private final Function<AgenticScope, String> contextProvider;
 
         public AgenticScopeContextGenerator(AgenticScope agenticScope, Function<AgenticScope, String> contextProvider) {
@@ -106,8 +103,7 @@ public class Context {
          * Creates a summarizer backed by a pre-built {@link ContextSummarizer}, typically one shared
          * by the caller across agents or invocations using the same model.
          */
-        public static Summarizer withSummarizer(
-                AgenticScope agenticScope, ContextSummarizer summarizer, String... agentNames) {
+        public static Summarizer withSummarizer(AgenticScope agenticScope, ContextSummarizer summarizer, String... agentNames) {
             return new Summarizer(agenticScope, summarizer, agentNames);
         }
 
@@ -115,49 +111,30 @@ public class Context {
          * Creates a summarizer whose {@link ChatModel} is resolved through the given provider at
          * summarization time, so it follows model changes across scopes or invocations.
          */
-        public static Summarizer withChatModelProvider(
-                AgenticScope agenticScope, Function<AgenticScope, ChatModel> chatModelProvider, String... agentNames) {
-            return new Summarizer(
-                    agenticScope,
-                    modelBasedSummarizer(agenticScope, chatModelProvider, Context::createSummarizer, "chat model"),
-                    agentNames);
+        public static Summarizer withChatModelProvider(AgenticScope agenticScope, Function<AgenticScope, ChatModel> chatModelProvider, String... agentNames) {
+            return new Summarizer(agenticScope, modelBasedSummarizer(agenticScope, chatModelProvider, Context::createSummarizer, "chat model"), agentNames);
         }
 
         /**
          * Creates a summarizer whose {@link StreamingChatModel} is resolved through the given provider at
          * summarization time, so it follows model changes across scopes or invocations.
          */
-        public static Summarizer withStreamingChatModelProvider(
-                AgenticScope agenticScope,
-                Function<AgenticScope, StreamingChatModel> streamingChatModelProvider,
-                String... agentNames) {
-            return new Summarizer(
-                    agenticScope,
-                    modelBasedSummarizer(
-                            agenticScope,
-                            streamingChatModelProvider,
-                            Context::createStreamingSummarizer,
-                            "streaming chat model"),
-                    agentNames);
+        public static Summarizer withStreamingChatModelProvider(AgenticScope agenticScope, Function<AgenticScope, StreamingChatModel> streamingChatModelProvider, String... agentNames) {
+            return new Summarizer(agenticScope, modelBasedSummarizer(agenticScope, streamingChatModelProvider, Context::createStreamingSummarizer, "streaming chat model"), agentNames);
         }
 
         private Summarizer(AgenticScope agenticScope, ContextSummarizer summarizer, String... agentNames) {
             super(agenticScope, c -> {
                 String context = c.contextAsConversation(agentNames);
-                return context.isBlank() ? context : summarizer.summarize(context);
+                return dev.langchain4j.internal.Jdk8.isBlank(context) ? context : summarizer.summarize(context);
             });
         }
 
-        private static <M> ContextSummarizer modelBasedSummarizer(
-                AgenticScope agenticScope,
-                Function<AgenticScope, M> modelProvider,
-                Function<M, ContextSummarizer> summarizerFactory,
-                String modelType) {
+        private static <M> ContextSummarizer modelBasedSummarizer(AgenticScope agenticScope, Function<AgenticScope, M> modelProvider, Function<M, ContextSummarizer> summarizerFactory, String modelType) {
             return conversation -> {
                 M model = modelProvider.apply(agenticScope);
                 if (model == null) {
-                    throw new IllegalConfigurationException(
-                            "The " + modelType + " provider returned null while summarizing agentic context.");
+                    throw new IllegalConfigurationException("The " + modelType + " provider returned null while summarizing agentic context.");
                 }
                 return summarizerFactory.apply(model).summarize(conversation);
             };

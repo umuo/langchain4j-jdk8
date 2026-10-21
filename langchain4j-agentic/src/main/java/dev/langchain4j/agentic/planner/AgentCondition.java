@@ -1,7 +1,6 @@
 package dev.langchain4j.agentic.planner;
 
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
-
 import dev.langchain4j.agentic.scope.AgenticScope;
 import java.util.Objects;
 import java.util.function.Predicate;
@@ -15,6 +14,7 @@ import java.util.function.Predicate;
 public final class AgentCondition {
 
     private final String description;
+
     private final Predicate<AgenticScope> predicate;
 
     /**
@@ -41,9 +41,7 @@ public final class AgentCondition {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof AgentCondition that
-                && description.equals(that.description)
-                && predicate.equals(that.predicate);
+        return o instanceof AgentCondition && description.equals(((AgentCondition) o).description) && predicate.equals(((AgentCondition) o).predicate);
     }
 
     @Override

@@ -1,12 +1,24 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 移植前审计（WIP，2026-10-21）
+## 当前状态：第十五阶段主 Agentic 基础移植检查点（WIP，2026-10-21）
 
-- 上一完整 clean/阶段标签仍为 `jdk8-m14`；Agentic 尚未实现、纳入 BOM 或验收，整体目标仍未完成。
-- [Agentic 声明审计](AGENTIC-AUDIT.md) 与 [机器清单](AGENTIC-API-INVENTORY.json) 从固定 Git 对象解析四模块全部 187 个生产 Java 文件，234 个声明类型、1292 个显式候选成员（含内部 owner，不是二进制公开 API 数量）。
-- `./jdk8/audit-agentic.sh` 只读重建声明快照，逐文件与 Git 树核对。Java 8 障碍候选含 33 record、95 instanceof pattern、20 switch expression、7 text block、25 var 及 API 调用候选；未据此声称已完成移植。
-- 主 Agentic/patterns/MCP 的直接依赖已有兼容主模块可作为基础；A2A 的 SDK 1.4.0.Final 两模块及传递依赖仍待产物审计/改造，不能因此排除。继承/合成 API、有效依赖、完整行为验收均仍 pending。
-- 下一单元：解析有效生产依赖并建立主 Agentic release 8 构建入口，再按完整能力清单改造作用域/基础 Agent 与所有工作流。MCP 旧双端点和其他剩余能力继续跟踪，不因转入 Agentic 而移出目标。
+- 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
+- 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 1 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；14 项基础行为在真实 Java 8 执行。
+- 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
+- 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
+- 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。其余 Agentic 三模块的有效依赖/功能仍待完成。
+- 下一单元：主 Agentic 的完整上游回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；再推进 patterns/MCP/A2A 的全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
+
+### 本次 WIP 验证
+
+`./jdk8/build.sh -o -Pagentic-wip` clean 全流程 exit 0；快照：[agentic-main-wip.json](verification/agentic-main-wip.json)。
+
+- 原八模块真实 Java 8 346 项、主 Agentic 新增 14 项，均无失败/错误/跳过。
+- JDK 17 选定上游仍为 864 项；Publisher TCK 62 通过、14 官方 untested。总计 1286 通过，14 官方 untested 单列。
+- 原八模块 33 JAR / 6366 类审计与全部 BOM 示例通过；新增 Agentic JAR 208 类均 classfile 52，无禁止类引用。加入该 JAR 后真实 Java 8 链接 5154 类，仍只排除原 3 个可选平台入口。
+- 固定基线主 Agentic API 对照通过：185 可见类型、1317 声明成员、2817 继承/公开项、22 可见 record 替代；无遗漏/改变成员或新增接口成员。Record 父类/反射元数据差异显式记录。
+- 这是 WIP 证据，不替代完整 Agentic 功能/BOM 消费验收，因此不新增阶段标签。
 
 ## 第十四阶段现代 stdio/WebSocket 已完成（2026-10-21）
 

@@ -3,7 +3,6 @@ package dev.langchain4j.agentic.internal;
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.agentError;
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.agentSkipped;
 import static dev.langchain4j.agentic.scope.DefaultAgenticScope.isSerializable;
-
 import dev.langchain4j.agentic.agent.AgentInvocationException;
 import dev.langchain4j.agentic.agent.ErrorRecoveryResult;
 import dev.langchain4j.agentic.agent.MissingArgumentException;
@@ -24,7 +23,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements AgentInstance, InternalAgent {
+public final class AgentExecutor implements AgentInstance, InternalAgent {
 
     private static final Logger LOG = LoggerFactory.getLogger(AgentExecutor.class);
 
@@ -40,33 +39,28 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
     }
 
     private Object execute(DefaultAgenticScope agenticScope, PlannerExecutor planner, boolean async) {
-        Object invokedAgent = (agent instanceof AgenticScopeOwner co ? co.withAgenticScope(agenticScope) : agent);
+        Object invokedAgent = (agent instanceof AgenticScopeOwner ? ((AgenticScopeOwner) agent).withAgenticScope(agenticScope) : agent);
         return internalExecute(agenticScope, invokedAgent, planner, async);
     }
 
-    private Object handleAgentFailure(
-            AgentInvocationException e,
-            DefaultAgenticScope agenticScope,
-            Object invokedAgent,
-            PlannerExecutor planner,
-            AgentInvocationArguments args,
-            boolean plannerAlreadyNotified) {
+    private Object handleAgentFailure(AgentInvocationException e, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean plannerAlreadyNotified) {
         ErrorRecoveryResult recoveryResult = agenticScope.handleError(agentInvoker.name(), e);
-        return switch (recoveryResult.type()) {
-            case THROW_EXCEPTION -> {
-                ActivationConditions.clearActivation(this, agenticScope);
-                throw e;
-            }
-            case RETRY -> internalExecute(agenticScope, invokedAgent, planner, false);
-            case RETURN_RESULT ->
-                plannerAlreadyNotified
-                        ? recoveryResult.result()
-                        : completeAgentInvocation(recoveryResult.result(), agenticScope, invokedAgent, planner, args);
-        };
+        switch(recoveryResult.type()) {
+            case THROW_EXCEPTION:
+                {
+                    ActivationConditions.clearActivation(this, agenticScope);
+                    throw e;
+                }
+            case RETRY:
+                return internalExecute(agenticScope, invokedAgent, planner, false);
+            case RETURN_RESULT:
+                return plannerAlreadyNotified ? recoveryResult.result() : completeAgentInvocation(recoveryResult.result(), agenticScope, invokedAgent, planner, args);
+            default:
+                throw new IllegalStateException("Unexpected enum value");
+        }
     }
 
-    private Object internalExecute(
-            DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, boolean async) {
+    private Object internalExecute(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, boolean async) {
         AgentInvocationArguments args = null;
         try {
             AgentCondition condition = agentInvoker.activationCondition();
@@ -76,7 +70,6 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
                 }
                 ActivationConditions.markActivated(this, agenticScope);
             }
-
             try {
                 args = agentInvoker.toInvocationArguments(agenticScope);
             } catch (MissingArgumentException e) {
@@ -85,7 +78,6 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
                 }
                 throw e;
             }
-
             Object response = agentResponse(agenticScope, invokedAgent, planner, args, async);
             return completeAgentInvocation(response, agenticScope, invokedAgent, planner, args);
         } catch (AgenticSystemSuspendedException e) {
@@ -102,9 +94,8 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
         try {
             return condition.test(agenticScope);
         } catch (RuntimeException e) {
-            AgentInvocationException failure =
-                    new AgentInvocationException("Activation condition of agent '" + name() + "' failed", e);
-            agentError(agentInvoker.listener(), agenticScope, agentInvoker, Map.of(), failure);
+            AgentInvocationException failure = new AgentInvocationException("Activation condition of agent '" + name() + "' failed", e);
+            agentError(agentInvoker.listener(), agenticScope, agentInvoker, dev.langchain4j.internal.Jdk8.map(), failure);
             throw failure;
         }
     }
@@ -117,30 +108,23 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
     private Object skip(DefaultAgenticScope agenticScope, PlannerExecutor planner, String reason) {
         LOG.info("Skipping agent '{}': {}", name(), reason);
         String outputKey = outputKey();
-        Object response = outputKey == null || outputKey.isBlank() ? null : agenticScope.readState(outputKey);
+        Object response = outputKey == null || dev.langchain4j.internal.Jdk8.isBlank(outputKey) ? null : agenticScope.readState(outputKey);
         agentSkipped(agentInvoker.listener(), agenticScope, agentInvoker, reason);
         if (planner != null) {
-            planner.onSubagentInvoked(new AgentInvocation(type(), name(), agentId(), Map.of(), response, reason));
+            planner.onSubagentInvoked(new AgentInvocation(type(), name(), agentId(), dev.langchain4j.internal.Jdk8.map(), response, reason));
         }
         return response;
     }
 
-    private Object completeAgentInvocation(
-            Object response,
-            DefaultAgenticScope agenticScope,
-            Object invokedAgent,
-            PlannerExecutor planner,
-            AgentInvocationArguments args) {
+    private Object completeAgentInvocation(Object response, DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args) {
         ActivationConditions.clearActivation(this, agenticScope);
         String outputKey = agentInvoker.outputKey();
-        if (outputKey != null && !outputKey.isBlank()) {
-            Object stateValue = response instanceof ResultWithAgenticScope<?> r ? r.result() : response;
+        if (outputKey != null && !dev.langchain4j.internal.Jdk8.isBlank(outputKey)) {
+            Object stateValue = response instanceof ResultWithAgenticScope<?> ? ((ResultWithAgenticScope<?>) response).result() : response;
             agenticScope.writeState(outputKey, stateValue);
         }
-
-        Map<String, Object> namedArgs = args != null ? args.namedArgs() : Map.of();
-        AgentInvocation agentInvocation = new AgentInvocation(
-                type(), name(), agentId(), namedArgs, isSerializable(response) ? response : "<unknown>");
+        Map<String, Object> namedArgs = args != null ? args.namedArgs() : dev.langchain4j.internal.Jdk8.map();
+        AgentInvocation agentInvocation = new AgentInvocation(type(), name(), agentId(), namedArgs, isSerializable(response) ? response : "<unknown>");
         agenticScope.registerAgentInvocation(agentInvocation, invokedAgent);
         if (planner != null) {
             planner.onSubagentInvoked(agentInvocation);
@@ -148,12 +132,7 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
         return response;
     }
 
-    private Object agentResponse(
-            DefaultAgenticScope agenticScope,
-            Object invokedAgent,
-            PlannerExecutor planner,
-            AgentInvocationArguments args,
-            boolean async) {
+    private Object agentResponse(DefaultAgenticScope agenticScope, Object invokedAgent, PlannerExecutor planner, AgentInvocationArguments args, boolean async) {
         if (async) {
             return new AsyncResponse<>(() -> {
                 try {
@@ -163,10 +142,9 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
                 }
             });
         }
-
         Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
-        if (planner != null && response instanceof TokenStream tokenStream) {
-            return planner.propagateStreaming() ? tokenStream : new StreamingResponse(tokenStream);
+        if (planner != null && response instanceof TokenStream) {
+            return planner.propagateStreaming() ? ((TokenStream) response) : new StreamingResponse(((TokenStream) response));
         }
         return response;
     }
@@ -284,9 +262,39 @@ public record AgentExecutor(AgentInvoker agentInvoker, Object agent) implements 
     private void propagateParentIndex(InternalAgent agent, int index) {
         agent.appendId("$" + index);
         for (AgentInstance subagent : agent.subagents()) {
-            if (subagent instanceof InternalAgent internalAgent) {
-                propagateParentIndex(internalAgent, index);
+            if (subagent instanceof InternalAgent) {
+                propagateParentIndex(((InternalAgent) subagent), index);
             }
         }
+    }
+
+    private final AgentInvoker agentInvoker;
+
+    public AgentInvoker agentInvoker() {
+        return agentInvoker;
+    }
+
+    private final Object agent;
+
+    public Object agent() {
+        return agent;
+    }
+
+    @com.fasterxml.jackson.annotation.JsonCreator
+    public AgentExecutor(@com.fasterxml.jackson.annotation.JsonProperty("agentInvoker") AgentInvoker agentInvoker, @com.fasterxml.jackson.annotation.JsonProperty("agent") Object agent) {
+        this.agentInvoker = agentInvoker;
+        this.agent = agent;
+    }
+
+    public final boolean equals(Object obj) {
+        return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(agentInvoker, ((AgentExecutor) obj).agentInvoker) && java.util.Objects.equals(agent, ((AgentExecutor) obj).agent));
+    }
+
+    public final int hashCode() {
+        return (31 * (31 * 0 + java.util.Objects.hashCode(agentInvoker)) + java.util.Objects.hashCode(agent));
+    }
+
+    public final String toString() {
+        return "AgentExecutor[" + "agentInvoker=" + agentInvoker + ", agent=" + agent + "]";
     }
 }

@@ -55,7 +55,7 @@
 | `langchain4j-agentic-a2a` | agentic | pending |
 | `langchain4j-agentic-mcp` | agentic | pending |
 | `langchain4j-agentic-patterns` | agentic | pending |
-| `langchain4j-agentic` | agentic | pending |
+| `langchain4j-agentic` | agentic | WIP（基础移植，完整验收未完成） |
 | `langchain4j-anthropic` | model | pending |
 | `langchain4j-azure-ai-search` | vector-store | pending |
 | `langchain4j-azure-cosmos-mongo-vcore` | vector-store | pending |

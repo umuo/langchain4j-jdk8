@@ -9,7 +9,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
 
-
 @Internal
 public class ComposedAgentListener implements AgentListener {
 
@@ -29,8 +28,8 @@ public class ComposedAgentListener implements AgentListener {
             if (listener == null) {
                 continue;
             }
-            if (listener instanceof ComposedAgentListener composed) {
-                collectedListeners.addAll(composed.listeners);
+            if (listener instanceof ComposedAgentListener) {
+                collectedListeners.addAll(((ComposedAgentListener) listener).listeners);
             } else {
                 collectedListeners.add(listener);
             }
@@ -39,8 +38,8 @@ public class ComposedAgentListener implements AgentListener {
     }
 
     public void addListener(AgentListener listener) {
-        if (listener instanceof ComposedAgentListener composed) {
-            this.listeners.addAll(composed.listeners);
+        if (listener instanceof ComposedAgentListener) {
+            this.listeners.addAll(((ComposedAgentListener) listener).listeners);
         } else {
             this.listeners.add(listener);
         }
@@ -114,8 +113,8 @@ public class ComposedAgentListener implements AgentListener {
     }
 
     public boolean contains(AgentListener listener) {
-        if (listener instanceof ComposedAgentListener composed) {
-            return listeners.containsAll(composed.listeners);
+        if (listener instanceof ComposedAgentListener) {
+            return listeners.containsAll(((ComposedAgentListener) listener).listeners);
         }
         return listeners.contains(listener);
     }
@@ -135,9 +134,9 @@ public class ComposedAgentListener implements AgentListener {
         if (existingListener == null) {
             return newListener;
         }
-        if (existingListener instanceof ComposedAgentListener composed) {
-            composed.addListener(newListener);
-            return composed;
+        if (existingListener instanceof ComposedAgentListener) {
+            ((ComposedAgentListener) existingListener).addListener(newListener);
+            return ((ComposedAgentListener) existingListener);
         }
         return new ComposedAgentListener(existingListener, newListener);
     }
@@ -164,8 +163,8 @@ public class ComposedAgentListener implements AgentListener {
         if (newListener == null) {
             return;
         }
-        if (newListener instanceof ComposedAgentListener composed) {
-            existingListeners.addAll(composed.listeners.stream().filter(filter).toList());
+        if (newListener instanceof ComposedAgentListener) {
+            existingListeners.addAll(((ComposedAgentListener) newListener).listeners.stream().filter(filter).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)));
         } else {
             if (filter.test(newListener)) {
                 existingListeners.add(newListener);
@@ -174,19 +173,22 @@ public class ComposedAgentListener implements AgentListener {
     }
 
     private static AgentListener composedListener(List<AgentListener> inherited) {
-        return switch (inherited.size()) {
-            case 0 -> null;
-            case 1 -> inherited.get(0);
-            default -> new ComposedAgentListener(inherited);
-        };
+        switch(inherited.size()) {
+            case 0:
+                return null;
+            case 1:
+                return inherited.get(0);
+            default:
+                return new ComposedAgentListener(inherited);
+        }
     }
 
     public static <T extends AgentListener> T listenerOfType(AgentListener rootListener, Class<T> listenerType) {
         if (listenerType.isInstance(rootListener)) {
             return (T) rootListener;
         }
-        if (rootListener instanceof ComposedAgentListener composed) {
-            for (AgentListener listener : composed.listeners) {
+        if (rootListener instanceof ComposedAgentListener) {
+            for (AgentListener listener : ((ComposedAgentListener) rootListener).listeners) {
                 if (listenerType.isInstance(listener)) {
                     return (T) listener;
                 }

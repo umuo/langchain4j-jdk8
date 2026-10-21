@@ -55,20 +55,25 @@ public interface AgentsRegistry {
     }
 
     class LazyHolder {
+
         private static volatile AgentsRegistry INSTANCE = discover();
 
-        private LazyHolder() { }
+        private LazyHolder() {
+        }
 
         private static AgentsRegistry discover() {
-            List<AgentsRegistry> registries = ServiceLoader.load(AgentsRegistry.class)
-                    .stream()
-                    .map(ServiceLoader.Provider::get)
-                    .toList();
-            return switch (registries.size()) {
-                case 0 -> new EmptyAgentsRegistry();
-                case 1 -> registries.get(0);
-                default -> new CompositeAgentsRegistry(registries);
-            };
+            List<AgentsRegistry> registries = new java.util.ArrayList<>();
+            for (AgentsRegistry registry : ServiceLoader.load(AgentsRegistry.class)) {
+                registries.add(registry);
+            }
+            switch(registries.size()) {
+                case 0:
+                    return new EmptyAgentsRegistry();
+                case 1:
+                    return registries.get(0);
+                default:
+                    return new CompositeAgentsRegistry(registries);
+            }
         }
     }
 
@@ -99,16 +104,16 @@ public interface AgentsRegistry {
             }
             return agent;
         }
-
     }
 
     class EmptyAgentsRegistry implements AgentsRegistry {
 
-        private EmptyAgentsRegistry() {}
+        private EmptyAgentsRegistry() {
+        }
 
         @Override
         public Map<String, AgentInstance> allAgents() {
-            return Map.of();
+            return dev.langchain4j.internal.Jdk8.map();
         }
 
         @Override

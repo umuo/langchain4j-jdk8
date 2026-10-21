@@ -12,23 +12,22 @@ import java.util.Map;
 public class MapperAgentInvoker extends AbstractAgentInvoker {
 
     private final Object item;
+
     private final String injectionKey;
+
     private final String instanceName;
+
     private final String instanceAgentId;
+
     private final String instanceOutputKey;
 
     public MapperAgentInvoker(AgentInvoker delegate, Object item, int instanceIndex) {
         super(delegate.method(), delegate);
         this.item = item;
-        this.injectionKey = delegate.arguments().isEmpty()
-                ? null
-                : delegate.arguments().get(0).name();
+        this.injectionKey = delegate.arguments().isEmpty() ? null : delegate.arguments().get(0).name();
         this.instanceName = delegate.name() + "_" + instanceIndex;
         this.instanceAgentId = delegate.agentId() + "_" + instanceIndex;
-        this.instanceOutputKey =
-                delegate.outputKey() != null && !delegate.outputKey().isBlank()
-                        ? delegate.outputKey() + "_" + instanceIndex
-                        : null;
+        this.instanceOutputKey = delegate.outputKey() != null && !dev.langchain4j.internal.Jdk8.isBlank(delegate.outputKey()) ? delegate.outputKey() + "_" + instanceIndex : null;
     }
 
     @Override
@@ -51,6 +50,6 @@ public class MapperAgentInvoker extends AbstractAgentInvoker {
         if (injectionKey == null) {
             return AgentUtil.agentInvocationArguments(agenticScope, arguments());
         }
-        return AgentUtil.agentInvocationArguments(agenticScope, arguments(), Map.of(injectionKey, item));
+        return AgentUtil.agentInvocationArguments(agenticScope, arguments(), dev.langchain4j.internal.Jdk8.map(injectionKey, item));
     }
 }

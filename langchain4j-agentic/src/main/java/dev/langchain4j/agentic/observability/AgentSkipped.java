@@ -11,7 +11,9 @@ import java.util.Objects;
 public final class AgentSkipped {
 
     private final AgenticScope agenticScope;
+
     private final AgentInstance agent;
+
     private final String reason;
 
     /**
@@ -47,10 +49,7 @@ public final class AgentSkipped {
 
     @Override
     public boolean equals(Object o) {
-        return o instanceof AgentSkipped that
-                && Objects.equals(agenticScope, that.agenticScope)
-                && Objects.equals(agent, that.agent)
-                && Objects.equals(reason, that.reason);
+        return o instanceof AgentSkipped && Objects.equals(agenticScope, ((AgentSkipped) o).agenticScope) && Objects.equals(agent, ((AgentSkipped) o).agent) && Objects.equals(reason, ((AgentSkipped) o).reason);
     }
 
     @Override

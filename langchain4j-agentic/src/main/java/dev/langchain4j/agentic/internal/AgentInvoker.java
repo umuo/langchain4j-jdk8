@@ -17,7 +17,6 @@ import java.lang.reflect.Parameter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
 import static dev.langchain4j.agentic.internal.AgentUtil.AGENTIC_SCOPE_ARG_NAME;
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.afterAgentInvocation;
 import static dev.langchain4j.agentic.observability.ListenerNotifierUtil.agentError;
@@ -32,41 +31,18 @@ public interface AgentInvoker extends AgentInstance, InternalAgent {
     default Object invoke(DefaultAgenticScope agenticScope, Object agent, AgentInvocationArguments args) throws AgentInvocationException {
         AgentListener listener = listener();
         beforeAgentInvocation(listener, agenticScope, this, args.namedArgs());
-        Object result = internalInvoke(agenticScope, listener, agent, args);
-        if (agent instanceof ChatMessagesAccess chatMessagesAccess) {
-            afterAgentInvocation(listener, agenticScope, this, args.namedArgs(), result,
-                    chatMessagesAccess.lastChatRequest(agenticScope.memoryId()),
-                    chatMessagesAccess.lastChatResponse(agenticScope.memoryId()));
+        Object result = AgentInvokerSupport.internalInvoke(this, agenticScope, listener, agent, args);
+        if (agent instanceof ChatMessagesAccess) {
+            afterAgentInvocation(listener, agenticScope, this, args.namedArgs(), result, ((ChatMessagesAccess) agent).lastChatRequest(agenticScope.memoryId()), ((ChatMessagesAccess) agent).lastChatResponse(agenticScope.memoryId()));
         } else {
             afterAgentInvocation(listener, agenticScope, this, args.namedArgs(), result);
         }
         return result;
     }
 
-    private Object internalInvoke(DefaultAgenticScope agenticScope, AgentListener listener, Object agent, AgentInvocationArguments args) {
-        LangChain4jManaged.setCurrent(Map.of(AgenticScope.class, agenticScope));
-        try {
-            return method().invoke(agent, args.positionalArgs());
-        } catch (Exception e) {
-            Throwable cause = e instanceof java.lang.reflect.InvocationTargetException ? e.getCause() : e;
-            if (cause instanceof AgenticSystemSuspendedException suspended) {
-                throw suspended;
-            }
-            AgentInvocationException invocationException = new AgentInvocationException("Failed to invoke agent method: " + method(), e);
-            agentError(listener, agenticScope, this, args.namedArgs(), invocationException);
-            throw invocationException;
-        } finally {
-            LangChain4jManaged.removeCurrent();
-        }
-    }
-
     static AgentInvoker fromSpec(AgentSpecsProvider spec, Method agenticMethod, String name) {
-        List<AgentArgument> arguments = spec.arguments() != null
-                ? spec.arguments()
-                : List.of(new AgentArgument(AgenticScope.class, AGENTIC_SCOPE_ARG_NAME));
-        InternalAgent agentInstance = new NonAiAgentInstance(agenticMethod.getDeclaringClass(),
-                name, spec.description(), agenticMethod.getGenericReturnType(), spec.outputKey(), spec.async(), arguments,
-                spec.listener(), spec.activationCondition());
+        List<AgentArgument> arguments = spec.arguments() != null ? spec.arguments() : dev.langchain4j.internal.Jdk8.list(new AgentArgument(AgenticScope.class, AGENTIC_SCOPE_ARG_NAME));
+        InternalAgent agentInstance = new NonAiAgentInstance(agenticMethod.getDeclaringClass(), name, spec.description(), agenticMethod.getGenericReturnType(), spec.outputKey(), spec.async(), arguments, spec.listener(), spec.activationCondition());
         return new SpecAgentInvoker(agenticMethod, agentInstance);
     }
 
@@ -74,16 +50,37 @@ public interface AgentInvoker extends AgentInstance, InternalAgent {
         if (method.getDeclaringClass() == UntypedAgent.class) {
             return new UntypedAgentInvoker(method, agent);
         }
-
         return new MethodAgentInvoker(method, agent);
     }
 
     static String parameterName(Parameter parameter) {
-        return optionalParameterName(parameter)
-                .orElseThrow(() -> new IllegalArgumentException("Parameter name not specified and no @V or @K annotation present: " + parameter));
+        return optionalParameterName(parameter).orElseThrow(() -> new IllegalArgumentException("Parameter name not specified and no @V or @K annotation present: " + parameter));
     }
 
     static Optional<String> optionalParameterName(Parameter parameter) {
         return Optional.ofNullable(ParameterNameResolver.name(parameter));
     }
+}
+
+/** Keeps the former private interface helper out of the Java 8 public API. */
+final class AgentInvokerSupport {
+    private AgentInvokerSupport() {}
+
+    static Object internalInvoke(AgentInvoker invoker, DefaultAgenticScope agenticScope, AgentListener listener, Object agent, AgentInvocationArguments args) {
+        LangChain4jManaged.setCurrent(dev.langchain4j.internal.Jdk8.map(AgenticScope.class, agenticScope));
+        try {
+            return invoker.method().invoke(agent, args.positionalArgs());
+        } catch (Exception e) {
+            Throwable cause = e instanceof java.lang.reflect.InvocationTargetException ? e.getCause() : e;
+            if (cause instanceof AgenticSystemSuspendedException) {
+                throw ((AgenticSystemSuspendedException) cause);
+            }
+            AgentInvocationException invocationException = new AgentInvocationException("Failed to invoke agent method: " + invoker.method(), e);
+            agentError(listener, agenticScope, invoker, args.namedArgs(), invocationException);
+            throw invocationException;
+        } finally {
+            LangChain4jManaged.removeCurrent();
+        }
+    }
+
 }

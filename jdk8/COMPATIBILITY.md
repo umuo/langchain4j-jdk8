@@ -197,3 +197,14 @@
 - 新增同一组 stdio 实际 Java 8 子进程 / 实际 WebSocket 双通道验收：发现、UTF-8 工具、资源/提示词、确认/拒绝/超时/中断、长期列表订阅、取消去重、状态续传/取消/时限、旧版本和能力/缓存恢复；另有 WebSocket 20 等待者共享恢复、旧订阅隔离、失败恢复/关闭/健康探测恢复。
 - 独立 BOM McpModernExample 增加 stdio/websocket 两模式，验证实际 Java 8 Future AI Services、明确 requestState 续传、工具仅执行一次、订阅取消一次、无坏元数据且通道/进程释放。HTTP 模式与所有旧示例保持不变。
 - 本轮单方法过滤参数化测试曾选中 0 个用例，不计验证；最终必须以完整类的 34 个参数化用例和 5 个 WebSocket 恢复用例及全部旧回归为准。原始双端点 HTTP+SSE、其余未验收 MCP 行为和所有后续模块仍不计完成。最终 clean exit 0：346 Java 8、864 上游、62 TCK 通过，14 官方 untested；33 JAR/6366 类审计、4946 类链接及全部独立消费通过，见 verification/milestone-14.json。
+
+
+## 第十五阶段主 Agentic 基础检查点（WIP，无新阶段标签）
+
+- `agentic-wip` 为显式构建入口；主模块全部生产源码使用 release 8，兼容坐标沿用 `dev.langchain4j.jdk8:langchain4j-agentic:1.23.0-jdk8-SNAPSHOT`。尚未加入 BOM/独立消费，不声明完整支持。
+- 25 个 record 改为 final POJO；保留规范构造器、组件访问器、浅值 equals/hashCode/toString，以及生成值方法的 final 属性。增加显式 Jackson 2 JSON 构造元数据，保留已有组件注解；Java 17 record 反射身份和 Record 父类不再存在。
+- 模式绑定在方法/集合读取处保留一次读取的局部快照；switch 分支和文本块分别转换为 Java 8 语法及等价字符串。Stream.toList 和集合工厂保持不可变结果。var 先在固定基线副本上以 javac 17 解析，类型归属错误为零，再转换；没有重跑已移植 core/main 的迁移工具。
+- 原私有接口辅助方法移入包内 AgentInvokerSupport，不新增公开 default 覆盖点。非静态 PlannerLoop 中两个静态辅助方法改为实例私有方法。ServiceLoader 改为 Java 8 迭代发现，保留提供者初始化顺序与注册表合并。
+- Optional.ifPresentOrElse、Predicate.not、Objects.requireNonNullElse、Class.getPackageName、Files.writeString 使用 Java 8 等价实现。报告默认 UTF-8、覆盖写入和损坏代理项报错；记录 Record 自动值方法 final 属性的首次 API 审计失败及修正，不将失败计作通过。
+- 14 项真实 Java 8 专项包含基础模型 Agent、顺序转换/状态传递、条件、循环上限/退出、并行实际重叠及调用方 executor 所有权、错误恢复、缺参不执行、消息变换、空白/null 状态、完成与 deferred 状态 JSON 恢复，以及报告写入。模型为进程内 stub，不宣称远端互操作；该集合不能代替完整 Agentic 验收。
+- 主模块完整功能、选定上游回归、HITL/挂起恢复、planner/supervisor、声明式/工具/补偿/记忆/可观测性完整场景，以及其余三个 Agentic 模块仍待推进。验证和 API/依赖细节见 AGENTIC-PORT.md 与 verification/agentic-main-wip.json。
