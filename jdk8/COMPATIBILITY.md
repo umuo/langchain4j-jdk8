@@ -390,6 +390,16 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 
 
 
+### terminal 提前工具与流错误取消（WIP，2026-10-23）
+
+- 新增十四个实际 Java 8 子进程，使用真正的 Agentic terminal 工作流或普通 AiServices TokenStream，以及 OpenAI/OkHttp loopback SSE。两个工具 index 交接在首个流关闭前触发第一工具，覆盖同步/异步 Agentic root 取消、SSE 错误时 pending 注解 Future、运行工具中断、排队工具跳过及正常双工具续传；普通无 owner 路径另覆盖错误/运行/排队/成功四项。
+- 初次十项均失败，其中八项为真实取消/资源缺口、两项成功路径为夹具误按无空白 JSON 查找 role。普通路径初次四项中三项复现取消缺口、一项有相同夹具问题。修复后第一次十四项运行仅三项成功夹具失败；现用 Jackson 解析消息，严格检查两个 tool_call_id、各自结果及最终响应，未放宽断言。完整定向十四项通过。
+- AiServiceStreamingResponseHandler.onError 取消本轮已提交的提前工具 Future，逐项继续清理，取消失败 suppressed 到原流错误；不取消其他调用 owner。DefaultToolExecutor 同步等待异步工具改为可中断 get，并登记原始 Future 到当前 root；等待中断时保留线程中断标记、取消原始 Future、以 CancellationException 终止。ToolService 不把取消转换成可重试的模型错误文本。
+- CapturedContextSupport.supplyAsync 在无 root owner 时也使用已有可取消任务实现：cancel(true) 可中断运行 supplier，排队取消不执行 supplier；保留调用者 executor。新增实际 Java 8 SPI 回归证明无 owner 时捕获的上下文只包装一次，取消后 worker/提交线程的 ThreadLocal 与 CancellationContext 恢复。没有新增公开签名或生产类型。
+- 网络用例在 fixture cleanup 前检查原始 Future 取消、运行中断/排队零执行、服务端 EOF、dispatcher 排空、零错误策略调用、无后续请求和单次错误终止；正常路径严格验证两个工具结果和一次最终完成。线程池保持打开；plain 用例确实不通过 Agentic 创建 InvocationContext。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 613 项（支持模块 423 + 主 Agentic 161 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1860 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；主 Agentic、CapturedContextSupport、ToolService、DefaultToolExecutor 严格 API、原始测试来源、生产依赖和产物审计通过。本单元无新增公开成员、生产类型或依赖；快照 [agentic-eager-terminal-wip.json](verification/agentic-eager-terminal-wip.json)。Agentic 仍 WIP、不进入默认 BOM，不新增完整阶段标签。
+- 同步 Future 工具等待现对线程中断响应并抛取消，这是有意的行为差异；取消不保证撤销外部副作用或强制停止拒绝中断的 provider。此组不包含保存 StreamingHandle 后主动取消、跨轮 handle 取消或任意第三方 CompletionStage 适配器；这些、完整成功生命周期、全部 Agentic 四模块/MCP/模型/向量库/BOM 范围仍 pending。Guardrails 不改动，不增加自动重放或重试。
+
 ### scope 创建与首次保存失败清理（WIP，2026-10-22）
 
 - 新增十二项真实 Java 8 scope 创建场景。改造前九项失败：首次 save RuntimeException/Error、替换已有 scope 的失败、重入安装替代 scope 后的失败，以及 ephemeral/registered/persistent 创建监听器 Error 均遗漏资源取消。load RuntimeException/Error 的不重试合同、普通创建 listener RuntimeException 的日志并继续合同原本通过。

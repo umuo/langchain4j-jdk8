@@ -446,6 +446,12 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
 
     @Override
     public void onError(Throwable error) {
+        // Tool calls may have started before the model stream terminates.
+        for (Future<ToolRequestResult> task : toolExecutionFutures) {
+            try { task.cancel(true); }
+            catch (RuntimeException | Error cleanup) { if (cleanup != error) error.addSuppressed(cleanup); }
+        }
+        toolExecutionFutures.clear();
         if (errorHandler != null) {
             try {
                 fireErrorReceived(error);

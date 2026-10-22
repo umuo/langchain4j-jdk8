@@ -1744,6 +1744,8 @@ public class ToolService {
     public static ToolExecutionResult executeWithErrorHandling(ToolExecutionRequest toolRequest, ToolExecutor toolExecutor, InvocationContext invocationContext, ToolArgumentsErrorHandler argumentsErrorHandler, ToolExecutionErrorHandler executionErrorHandler) {
         try {
             return toolExecutor.executeWithContext(toolRequest, invocationContext);
+        } catch (java.util.concurrent.CancellationException cancelled) {
+            throw cancelled;
         } catch (Exception e) {
             return toolErrorResult(e, toolRequest, invocationContext, argumentsErrorHandler, executionErrorHandler);
         }

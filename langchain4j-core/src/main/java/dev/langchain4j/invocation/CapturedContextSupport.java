@@ -60,8 +60,9 @@ public final class CapturedContextSupport {
         }
     }
 
-    /** Submit a supplier with its invocation context and root-owned cancellation, when present.
-     * Caller-owned executors remain open; cancelled queued entries become no-ops when dequeued. */
+    /** Submit a cancellable supplier with its invocation context and root ownership, when present.
+     * Cancellation also interrupts a running supplier without a root owner. Caller-owned executors
+     * remain open; cancelled queued entries become no-ops when dequeued. */
     public static <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier, Executor executor, InvocationContext context) {
         Objects.requireNonNull(supplier);
         Objects.requireNonNull(executor);
@@ -70,15 +71,13 @@ public final class CapturedContextSupport {
         if (executor instanceof RestoringExecutor && ((RestoringExecutor) executor).captured == captured) {
             executor = ((RestoringExecutor) executor).delegate;
         }
-        if (!(captured instanceof OwnedCapturedContext)) {
-            return CompletableFuture.supplyAsync(supplier, restoringIn(executor, context));
-        }
-        OwnedCapturedContext owned = (OwnedCapturedContext) captured;
         OwnedTask<T> task = new OwnedTask<>(supplier);
         try {
-            task.attach(owned.owner.register(task::cancelOwned));
+            if (captured instanceof OwnedCapturedContext) {
+                task.attach(((OwnedCapturedContext) captured).owner.register(task::cancelOwned));
+            }
             if (!task.isDone()) {
-                Runnable command = owned.wrap(task::invokeSupplier);
+                Runnable command = captured == null ? task::invokeSupplier : captured.wrap(task::invokeSupplier);
                 task.prepare(command);
                 if (!task.isDone()) executor.execute(task);
             }

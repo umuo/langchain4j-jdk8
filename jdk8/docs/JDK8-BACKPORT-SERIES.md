@@ -464,7 +464,9 @@ root 调用的失败保护随后覆盖 scope 取得后的 beforeCall、前后 li
 
 scope 创建入口随后补齐首次 save 和创建 listener 失败的清理：12 项实际 Java 8 场景覆盖存储错误、旧会话/重入替代保留、资源释放和失败 snapshot。首次 save 失败只条件撤回本次内存登记，不猜测外部写入结果，不盲目 delete 或重试；创建 listener 的普通异常仍记录日志并继续，Error 走失败清理。最终 clean 为 1845 通过、14 项官方 TCK untested，详见 [scope 创建快照](../verification/agentic-scope-creation-wip.json)。
 
-下一组检查包括 terminal 提前工具执行/续传与 handle 主动取消组合、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+terminal 提前工具随后补齐 root 取消与 SSE 错误清理：14 项实际 Java 8 子进程覆盖 Agentic 同步/异步和普通 AiServices 的 pending Future、运行/排队工具及双工具正常续传，另有 1 项无 owner SPI 上下文恢复验收。同步 Future 工具等待从不可中断 join 改为可取消 get；取消向原始 Future 传播，并绕过模型错误文本策略。无 owner supplier 也可中断，借用线程池保持打开。最终 clean 为 1860 通过、14 项官方 TCK untested，详见 [提前工具快照](../verification/agentic-eager-terminal-wip.json)。
+
+下一组检查包括保存 StreamingHandle 后的主动取消、跨工具轮次取消、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

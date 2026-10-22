@@ -40,7 +40,6 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.CompletionStage;
 
 public class DefaultToolExecutor implements ToolExecutor {
@@ -268,12 +267,18 @@ public class DefaultToolExecutor implements ToolExecutor {
     }
 
     private static Object joinToolFuture(CompletableFuture<?> futureResult) throws InvocationTargetException {
-        try {
-            return futureResult.join();
-        } catch (CompletionException e) {
+        try (dev.langchain4j.internal.CancellationContext.Registration registration =
+                     dev.langchain4j.internal.CancellationContext.register(() -> futureResult.cancel(true))) {
+            return futureResult.get();
+        } catch (java.util.concurrent.ExecutionException e) {
             throw new InvocationTargetException(getOrDefault(e.getCause(), e));
-        } catch (CancellationException e) {
-            throw new InvocationTargetException(e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            CancellationException cancelled = new CancellationException("Interrupted while waiting for tool result");
+            cancelled.initCause(e);
+            try { futureResult.cancel(true); }
+            catch (RuntimeException | Error cleanup) { if (cleanup != cancelled) cancelled.addSuppressed(cleanup); }
+            throw cancelled;
         }
     }
 

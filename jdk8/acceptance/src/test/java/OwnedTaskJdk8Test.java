@@ -86,4 +86,38 @@ public class OwnedTaskJdk8Test {
         }finally{release.countDown();}
     }
 
+    @Test(timeout=5000) public void ownerlessCancellationInterruptsWithProviderContextAndRestoresWorker() throws Exception {
+        ThreadLocal<String> host = new ThreadLocal<>();
+        AtomicInteger wraps = new AtomicInteger();
+        ExecutorProvider.set(new ExecutorProvider() {
+            public Executor executor() { return null; }
+            public CapturedContext captureContext() {
+                String captured = host.get();
+                return action -> { wraps.incrementAndGet(); return () -> {
+                    String prior = host.get(); host.set(captured);
+                    try { action.run(); } finally { if (prior == null) host.remove(); else host.set(prior); }
+                }; };
+            }
+        });
+        executor.submit(() -> host.set("worker")).get(2,TimeUnit.SECONDS);
+        host.set("caller");
+        InvocationContext context = CapturedContextSupport.captureInto(InvocationContext.builder()).build();
+        host.set("submitter");
+        CountDownLatch entered = new CountDownLatch(1), release = new CountDownLatch(1), stopped = new CountDownLatch(1);
+        AtomicBoolean interrupted = new AtomicBoolean();
+        try {
+            CompletableFuture<String> future = CapturedContextSupport.supplyAsync(() -> {
+                assertEquals("caller",host.get()); assertNull(CancellationContext.current()); entered.countDown();
+                try { release.await(); return "late"; }
+                catch (InterruptedException e) { interrupted.set(true); return "interrupted"; }
+                finally { stopped.countDown(); }
+            }, CapturedContextSupport.restoringIn(executor,context), context);
+            assertTrue(entered.await(2,TimeUnit.SECONDS)); assertTrue(future.cancel(true));
+            assertTrue(stopped.await(2,TimeUnit.SECONDS)); assertTrue(interrupted.get());
+            assertEquals("worker",executor.submit(host::get).get(2,TimeUnit.SECONDS));
+            assertEquals("submitter",host.get()); assertEquals(1,wraps.get()); assertTrue(future.isCancelled());
+            assertFalse(executor.isShutdown()); clean();
+        } finally { release.countDown(); host.remove(); }
+    }
+
 }

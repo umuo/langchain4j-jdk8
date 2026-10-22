@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic scope 创建失败检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic terminal 提前工具取消检查点（WIP，2026-10-23）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界及 12 项 scope 创建场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建及 14 项提前工具场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -22,6 +22,16 @@
 
 
 
+
+### terminal 提前工具与流错误取消（WIP，2026-10-23）
+
+- 新增十四个实际 Java 8 子进程，使用真正的 Agentic terminal 工作流或普通 AiServices TokenStream，以及 OpenAI/OkHttp loopback SSE。两个工具 index 交接在首个流关闭前触发第一工具，覆盖同步/异步 Agentic root 取消、SSE 错误时 pending 注解 Future、运行工具中断、排队工具跳过及正常双工具续传；普通无 owner 路径另覆盖错误/运行/排队/成功四项。
+- 初次十项均失败，其中八项为真实取消/资源缺口、两项成功路径为夹具误按无空白 JSON 查找 role。普通路径初次四项中三项复现取消缺口、一项有相同夹具问题。修复后第一次十四项运行仅三项成功夹具失败；现用 Jackson 解析消息，严格检查两个 tool_call_id、各自结果及最终响应，未放宽断言。完整定向十四项通过。
+- AiServiceStreamingResponseHandler.onError 取消本轮已提交的提前工具 Future，逐项继续清理，取消失败 suppressed 到原流错误；不取消其他调用 owner。DefaultToolExecutor 同步等待异步工具改为可中断 get，并登记原始 Future 到当前 root；等待中断时保留线程中断标记、取消原始 Future、以 CancellationException 终止。ToolService 不把取消转换成可重试的模型错误文本。
+- CapturedContextSupport.supplyAsync 在无 root owner 时也使用已有可取消任务实现：cancel(true) 可中断运行 supplier，排队取消不执行 supplier；保留调用者 executor。新增实际 Java 8 SPI 回归证明无 owner 时捕获的上下文只包装一次，取消后 worker/提交线程的 ThreadLocal 与 CancellationContext 恢复。没有新增公开签名或生产类型。
+- 网络用例在 fixture cleanup 前检查原始 Future 取消、运行中断/排队零执行、服务端 EOF、dispatcher 排空、零错误策略调用、无后续请求和单次错误终止；正常路径严格验证两个工具结果和一次最终完成。线程池保持打开；plain 用例确实不通过 Agentic 创建 InvocationContext。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 613 项（支持模块 423 + 主 Agentic 161 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1860 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；主 Agentic、CapturedContextSupport、ToolService、DefaultToolExecutor 严格 API、原始测试来源、生产依赖和产物审计通过。本单元无新增公开成员、生产类型或依赖；快照 [agentic-eager-terminal-wip.json](verification/agentic-eager-terminal-wip.json)。Agentic 仍 WIP、不进入默认 BOM，不新增完整阶段标签。
+- 同步 Future 工具等待现对线程中断响应并抛取消，这是有意的行为差异；取消不保证撤销外部副作用或强制停止拒绝中断的 provider。此组不包含保存 StreamingHandle 后主动取消、跨轮 handle 取消或任意第三方 CompletionStage 适配器；这些、完整成功生命周期、全部 Agentic 四模块/MCP/模型/向量库/BOM 范围仍 pending。Guardrails 不改动，不增加自动重放或重试。
 
 ### scope 创建与首次保存失败清理（WIP，2026-10-22）
 
