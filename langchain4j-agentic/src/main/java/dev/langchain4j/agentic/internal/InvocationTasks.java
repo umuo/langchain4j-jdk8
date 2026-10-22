@@ -14,6 +14,13 @@ public final class InvocationTasks {
     private final Set<Registration> tasks = new HashSet<>();
     private volatile boolean cancelled;
     private volatile boolean finished;
+    private final dev.langchain4j.internal.CancellationContext.Registrar registrar =
+            new dev.langchain4j.internal.CancellationContext.Registrar() {
+                @Override public dev.langchain4j.internal.CancellationContext.Registration register(Runnable cancel) {
+                    return InvocationTasks.this.register(cancel);
+                }
+                @Override public <T> T inContext(Supplier<T> action) { return withBinding(action); }
+            };
 
     public InvocationTasks(DefaultAgenticScope scope) { this.scope = scope; }
     public boolean finished() { return finished || cancelled; }
@@ -32,9 +39,14 @@ public final class InvocationTasks {
         synchronized (tasks) { check(scope); action.run(); }
     }
     public <T> T call(Supplier<T> action) {
+        return dev.langchain4j.internal.CancellationContext.call(registrar, () -> { check(scope); return action.get(); });
+    }
+    private <T> T withBinding(Supplier<T> action) {
         Binding previous = CURRENT.get();
         CURRENT.set(new Binding(this, previous));
-        try { return dev.langchain4j.internal.CancellationContext.call(this::register, () -> { check(scope); return action.get(); }); }
+        // Cancelled callbacks must still close responses and deliver failure signals.
+        // Their scope mutations are rejected by check/mutate using this captured generation.
+        try { return action.get(); }
         finally { if (previous == null) CURRENT.remove(); else CURRENT.set(previous); }
     }
     public Registration register(Runnable cancel) {

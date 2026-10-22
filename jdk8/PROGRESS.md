@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 中间流网络取消检查点（WIP，2026-10-21）
+## 当前状态：第十五阶段 Agentic 回调 scope 归属检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败及 7 项网络取消场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、8 项网络取消及 4 项回调归属场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -15,6 +15,17 @@
 
 
 
+
+
+
+### HTTP 回调的 scope 代际归属（WIP，2026-10-22）
+
+- 三个定向实际 Java 8 用例先复现失败：捕获回调取消后仍可写入、嵌套回调未恢复 owner、旧回调无法隔离新的 root 代际。SSE 工具夹具修正为先半关闭服务端输出触发协议 EOF 后，明确复现三种迟到写入全部未被拒绝；夹具早期等待超时不计为有效证据。
+- CancellationContext.Registrar 新增内部默认 inContext(Supplier) 钩子，保留单抽象方法合同；InvocationTasks 用私有 registrar bridge 把捕获的代际绑定到 scope 守卫。嵌套及异常时分别恢复之前的 scope/resource 上下文，无隐式线程继承。
+- 回调绑定本身不提前拒绝取消：HTTP onFailure/onResponse 仍可关闭响应、解除登记并传递失败。调用者真正写 scope 或开始新工作时，原有 check/mutate 根据捕获代际拒绝；不会错误采用 scope 新调用的 owner。
+- 四项定向验收覆盖三种写入、不同 scope 嵌套、线程复用无残留、同一 scope 新旧代际，以及 callback Error 保留和双绑定恢复。新增真实 SSE 工具回调用例在 root 返回原始失败后显式释放被门控的工具，断言拒绝三种迟到写入并保留外部写入的新值；原七项网络资源验证继续保留。半关闭输出用于触发工具执行，不把该场景的 EOF 单独当作 root 取消导致关闭的证据。
+- 本单元不改变基线公共类型/方法；新增默认钩子位于本分支新增的内部辅助接口，私有 bridge 不扩展 InvocationTasks 的公开方法。无生产依赖变化。最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 483 项（支持模块 349 + 主 Agentic 105 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1730 通过。严格基线 API/测试来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过，生产依赖树未变。快照 `verification/agentic-callback-scope-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
+- terminal TokenStream、任意自定义传输、异步工具执行器、用户自己创建线程的上下文传播仍待完成；直接 state() Map 写入、外部副作用不受此守卫合同覆盖。成功收尾/完整失败历史/自动重试、同步用户回调与 guard 锁边界及全部其他长期范围继续 pending。
 
 ### 中间流与 OkHttp 调用取消（WIP，2026-10-21）
 

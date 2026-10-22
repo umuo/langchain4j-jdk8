@@ -200,3 +200,13 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 三项支持模块 Java 8 用例验证无 owner 不取消资源、嵌套/异常恢复和 executor 回调的显式捕获/线程复用无泄漏。生产不新增外部依赖；StreamingResponse.isCancelled() 为内部 API 增项，AsyncResponse/StreamingResponse 保留基线直接 DelayedResponse 接口声明，由内部 OwnedResponse 辅助判断取消状态；不放宽接口审计。
 - 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：实际 Java 8 478 项（支持模块 349 + 主 Agentic 100 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1725 通过。33 JAR/6372 基础类条目审计，默认链接 4949 类；main 217 类/patterns 22 类均 classfile 52，扩展链接 5188 类及全部既有 BOM 消费通过。严格基线 API 和测试来源审计通过，主模块增项累计八个内部方法，无新增生产依赖。快照 `verification/agentic-network-cancellation-wip.json`；仍 WIP，无新完整阶段标签或 Agentic BOM 支持声明。
 - 边界：本单元覆盖默认 OkHttp 与框架消费的中间流；terminal TokenStream、任意自定义模型/传输、HTTP 回调的 scope 写入归属和异步工具执行器的取消/上下文传播仍需验收。资源 registrar 不等于恢复全部 Agentic ThreadLocal。成功调用被覆盖任务收尾、完整失败历史/自动重试、scope guard 与用户同步回调的阻塞边界，以及全部其余 Agentic/MCP/模型/向量库范围继续 pending。
+
+
+### HTTP 回调的 scope 代际归属（WIP，2026-10-22）
+
+- 三个定向实际 Java 8 用例先复现失败：捕获回调取消后仍可写入、嵌套回调未恢复 owner、旧回调无法隔离新的 root 代际。SSE 工具夹具修正为先半关闭服务端输出触发协议 EOF 后，明确复现三种迟到写入全部未被拒绝；夹具早期等待超时不计为有效证据。
+- CancellationContext.Registrar 新增内部默认 inContext(Supplier) 钩子，保留单抽象方法合同；InvocationTasks 用私有 registrar bridge 把捕获的代际绑定到 scope 守卫。嵌套及异常时分别恢复之前的 scope/resource 上下文，无隐式线程继承。
+- 回调绑定本身不提前拒绝取消：HTTP onFailure/onResponse 仍可关闭响应、解除登记并传递失败。调用者真正写 scope 或开始新工作时，原有 check/mutate 根据捕获代际拒绝；不会错误采用 scope 新调用的 owner。
+- 四项定向验收覆盖三种写入、不同 scope 嵌套、线程复用无残留、同一 scope 新旧代际，以及 callback Error 保留和双绑定恢复。新增真实 SSE 工具回调用例在 root 返回原始失败后显式释放被门控的工具，断言拒绝三种迟到写入并保留外部写入的新值；原七项网络资源验证继续保留。半关闭输出用于触发工具执行，不把该场景的 EOF 单独当作 root 取消导致关闭的证据。
+- 本单元不改变基线公共类型/方法；新增默认钩子位于本分支新增的内部辅助接口，私有 bridge 不扩展 InvocationTasks 的公开方法。无生产依赖变化。最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 483 项（支持模块 349 + 主 Agentic 105 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1730 通过。严格基线 API/测试来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过，生产依赖树未变。快照 `verification/agentic-callback-scope-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
+- terminal TokenStream、任意自定义传输、异步工具执行器、用户自己创建线程的上下文传播仍待完成；直接 state() Map 写入、外部副作用不受此守卫合同覆盖。成功收尾/完整失败历史/自动重试、同步用户回调与 guard 锁边界及全部其他长期范围继续 pending。

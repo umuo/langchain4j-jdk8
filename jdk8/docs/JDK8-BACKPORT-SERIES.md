@@ -307,6 +307,8 @@ ThreadLocal 不会自动正确传播到任意异步链路。需要明确捕获�
 
 [`CancellationContext`](../../langchain4j-core/src/main/java/dev/langchain4j/internal/CancellationContext.java) 当前传播资源登记者，使默认 SSE 工具回调触发的后续请求仍可取消。它不等于恢复所有 Agentic ThreadLocal；HTTP 回调中的 scope 写入归属和异步工具执行器仍是后续验收范围。
 
+后续演进：2026-10-22 的[回调归属检查点](../verification/agentic-callback-scope-wip.json)已验证默认 OkHttp 显式捕获回调的 scope 代际绑定和迟到写入拒绝。异步工具执行器及自定义传输仍待推进；该记录不改变本文以 `4d09bf8b7` 为基准的统计。
+
 ## 第八篇：保存状态与恢复执行——检查点保存业务事实
 
 ### 8.1 不保存运行时执行对象

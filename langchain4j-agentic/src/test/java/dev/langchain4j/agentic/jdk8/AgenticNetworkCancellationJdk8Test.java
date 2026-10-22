@@ -28,9 +28,25 @@ public class AgenticNetworkCancellationJdk8Test {
     @Test(timeout=15000) public void asyncChatBeforeHeaders() throws Exception { child("chat-header"); }
     @Test(timeout=15000) public void directAsyncHttpBeforeHeaders() throws Exception { child("http-async"); }
     @Test(timeout=15000) public void callbackToolContinuationRetainsCancellationOwner() throws Exception { child("tool-next"); }
+    @Test(timeout=15000) public void cancelledHttpToolCallbackCannotWriteScope() throws Exception { child("tool-late-write"); }
     public static class Lookup {
         final AtomicInteger calls = new AtomicInteger();
-        @dev.langchain4j.agent.tool.Tool public String lookup() { calls.incrementAndGet(); return "synthetic-tool-result"; }
+        volatile boolean gated;
+        final AtomicReference<AgenticScope> scope = new AtomicReference<>();
+        final CountDownLatch entered = new CountDownLatch(1), release = new CountDownLatch(1), done = new CountDownLatch(1);
+        final AtomicInteger rejected = new AtomicInteger();
+        @dev.langchain4j.agent.tool.Tool public String lookup() throws InterruptedException {
+            calls.incrementAndGet();
+            if (gated) {
+                entered.countDown();
+                try {
+                    assertTrue(release.await(4,TimeUnit.SECONDS));
+                    java.util.List<Runnable> writes=java.util.Arrays.asList(()->scope.get().writeState("late","stale"),()->scope.get().writeStateIfAbsent("absent","stale"),()->scope.get().writeStates(java.util.Collections.singletonMap("bulk","stale")));
+                    for(Runnable write:writes)try {write.run();}catch(CancellationException expected){rejected.incrementAndGet();}
+                } finally {done.countDown();}
+            }
+            return "synthetic-tool-result";
+        }
     }
     static String readRequest(Socket socket) throws Exception {
         socket.setSoTimeout(7000);InputStream in=socket.getInputStream();ByteArrayOutputStream headers=new ByteArrayOutputStream();int match=0,b;
@@ -49,13 +65,15 @@ public class AgenticNetworkCancellationJdk8Test {
         CountDownLatch ready=new CountDownLatch(1),closed=new CountDownLatch(1);AtomicReference<Throwable> serverFailure=new AtomicReference<>();AtomicInteger errors=new AtomicInteger();
         ServerSocket server=new ServerSocket(0,1,InetAddress.getByName("127.0.0.1"));server.setSoTimeout(7000);ExecutorService fixture=Executors.newSingleThreadExecutor();
         okhttp3.Dispatcher dispatcher=new okhttp3.Dispatcher();okhttp3.ConnectionPool pool=new okhttp3.ConnectionPool();
+        Lookup tool = new Lookup();tool.gated=mode.equals("tool-late-write");
         fixture.submit(()->{try {
-            if(mode.equals("tool-next"))try(Socket first=server.accept()) {
+            if(mode.startsWith("tool-"))try(Socket first=server.accept()) {
                 assertTrue(readRequest(first).contains("lookup"));
-                String tool="HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n"
+                String toolFrame="HTTP/1.1 200 OK\r\nContent-Type: text/event-stream\r\nConnection: close\r\n\r\n"
                     +"data: {\"id\":\"fixture\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"tool-1\",\"type\":\"function\",\"function\":{\"name\":\"lookup\",\"arguments\":\"{}\"}}]}}]}\n\n"
                     +"data: {\"id\":\"fixture\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n";
-                first.getOutputStream().write(tool.getBytes(StandardCharsets.UTF_8));first.getOutputStream().flush();
+                first.getOutputStream().write(toolFrame.getBytes(StandardCharsets.UTF_8));first.getOutputStream().flush();
+                if(mode.equals("tool-late-write")){first.shutdownOutput();ready.countDown();assertEquals(-1,first.getInputStream().read());closed.countDown();return;}
             }
             try(Socket socket=server.accept()) {
                 String body=readRequest(socket);InputStream in=socket.getInputStream();
@@ -67,7 +85,6 @@ public class AgenticNetworkCancellationJdk8Test {
                 ready.countDown();assertEquals("peer did not close",-1,in.read());closed.countDown();
             }
         }catch(Throwable failure){serverFailure.set(failure);ready.countDown();}});
-        Lookup tool = new Lookup();
         AtomicReference<CompletableFuture<?>> directHttp = new AtomicReference<>();
         try {
             String base="http://127.0.0.1:"+server.getLocalPort()+"/v1";
@@ -76,17 +93,22 @@ public class AgenticNetworkCancellationJdk8Test {
                 directHttp.set(transport.build().executeAsync(dev.langchain4j.http.client.HttpRequest.builder().method(dev.langchain4j.http.client.HttpMethod.POST).url(base+"/chat/completions").body("{}").build()));
                 return "started";
             }).name("direct-http").outputKey("x").build() : mode.startsWith("chat")?AgenticServices.agentBuilder(Chat.class).chatModel(OpenAiChatModel.builder().apiKey("synthetic-fixture").modelName("fixture").baseUrl(base).timeout(Duration.ofSeconds(20)).maxRetries(0).httpClientBuilder(transport).build()).async(true).build()
-                :AgenticServices.agentBuilder(Stream.class).streamingChatModel(OpenAiStreamingChatModel.builder().apiKey("synthetic-fixture").modelName("fixture").baseUrl(base).timeout(Duration.ofSeconds(20)).httpClientBuilder(transport).build()).async(mode.startsWith("async")).tools(mode.equals("tool-next") ? new Object[]{tool} : new Object[0]).build();
-            Object bad=AgenticServices.nonAiAgentBuilder(scope->{assertTrue(ready.await(3,TimeUnit.SECONDS));assertNull(serverFailure.get());throw new IllegalStateException("primary failure");}).name("bad").outputKey("z").build();
-            Work work=AgenticServices.sequenceBuilder(Work.class).subAgents(producer,bad).outputKey("z").errorHandler(error->{errors.incrementAndGet();return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException();}).build();
-            try {work.run("failed");fail("must fail");}catch(AgentInvocationException e){Throwable cause=e;while(cause.getCause()!=null)cause=cause.getCause();assertEquals("primary failure",cause.getMessage());}
+                :AgenticServices.agentBuilder(Stream.class).streamingChatModel(OpenAiStreamingChatModel.builder().apiKey("synthetic-fixture").modelName("fixture").baseUrl(base).timeout(Duration.ofSeconds(20)).httpClientBuilder(transport).build()).async(mode.startsWith("async")).tools(mode.startsWith("tool-") ? new Object[]{tool} : new Object[0]).build();
+            Object bad=AgenticServices.nonAiAgentBuilder(scope->{assertTrue((mode.equals("tool-late-write")?tool.entered:ready).await(3,TimeUnit.SECONDS));assertNull(serverFailure.get());throw new IllegalStateException("primary failure");}).name("bad").outputKey("z").build();
+            Work work=AgenticServices.sequenceBuilder(Work.class).subAgents(producer,bad).beforeCall(tool.scope::set).outputKey("z").errorHandler(error->{errors.incrementAndGet();return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException();}).build();
+            try {work.run("failed");fail("must fail");}catch(AgentInvocationException e){Throwable cause=e;while(cause.getCause()!=null)cause=cause.getCause();if(!"primary failure".equals(cause.getMessage())){e.printStackTrace();System.err.println("server="+serverFailure.get()+" toolCalls="+tool.calls.get()+" entered="+tool.entered.getCount());}
+                assertEquals("primary failure",cause.getMessage());}
             assertTrue("HTTP connection still open after root failed",closed.await(2,TimeUnit.SECONDS));assertNull(serverFailure.get());
+            if (mode.equals("tool-late-write")) {
+                AgenticScope scope=work.getAgenticScope("failed");scope.writeState("late","fresh");tool.release.countDown();assertTrue(tool.done.await(2,TimeUnit.SECONDS));
+                assertEquals("late callback writes were not rejected",3,tool.rejected.get());assertEquals("fresh",scope.readState("late"));assertFalse(scope.hasState("absent"));assertFalse(scope.hasState("bulk"));
+            }
             if (mode.equals("http-async")) { assertTrue(directHttp.get().isCancelled()); } else {
             Object pending=work.getAgenticScope("failed").state().get("x");assertTrue(pending instanceof DelayedResponse<?>);assertTrue("stream waiter still pending",((DelayedResponse<?>)pending).isDone());
             try {work.getAgenticScope("failed").readState("x");fail("expected cancelled result");}catch(CancellationException expected){}
             }
             long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(2);while(dispatcher.runningCallsCount()!=0&&System.nanoTime()<until)Thread.sleep(5);
-            assertEquals(0,dispatcher.runningCallsCount());assertEquals(0,dispatcher.queuedCallsCount());assertEquals("cancel must not retry",1,errors.get());if(mode.equals("tool-next"))assertEquals(1,tool.calls.get());
-        }finally {dispatcher.cancelAll();server.close();fixture.shutdownNow();dispatcher.executorService().shutdownNow();pool.evictAll();assertTrue(fixture.awaitTermination(2,TimeUnit.SECONDS));assertTrue(dispatcher.executorService().awaitTermination(2,TimeUnit.SECONDS));}
+            assertEquals(0,dispatcher.runningCallsCount());assertEquals(0,dispatcher.queuedCallsCount());assertEquals("cancel must not retry",1,errors.get());if(mode.startsWith("tool-"))assertEquals(1,tool.calls.get());
+        }finally {tool.release.countDown();dispatcher.cancelAll();server.close();fixture.shutdownNow();dispatcher.executorService().shutdownNow();pool.evictAll();assertTrue(fixture.awaitTermination(2,TimeUnit.SECONDS));assertTrue(dispatcher.executorService().awaitTermination(2,TimeUnit.SECONDS));}
     }
 }

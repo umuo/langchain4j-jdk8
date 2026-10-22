@@ -13,7 +13,13 @@ public final class CancellationContext {
     @FunctionalInterface
     public interface Registration extends AutoCloseable { @Override void close(); }
     @FunctionalInterface
-    public interface Registrar { Registration register(Runnable cancel); }
+    public interface Registrar {
+        Registration register(Runnable cancel);
+
+        /** Restore owner-local guards for callbacks, including failure cleanup after cancellation.
+         * Implementations must restore any previous binding in finally. */
+        default <T> T inContext(Supplier<T> action) { return action.get(); }
+    }
 
     public static Registrar current() { return CURRENT.get(); }
     public static Registration register(Runnable cancel) {
@@ -23,7 +29,7 @@ public final class CancellationContext {
     public static <T> T call(Registrar registrar, Supplier<T> action) {
         Registrar previous = CURRENT.get();
         if (registrar == null) CURRENT.remove(); else CURRENT.set(registrar);
-        try { return action.get(); }
+        try { return registrar == null ? action.get() : registrar.inContext(action); }
         finally { if (previous == null) CURRENT.remove(); else CURRENT.set(previous); }
     }
     public static void run(Registrar registrar, Runnable action) {
