@@ -675,7 +675,7 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
 
     private DefaultAgenticScope createEphemeralAgenticScope(AgenticScopeRegistry registry) {
         DefaultAgenticScope agenticScope = registry.createEphemeralAgenticScope();
-        afterAgenticScopeCreated(agentListener, agenticScope);
+        notifyScopeCreated(registry, agenticScope);
         return agenticScope;
     }
 
@@ -683,9 +683,21 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
         DefaultAgenticScope agenticScope = registry.get(memoryId);
         if (agenticScope == null) {
             agenticScope = registry.create(memoryId);
-            afterAgenticScopeCreated(agentListener, agenticScope);
+            notifyScopeCreated(registry, agenticScope);
         }
         return agenticScope;
+    }
+
+    private void notifyScopeCreated(AgenticScopeRegistry registry, DefaultAgenticScope scope) {
+        try {
+            afterAgenticScopeCreated(agentListener, scope);
+        } catch (RuntimeException | Error failure) {
+            // Creation precedes executeAgentMethod's root failure boundary.
+            scope.cancelPendingTasks(failure);
+            AgenticJdk8.suppressCleanupFailure(failure, scope::compensateAll);
+            AgenticJdk8.suppressCleanupFailure(failure, () -> scope.rootCallFailed(registry, agentListener, failure));
+            throw failure;
+        }
     }
 
     private Object memoryId(Method method, Object[] args) {

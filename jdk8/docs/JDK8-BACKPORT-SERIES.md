@@ -462,7 +462,9 @@ terminal TokenStream 随后在延迟 start 时恢复创建时的 root owner：14
 
 root 调用的失败保护随后覆盖 scope 取得后的 beforeCall、前后 listener、输出结算和最终持久化；11 项实际 Java 8 边界测试验证资源取消、原异常身份、suppressed 清理错误、同会话新 owner 及正常挂起保留资源。普通 listener RuntimeException 仍按基线约定记录日志后继续。最终 clean 为 1833 通过、14 项官方 TCK untested，详见 [root 边界快照](../verification/agentic-root-boundary-wip.json)。这些边界测试使用登记资源探针，实际网络证明仍来自既有 HTTP/SSE 回归。
 
-下一组检查包括 terminal 提前工具执行/续传与 handle 主动取消组合、scope 获取/创建时的 store 与创建 listener 失败，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+scope 创建入口随后补齐首次 save 和创建 listener 失败的清理：12 项实际 Java 8 场景覆盖存储错误、旧会话/重入替代保留、资源释放和失败 snapshot。首次 save 失败只条件撤回本次内存登记，不猜测外部写入结果，不盲目 delete 或重试；创建 listener 的普通异常仍记录日志并继续，Error 走失败清理。最终 clean 为 1845 通过、14 项官方 TCK untested，详见 [scope 创建快照](../verification/agentic-scope-creation-wip.json)。
+
+下一组检查包括 terminal 提前工具执行/续传与 handle 主动取消组合、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

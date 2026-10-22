@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic root 边界收尾检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic scope 创建失败检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流及 11 项 root 边界场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界及 12 项 scope 创建场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -22,6 +22,15 @@
 
 
 
+
+### scope 创建与首次保存失败清理（WIP，2026-10-22）
+
+- 新增十二项真实 Java 8 scope 创建场景。改造前九项失败：首次 save RuntimeException/Error、替换已有 scope 的失败、重入安装替代 scope 后的失败，以及 ephemeral/registered/persistent 创建监听器 Error 均遗漏资源取消。load RuntimeException/Error 的不重试合同、普通创建 listener RuntimeException 的日志并继续合同原本通过。
+- registry 首次登记 save 失败时，以条件 remove/replace 撤回本次内存发布；有旧 scope 则恢复旧对象，重入或并发安装的其他对象不被本次清理覆盖。失败新 scope 的 owner 被取消，取消清理异常 suppressed 到原始失败；旧 scope 资源不被取消。store.save 可能先写入后抛错，故不盲目 delete、不自动重试。
+- 创建后 listener 的 Error 在进入 executeAgentMethod 前处理：取消已登记资源、尽力补偿并执行 rootCallFailed；ephemeral 被驱逐，registered/persistent 仍按失败 scope 合同保留，persistent 尝试写失败状态。其 snapshot 失败 suppressed 到原 listener Error，原异常身份不变。普通 listener RuntimeException 沿用既有日志并继续合同，未新增初始化阶段的 agent-invocation 事件。
+- 十二项场景验证原错误/清理错误身份、资源释放与迟到登记、旧会话保留、重入替代对象保留、临时驱逐、失败状态持久化，以及 load 失败时零保存/零 agent 调用/一次 load；所有行为断言早于 fixture cleanup。单写入与重入探针不等于完整并发初始化、分布式存储事务或第三方 I/O 证明。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 598 项（支持模块 422 + 主 Agentic 147 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1845 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接和全部既有 BOM 独立消费通过；主 Agentic 严格 API、原始测试来源、生产依赖图及产物审计通过，无新增公开成员、生产类型或依赖。快照 [agentic-scope-creation-wip.json](verification/agentic-scope-creation-wip.json)。仍 WIP，无新完整阶段标签，Agentic 不进入默认 BOM。
+- store 写入的结果不确定性保留为存储实现合同；不因兼容移植增加跨进程事务或自动工具重放。创建 listener 失败后持久/registered scope 保留供显式检查，不声称下一次调用会重新执行创建 listener。terminal 提前工具/续传与 handle 取消、成功 root 被覆盖任务收尾、完整四模块与其他 MCP/模型/向量库/BOM 仍 pending；Guardrails 不改动。
 
 ### root 调用边界失败收尾（WIP，2026-10-22）
 

@@ -64,8 +64,18 @@ public class AgenticScopeRegistry {
     }
 
     private void register(DefaultAgenticScope agenticScope) {
-        inMemoryAgenticScope.put(new AgenticScopeKey(agentId, agenticScope.memoryId()), agenticScope);
-        update(agenticScope);
+        AgenticScopeKey key = new AgenticScopeKey(agentId, agenticScope.memoryId());
+        DefaultAgenticScope previous = inMemoryAgenticScope.put(key, agenticScope);
+        try {
+            update(agenticScope);
+        } catch (RuntimeException | Error failure) {
+            // Undo only our own publication, preserving a concurrent/reentrant replacement.
+            if (previous == null) inMemoryAgenticScope.remove(key, agenticScope);
+            else inMemoryAgenticScope.replace(key, agenticScope, previous);
+            agenticScope.cancelPendingTasks(failure);
+            // A store may have written before throwing; do not delete or replay that write.
+            throw failure;
+        }
     }
 
     public boolean evict(Object memoryId, AgentListener listener) {

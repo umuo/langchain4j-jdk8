@@ -223,6 +223,15 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 
 
 
+### scope 创建与首次保存失败清理（WIP，2026-10-22）
+
+- 新增十二项真实 Java 8 scope 创建场景。改造前九项失败：首次 save RuntimeException/Error、替换已有 scope 的失败、重入安装替代 scope 后的失败，以及 ephemeral/registered/persistent 创建监听器 Error 均遗漏资源取消。load RuntimeException/Error 的不重试合同、普通创建 listener RuntimeException 的日志并继续合同原本通过。
+- registry 首次登记 save 失败时，以条件 remove/replace 撤回本次内存发布；有旧 scope 则恢复旧对象，重入或并发安装的其他对象不被本次清理覆盖。失败新 scope 的 owner 被取消，取消清理异常 suppressed 到原始失败；旧 scope 资源不被取消。store.save 可能先写入后抛错，故不盲目 delete、不自动重试。
+- 创建后 listener 的 Error 在进入 executeAgentMethod 前处理：取消已登记资源、尽力补偿并执行 rootCallFailed；ephemeral 被驱逐，registered/persistent 仍按失败 scope 合同保留，persistent 尝试写失败状态。其 snapshot 失败 suppressed 到原 listener Error，原异常身份不变。普通 listener RuntimeException 沿用既有日志并继续合同，未新增初始化阶段的 agent-invocation 事件。
+- 十二项场景验证原错误/清理错误身份、资源释放与迟到登记、旧会话保留、重入替代对象保留、临时驱逐、失败状态持久化，以及 load 失败时零保存/零 agent 调用/一次 load；所有行为断言早于 fixture cleanup。单写入与重入探针不等于完整并发初始化、分布式存储事务或第三方 I/O 证明。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 598 项（支持模块 422 + 主 Agentic 147 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1845 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接和全部既有 BOM 独立消费通过；主 Agentic 严格 API、原始测试来源、生产依赖图及产物审计通过，无新增公开成员、生产类型或依赖。快照 [agentic-scope-creation-wip.json](verification/agentic-scope-creation-wip.json)。仍 WIP，无新完整阶段标签，Agentic 不进入默认 BOM。
+- store 写入的结果不确定性保留为存储实现合同；不因兼容移植增加跨进程事务或自动工具重放。创建 listener 失败后持久/registered scope 保留供显式检查，不声称下一次调用会重新执行创建 listener。terminal 提前工具/续传与 handle 取消、成功 root 被覆盖任务收尾、完整四模块与其他 MCP/模型/向量库/BOM 仍 pending；Guardrails 不改动。
+
 ### root 调用边界失败收尾（WIP，2026-10-22）
 
 - 新增 AgenticRootBoundaryJdk8Test，八项初始场景中七项在改造前失败：beforeCall RuntimeException/Error、前/后 listener Error、最终持久化 RuntimeException/Error 和 ephemeral beforeCall 失败均未取消已登记资源。listener 普通 RuntimeException 的日志并继续合同原本通过。

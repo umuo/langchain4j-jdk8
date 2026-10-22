@@ -153,3 +153,5 @@
 - 2026-10-22 terminal 流延迟启动归属 WIP：14 项真实 Java 8 Agentic socket/SSE 子进程覆盖启动前、响应头前、首段后取消、同会话代际、正常 Unicode、HTTP/SSE 错误；6 项 SPI 验证单次终止与清理错误。强化排空后断言复现并修复错误后迟到成功；SSE 错误帧主动释放解析连接。最终 clean 1822 通过/14 官方 TCK untested，严格 API/来源/产物/链接、生产依赖及既有 BOM 消费通过，无新增公开成员、生产类型或依赖。快照 verification/agentic-terminal-stream-wip.json；本组无工具，terminal 提前工具/续传/handle 主动取消组合、root 完整收尾和全部长期范围仍 pending。
 
 - 2026-10-22 root 边界收尾 WIP：11 项真实 Java 8 用例覆盖 beforeCall、前后 listener、最终 save 的 RuntimeException/Error、临时驱逐、同会话 owner 换代和正常/失败挂起。失败取消/迟到资源、原异常与 suppressed 诊断在 fixture cleanup 前检查；普通 listener RuntimeException 保持日志并继续。最终 clean 1833 通过/14 官方 TCK untested，严格 API/来源/产物/链接、生产依赖图与既有 BOM 消费通过，无新增公开成员/生产类型/依赖。快照 verification/agentic-root-boundary-wip.json；scope 创建失败、terminal 工具组合、完整生命周期与全部长期范围仍 pending。
+
+- 2026-10-22 scope 创建失败 WIP：12 项真实 Java 8 用例覆盖首次 save 与 load 的 RuntimeException/Error、旧 scope/重入替代保留、创建 listener Error 及普通异常合同；改造前 9 项失败。save 失败条件撤回本次内存登记并取消新 owner，不重试/盲删存储；listener Error 取消、临时驱逐或持久失败快照。最终 clean 1845 通过/14 官方 TCK untested，严格 API/来源/产物/链接、生产依赖图与既有 BOM 消费通过，无新增公开成员/类型/依赖。快照 verification/agentic-scope-creation-wip.json；完整并发初始化、terminal 工具组合、成功生命周期及全部长期范围仍 pending。
