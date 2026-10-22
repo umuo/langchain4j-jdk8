@@ -8,6 +8,34 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 
 public class AgenticCallbackScopeJdk8Test {
+    @Test(timeout=5000) public void terminalCallbackUsesCapturedGenerationAndRestoresCallerAfterError() {
+        DefaultAgenticScope scope = DefaultAgenticScope.ephemeralAgenticScope();
+        capture(scope);
+        dev.langchain4j.invocation.InvocationContext stale = scope.invocationTasks().call(() ->
+                dev.langchain4j.invocation.CapturedContextSupport.captureInto(dev.langchain4j.invocation.InvocationContext.builder()).build());
+        scope.cancelPendingTasks(new IllegalStateException("old root"));
+        scope.rootCallStarted(null);
+        CancellationContext.Registrar fresh = capture(scope);
+        AssertionError primary = new AssertionError("terminal callback");
+        CancellationContext.run(fresh, () -> {
+            scope.writeState("result", "fresh");
+            try {
+                dev.langchain4j.invocation.CapturedContextSupport.runWithOwner(stale, () -> {
+                    rejected(() -> scope.writeState("result", "stale"));
+                    rejected(() -> scope.writeStateIfAbsent("absent", "stale"));
+                    rejected(() -> scope.writeStates(java.util.Collections.singletonMap("bulk", "stale")));
+                    throw primary;
+                });
+                fail();
+            } catch (AssertionError expected) { assertSame(primary, expected); }
+            assertSame(fresh, CancellationContext.current());
+            scope.writeState("other", "fresh");
+        });
+        assertEquals("fresh", scope.readState("result"));
+        assertEquals("fresh", scope.readState("other"));
+        assertFalse(scope.hasState("absent")); assertFalse(scope.hasState("bulk"));
+        assertNull(InvocationTasks.bound(scope)); assertNull(CancellationContext.current());
+    }
     static CancellationContext.Registrar capture(DefaultAgenticScope scope) {
         assertTrue(System.getProperty("java.version").startsWith("1.8."));
         return scope.invocationTasks().call(CancellationContext::current);

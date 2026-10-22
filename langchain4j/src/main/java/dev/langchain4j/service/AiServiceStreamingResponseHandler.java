@@ -11,6 +11,7 @@ import dev.langchain4j.guardrail.ChatExecutor;
 import dev.langchain4j.guardrail.GuardrailRequestParams;
 import dev.langchain4j.guardrail.OutputGuardrailRequest;
 import dev.langchain4j.invocation.InvocationContext;
+import dev.langchain4j.invocation.CapturedContextSupport;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ChatRequestParameters;
@@ -288,15 +289,24 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
             return;
         }
         try {
-            completeResponseProcessingExecutor.execute(() -> {
-                try {
-                    processCompleteResponse(chatResponse);
-                } catch (Throwable t) {
-                    onError(t);
-                }
+            CapturedContextSupport.supplyAsync(() -> {
+                processCompleteResponse(chatResponse);
+                return null;
+            }, completeResponseProcessingExecutor, invocationContext).whenComplete((ignored, error) -> {
+                if (error != null) reportCompletionFailure(dev.langchain4j.internal.Exceptions.unwrapCompletionException(error));
             });
         } catch (Exception e) {
-            onError(e);
+            reportCompletionFailure(e);
+        }
+    }
+
+    private void reportCompletionFailure(Throwable error) {
+        try {
+            CapturedContextSupport.runWithOwner(invocationContext, () -> onError(error));
+        } catch (RuntimeException | Error callbackFailure) {
+            // CompletableFuture callbacks capture exceptions; retain the executor's uncaught-error channel.
+            Thread current = Thread.currentThread();
+            current.getUncaughtExceptionHandler().uncaughtException(current, callbackFailure);
         }
     }
 

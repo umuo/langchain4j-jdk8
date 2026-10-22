@@ -456,7 +456,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 同轮双工具的后续验收又发现，高层 Future 虽然取消了其他工具，provider 的清理异常仍可能在包装层之间丢失。修复通用取消传播工具后，10 项双工具 HTTP/SSE 场景和 4 项异常传播用例通过；其中包括运行/排队 sibling、结果 ID 对应和补偿逆序，详见 [同轮多工具取消快照](../verification/agentic-tool-fanout-cancellation-wip.json)。最终 clean 为 1793 通过、14 项官方 TCK untested，无新增公开成员、生产类型或依赖。
 
-当前下一组取消问题包括完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+完成响应 executor 随后接入统一任务登记：8 项实际 Java 8 SSE 用例覆盖排队/运行取消、上下文与失败通道，新增 1 项 Agentic 用例证明终端回调继续使用捕获的旧代际，详见 [完成响应 executor 快照](../verification/agentic-completion-executor-wip.json)。最终 clean 为 1802 通过、14 项官方 TCK untested。TokenStream 的局部公开 API 对照无增删；新增的内部公开 helper runWithOwner 单独记录。该路径使用低层参数中的显式 executor，没有新增高层配置入口。
+
+当前下一组取消问题包括 terminal TokenStream，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

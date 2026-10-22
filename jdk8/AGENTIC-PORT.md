@@ -222,6 +222,16 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+### 完成响应 executor 的任务归属（WIP，2026-10-22）
+
+- 用显式捕获的 InvocationContext 构造低层 AiServiceTokenStream，并以真实 loopback OpenAI SSE 测试 completeResponseProcessingExecutor。八个场景先有五个失败：取消后排队任务仍交付成功、运行任务未中断、拒绝提交与 provider.wrap 失败时错误回调 owner 丢失、provider runnable 失败时流未终止。后者还触发 @After 的未捕获异常检查，Surefire 初次报告多一条清理失败记录；不当作额外独立用例。
+- 完成响应派发改用 CapturedContextSupport.supplyAsync，沿用已有 root 任务登记、排队跳过、运行中断及 provider 上下文恢复。TokenStream 保存原始调用者 executor，避免队列外层再持有捕获上下文；调用者 executor 不被关闭。future 失败统一向 onError 交付，取消后 worker 再退出不重复交付错误。
+- 新增 public @Internal CapturedContextSupport.runWithOwner(InvocationContext,Runnable)，从捕获上下文恢复终端回调的 cancellation owner；provider 包装只在任务提交时执行，终端失败交付可在 provider 失败或任务未开始时进入原 owner。无已捕获 owner 时保留调用线程原行为。错误处理器自身的 RuntimeException/Error 若逃出原 onError 合同，显式转交当前线程 uncaught 通道，避免被 CompletableFuture 回调静默捕获。
+- 八项实际 Java 8 SSE 用例覆盖排队取消/不打断无关 blocker、运行中断/不写入消息、provider 只包装一次/工作线程恢复、拒绝提交原异常、provider 包装与 runnable 两类失败、处理 Error 原身份、错误处理器 Error 通道。所有关闭/解除登记断言在测试清理前执行；本组网络正常完成后再取消处理任务，不将正常 EOF 当作取消网络的证据。
+- 新增一项 Agentic Java 8 回调代际用例：旧捕获 owner 已取消且新 root 活动时，runWithOwner 拒绝三种迟到写入、保留新状态，抛 Error 后恢复新 root 的 resource/scope 绑定。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 555 项（支持模块 416 + 主 Agentic 110 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1802 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；严格 API/原始测试来源/生产依赖树审计通过。新 TokenStream 局部对照为 1 可见类型/16 声明成员/24 继承公开条目，无公开成员增删；core helper 明确报告新增 runWithOwner，连同此前 supplyAsync 共 2 项内部公开方法增项。无新增生产类型或依赖。快照 [agentic-completion-executor-wip.json](verification/agentic-completion-executor-wip.json)。仍 WIP，无新完整阶段标签，不将 Agentic 纳入默认 BOM。
+- 本单元使用低层参数中的显式 executor，不新增高层 AI Services 配置入口。任意阻塞回调/拒绝中断的 provider 不获得强制停止或新超时合同。terminal TokenStream、完整成功/失败收尾、全部 Agentic 四模块/剩余 MCP/模型/向量库/BOM 与最终交付继续 pending，Guardrails 实现不改动。
+
 ### 同轮多工具取消与清理异常传播（WIP，2026-10-22）
 
 - 扩展 loopback HTTP/SSE 夹具，每次第一响应包含 call1/Shanghai 与 call2/Beijing 两个工具，第二响应正常结束。十项实际 Java 8 多工具测试中九项先通过；一项复现清理错误在高层 Future 包装之间丢失，而另一个工具仍成功取消。不把该失败解释成取消循环未处理其他工具。

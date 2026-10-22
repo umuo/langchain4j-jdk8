@@ -46,6 +46,20 @@ public final class CapturedContextSupport {
         return new RestoringExecutor(executor, capturedContext);
     }
 
+    /** Runs a completion callback with the invocation's captured cancellation owner, when present.
+     * Executor-provider wrapping is applied at task submission; failure delivery can still restore the owner
+     * when that provider failed or a queued task was cancelled before starting. */
+    public static void runWithOwner(InvocationContext context, Runnable callback) {
+        Objects.requireNonNull(callback);
+        CapturedContext captured = context instanceof DefaultInvocationContext
+                ? ((DefaultInvocationContext) context).capturedContext() : null;
+        if (captured instanceof OwnedCapturedContext) {
+            CancellationContext.run(((OwnedCapturedContext) captured).owner, callback);
+        } else {
+            callback.run();
+        }
+    }
+
     /** Submit a supplier with its invocation context and root-owned cancellation, when present.
      * Caller-owned executors remain open; cancelled queued entries become no-ops when dequeued. */
     public static <T> CompletableFuture<T> supplyAsync(Supplier<T> supplier, Executor executor, InvocationContext context) {
