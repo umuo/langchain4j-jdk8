@@ -220,3 +220,15 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 两项新增 SSE 子进程使用自定义单线程工具 executor：失败后释放门控工具，拒绝三种 scope 写入且保留外部新值；工具在线程中创建的新 HTTP future 立即取消；正常工具续传保持既有归属。验证工具确实运行在指定线程、executor 未被框架关闭，并在同一线程复用时无 scope/resource 残留。原八项网络场景保留。
 - 完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 489 项（支持模块 353 + 主 Agentic 107 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1736 通过。严格基线 API/来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过。快照 `verification/agentic-executor-context-wip.json`。没有公开签名或生产依赖变化，Agentic 仍不纳入默认 BOM，无新阶段标签。
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
+
+
+### 工具 supplier 的中断与排队取消（WIP，2026-10-22）
+
+- 两项真实 Java 8 SSE 子进程先失败：运行工具没有中断，排队工具 future 未终止导致 HTTP 完成回调继续等待。现工具 supplier 提交到 executor 之前按 InvocationContext owner 登记，取消立即终止 future；运行任务中断实际 worker，排队任务出队时跳过 supplier。调用者 executor 与其中不属于本调用的阻塞任务保持运行。
+- 新增内部 CapturedContextSupport.supplyAsync，使用私有 OwnedTask/OwnedCapturedContext/RestoringExecutor。future 完成回调不在 worker 锁中执行；worker 引用在归还 executor 前清除；cancel(false) 后运行 supplier 仍保持 owner 登记，root 后续可中断。排队取消清除本任务持有的 supplier、上下文命令和登记，不承诺从任意用户 executor 的物理队列移除 entry。
+- 同一捕获上下文的 restoring executor 可识别并避免重复包装；无 owner 时仍走标准 CompletableFuture 路径。TokenStream 工具调度与 ToolService 并行/启动 supplier 接入统一入口，保留调用者执行器；Guardrails 实现不修改。
+- 九项实际 Java 8 基础测试覆盖运行中断、排队 future 立即终止且出队不执行、cancel(false)、拒绝提交原异常/解除登记、已取消 owner 跳过提交、SPI 单次包装/恢复和 supplier 原始错误；另外复现并修复上下文清理 Error 被吞，以及调用者提前完成排队 future 时登记未解除。已发布结果保留，后续 provider 清理 Error 继续交给 executor 的 uncaught-error 通道。
+- 新增的两项 SSE 场景验证工具业务方法确实被中断，或仍被调用者工作占住的 executor 中排队工具被取消；HTTP 回调在释放夹具 blocker 前已退出，之后出队也不执行工具。既有迟到写入夹具改为故意忽略中断，以继续验证拒绝三种迟到写入，未删除原断言。
+- 固定基线受影响 core helper 的严格 API 对照新增 audit-captured-context-api.sh；既有签名保持，明确报告新增 public @Internal supplyAsync(Supplier,Executor,InvocationContext)。该审计只覆盖受影响 helper，不冒充整个 core 的完整 API 对照。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 500 项（支持模块 362 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1747 通过。33 JAR/6378 基础类条目审计、4952 类默认链接与全部既有 BOM 独立消费通过；main 217 类/patterns 22 类均为 classfile 52、无禁止引用，扩展链接 5191 类。严格 Agentic/patterns API、受影响 core helper API 及原始测试来源审计通过，生产依赖树未变。快照 [agentic-owned-task-wip.json](verification/agentic-owned-task-wip.json)。Agentic 仍不纳入默认 BOM，无新完整阶段标签。
+- 任意忽略中断的用户代码不能强制停止，物理队列属于调用者；自定义 ToolExecutor.executeAsync 返回的委托 stage 取消、完成响应 executor 的完整任务生命周期、terminal TokenStream、自定义传输、成功收尾与完整失败历史/自动重试、guard 锁边界及全部长期范围继续 pending。

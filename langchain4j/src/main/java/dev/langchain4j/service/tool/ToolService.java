@@ -1370,7 +1370,7 @@ public class ToolService {
     private CompletableFuture<CombinedToolResults> executeToolsCollectingErrors(List<ToolExecutionRequest> toolRequests, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext) {
         Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> futures = new LinkedHashMap<>();
         for (ToolExecutionRequest toolRequest : toolRequests) {
-            futures.put(toolRequest, startTool(toolRequest, toolExecutors, invocationContext, null, null, CapturedContextSupport.restoringIn(effectiveToolExecutor(), invocationContext)));
+            futures.put(toolRequest, startTool(toolRequest, toolExecutors, invocationContext, null, null, effectiveToolExecutor()));
         }
         return combineToolResultsCollectingErrors(futures);
     }
@@ -1384,7 +1384,7 @@ public class ToolService {
      * @since 1.20.0
      */
     public CompletableFuture<ToolExecutionResult> startTool(ToolExecutionRequest toolRequest, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution, Executor executor) {
-        return CompletableFuture.supplyAsync(() -> executeToolAsync(invocationContext, toolExecutors, toolRequest, externalBeforeToolExecution, externalAfterToolExecution), executor).thenCompose(toolResultFuture -> toolResultFuture);
+        return CapturedContextSupport.supplyAsync(() -> executeToolAsync(invocationContext, toolExecutors, toolRequest, externalBeforeToolExecution, externalAfterToolExecution), executor, invocationContext).thenCompose(toolResultFuture -> toolResultFuture);
     }
 
     /**
@@ -1555,7 +1555,7 @@ public class ToolService {
     private Map<ToolExecutionRequest, ToolExecutionResult> executeConcurrently(List<ToolExecutionRequest> toolRequests, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext) {
         Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> futures = new LinkedHashMap<>();
         for (ToolExecutionRequest toolRequest : toolRequests) {
-            CompletableFuture<ToolExecutionResult> future = CompletableFuture.supplyAsync(() -> executeTool(invocationContext, toolExecutors, toolRequest), CapturedContextSupport.restoringIn(executor, invocationContext));
+            CompletableFuture<ToolExecutionResult> future = CapturedContextSupport.supplyAsync(() -> executeTool(invocationContext, toolExecutors, toolRequest), executor, invocationContext);
             futures.put(toolRequest, future);
         }
         Map<ToolExecutionRequest, ToolExecutionResult> results = new LinkedHashMap<>();

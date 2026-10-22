@@ -123,7 +123,7 @@ public class AiServiceTokenStream implements TokenStream {
         this.toolServiceContext = parameters.toolServiceContext();
         this.toolArgumentsErrorHandler = parameters.toolArgumentsErrorHandler();
         this.toolExecutionErrorHandler = parameters.toolExecutionErrorHandler();
-        this.toolExecutor = CapturedContextSupport.restoringIn(parameters.toolExecutor(), parameters.invocationContext());
+        this.toolExecutor = parameters.toolExecutor();
         this.completeResponseProcessingExecutor = CapturedContextSupport.restoringIn(parameters.completeResponseProcessingExecutor(), parameters.invocationContext());
         this.retrievedContents = copy(parameters.retrievedContents());
         this.context = ensureNotNull(parameters.context(), "context");

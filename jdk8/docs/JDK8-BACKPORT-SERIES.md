@@ -446,7 +446,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 上一完整阶段是 `jdk8-m14`。Agentic 主模块与 patterns 仍为 WIP；Agentic MCP/A2A、更多生命周期能力、MCP 剩余协议、模型与向量库集成以及后续 BOM/消费交付，继续按长期目标推进。
 
-当前下一组取消问题包括 terminal TokenStream、HTTP 回调的状态写入归属、异步工具执行器，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+后续演进：工具 supplier 已增加 root 归属、中断和排队取消，9 项基础测试与新增 2 项实际 Java 8 SSE 场景通过，详见 [工具任务取消 WIP 快照](../verification/agentic-owned-task-wip.json)。完整 clean 为 1747 通过、14 项官方 TCK untested；受影响 core helper 严格 API 对照明确报告新增 public @Internal supplyAsync。本文前面的固定历史统计保持原有证据范围。
+
+当前下一组取消问题包括委托异步工具 stage、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

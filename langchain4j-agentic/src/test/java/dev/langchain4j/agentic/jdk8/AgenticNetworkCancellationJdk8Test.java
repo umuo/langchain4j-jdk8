@@ -31,9 +31,13 @@ public class AgenticNetworkCancellationJdk8Test {
     @Test(timeout=15000) public void cancelledHttpToolCallbackCannotWriteScope() throws Exception { child("tool-late-write"); }
     @Test(timeout=15000) public void executorToolCannotWriteAfterRootFailure() throws Exception { child("tool-async-late-write"); }
     @Test(timeout=15000) public void executorToolContinuationRetainsOwner() throws Exception { child("tool-async-next"); }
+    @Test(timeout=15000) public void rootFailureInterruptsRunningExecutorTool() throws Exception { child("tool-async-interrupt"); }
+    @Test(timeout=15000) public void rootFailureCancelsQueuedExecutorTool() throws Exception { child("tool-async-queued"); }
     public static class Lookup {
         final AtomicInteger calls = new AtomicInteger();
         volatile boolean gated;
+        volatile boolean interruptible;
+        final CountDownLatch interrupted=new CountDownLatch(1);
         volatile Runnable lateAction;
         final AtomicReference<String> threadName=new AtomicReference<>();
         final AtomicReference<AgenticScope> scope = new AtomicReference<>();
@@ -41,10 +45,16 @@ public class AgenticNetworkCancellationJdk8Test {
         final AtomicInteger rejected = new AtomicInteger();
         @dev.langchain4j.agent.tool.Tool public String lookup() throws InterruptedException {
             calls.incrementAndGet();threadName.set(Thread.currentThread().getName());
+            if(interruptible){
+                entered.countDown();try{assertTrue(release.await(4,TimeUnit.SECONDS));}
+                catch(InterruptedException failure){interrupted.countDown();throw failure;}finally{done.countDown();}
+            }
             if (gated) {
                 entered.countDown();
                 try {
-                    assertTrue(release.await(4,TimeUnit.SECONDS));
+                    boolean released=false;long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(4);
+                    while(!released&&System.nanoTime()<deadline)try{released=release.await(100,TimeUnit.MILLISECONDS);}catch(InterruptedException ignored){interrupted.countDown();}
+                    assertTrue(released);
                     java.util.List<Runnable> writes=java.util.Arrays.asList(()->scope.get().writeState("late","stale"),()->scope.get().writeStateIfAbsent("absent","stale"),()->scope.get().writeStates(java.util.Collections.singletonMap("bulk","stale")));
                     for(Runnable write:writes)try {write.run();}catch(CancellationException expected){rejected.incrementAndGet();}
                     if(lateAction!=null)lateAction.run();
@@ -70,8 +80,10 @@ public class AgenticNetworkCancellationJdk8Test {
         CountDownLatch ready=new CountDownLatch(1),closed=new CountDownLatch(1);AtomicReference<Throwable> serverFailure=new AtomicReference<>();AtomicInteger errors=new AtomicInteger();
         ServerSocket server=new ServerSocket(0,1,InetAddress.getByName("127.0.0.1"));server.setSoTimeout(7000);ExecutorService fixture=Executors.newSingleThreadExecutor();
         okhttp3.Dispatcher dispatcher=new okhttp3.Dispatcher();okhttp3.ConnectionPool pool=new okhttp3.ConnectionPool();
-        ExecutorService toolPool=Executors.newSingleThreadExecutor(task->new Thread(task,"fixture-tool-executor"));
-        Lookup tool = new Lookup();tool.gated=mode.endsWith("late-write");
+        ThreadPoolExecutor toolPool=(ThreadPoolExecutor)Executors.newFixedThreadPool(1,task->new Thread(task,"fixture-tool-executor"));
+        CountDownLatch blockerEntered=new CountDownLatch(1),releaseBlocker=new CountDownLatch(1);AtomicInteger blockerInterrupts=new AtomicInteger();
+        if(mode.endsWith("queued")){toolPool.submit(()->{blockerEntered.countDown();try{assertTrue(releaseBlocker.await(7,TimeUnit.SECONDS));}catch(InterruptedException failure){blockerInterrupts.incrementAndGet();}});assertTrue(blockerEntered.await(2,TimeUnit.SECONDS));}
+        Lookup tool = new Lookup();tool.gated=mode.endsWith("late-write");tool.interruptible=mode.endsWith("interrupt");
         fixture.submit(()->{try {
             if(mode.startsWith("tool-"))try(Socket first=server.accept()) {
                 assertTrue(readRequest(first).contains("lookup"));
@@ -79,7 +91,7 @@ public class AgenticNetworkCancellationJdk8Test {
                     +"data: {\"id\":\"fixture\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"tool_calls\":[{\"index\":0,\"id\":\"tool-1\",\"type\":\"function\",\"function\":{\"name\":\"lookup\",\"arguments\":\"{}\"}}]}}]}\n\n"
                     +"data: {\"id\":\"fixture\",\"model\":\"fixture\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n";
                 first.getOutputStream().write(toolFrame.getBytes(StandardCharsets.UTF_8));first.getOutputStream().flush();
-                if(mode.endsWith("late-write")){first.shutdownOutput();ready.countDown();assertEquals(-1,first.getInputStream().read());closed.countDown();return;}
+                if(mode.endsWith("late-write")||mode.endsWith("interrupt")||mode.endsWith("queued")){first.shutdownOutput();ready.countDown();assertEquals(-1,first.getInputStream().read());closed.countDown();return;}
             }
             try(Socket socket=server.accept()) {
                 String body=readRequest(socket);InputStream in=socket.getInputStream();
@@ -108,11 +120,14 @@ public class AgenticNetworkCancellationJdk8Test {
                 if(mode.startsWith("tool-async-"))builder.executeToolsConcurrently(toolPool);
                 producer=builder.build();
             }
-            Object bad=AgenticServices.nonAiAgentBuilder(scope->{assertTrue((mode.endsWith("late-write")?tool.entered:ready).await(3,TimeUnit.SECONDS));assertNull(serverFailure.get());throw new IllegalStateException("primary failure");}).name("bad").outputKey("z").build();
+            Object bad=AgenticServices.nonAiAgentBuilder(scope->{
+                if(mode.endsWith("queued")){assertTrue(ready.await(3,TimeUnit.SECONDS));long deadline=System.nanoTime()+TimeUnit.SECONDS.toNanos(3);while(toolPool.getQueue().isEmpty()&&System.nanoTime()<deadline)Thread.yield();assertEquals(1,toolPool.getQueue().size());}
+                else assertTrue((mode.endsWith("late-write")||mode.endsWith("interrupt")?tool.entered:ready).await(3,TimeUnit.SECONDS));assertNull(serverFailure.get());throw new IllegalStateException("primary failure");}).name("bad").outputKey("z").build();
             Work work=AgenticServices.sequenceBuilder(Work.class).subAgents(producer,bad).beforeCall(tool.scope::set).outputKey("z").errorHandler(error->{errors.incrementAndGet();return dev.langchain4j.agentic.agent.ErrorRecoveryResult.throwException();}).build();
             try {work.run("failed");fail("must fail");}catch(AgentInvocationException e){Throwable cause=e;while(cause.getCause()!=null)cause=cause.getCause();if(!"primary failure".equals(cause.getMessage())){e.printStackTrace();System.err.println("server="+serverFailure.get()+" toolCalls="+tool.calls.get()+" entered="+tool.entered.getCount());}
                 assertEquals("primary failure",cause.getMessage());}
             assertTrue("HTTP connection still open after root failed",closed.await(2,TimeUnit.SECONDS));assertNull(serverFailure.get());
+            if(mode.endsWith("interrupt")){assertTrue("running tool not interrupted",tool.interrupted.await(2,TimeUnit.SECONDS));assertTrue(tool.done.await(2,TimeUnit.SECONDS));}
             if (mode.endsWith("late-write")) {
                 AgenticScope scope=work.getAgenticScope("failed");scope.writeState("late","fresh");tool.release.countDown();assertTrue(tool.done.await(2,TimeUnit.SECONDS));
                 assertEquals("late callback writes were not rejected",3,tool.rejected.get());assertEquals("fresh",scope.readState("late"));assertFalse(scope.hasState("absent"));assertFalse(scope.hasState("bulk"));
@@ -123,11 +138,13 @@ public class AgenticNetworkCancellationJdk8Test {
             try {work.getAgenticScope("failed").readState("x");fail("expected cancelled result");}catch(CancellationException expected){}
             }
             long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(2);while(dispatcher.runningCallsCount()!=0&&System.nanoTime()<until)Thread.sleep(5);
-            assertEquals(0,dispatcher.runningCallsCount());assertEquals(0,dispatcher.queuedCallsCount());assertEquals("cancel must not retry",1,errors.get());if(mode.startsWith("tool-"))assertEquals(1,tool.calls.get());
+            assertEquals(0,dispatcher.runningCallsCount());assertEquals(0,dispatcher.queuedCallsCount());assertEquals("cancel must not retry",1,errors.get());if(mode.startsWith("tool-"))assertEquals(mode.endsWith("queued")?0:1,tool.calls.get());
             if(mode.startsWith("tool-async-")){
-                assertTrue(tool.threadName.get().startsWith("fixture-tool-executor"));assertFalse(toolPool.isShutdown());
+                if(!mode.endsWith("queued"))assertTrue(tool.threadName.get().startsWith("fixture-tool-executor"));assertFalse(toolPool.isShutdown());
+                assertEquals(0,blockerInterrupts.get());releaseBlocker.countDown();
                 toolPool.submit(()->{assertNull(dev.langchain4j.internal.CancellationContext.current());assertNull(dev.langchain4j.agentic.internal.InvocationTasks.bound((DefaultAgenticScope)work.getAgenticScope("failed")));}).get(2,TimeUnit.SECONDS);
+                if(mode.endsWith("queued"))assertEquals("cancelled queued tool still executed",0,tool.calls.get());
             }
-        }finally {tool.release.countDown();toolPool.shutdownNow();dispatcher.cancelAll();server.close();fixture.shutdownNow();dispatcher.executorService().shutdownNow();pool.evictAll();assertTrue(toolPool.awaitTermination(2,TimeUnit.SECONDS));assertTrue(fixture.awaitTermination(2,TimeUnit.SECONDS));assertTrue(dispatcher.executorService().awaitTermination(2,TimeUnit.SECONDS));}
+        }finally {releaseBlocker.countDown();tool.release.countDown();toolPool.shutdownNow();dispatcher.cancelAll();server.close();fixture.shutdownNow();dispatcher.executorService().shutdownNow();pool.evictAll();assertTrue(toolPool.awaitTermination(2,TimeUnit.SECONDS));assertTrue(fixture.awaitTermination(2,TimeUnit.SECONDS));assertTrue(dispatcher.executorService().awaitTermination(2,TimeUnit.SECONDS));}
     }
 }

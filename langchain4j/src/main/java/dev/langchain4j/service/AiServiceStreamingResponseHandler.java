@@ -250,10 +250,10 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     public void onCompleteToolCall(CompleteToolCall completeToolCall) {
         if (toolExecutor != null) {
             ToolExecutionRequest toolRequest = completeToolCall.toolExecutionRequest();
-            java.util.concurrent.CompletableFuture<dev.langchain4j.service.AiServiceStreamingResponseHandler.ToolRequestResult> future = CompletableFuture.supplyAsync(() -> {
+            java.util.concurrent.CompletableFuture<dev.langchain4j.service.AiServiceStreamingResponseHandler.ToolRequestResult> future = dev.langchain4j.invocation.CapturedContextSupport.supplyAsync(() -> {
                 ToolExecutionResult toolResult = execute(toolRequest);
                 return new ToolRequestResult(toolRequest, toolResult);
-            }, toolExecutor);
+            }, toolExecutor, invocationContext);
             toolExecutionFutures.add(future);
         }
     }

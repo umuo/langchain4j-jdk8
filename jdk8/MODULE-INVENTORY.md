@@ -137,3 +137,5 @@
 - 2026-10-22 捕获回调 scope 代际归属 WIP：4 项实际 Java 8 定向测试和新增 SSE 迟到工具用例通过；旧代际拒绝三种写入，嵌套/异常/线程复用恢复绑定，传输失败清理仍可进入。完整 clean 1730 通过/14 官方 TCK untested，API/来源/链接/字节码及既有 BOM 消费通过，无生产依赖变化。快照 verification/agentic-callback-scope-wip.json。terminal 流、异步工具、自定义传输、成功收尾与其余长期范围仍 pending。
 
 - 2026-10-22 AI Services executor 上下文组合 WIP：4 项基础 Java 8 验收和新增 2 项 SSE 工具 executor 场景通过；保留用户 SPI 快照/恢复，复制 InvocationContext 后仍带 root owner，拒绝迟到 scope 写入并立即取消工具中新建 HTTP。完整 clean 1736 通过/14 官方 TCK untested，严格 API/来源/产物/链接与既有 BOM 消费通过，无签名/生产依赖变化。快照 verification/agentic-executor-context-wip.json。工具主动中断、排队取消、terminal 流和全部长期范围仍 pending。
+
+- 2026-10-22 工具 supplier 中断/排队取消 WIP：9 项实际 Java 8 基础测试及新增 2 项 SSE 场景通过，调用者池保持运行，队列中取消的 supplier 不执行。完整 clean 1747 通过/14 官方 TCK untested，API/来源/产物/链接及既有 BOM 消费通过；快照 verification/agentic-owned-task-wip.json。新增 public @Internal CapturedContextSupport.supplyAsync 已单独基线审计；委托异步 stage、完成响应任务、terminal 流与全部长期范围仍 pending。
