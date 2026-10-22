@@ -932,15 +932,15 @@ public class ToolService {
             this.resultMessages = resultMessages;
         }
 
-        public boolean equals(Object obj) {
+        public final boolean equals(Object obj) {
             return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(anyToolErrored, ((ToolResultsOutcome) obj).anyToolErrored) && java.util.Objects.equals(returnBehaviors, ((ToolResultsOutcome) obj).returnBehaviors) && java.util.Objects.equals(resultMessages, ((ToolResultsOutcome) obj).resultMessages));
         }
 
-        public int hashCode() {
+        public final int hashCode() {
             return (31 * (31 * (31 * 0 + java.util.Objects.hashCode(anyToolErrored)) + java.util.Objects.hashCode(returnBehaviors)) + java.util.Objects.hashCode(resultMessages));
         }
 
-        public String toString() {
+        public final String toString() {
             return "ToolResultsOutcome[" + "anyToolErrored=" + anyToolErrored + ", returnBehaviors=" + returnBehaviors + ", resultMessages=" + resultMessages + "]";
         }
     }
@@ -983,15 +983,15 @@ public class ToolService {
             this.parameters = parameters;
         }
 
-        public boolean equals(Object obj) {
+        public final boolean equals(Object obj) {
             return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(chatRequest, ((NextChatRequest) obj).chatRequest) && java.util.Objects.equals(messages, ((NextChatRequest) obj).messages) && java.util.Objects.equals(toolServiceContext, ((NextChatRequest) obj).toolServiceContext) && java.util.Objects.equals(parameters, ((NextChatRequest) obj).parameters));
         }
 
-        public int hashCode() {
+        public final int hashCode() {
             return (31 * (31 * (31 * (31 * 0 + java.util.Objects.hashCode(chatRequest)) + java.util.Objects.hashCode(messages)) + java.util.Objects.hashCode(toolServiceContext)) + java.util.Objects.hashCode(parameters));
         }
 
-        public String toString() {
+        public final String toString() {
             return "NextChatRequest[" + "chatRequest=" + chatRequest + ", messages=" + messages + ", toolServiceContext=" + toolServiceContext + ", parameters=" + parameters + "]";
         }
     }
@@ -1233,15 +1233,15 @@ public class ToolService {
             this.resultMessage = resultMessage;
         }
 
-        public boolean equals(Object obj) {
+        public final boolean equals(Object obj) {
             return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(toolExecution, ((CompensableToolExecution) obj).toolExecution) && java.util.Objects.equals(resultMessage, ((CompensableToolExecution) obj).resultMessage));
         }
 
-        public int hashCode() {
+        public final int hashCode() {
             return (31 * (31 * 0 + java.util.Objects.hashCode(toolExecution)) + java.util.Objects.hashCode(resultMessage));
         }
 
-        public String toString() {
+        public final String toString() {
             return "CompensableToolExecution[" + "toolExecution=" + toolExecution + ", resultMessage=" + resultMessage + "]";
         }
     }
@@ -1384,7 +1384,84 @@ public class ToolService {
      * @since 1.20.0
      */
     public CompletableFuture<ToolExecutionResult> startTool(ToolExecutionRequest toolRequest, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution, Executor executor) {
-        return CapturedContextSupport.supplyAsync(() -> executeToolAsync(invocationContext, toolExecutors, toolRequest, externalBeforeToolExecution, externalAfterToolExecution), executor, invocationContext).thenCompose(toolResultFuture -> toolResultFuture);
+        ToolTask result = new ToolTask();
+        CompletableFuture<CompletableFuture<ToolExecutionResult>> starter = CapturedContextSupport.supplyAsync(() -> {
+            if (!result.begin()) return dev.langchain4j.internal.Jdk8.failedFuture(new CancellationException("Tool cancelled before execution"));
+            try {
+                return executeToolAsync(invocationContext, toolExecutors, toolRequest, externalBeforeToolExecution, externalAfterToolExecution, result);
+            } finally {
+                result.end();
+            }
+        }, executor, invocationContext);
+        result.track(starter);
+        starter.whenComplete((toolResult, error) -> {
+            if (error != null) result.publish(null, error);
+            else toolResult.whenComplete(result::publish);
+        });
+        return result;
+    }
+
+    /** One tool's supplier and provider future, independent of the caller's executor lifecycle. */
+    private static final class ToolTask extends CompletableFuture<ToolExecutionResult> {
+        private final Object lock = new Object();
+        private final Set<CompletableFuture<?>> pending = new LinkedHashSet<>();
+        private Thread worker;
+        private boolean cancelling;
+        private boolean interrupt;
+
+        boolean begin() {
+            synchronized (lock) {
+                if (cancelling) return false;
+                worker = Thread.currentThread();
+                return true;
+            }
+        }
+        void end() { synchronized (lock) { worker = null; } }
+        void track(CompletableFuture<?> future) {
+            boolean cancel;
+            boolean mayInterrupt;
+            synchronized (lock) {
+                if (!future.isDone()) pending.add(future);
+                cancel = cancelling;
+                mayInterrupt = interrupt;
+            }
+            future.whenComplete((value, error) -> { synchronized (lock) { pending.remove(future); } });
+            if (cancel) future.cancel(mayInterrupt);
+        }
+        void publish(ToolExecutionResult value, Throwable error) {
+            synchronized (lock) { if (cancelling) return; }
+            if (error == null) complete(value);
+            else completeExceptionally(error);
+        }
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            if (isDone() && !isCancelled()) return false;
+            List<CompletableFuture<?>> toCancel;
+            synchronized (lock) {
+                boolean changed = !cancelling || (mayInterruptIfRunning && !interrupt);
+                cancelling = true;
+                interrupt |= mayInterruptIfRunning;
+                // Clear the worker under the same lock in end(), before the pool can reuse it.
+                if (changed && interrupt && worker != null && worker != Thread.currentThread()) worker.interrupt();
+                toCancel = changed ? new ArrayList<>(pending) : java.util.Collections.emptyList();
+            }
+            Throwable failure = null;
+            boolean cancelled;
+            try {
+                // Future cancellation may run arbitrary callbacks. Never hold lock here.
+                for (CompletableFuture<?> future : toCancel) {
+                    try { future.cancel(mayInterruptIfRunning); }
+                    catch (RuntimeException | Error error) {
+                        if (failure == null) failure = error;
+                        else if (failure != error) failure.addSuppressed(error);
+                    }
+                }
+            } finally {
+                cancelled = super.cancel(false);
+            }
+            if (failure instanceof Error) throw (Error) failure;
+            if (failure != null) throw (RuntimeException) failure;
+            return cancelled;
+        }
     }
 
     /**
@@ -1419,15 +1496,15 @@ public class ToolService {
             this.firstError = firstError;
         }
 
-        public boolean equals(Object obj) {
+        public final boolean equals(Object obj) {
             return obj == this || (obj != null && obj.getClass() == getClass() && java.util.Objects.equals(results, ((CombinedToolResults) obj).results) && java.util.Objects.equals(firstError, ((CombinedToolResults) obj).firstError));
         }
 
-        public int hashCode() {
+        public final int hashCode() {
             return (31 * (31 * 0 + java.util.Objects.hashCode(results)) + java.util.Objects.hashCode(firstError));
         }
 
-        public String toString() {
+        public final String toString() {
             return "CombinedToolResults[" + "results=" + results + ", firstError=" + firstError + "]";
         }
     }
@@ -1482,11 +1559,11 @@ public class ToolService {
         }
     }
 
-    private CompletableFuture<ToolExecutionResult> executeToolAsync(InvocationContext invocationContext, Map<String, ToolExecutor> toolExecutors, ToolExecutionRequest toolRequest, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution) {
-        return internalExecuteToolAsync(invocationContext, toolExecutors, toolRequest, nullSafeCombineConsumers(this.beforeToolExecution, externalBeforeToolExecution), nullSafeCombineConsumers(this.afterToolExecution, externalAfterToolExecution));
+    private CompletableFuture<ToolExecutionResult> executeToolAsync(InvocationContext invocationContext, Map<String, ToolExecutor> toolExecutors, ToolExecutionRequest toolRequest, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution, ToolTask task) {
+        return internalExecuteToolAsync(invocationContext, toolExecutors, toolRequest, nullSafeCombineConsumers(this.beforeToolExecution, externalBeforeToolExecution), nullSafeCombineConsumers(this.afterToolExecution, externalAfterToolExecution), task);
     }
 
-    private CompletableFuture<ToolExecutionResult> internalExecuteToolAsync(InvocationContext invocationContext, Map<String, ToolExecutor> toolExecutors, ToolExecutionRequest toolRequest, Consumer<BeforeToolExecution> beforeToolExecution, Consumer<ToolExecution> afterToolExecution) {
+    private CompletableFuture<ToolExecutionResult> internalExecuteToolAsync(InvocationContext invocationContext, Map<String, ToolExecutor> toolExecutors, ToolExecutionRequest toolRequest, Consumer<BeforeToolExecution> beforeToolExecution, Consumer<ToolExecution> afterToolExecution, ToolTask task) {
         if (beforeToolExecution != null) {
             beforeToolExecution.accept(BeforeToolExecution.builder().request(toolRequest).invocationContext(invocationContext).build());
         }
@@ -1500,7 +1577,7 @@ public class ToolService {
                 futureToolResult = dev.langchain4j.internal.Jdk8.failedFuture(e);
             }
         } else {
-            futureToolResult = executeWithErrorHandlingAsync(toolRequest, toolExecutor, invocationContext, asyncArgumentsErrorHandler(), asyncExecutionErrorHandler());
+            futureToolResult = executeWithErrorHandlingAsync(toolRequest, toolExecutor, invocationContext, asyncArgumentsErrorHandler(), asyncExecutionErrorHandler(), task);
         }
         if (afterToolExecution != null) {
             futureToolResult = futureToolResult.handle((toolResult, error) -> {
@@ -1525,15 +1602,19 @@ public class ToolService {
      * Applies the error handlers both to exceptions thrown synchronously from
      * {@link ToolExecutor#executeAsync(ToolExecutionRequest, InvocationContext)} and to failed futures.
      */
-    private static CompletableFuture<ToolExecutionResult> executeWithErrorHandlingAsync(ToolExecutionRequest toolRequest, ToolExecutor toolExecutor, InvocationContext invocationContext, ToolArgumentsErrorHandler argumentsErrorHandler, ToolExecutionErrorHandler executionErrorHandler) {
-        CompletableFuture<ToolExecutionResult> futureToolResult;
+    private static CompletableFuture<ToolExecutionResult> executeWithErrorHandlingAsync(ToolExecutionRequest toolRequest, ToolExecutor toolExecutor, InvocationContext invocationContext, ToolArgumentsErrorHandler argumentsErrorHandler, ToolExecutionErrorHandler executionErrorHandler, ToolTask task) {
+        CompletableFuture<ToolExecutionResult> source;
         try {
-            futureToolResult = ownAsyncToolResult(toolExecutor.executeAsync(toolRequest, invocationContext));
-        } catch (AsyncNotSupportedException e) {
+            source = toolExecutor.executeAsync(toolRequest, invocationContext);
+        } catch (AsyncNotSupportedException | CancellationException e) {
             return dev.langchain4j.internal.Jdk8.failedFuture(e);
         } catch (Exception e) {
             return handleToolError(e, toolRequest, invocationContext, argumentsErrorHandler, executionErrorHandler);
         }
+        // Root ownership must be attached even if a late provider's cancel implementation throws.
+        // Registration/cleanup failures are not tool business errors for an error-to-text policy.
+        CompletableFuture<ToolExecutionResult> futureToolResult = ownAsyncToolResult(source);
+        task.track(source);
         return dev.langchain4j.internal.Jdk8.exceptionallyCompose(futureToolResult, error -> {
             Throwable cause = unwrapCompletionException(error);
             if (cause instanceof AsyncNotSupportedException || cause instanceof CancellationException) {

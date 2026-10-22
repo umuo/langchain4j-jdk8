@@ -389,6 +389,16 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+### 单次工具调用的组合 Future 取消（WIP，2026-10-22）
+
+- 六项实际 Java 8 定向测试先失败五项：同步 CancellationException 被错误策略转为成功文本、直接取消未到达 provider Future、运行 supplier 未中断、排队 supplier 仍执行、cancel(false) 后迟到的 provider Future 丢失。成功完成后取消返回 false 的用例原本通过。
+- startTool 用私有 ToolTask 管理单次调用的 supplier worker、启动 Future 与 provider 原始 Future。直接取消先标记本任务并传播，再终止对外 Future；队列出队不执行 supplier，运行 supplier 在 cancel(true) 时中断，迟到 Future 按已记录模式取消，cancel(false) 可以升级为 true。线程引用在归还调用者 executor 前清除；不关闭调用者 executor，不中断队列中其他任务。
+- Future 完成/取消回调均在登记锁外执行；provider cancel 抛异常时继续处理其他已登记 Future，最终仍终止对外 Future，并向取消调用者保留清理错误及 suppressed 错误。root 归属先于迟到 Future 的直接取消处理登记，清理失败不送进工具业务错误策略。provider 同步抛出 CancellationException 现与返回 Future 的取消一样绕过错误转文本策略。
+- 新增八项实际 Java 8 验收覆盖上述五个缺口、成功后取消、false→true 升级与 provider cancel 抛错。既有 8 项委托工具（含 loopback HTTP 正常续传/取消后无下一请求）和 9 项基础任务取消回归保留。
+- 新增 `audit-tool-service-api.sh`，从固定 Git 导出 ToolService 并编译 Java 17 对照。首次严格对照发现四个 record 替代类的 12 个自动值方法漏 final；补齐修饰符，保留比较器原有严格规则。该检查只覆盖受影响 ToolService 与其可见嵌套类型，不代表整个主模块 API 审计。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 516 项（支持模块 378 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1763 通过。33 JAR/6382 基础类条目、4954 类默认链接、5193 类扩展链接与全部既有 BOM 独立消费通过；严格 ToolService/Agentic/patterns/受影响 core helper API、原始测试来源及生产依赖树审计通过。ToolService 无公开成员增项，12 个值方法修饰符恢复基线；新增私有 ToolTask 及 javac 合成访问标记。快照 [agentic-tool-cancellation-wip.json](verification/agentic-tool-cancellation-wip.json)。仍 WIP、无新完整阶段标签，不将 Agentic 纳入默认 BOM。
+- 单次 startTool 的直接取消不代表高层 AI Service Future/Publisher 或整个工具轮次的反向传播已完成；这些路径继续验收。自定义 Future/I/O 可拒绝取消，忽略中断的用户代码不能强制停止；同步用户回调阻塞没有新增超时保证。完成响应 executor 任务生命周期、terminal 流、完整成功/失败收尾及全部 Agentic/MCP/模型/向量库与交付范围仍 pending。
+
 ### 委托异步工具 Future 的归属（WIP，2026-10-22）
 
 - 四项定向实际 Java 8 测试先复现三处失败：supplier 已返回后委托 Future 未取消，成功 after 通知和错误处理均丢失 owner；无 owner 的隔离用例原本通过。

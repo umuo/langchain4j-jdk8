@@ -450,7 +450,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 委托异步工具的 root 取消随后补齐：8 项实际 Java 8 测试包含本地 HTTP 正常工具续传和取消后不重试，详见 [委托工具 WIP 快照](../verification/agentic-delegated-tool-wip.json)。该轮完整 clean 为 1755 通过、14 项官方 TCK untested；没有新增公开声明或生产依赖。
 
-当前下一组取消问题包括组合 Future 主动取消的反向传播、provider 同步取消异常、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+单次工具组合 Future 的主动取消随后补齐：8 项实际 Java 8 测试覆盖排队跳过、运行中断、迟到 Future、取消升级和同步取消策略，详见 [单次工具取消快照](../verification/agentic-tool-cancellation-wip.json)。最终 clean 为 1763 通过、14 项官方 TCK untested。新建的 ToolService 基线 API 对照还发现四个旧 record 替代类的 12 个值方法漏 final；修复后 5 个可见类型、89 个声明成员和 117 个继承公开条目严格对照通过。这个实例再次说明编译和功能测试通过并不自动证明声明一致。
+
+当前下一组取消问题包括高层 Future/Publisher 到整个工具轮次的反向传播、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

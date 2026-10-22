@@ -141,3 +141,5 @@
 - 2026-10-22 工具 supplier 中断/排队取消 WIP：9 项实际 Java 8 基础测试及新增 2 项 SSE 场景通过，调用者池保持运行，队列中取消的 supplier 不执行。完整 clean 1747 通过/14 官方 TCK untested，API/来源/产物/链接及既有 BOM 消费通过；快照 verification/agentic-owned-task-wip.json。新增 public @Internal CapturedContextSupport.supplyAsync 已单独基线审计；委托异步 stage、完成响应任务、terminal 流与全部长期范围仍 pending。
 
 - 2026-10-22 委托异步工具取消 WIP：8 项实际 Java 8 验收覆盖 provider Future 取消/完成 owner 恢复/错误及 loopback HTTP 正常续传与取消后不重试。完整 clean 1755 通过/14 官方 TCK untested，API/来源/产物/链接和既有 BOM 消费通过；快照 verification/agentic-delegated-tool-wip.json。无新增公开声明、类或生产依赖；直接取消组合 Future 的反向传播、同步取消异常策略、完成响应 executor、terminal 流和全部长期范围仍 pending。
+
+- 2026-10-22 单次工具组合 Future 取消 WIP：8 项实际 Java 8 验收覆盖直接取消委托 Future、排队跳过、运行中断、迟到 Future、false→true 升级、同步取消错误策略及清理失败。严格 ToolService API 对照修复四个 record 替代类 12 个自动方法缺少 final 的历史遗漏；5 可见类型/89 声明成员/117 继承公开条目/4 record，无成员缺失或新增。最终 clean 1763 通过/14 官方 TCK untested，来源/产物/链接与既有 BOM 消费通过，依赖树未变；快照 verification/agentic-tool-cancellation-wip.json。高层 Future/Publisher 整链、完成响应 executor、terminal 流及全部长期范围仍 pending。
