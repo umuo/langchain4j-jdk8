@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic terminal 流归属检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic root 边界收尾检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属及 14 项 terminal 流场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流及 11 项 root 边界场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -21,6 +21,16 @@
 
 
 
+
+
+### root 调用边界失败收尾（WIP，2026-10-22）
+
+- 新增 AgenticRootBoundaryJdk8Test，八项初始场景中七项在改造前失败：beforeCall RuntimeException/Error、前/后 listener Error、最终持久化 RuntimeException/Error 和 ephemeral beforeCall 失败均未取消已登记资源。listener 普通 RuntimeException 的日志并继续合同原本通过。
+- executeAgentMethod 在 scope 取得之后，将 root owner 初始化、参数写入、beforeCall、前后 listener、planner、输出结算、挂起检查点与最终 root 收尾纳入统一失败保护。Exception 或 Error 先取消该 root，再尽力补偿、通知错误与清理/持久化失败状态；保留原异常身份，清理异常 suppressed，不引入重试或副作用重放。
+- rootCallStarted 移到 beforeCall 之前；同会话再次调用时，beforeCall 获取新 owner，不再拿到上一成功调用的 finished owner。新增代际测试证明第二调用失败取消其资源，上一成功 owner 仍可保留其延迟资源。
+- 正常挂起仍是控制流，不取消资源或发错误通知；挂起通知 Error 则按失败路径取消并保留 unanswered marker。共十一项真实 Java 8 场景，断言均在 fixture cleanup 前执行；包含最终 save 与失败 snapshot 的两次尝试、onError 清理 Error 的 suppressed 身份、临时 scope 驱逐及持久会话保留。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 586 项（支持模块 422 + 主 Agentic 135 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1833 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接和全部既有 BOM 独立消费通过；主 Agentic 严格 API、原始测试来源、生产依赖图及产物审计通过，无新增公开成员、生产类型或依赖。快照 [agentic-root-boundary-wip.json](verification/agentic-root-boundary-wip.json)。仍 WIP、无新完整阶段标签，Agentic 不进入默认 BOM。
+- 本组使用登记资源探针，不把它宣称为所有第三方 I/O 强制终止证明；既有实际 HTTP/SSE 回归继续运行。scope 获取/创建时的 store 或 afterAgenticScopeCreated 失败、任意不配合组件、terminal 工具组合及完整生命周期仍需继续验证。Guardrails、默认 BOM 和生产依赖保持既定范围，Agentic 四模块与其他长期范围尚未完成。
 
 ### terminal TokenStream 延迟启动的 root 归属（WIP，2026-10-22）
 

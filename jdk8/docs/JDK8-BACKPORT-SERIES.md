@@ -460,7 +460,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 terminal TokenStream 随后在延迟 start 时恢复创建时的 root owner：14 项实际 Java 8 Agentic SSE 场景和 6 项直接 SPI 场景通过，覆盖取消、代际隔离和正常/错误终止。排空后断言复现了错误回调之后又成功完成的问题，OpenAI 请求现以私有原子状态限制一次终止，并在错误时释放解析连接。最终 clean 为 1822 通过、14 项官方 TCK untested，无新增公开成员、生产类型或依赖，详见 [terminal 流快照](../verification/agentic-terminal-stream-wip.json)。这组网络夹具不含工具。
 
-下一组检查包括 terminal 提前工具执行/续传与 handle 主动取消组合，root 前后 listener 和持久化失败收尾，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+root 调用的失败保护随后覆盖 scope 取得后的 beforeCall、前后 listener、输出结算和最终持久化；11 项实际 Java 8 边界测试验证资源取消、原异常身份、suppressed 清理错误、同会话新 owner 及正常挂起保留资源。普通 listener RuntimeException 仍按基线约定记录日志后继续。最终 clean 为 1833 通过、14 项官方 TCK untested，详见 [root 边界快照](../verification/agentic-root-boundary-wip.json)。这些边界测试使用登记资源探针，实际网络证明仍来自既有 HTTP/SSE 回归。
+
+下一组检查包括 terminal 提前工具执行/续传与 handle 主动取消组合、scope 获取/创建时的 store 与创建 listener 失败，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

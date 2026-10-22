@@ -222,6 +222,16 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+
+### root 调用边界失败收尾（WIP，2026-10-22）
+
+- 新增 AgenticRootBoundaryJdk8Test，八项初始场景中七项在改造前失败：beforeCall RuntimeException/Error、前/后 listener Error、最终持久化 RuntimeException/Error 和 ephemeral beforeCall 失败均未取消已登记资源。listener 普通 RuntimeException 的日志并继续合同原本通过。
+- executeAgentMethod 在 scope 取得之后，将 root owner 初始化、参数写入、beforeCall、前后 listener、planner、输出结算、挂起检查点与最终 root 收尾纳入统一失败保护。Exception 或 Error 先取消该 root，再尽力补偿、通知错误与清理/持久化失败状态；保留原异常身份，清理异常 suppressed，不引入重试或副作用重放。
+- rootCallStarted 移到 beforeCall 之前；同会话再次调用时，beforeCall 获取新 owner，不再拿到上一成功调用的 finished owner。新增代际测试证明第二调用失败取消其资源，上一成功 owner 仍可保留其延迟资源。
+- 正常挂起仍是控制流，不取消资源或发错误通知；挂起通知 Error 则按失败路径取消并保留 unanswered marker。共十一项真实 Java 8 场景，断言均在 fixture cleanup 前执行；包含最终 save 与失败 snapshot 的两次尝试、onError 清理 Error 的 suppressed 身份、临时 scope 驱逐及持久会话保留。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 586 项（支持模块 422 + 主 Agentic 135 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1833 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接和全部既有 BOM 独立消费通过；主 Agentic 严格 API、原始测试来源、生产依赖图及产物审计通过，无新增公开成员、生产类型或依赖。快照 [agentic-root-boundary-wip.json](verification/agentic-root-boundary-wip.json)。仍 WIP、无新完整阶段标签，Agentic 不进入默认 BOM。
+- 本组使用登记资源探针，不把它宣称为所有第三方 I/O 强制终止证明；既有实际 HTTP/SSE 回归继续运行。scope 获取/创建时的 store 或 afterAgenticScopeCreated 失败、任意不配合组件、terminal 工具组合及完整生命周期仍需继续验证。Guardrails、默认 BOM 和生产依赖保持既定范围，Agentic 四模块与其他长期范围尚未完成。
+
 ### terminal TokenStream 延迟启动的 root 归属（WIP，2026-10-22）
 
 - 新增十二项真实 Java 8 子进程，使用实际 Agentic 终端工作流和 loopback socket/SSE。改造前十二项均失败：响应头前/首段后 root 取消不关闭延迟启动的 Call，成功/HTTP 错误回调丢失捕获代际，启动前取消仍调用模型。另一次双用例定向检查直接证明已取消 root 的模型调用次数为 1，而预期为 0。

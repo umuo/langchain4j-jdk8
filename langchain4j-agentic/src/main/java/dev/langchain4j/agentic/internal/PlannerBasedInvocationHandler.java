@@ -204,22 +204,40 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
 
     private Object executeAgentMethod(AgenticScopeRegistry registry, Method method, Object[] args) {
         DefaultAgenticScope currentScope = currentAgenticScope(registry, method, args);
-        writeAgenticScope(currentScope, method, args);
-        beforeCall.accept(currentScope);
         Map<String, Object> namedArgs = isRootCall() ? argToMap(method, args) : null;
-        if (isRootCall()) {
-            currentScope.rootCallStarted(registry);
-            beforeAgentInvocation(agentListener, currentScope, this, namedArgs);
-        }
-        Object result;
         try {
-            Planner planner = plannerSupplier.get();
-            planner.init(new InitPlanningContext(currentScope, this, subagents));
-            result = new PlannerLoop(planner, currentScope, registry).loop();
+            // A new generation must exist before user callbacks can acquire resources.
+            if (isRootCall()) currentScope.rootCallStarted(registry);
+            writeAgenticScope(currentScope, method, args);
+            beforeCall.accept(currentScope);
+            if (isRootCall()) beforeAgentInvocation(agentListener, currentScope, this, namedArgs);
+            Object result;
+            try {
+                Planner planner = plannerSupplier.get();
+                planner.init(new InitPlanningContext(currentScope, this, subagents));
+                result = new PlannerLoop(planner, currentScope, registry).loop();
+            } catch (AgenticSystemSuspendedException suspended) {
+                // Suspension is control flow, not a failure requiring recovery or compensation.
+                result = new Action.SuspendAction();
+            }
+            if (result instanceof Action && ((Action) result).isSuspended()) {
+                // Persist the settled pause, rather than a pre-completion Future snapshot.
+                if (isRootCall()) currentScope.checkpoint(registry);
+                onAgenticSystemSuspended(agentListener, currentScope);
+                if (isRootCall() && method.getReturnType().equals(ResultWithAgenticScope.class)) {
+                    return new ResultWithAgenticScope<>(currentScope, null, true, () -> (ResultWithAgenticScope) executeAgentMethod(registry, method, args));
+                }
+                throw new AgenticSystemSuspendedException(currentScope);
+            }
+            Object output = outputKey != null ? currentScope.readState(outputKey) : result;
+            if (isRootCall()) {
+                afterAgentInvocation(agentListener, currentScope, this, namedArgs, output);
+                currentScope.rootCallEnded(registry, agentListener);
+            }
+            return method.getReturnType().equals(ResultWithAgenticScope.class) ? new ResultWithAgenticScope<>(currentScope, output) : output;
         } catch (AgenticSystemSuspendedException suspended) {
-            // Suspension is control flow, not a failure requiring recovery or compensation.
-            result = new Action.SuspendAction();
-        } catch (Exception e) {
+            throw suspended;
+        } catch (Exception | Error e) {
             if (isRootCall()) currentScope.cancelPendingTasks(e);
             AgenticJdk8.suppressCleanupFailure(e, currentScope::compensateAll);
             if (isRootCall()) {
@@ -228,22 +246,6 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
             }
             throw e;
         }
-        if (result instanceof Action && ((Action) result).isSuspended()) {
-            // The last async result can become a human marker after the dispatch checkpoint.
-            // Persist the settled pause, rather than leaving a pre-completion Future snapshot.
-            if (isRootCall()) currentScope.checkpoint(registry);
-            onAgenticSystemSuspended(agentListener, currentScope);
-            if (isRootCall() && method.getReturnType().equals(ResultWithAgenticScope.class)) {
-                return new ResultWithAgenticScope<>(currentScope, null, true, () -> (ResultWithAgenticScope) executeAgentMethod(registry, method, args));
-            }
-            throw new AgenticSystemSuspendedException(currentScope);
-        }
-        Object output = outputKey != null ? currentScope.readState(outputKey) : result;
-        if (isRootCall()) {
-            afterAgentInvocation(agentListener, currentScope, this, namedArgs, output);
-            currentScope.rootCallEnded(registry, agentListener);
-        }
-        return method.getReturnType().equals(ResultWithAgenticScope.class) ? new ResultWithAgenticScope<>(currentScope, output) : output;
     }
 
     private static Map<String, Object> argToMap(Method method, Object[] args) {
