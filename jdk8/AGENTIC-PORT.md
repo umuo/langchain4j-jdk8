@@ -222,6 +222,18 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+### terminal TokenStream 延迟启动的 root 归属（WIP，2026-10-22）
+
+- 新增十二项真实 Java 8 子进程，使用实际 Agentic 终端工作流和 loopback socket/SSE。改造前十二项均失败：响应头前/首段后 root 取消不关闭延迟启动的 Call，成功/HTTP 错误回调丢失捕获代际，启动前取消仍调用模型。另一次双用例定向检查直接证明已取消 root 的模型调用次数为 1，而预期为 0。
+- AiServiceTokenStream.start 通过已有 runWithOwner 恢复 InvocationContext 中捕获的 owner，再执行原启动过程；派发前登记取消检查，已取消 root 以 CancellationException 交付错误，不调用模型接口。正常工作流已结束的 finished owner 仍允许合法延迟启动；模型/传输登记在创建时 owner，而不是启动线程的其他 root 上。
+- 同步/异步 writer 各覆盖响应头前、首段后、启动前取消、同会话新旧代际、正常 Unicode 完成与 HTTP 400；另加两项 SSE 错误帧场景。新旧代际测试从 fresh root 绑定内部启动 old stream，确认调用线程绑定恢复、fresh 取消不影响 old stream、old 取消确实关闭连接。成功/错误/部分响应 callback 都校验真实 InvocationTasks scope 绑定。
+- 运行中取消用服务端读取到 socket EOF、dispatcher running/queued=0、一次错误且无成功终止为证据；这些断言早于 fixture cancelAll/关闭。启动前取消同时检查模型调用次数与 HTTP 请求数均为 0。正常成功/错误场景不把正常 EOF 当取消证据。既有上下文 handle 主动取消且不发 terminal 的回归保持。
+- 初次 clean 虽通过，但把终止计数断言加强到 dispatcher 完全排空后，四项真实场景再失败：首段/代际取消先报错误，随后又交付成功。原因是 SSE parser 已报告读取错误后返回，传输仍发 onClose，OpenAI StreamingRequestExecutor 未区分错误终止与正常完成。现每次请求使用私有原子终止状态，错误/完成只 claim 一次，迟到事件忽略；错误时取消可用 parsing handle，取消失败 suppressed 到原始错误，不遮蔽错误交付。传输层 onClose 的资源生命周期合同保持。
+- 两个额外 Agentic SSE 错误帧场景不调用 root.cancel，由客户端主动释放解析连接，验证服务端 EOF、单一错误和无成功终止；共十四项子进程。另六项 Java 8 SPI 回调测试覆盖 error→close、完成后迟到事件、空流重复关闭、partial consumer 失败、parsing handle 取消失败和 error 处理器异常；无可用取消句柄的旧式客户端保留原错误与 suppressed 诊断。终止计数全部在 dispatcher 排空后再次检查。
+- 新增的 error-event 错误处理器失败检查先复现异常被静默吞掉；错误事件交付现移出 JSON/partial 解析捕获块，保持一次通知并将处理器异常交给原调用通道。六项 SPI 场景均在实际 Java 8 运行。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 575 项（支持模块 422 + 主 Agentic 124 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1822 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；严格 API、原始测试来源、生产依赖树和产物审计通过。TokenStream 对照为 1 可见类型/16 声明成员/24 继承公开条目，无公开成员增删；本单元无新增生产类型或依赖。快照 [agentic-terminal-stream-wip.json](verification/agentic-terminal-stream-wip.json)。仍 WIP，不新增完整阶段标签、不将 Agentic 纳入默认 BOM。
+- 本组 terminal 网络夹具不含工具；提前工具执行、工具续传与 handle 主动取消的组合仍需专项验证。不新增公开成员、生产类型或依赖；不改变 Guardrails 实现。此处保留 terminal 输出的调用者消费语义，不引入返回之后的自动工作流重放或工具请求重试。任意不配合的自定义传输/SDK 仍需各模块验证；完整成功/失败收尾、其他 Agentic 四模块能力、剩余 MCP/模型/向量库/BOM 与最终交付继续 pending。
+
 ### 完成响应 executor 的任务归属（WIP，2026-10-22）
 
 - 用显式捕获的 InvocationContext 构造低层 AiServiceTokenStream，并以真实 loopback OpenAI SSE 测试 completeResponseProcessingExecutor。八个场景先有五个失败：取消后排队任务仍交付成功、运行任务未中断、拒绝提交与 provider.wrap 失败时错误回调 owner 丢失、provider runnable 失败时流未终止。后者还触发 @After 的未捕获异常检查，Surefire 初次报告多一条清理失败记录；不当作额外独立用例。

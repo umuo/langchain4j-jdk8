@@ -149,3 +149,5 @@
 - 2026-10-22 同轮双工具取消 WIP：10 项实际 Java 8 HTTP/SSE 用例验证两个 pending Future、运行/排队 sibling、取消失败继续清理、逆序完成的结果 ID 和逆请求顺序补偿；4 项通用取消回归补齐跨层清理异常传播和身份去重。最终 clean 1793 通过/14 官方 TCK untested，API/来源/产物/链接和既有 BOM 消费通过，生产依赖未变，无新增类型或公开成员。快照 verification/agentic-tool-fanout-cancellation-wip.json；完成响应 executor、terminal 流、完整生命周期及全部长期范围仍 pending。
 
 - 2026-10-22 完成响应 executor 归属 WIP：8 项实际 Java 8 低层 TokenStream/SSE 场景及新增 1 项 Agentic 代际回调通过。排队跳过、运行中断、失败交付一次、SPI/拒绝提交原异常、Error 通道与调用者线程恢复已验证；新增 public 内部辅助方法 CapturedContextSupport.runWithOwner 已在严格 API 对照中报告，TokenStream 无公开声明增删。最终 clean 1802 通过/14 官方 TCK untested，BOM 消费/来源/产物/链接与依赖审计通过；快照 verification/agentic-completion-executor-wip.json。terminal 流、完整成功/失败收尾与全部长期范围仍 pending。
+
+- 2026-10-22 terminal 流延迟启动归属 WIP：14 项真实 Java 8 Agentic socket/SSE 子进程覆盖启动前、响应头前、首段后取消、同会话代际、正常 Unicode、HTTP/SSE 错误；6 项 SPI 验证单次终止与清理错误。强化排空后断言复现并修复错误后迟到成功；SSE 错误帧主动释放解析连接。最终 clean 1822 通过/14 官方 TCK untested，严格 API/来源/产物/链接、生产依赖及既有 BOM 消费通过，无新增公开成员、生产类型或依赖。快照 verification/agentic-terminal-stream-wip.json；本组无工具，terminal 提前工具/续传/handle 主动取消组合、root 完整收尾和全部长期范围仍 pending。

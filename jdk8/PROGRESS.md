@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 完成响应任务归属检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic terminal 流归属检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消及 5 项回调归属场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属及 14 项 terminal 流场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -21,6 +21,18 @@
 
 
 
+
+### terminal TokenStream 延迟启动的 root 归属（WIP，2026-10-22）
+
+- 新增十二项真实 Java 8 子进程，使用实际 Agentic 终端工作流和 loopback socket/SSE。改造前十二项均失败：响应头前/首段后 root 取消不关闭延迟启动的 Call，成功/HTTP 错误回调丢失捕获代际，启动前取消仍调用模型。另一次双用例定向检查直接证明已取消 root 的模型调用次数为 1，而预期为 0。
+- AiServiceTokenStream.start 通过已有 runWithOwner 恢复 InvocationContext 中捕获的 owner，再执行原启动过程；派发前登记取消检查，已取消 root 以 CancellationException 交付错误，不调用模型接口。正常工作流已结束的 finished owner 仍允许合法延迟启动；模型/传输登记在创建时 owner，而不是启动线程的其他 root 上。
+- 同步/异步 writer 各覆盖响应头前、首段后、启动前取消、同会话新旧代际、正常 Unicode 完成与 HTTP 400；另加两项 SSE 错误帧场景。新旧代际测试从 fresh root 绑定内部启动 old stream，确认调用线程绑定恢复、fresh 取消不影响 old stream、old 取消确实关闭连接。成功/错误/部分响应 callback 都校验真实 InvocationTasks scope 绑定。
+- 运行中取消用服务端读取到 socket EOF、dispatcher running/queued=0、一次错误且无成功终止为证据；这些断言早于 fixture cancelAll/关闭。启动前取消同时检查模型调用次数与 HTTP 请求数均为 0。正常成功/错误场景不把正常 EOF 当取消证据。既有上下文 handle 主动取消且不发 terminal 的回归保持。
+- 初次 clean 虽通过，但把终止计数断言加强到 dispatcher 完全排空后，四项真实场景再失败：首段/代际取消先报错误，随后又交付成功。原因是 SSE parser 已报告读取错误后返回，传输仍发 onClose，OpenAI StreamingRequestExecutor 未区分错误终止与正常完成。现每次请求使用私有原子终止状态，错误/完成只 claim 一次，迟到事件忽略；错误时取消可用 parsing handle，取消失败 suppressed 到原始错误，不遮蔽错误交付。传输层 onClose 的资源生命周期合同保持。
+- 两个额外 Agentic SSE 错误帧场景不调用 root.cancel，由客户端主动释放解析连接，验证服务端 EOF、单一错误和无成功终止；共十四项子进程。另六项 Java 8 SPI 回调测试覆盖 error→close、完成后迟到事件、空流重复关闭、partial consumer 失败、parsing handle 取消失败和 error 处理器异常；无可用取消句柄的旧式客户端保留原错误与 suppressed 诊断。终止计数全部在 dispatcher 排空后再次检查。
+- 新增的 error-event 错误处理器失败检查先复现异常被静默吞掉；错误事件交付现移出 JSON/partial 解析捕获块，保持一次通知并将处理器异常交给原调用通道。六项 SPI 场景均在实际 Java 8 运行。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 575 项（支持模块 422 + 主 Agentic 124 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1822 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；严格 API、原始测试来源、生产依赖树和产物审计通过。TokenStream 对照为 1 可见类型/16 声明成员/24 继承公开条目，无公开成员增删；本单元无新增生产类型或依赖。快照 [agentic-terminal-stream-wip.json](verification/agentic-terminal-stream-wip.json)。仍 WIP，不新增完整阶段标签、不将 Agentic 纳入默认 BOM。
+- 本组 terminal 网络夹具不含工具；提前工具执行、工具续传与 handle 主动取消的组合仍需专项验证。不新增公开成员、生产类型或依赖；不改变 Guardrails 实现。此处保留 terminal 输出的调用者消费语义，不引入返回之后的自动工作流重放或工具请求重试。任意不配合的自定义传输/SDK 仍需各模块验证；完整成功/失败收尾、其他 Agentic 四模块能力、剩余 MCP/模型/向量库/BOM 与最终交付继续 pending。
 
 ### 完成响应 executor 的任务归属（WIP，2026-10-22）
 

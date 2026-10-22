@@ -5,11 +5,13 @@ import static dev.langchain4j.internal.ValidationUtils.ensureNotEmpty;
 import static dev.langchain4j.internal.ValidationUtils.ensureNotNull;
 import static dev.langchain4j.service.AiServiceParamsUtil.chatRequestParameters;
 import dev.langchain4j.Internal;
+import dev.langchain4j.internal.CancellationContext;
 import dev.langchain4j.agent.tool.ToolSpecification;
 import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.guardrail.ChatExecutor;
 import dev.langchain4j.guardrail.GuardrailRequestParams;
 import dev.langchain4j.invocation.InvocationContext;
+import dev.langchain4j.invocation.CapturedContextSupport;
 import dev.langchain4j.memory.ChatMemory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -232,6 +234,10 @@ public class AiServiceTokenStream implements TokenStream {
 
     @Override
     public void start() {
+        CapturedContextSupport.runWithOwner(invocationContext, this::startWithOwner);
+    }
+
+    private void startWithOwner() {
         validateConfiguration();
         List<ToolSpecification> effectiveTools = toolServiceContext != null ? toolServiceContext.effectiveTools() : null;
         ChatRequest chatRequest = context.chatRequestTransformer.apply(ChatRequest.builder().messages(messages).parameters(chatRequestParameters(invocationContext.methodArguments(), effectiveTools)).build(), invocationContext.chatMemoryId());
@@ -240,8 +246,15 @@ public class AiServiceTokenStream implements TokenStream {
         if (contentsHandler != null && retrievedContents != null) {
             contentsHandler.accept(retrievedContents);
         }
-        context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(invocationContext).request(chatRequest).build());
-        context.streamingChatModel.chat(chatRequest, handler);
+        java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean();
+        try (CancellationContext.Registration registration = CancellationContext.register(() -> cancelled.set(true))) {
+            if (cancelled.get()) {
+                handler.onError(new java.util.concurrent.CancellationException("Invocation cancelled before stream start"));
+                return;
+            }
+            context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(invocationContext).request(chatRequest).build());
+            context.streamingChatModel.chat(chatRequest, handler);
+        }
     }
 
     private void validateConfiguration() {

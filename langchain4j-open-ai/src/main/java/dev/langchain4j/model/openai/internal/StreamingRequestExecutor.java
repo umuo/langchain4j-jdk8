@@ -93,6 +93,8 @@ class StreamingRequestExecutor<Response> {
     private ResponseHandle stream(Consumer<ParsedAndRawResponse<Response>> partialResponseHandler, Runnable streamingCompletionCallback, Consumer<Throwable> errorHandler) {
         ServerSentEventListener listener = new ServerSentEventListener() {
 
+            final java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
+
             volatile SuccessfulHttpResponse response;
 
             volatile StreamingHandle streamingHandle;
@@ -111,6 +113,7 @@ class StreamingRequestExecutor<Response> {
 
             @Override
             public void onEvent(ServerSentEvent event, ServerSentEventContext context) {
+                if (terminal.get()) return;
                 if (streamingHandle == null) {
                     streamingHandle = toStreamingHandle(context.parsingHandle());
                 }
@@ -118,11 +121,11 @@ class StreamingRequestExecutor<Response> {
                 if ("[DONE]".equals(event.data())) {
                     return;
                 }
+                if ("error".equals(event.event())) {
+                    onError(new RuntimeException(event.data()));
+                    return;
+                }
                 try {
-                    if ("error".equals(event.event())) {
-                        errorHandler.accept(new RuntimeException(event.data()));
-                        return;
-                    }
                     Response parsedResponse = Json.fromJson(event.data(), responseClass);
                     if (parsedResponse != null) {
                         ParsedAndRawResponse parsedAndRawResponse = ParsedAndRawResponse.builder().parsedResponse(parsedResponse).rawHttpResponse(response).rawServerSentEvent(event).streamingHandle(streamingHandle).build();
@@ -130,12 +133,13 @@ class StreamingRequestExecutor<Response> {
                         partialResponseHandler.accept(parsedAndRawResponse);
                     }
                 } catch (Exception e) {
-                    errorHandler.accept(e);
+                    onError(e);
                 }
             }
 
             @Override
             public void onClose() {
+                if (!terminal.compareAndSet(false, true)) return;
                 if (!eventReceived) {
                     errorHandler.accept(new InternalServerException(NO_CHOICES_ERROR_MESSAGE));
                 } else if (streamingHandle == null || !streamingHandle.isCancelled()) {
@@ -145,6 +149,11 @@ class StreamingRequestExecutor<Response> {
 
             @Override
             public void onError(Throwable t) {
+                if (!terminal.compareAndSet(false, true)) return;
+                if (streamingHandle != null) {
+                    try { streamingHandle.cancel(); }
+                    catch (RuntimeException | Error cleanup) { if (cleanup != t) t.addSuppressed(cleanup); }
+                }
                 errorHandler.accept(t);
             }
         };
