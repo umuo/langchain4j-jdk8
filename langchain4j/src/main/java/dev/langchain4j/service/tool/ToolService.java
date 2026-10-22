@@ -1528,7 +1528,7 @@ public class ToolService {
     private static CompletableFuture<ToolExecutionResult> executeWithErrorHandlingAsync(ToolExecutionRequest toolRequest, ToolExecutor toolExecutor, InvocationContext invocationContext, ToolArgumentsErrorHandler argumentsErrorHandler, ToolExecutionErrorHandler executionErrorHandler) {
         CompletableFuture<ToolExecutionResult> futureToolResult;
         try {
-            futureToolResult = toolExecutor.executeAsync(toolRequest, invocationContext);
+            futureToolResult = ownAsyncToolResult(toolExecutor.executeAsync(toolRequest, invocationContext));
         } catch (AsyncNotSupportedException e) {
             return dev.langchain4j.internal.Jdk8.failedFuture(e);
         } catch (Exception e) {
@@ -1536,12 +1536,35 @@ public class ToolService {
         }
         return dev.langchain4j.internal.Jdk8.exceptionallyCompose(futureToolResult, error -> {
             Throwable cause = unwrapCompletionException(error);
-            if (cause instanceof AsyncNotSupportedException) {
+            if (cause instanceof AsyncNotSupportedException || cause instanceof CancellationException) {
                 return dev.langchain4j.internal.Jdk8.failedFuture(cause);
             }
             Exception exception = cause instanceof Exception ? ((Exception) cause) : new RuntimeException(cause);
             return handleToolError(exception, toolRequest, invocationContext, argumentsErrorHandler, executionErrorHandler);
         });
+    }
+
+    /** Keep the provider's asynchronous work owned after its initiating supplier returns.
+     * Publish completion under the captured owner so error/after notifications retain its guards. */
+    private static CompletableFuture<ToolExecutionResult> ownAsyncToolResult(CompletableFuture<ToolExecutionResult> source) {
+        dev.langchain4j.internal.CancellationContext.Registrar owner = dev.langchain4j.internal.CancellationContext.current();
+        if (owner == null) return source;
+        java.util.Objects.requireNonNull(source, "ToolExecutor.executeAsync result");
+        CompletableFuture<ToolExecutionResult> result = new CompletableFuture<>();
+        dev.langchain4j.internal.CancellationContext.Registration registration = owner.register(() ->
+                dev.langchain4j.internal.CancellationContext.run(owner, () -> {
+                    result.cancel(false);
+                    source.cancel(true);
+                }));
+        source.whenComplete((value, error) -> dev.langchain4j.internal.CancellationContext.run(owner, () -> {
+            try {
+                if (error == null) result.complete(value);
+                else result.completeExceptionally(error);
+            } finally {
+                registration.close();
+            }
+        }));
+        return result;
     }
 
     private static CompletableFuture<ToolExecutionResult> handleToolError(Exception e, ToolExecutionRequest toolRequest, InvocationContext invocationContext, ToolArgumentsErrorHandler argumentsErrorHandler, ToolExecutionErrorHandler executionErrorHandler) {

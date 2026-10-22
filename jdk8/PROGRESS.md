@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 工具任务取消检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic 委托异步工具取消检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
@@ -21,6 +21,15 @@
 
 
 
+
+### 委托异步工具 Future 的归属（WIP，2026-10-22）
+
+- 四项定向实际 Java 8 测试先复现三处失败：supplier 已返回后委托 Future 未取消，成功 after 通知和错误处理均丢失 owner；无 owner 的隔离用例原本通过。
+- ToolService 在拿到 ToolExecutor.executeAsync 返回 Future 后登记 root 取消，保留独立等待结果；成功/失败完成时进入捕获的 CancellationContext，恢复原绑定并解除登记。取消在 provider 返回前发生时，迟到 Future 登记后立即取消。
+- 通过返回 Future 报告的 CancellationException 不再转交工具错误策略，不生成可送回模型的工具成功结果；避免自定义“错误转文本”策略把取消变为下一轮模型请求。已有 AsyncNotSupportedException 的显式失败行为保留。
+- 八项实际 Java 8 验收覆盖 root 取消、异线程成功通知/原异常、无 owner 隔离、provider 返回时取消、提前完成/解除登记，以及 loopback OpenAI HTTP 的正常工具结果回传与取消后无后续请求。该组使用可取消 CompletableFuture，不声称可强制停止拒绝取消的第三方 I/O。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 508 项（支持模块 370 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1755 通过。33 JAR/6378 基础类条目、4952 类默认链接、5191 类扩展链接、全部既有 BOM 独立消费，以及严格 API/测试来源审计通过；生产依赖树无变化，无新增公开声明或类。快照 [agentic-delegated-tool-wip.json](verification/agentic-delegated-tool-wip.json)。Agentic 继续 WIP、未纳入默认 BOM，无新完整阶段标签。
+- 当前只证明 root 归属取消；直接取消 startTool 返回的组合 Future 到委托 Future 的反向传播，以及 provider 同步抛出 CancellationException 时的策略，仍待实现/验收。完成响应 executor、terminal 流、自定义传输、全部 Agentic/MCP/模型/向量库及交付范围继续 pending。
 
 ### 工具 supplier 的中断与排队取消（WIP，2026-10-22）
 

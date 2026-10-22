@@ -448,7 +448,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 后续演进：工具 supplier 已增加 root 归属、中断和排队取消，9 项基础测试与新增 2 项实际 Java 8 SSE 场景通过，详见 [工具任务取消 WIP 快照](../verification/agentic-owned-task-wip.json)。完整 clean 为 1747 通过、14 项官方 TCK untested；受影响 core helper 严格 API 对照明确报告新增 public @Internal supplyAsync。本文前面的固定历史统计保持原有证据范围。
 
-当前下一组取消问题包括委托异步工具 stage、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+委托异步工具的 root 取消随后补齐：8 项实际 Java 8 测试包含本地 HTTP 正常工具续传和取消后不重试，详见 [委托工具 WIP 快照](../verification/agentic-delegated-tool-wip.json)。该轮完整 clean 为 1755 通过、14 项官方 TCK untested；没有新增公开声明或生产依赖。
+
+当前下一组取消问题包括组合 Future 主动取消的反向传播、provider 同步取消异常、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

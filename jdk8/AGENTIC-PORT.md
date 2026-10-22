@@ -222,6 +222,15 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+### 委托异步工具 Future 的归属（WIP，2026-10-22）
+
+- 四项定向实际 Java 8 测试先复现三处失败：supplier 已返回后委托 Future 未取消，成功 after 通知和错误处理均丢失 owner；无 owner 的隔离用例原本通过。
+- ToolService 在拿到 ToolExecutor.executeAsync 返回 Future 后登记 root 取消，保留独立等待结果；成功/失败完成时进入捕获的 CancellationContext，恢复原绑定并解除登记。取消在 provider 返回前发生时，迟到 Future 登记后立即取消。
+- 通过返回 Future 报告的 CancellationException 不再转交工具错误策略，不生成可送回模型的工具成功结果；避免自定义“错误转文本”策略把取消变为下一轮模型请求。已有 AsyncNotSupportedException 的显式失败行为保留。
+- 八项实际 Java 8 验收覆盖 root 取消、异线程成功通知/原异常、无 owner 隔离、provider 返回时取消、提前完成/解除登记，以及 loopback OpenAI HTTP 的正常工具结果回传与取消后无后续请求。该组使用可取消 CompletableFuture，不声称可强制停止拒绝取消的第三方 I/O。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 508 项（支持模块 370 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1755 通过。33 JAR/6378 基础类条目、4952 类默认链接、5191 类扩展链接、全部既有 BOM 独立消费，以及严格 API/测试来源审计通过；生产依赖树无变化，无新增公开声明或类。快照 [agentic-delegated-tool-wip.json](verification/agentic-delegated-tool-wip.json)。Agentic 继续 WIP、未纳入默认 BOM，无新完整阶段标签。
+- 当前只证明 root 归属取消；直接取消 startTool 返回的组合 Future 到委托 Future 的反向传播，以及 provider 同步抛出 CancellationException 时的策略，仍待实现/验收。完成响应 executor、terminal 流、自定义传输、全部 Agentic/MCP/模型/向量库及交付范围继续 pending。
+
 ### 工具 supplier 的中断与排队取消（WIP，2026-10-22）
 
 - 两项真实 Java 8 SSE 子进程先失败：运行工具没有中断，排队工具 future 未终止导致 HTTP 完成回调继续等待。现工具 supplier 提交到 executor 之前按 InvocationContext owner 登记，取消立即终止 future；运行任务中断实际 worker，排队任务出队时跳过 supplier。调用者 executor 与其中不属于本调用的阻塞任务保持运行。
