@@ -143,3 +143,5 @@
 - 2026-10-22 委托异步工具取消 WIP：8 项实际 Java 8 验收覆盖 provider Future 取消/完成 owner 恢复/错误及 loopback HTTP 正常续传与取消后不重试。完整 clean 1755 通过/14 官方 TCK untested，API/来源/产物/链接和既有 BOM 消费通过；快照 verification/agentic-delegated-tool-wip.json。无新增公开声明、类或生产依赖；直接取消组合 Future 的反向传播、同步取消异常策略、完成响应 executor、terminal 流和全部长期范围仍 pending。
 
 - 2026-10-22 单次工具组合 Future 取消 WIP：8 项实际 Java 8 验收覆盖直接取消委托 Future、排队跳过、运行中断、迟到 Future、false→true 升级、同步取消错误策略及清理失败。严格 ToolService API 对照修复四个 record 替代类 12 个自动方法缺少 final 的历史遗漏；5 可见类型/89 声明成员/117 继承公开条目/4 record，无成员缺失或新增。最终 clean 1763 通过/14 官方 TCK untested，来源/产物/链接与既有 BOM 消费通过，依赖树未变；快照 verification/agentic-tool-cancellation-wip.json。高层 Future/Publisher 整链、完成响应 executor、terminal 流及全部长期范围仍 pending。
+
+- 2026-10-22 高层 Future/Publisher 工具轮次取消 WIP：新增 16 项实际 Java 8 HTTP/SSE 用例，验证排队/运行/委托工具取消、注解原始 Future 取消、调用隔离、独立取消不重试及显式补偿 drain/rollback 一次。最终 clean 1779 通过/14 官方 TCK untested，既有 BOM 消费/字节码/链接/原始测试来源通过，ToolService 与新增 DefaultToolExecutor 严格 API 审计无公开成员缺失或新增，生产依赖树未变。快照 verification/agentic-tool-loop-cancellation-wip.json；完成响应 executor、terminal 流、完整 Agentic 四模块/剩余 MCP/模型/向量库与交付仍 pending。

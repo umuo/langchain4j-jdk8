@@ -113,7 +113,7 @@ public class OpenAiJdk8Test {
                             return;
                         }
                     }
-                } else if (mode.equals("toolOnce") && requests.get() == 1) {
+                } else if (mode.equals("tool") || (mode.equals("toolOnce") && requests.get() == 1)) {
                     com.fasterxml.jackson.databind.node.ObjectNode payload = mapper.createObjectNode();
                     payload.put("id", "id").put("model", "mock-model");
                     com.fasterxml.jackson.databind.node.ObjectNode choice = payload.putArray("choices").addObject().put("index", 0);

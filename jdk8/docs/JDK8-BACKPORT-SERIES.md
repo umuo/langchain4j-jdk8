@@ -452,7 +452,9 @@ AST 工具适合批量定位和机械转换，适合辅助检查 record、模式
 
 单次工具组合 Future 的主动取消随后补齐：8 项实际 Java 8 测试覆盖排队跳过、运行中断、迟到 Future、取消升级和同步取消策略，详见 [单次工具取消快照](../verification/agentic-tool-cancellation-wip.json)。最终 clean 为 1763 通过、14 项官方 TCK untested。新建的 ToolService 基线 API 对照还发现四个旧 record 替代类的 12 个值方法漏 final；修复后 5 个可见类型、89 个声明成员和 117 个继承公开条目严格对照通过。这个实例再次说明编译和功能测试通过并不自动证明声明一致。
 
-当前下一组取消问题包括高层 Future/Publisher 到整个工具轮次的反向传播、完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+高层 Future/Publisher 到工具轮次的默认取消随后补齐：16 项实际 Java 8 HTTP/SSE 用例覆盖排队/运行/委托工具、注解原始 Future、调用隔离、独立取消与补偿合同，详见 [高层工具轮次取消快照](../verification/agentic-tool-loop-cancellation-wip.json)。显式启用补偿时继续等待已启动工具的成功结果并回滚，避免把结果取消掉之后无从补偿；默认模式则 best-effort 取消活动工具。最终 clean 为 1779 通过、14 项官方 TCK untested；ToolService 与 DefaultToolExecutor 的局部严格 API 对照通过。
+
+当前下一组取消问题包括完成响应 executor 的任务生命周期、terminal TokenStream，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

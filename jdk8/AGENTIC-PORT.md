@@ -222,6 +222,17 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 - 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 
+### 高层 Future/Publisher 的工具轮次取消（WIP，2026-10-22）
+
+- 修正 loopback SSE 夹具，使连续 tool 模式也能发送工具事件，之后十二项实际 Java 8 端到端测试先复现十项失败：Future/Publisher 未取消程序化或注解 Future、未跳过排队工具、未中断运行工具、指定调用的取消未到达其工具。两个启用补偿的 drain/rollback 用例原本通过，不把夹具早期缺失的工具事件当有效失败证据。
+- AsyncToolLoop 在工具 supplier 提交前登记调用者取消，后创建的工具也立即观察已取消信号；memory 添加之后再次检查取消，避免继续启动新轮次。单次 ToolTask 继续负责运行 worker、排队入口与迟到 Future，调用者池保持打开。取消清理失败附加到调用者取消异常，不把它转成新的模型请求。
+- 响应式 Loop 为每个订阅维护并发活动工具集合，取消时遍历快照，工具完成解除登记，发布窗口之后再次检查取消。缺失 CompleteToolCall 时启动的回退工具同样登记。取消清理异常写日志并继续取消其他工具，不在已取消订阅上发 onError/onComplete。
+- DefaultToolExecutor 新增私有 AsyncToolResult，将取消穿过注解异步值转换传到原始 CompletableFuture，保留 mayInterruptIfRunning 和清理异常。另两个定向用例先失败：注解工具原始 Future 独立取消被错误转文本并成功返回。现保留 CancellationException，绕过工具错误文本策略；高层 Future 作为失败交给调用者（不冒充主动 cancel），Publisher 正常收到 onError，不发下一轮请求。
+- 显式启用 compensateOnToolErrors 时保留固定基线 drain-then-rollback：已启动工具不因高层取消丢失迟到成功结果，待其完成再收集并补偿一次。它不同于默认模式的 best-effort 取消，不承诺补偿模式能强制停止未知外部副作用。相应两条 HTTP/SSE 回归继续验证回滚一次、无下一模型请求。
+- 新增十六项实际 Java 8 用例覆盖上述调用模式、隔离、补偿、独立取消、注解 Future 转换的取消模式升级/清理失败。既有 25 项任务/单工具/归属回归全部保留。新增受影响 DefaultToolExecutor 的固定基线 API 对照脚本，不将局部审计当整个主模块 API 审计。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 532 项（支持模块 394 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1779 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过。ToolService 5 类型/89 声明/117 继承公开条目/4 record，DefaultToolExecutor 2 类型/17 声明/30 继承公开条目/0 record，严格基线对照无公开成员缺失或新增；Agentic/patterns/受影响 core helper API 与原始测试来源审计通过，生产依赖树未变。快照 [agentic-tool-loop-cancellation-wip.json](verification/agentic-tool-loop-cancellation-wip.json)。Agentic 仍 WIP、未纳入默认 BOM，无新完整阶段标签。
+- 本组 HTTP/SSE 取消夹具每次模型响应只含一个工具；同一响应中多工具 fan-out 取消仍需专门验收。任意拒绝取消的 provider/CompletionStage 适配器、同步阻塞回调或 inline executor 不因此获得强制停止与新超时保证；Guardrails 不纳入本单元改造。完成响应 executor、terminal 流、完整成功/失败收尾、所有 Agentic 四模块能力、剩余 MCP/模型/向量库/BOM 与最终交付继续 pending。
+
 ### 单次工具调用的组合 Future 取消（WIP，2026-10-22）
 
 - 六项实际 Java 8 定向测试先失败五项：同步 CancellationException 被错误策略转为成功文本、直接取消未到达 provider Future、运行 supplier 未中断、排队 supplier 仍执行、cancel(false) 后迟到的 provider Future 丢失。成功完成后取消返回 false 的用例原本通过。

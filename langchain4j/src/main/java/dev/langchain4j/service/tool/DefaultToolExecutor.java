@@ -200,15 +200,33 @@ public class DefaultToolExecutor implements ToolExecutor {
         }
         CompletableFuture<?> futureResult = toCompletableFuture(result);
         if (futureResult != null) {
-            return futureResult.handle((value, error) -> {
+            CompletableFuture<ToolExecutionResult> converted = futureResult.handle((value, error) -> {
                 if (error != null) {
                     Throwable cause = unwrapCompletionException(error);
                     return toFailedOrErrorResult(cause);
                 }
                 return CompletableFuture.completedFuture(toToolExecutionResult(value, futureValueType()));
             }).thenCompose(futureToolResult -> futureToolResult);
+            return new AsyncToolResult(futureResult, converted);
         }
         return CompletableFuture.completedFuture(toToolExecutionResult(result, methodToInvoke.getReturnType()));
+    }
+
+    /** Preserve cancellation through conversion of an annotated tool's asynchronous return value. */
+    private static final class AsyncToolResult extends CompletableFuture<ToolExecutionResult> {
+        private final CompletableFuture<?> source;
+        AsyncToolResult(CompletableFuture<?> source, CompletableFuture<ToolExecutionResult> converted) {
+            this.source = source;
+            converted.whenComplete((value, error) -> {
+                if (error == null) complete(value);
+                else completeExceptionally(error);
+            });
+        }
+        @Override public boolean cancel(boolean mayInterruptIfRunning) {
+            boolean cancelled = super.cancel(false);
+            if (cancelled) source.cancel(mayInterruptIfRunning);
+            return cancelled;
+        }
     }
 
     /**
@@ -260,6 +278,9 @@ public class DefaultToolExecutor implements ToolExecutor {
     }
 
     private CompletableFuture<ToolExecutionResult> toFailedOrErrorResult(Throwable cause) {
+        if (cause instanceof CancellationException) {
+            return dev.langchain4j.internal.Jdk8.failedFuture(cause);
+        }
         if (propagateToolExecutionExceptions) {
             return dev.langchain4j.internal.Jdk8.failedFuture(new ToolExecutionException(cause));
         }

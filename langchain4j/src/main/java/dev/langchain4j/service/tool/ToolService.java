@@ -588,9 +588,9 @@ public class ToolService {
      * When no tool executor is configured, tools run on the thread that delivered the model response.
      * <p>
      * The {@code cancellation} future lets the caller stop the loop: once it is cancelled, no further model
-     * call or tool execution is initiated, and any in-flight model call is cancelled. A tool execution that
-     * has <b>already started</b> is <b>not</b> interrupted — it runs to completion and its result is simply
-     * discarded (Java cannot safely interrupt arbitrary tool code; this is a deliberate best-effort contract).
+     * call or tool execution is initiated, and in-flight model calls and tools are cancelled best-effort.
+     * When compensation is enabled, already-started tools retain the drain-then-rollback contract so their
+     * successful results remain available to compensating actions. User code may refuse cancellation/interruption.
      *
      * @since 1.20.0
      */
@@ -688,13 +688,32 @@ public class ToolService {
                 aiMessageAdded = CompletableFuture.completedFuture(null);
             }
             return aiMessageAdded.thenCompose(ignored -> {
+                if (isCancelled(cancellation)) {
+                    return dev.langchain4j.internal.Jdk8.failedFuture(new CancellationException());
+                }
                 if (!aiMessage.hasToolExecutionRequests()) {
                     return CompletableFuture.completedFuture(finalToolServiceResult(chatResponse, intermediateResponses, toolExecutions, aggregateTokenUsage, chatMemory == null ? accumulator : dev.langchain4j.internal.Jdk8.list(), lastChatRequest));
                 }
                 intermediateResponses.add(chatResponse);
                 List<ToolExecutionRequest> toolExecutionRequests = aiMessage.toolExecutionRequests();
-                return executeToolsCollectingErrors(toolExecutionRequests, toolServiceContext.toolExecutors(), invocationContext).thenCompose(combined -> afterToolsExecuted(parameters, accumulator, toolServiceContext, aggregateTokenUsage, roundTripsLeft, toolExecutionRequests, combined.results(), combined.firstError()));
+                return executeToolsCollectingErrors(toolExecutionRequests, toolServiceContext.toolExecutors(), invocationContext, this::trackTool).thenCompose(combined -> afterToolsExecuted(parameters, accumulator, toolServiceContext, aggregateTokenUsage, roundTripsLeft, toolExecutionRequests, combined.results(), combined.firstError()));
             }).toCompletableFuture();
+        }
+
+        private void trackTool(CompletableFuture<ToolExecutionResult> future) {
+            if (compensateOnToolErrors) {
+                // Do not lose a started tool's successful result before compensation can observe it.
+                if (isCancelled(cancellation)) future.cancel(false);
+            } else if (cancellation != null) {
+                cancellation.whenComplete((ignored, error) -> {
+                    if (cancellation.isCancelled()) {
+                        try { future.cancel(true); }
+                        catch (RuntimeException | Error cleanup) {
+                            if (error != null && cleanup != error) error.addSuppressed(cleanup);
+                        }
+                    }
+                });
+            }
         }
 
         /**
@@ -1367,10 +1386,10 @@ public class ToolService {
      * the successful tools before failing the invocation with the tool error. Every tool is started on the
      * {@linkplain #effectiveToolExecutor() effective executor} so the model-delivery thread is never blocked.
      */
-    private CompletableFuture<CombinedToolResults> executeToolsCollectingErrors(List<ToolExecutionRequest> toolRequests, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext) {
+    private CompletableFuture<CombinedToolResults> executeToolsCollectingErrors(List<ToolExecutionRequest> toolRequests, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext, Consumer<CompletableFuture<ToolExecutionResult>> onStart) {
         Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> futures = new LinkedHashMap<>();
         for (ToolExecutionRequest toolRequest : toolRequests) {
-            futures.put(toolRequest, startTool(toolRequest, toolExecutors, invocationContext, null, null, effectiveToolExecutor()));
+            futures.put(toolRequest, startTool(toolRequest, toolExecutors, invocationContext, null, null, effectiveToolExecutor(), onStart));
         }
         return combineToolResultsCollectingErrors(futures);
     }
@@ -1384,7 +1403,13 @@ public class ToolService {
      * @since 1.20.0
      */
     public CompletableFuture<ToolExecutionResult> startTool(ToolExecutionRequest toolRequest, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution, Executor executor) {
+        return startTool(toolRequest, toolExecutors, invocationContext, externalBeforeToolExecution, externalAfterToolExecution, executor, null);
+    }
+
+    private CompletableFuture<ToolExecutionResult> startTool(ToolExecutionRequest toolRequest, Map<String, ToolExecutor> toolExecutors, InvocationContext invocationContext, Consumer<BeforeToolExecution> externalBeforeToolExecution, Consumer<ToolExecution> externalAfterToolExecution, Executor executor, Consumer<CompletableFuture<ToolExecutionResult>> onStart) {
         ToolTask result = new ToolTask();
+        if (onStart != null) onStart.accept(result);
+        if (result.isCancelled()) return result;
         CompletableFuture<CompletableFuture<ToolExecutionResult>> starter = CapturedContextSupport.supplyAsync(() -> {
             if (!result.begin()) return dev.langchain4j.internal.Jdk8.failedFuture(new CancellationException("Tool cancelled before execution"));
             try {

@@ -257,6 +257,8 @@ public class AiServiceStreamingEventPublisher implements Publisher<AiServiceStre
 
         private final AtomicReference<Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>>> startedRoundTools = new AtomicReference<>();
 
+        private final java.util.Set<CompletableFuture<ToolExecutionResult>> activeTools = java.util.concurrent.ConcurrentHashMap.newKeySet();
+
         private final AtomicReference<CompletableFuture<?>> guardrailsFuture = new AtomicReference<>();
 
         private final List<ToolService.CompensableToolExecution> compensableExecutions = context.toolService.newCompensableExecutionsAccumulator();
@@ -288,6 +290,10 @@ public class AiServiceStreamingEventPublisher implements Publisher<AiServiceStre
                 }
             });
             tube.whenCancelled(() -> {
+                if (compensableExecutions == null) {
+                    for (CompletableFuture<ToolExecutionResult> future : new ArrayList<>(activeTools)) cancelTool(future);
+                    return;
+                }
                 Object[] claimed = underAccumulatorLock(() -> {
                     InflightRound round = inflightRound.getAndSet(null);
                     Map<ToolExecutionRequest, CompletableFuture<ToolExecutionResult>> started = round == null ? startedRoundTools.getAndSet(null) : null;
@@ -361,7 +367,7 @@ public class AiServiceStreamingEventPublisher implements Publisher<AiServiceStre
                     } else if (event instanceof CompleteToolCall) {
                         tube.send(new CompleteToolCallEvent(((CompleteToolCall) event), invocationContext));
                         ToolExecutionRequest toolRequest = ((CompleteToolCall) event).toolExecutionRequest();
-                        CompletableFuture<ToolExecutionResult> startedTool = context.toolService.startTool(toolRequest, currentToolContext.toolExecutors(), invocationContext, Loop.this::emitBeforeToolExecution, Loop.this::emitAfterToolExecution, toolExecutor);
+                        CompletableFuture<ToolExecutionResult> startedTool = startTool(toolRequest, currentToolContext);
                         underAccumulatorLock(() -> {
                             startedTools.put(toolRequest, startedTool);
                             return null;
@@ -546,11 +552,29 @@ public class AiServiceStreamingEventPublisher implements Publisher<AiServiceStre
                 ToolExecutionRequest toolRequest = toolRequests.get(i);
                 CompletableFuture<ToolExecutionResult> future = everyToolCallWasAnnounced ? startedInAnnouncedOrder.get(i) : startedTools.get(toolRequest);
                 if (future == null) {
-                    future = context.toolService.startTool(toolRequest, currentToolContext.toolExecutors(), invocationContext, this::emitBeforeToolExecution, this::emitAfterToolExecution, toolExecutor);
+                    future = startTool(toolRequest, currentToolContext);
                 }
                 orderedFutures.put(toolRequest, future);
             }
             return ToolService.combineToolResultsCollectingErrors(orderedFutures);
+        }
+
+        private CompletableFuture<ToolExecutionResult> startTool(ToolExecutionRequest request, ToolServiceContext currentToolContext) {
+            CompletableFuture<ToolExecutionResult> future = context.toolService.startTool(request, currentToolContext.toolExecutors(), invocationContext, this::emitBeforeToolExecution, this::emitAfterToolExecution, toolExecutor);
+            if (compensableExecutions == null) {
+                activeTools.add(future);
+                future.whenComplete((value, error) -> activeTools.remove(future));
+                if (tube.cancelled()) cancelTool(future);
+            }
+            return future;
+        }
+
+        private void cancelTool(CompletableFuture<ToolExecutionResult> future) {
+            try { future.cancel(true); }
+            catch (RuntimeException | Error cleanup) {
+                // A cancelled subscription cannot receive another error signal; try the remaining tools.
+                org.slf4j.LoggerFactory.getLogger(AiServiceStreamingEventPublisher.class).warn("Tool cancellation failed", cleanup);
+            }
         }
 
         private void afterToolsExecuted(ChatResponse chatResponse, AiMessage aiMessage, ToolServiceContext currentToolContext, ChatRequestParameters parameters, List<ToolExecutionRequest> toolRequests, Map<ToolExecutionRequest, ToolExecutionResult> toolResults, Throwable firstError, String preCollectedFailedToolName) {
