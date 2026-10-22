@@ -377,3 +377,13 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 - 四项定向验收覆盖三种写入、不同 scope 嵌套、线程复用无残留、同一 scope 新旧代际，以及 callback Error 保留和双绑定恢复。新增真实 SSE 工具回调用例在 root 返回原始失败后显式释放被门控的工具，断言拒绝三种迟到写入并保留外部写入的新值；原七项网络资源验证继续保留。半关闭输出用于触发工具执行，不把该场景的 EOF 单独当作 root 取消导致关闭的证据。
 - 本单元不改变基线公共类型/方法；新增默认钩子位于本分支新增的内部辅助接口，私有 bridge 不扩展 InvocationTasks 的公开方法。无生产依赖变化。最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 483 项（支持模块 349 + 主 Agentic 105 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1730 通过。严格基线 API/测试来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过，生产依赖树未变。快照 `verification/agentic-callback-scope-wip.json`；无新完整阶段标签或 Agentic BOM 支持声明。
 - terminal TokenStream、任意自定义传输、异步工具执行器、用户自己创建线程的上下文传播仍待完成；直接 state() Map 写入、外部副作用不受此守卫合同覆盖。成功收尾/完整失败历史/自动重试、同步用户回调与 guard 锁边界及全部其他长期范围继续 pending。
+
+
+### AI Services executor 上下文组合（WIP，2026-10-22）
+
+- 现有 CapturedContextSupport 只捕获 ExecutorProvider 上下文。四项基础实际 Java 8 测试中三项先失败（owner 丢失），无上下文的原 executor/null 合同用例通过；自定义工具 executor 的迟到写入也复现为三次写入全部未拒绝。工具续传请求原先仍在 HTTP 回调上发起，已有 owner，新增续传用例作为回归而非失败证据。
+- captureInto 将当前 CancellationContext owner 与原 SPI CapturedContext 组合，保留 provider 的捕获/包装时机和恢复合同；toBuilder 继续沿用不可变捕获快照。既有工具及完成响应 executor 的 restoringIn 因此携带同一 root 归属，不替换或关闭调用者 executor，不改 Guardrails 实现。
+- 四项基础用例验证无 provider 时的 owner、InvocationContext 复制、与用户 ThreadLocal 快照组合、worker 原值恢复、callback Error 原对象与上下文恢复，以及无上下文的 executor/null 合同。
+- 两项新增 SSE 子进程使用自定义单线程工具 executor：失败后释放门控工具，拒绝三种 scope 写入且保留外部新值；工具在线程中创建的新 HTTP future 立即取消；正常工具续传保持既有归属。验证工具确实运行在指定线程、executor 未被框架关闭，并在同一线程复用时无 scope/resource 残留。原八项网络场景保留。
+- 完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 489 项（支持模块 353 + 主 Agentic 107 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1736 通过。严格基线 API/来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过。快照 `verification/agentic-executor-context-wip.json`。没有公开签名或生产依赖变化，Agentic 仍不纳入默认 BOM，无新阶段标签。
+- 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。

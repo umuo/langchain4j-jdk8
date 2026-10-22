@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 回调 scope 归属检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic executor 上下文检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、8 项网络取消及 4 项回调归属场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、10 项网络取消及 4 项回调归属场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -17,6 +17,17 @@
 
 
 
+
+
+
+### AI Services executor 上下文组合（WIP，2026-10-22）
+
+- 现有 CapturedContextSupport 只捕获 ExecutorProvider 上下文。四项基础实际 Java 8 测试中三项先失败（owner 丢失），无上下文的原 executor/null 合同用例通过；自定义工具 executor 的迟到写入也复现为三次写入全部未拒绝。工具续传请求原先仍在 HTTP 回调上发起，已有 owner，新增续传用例作为回归而非失败证据。
+- captureInto 将当前 CancellationContext owner 与原 SPI CapturedContext 组合，保留 provider 的捕获/包装时机和恢复合同；toBuilder 继续沿用不可变捕获快照。既有工具及完成响应 executor 的 restoringIn 因此携带同一 root 归属，不替换或关闭调用者 executor，不改 Guardrails 实现。
+- 四项基础用例验证无 provider 时的 owner、InvocationContext 复制、与用户 ThreadLocal 快照组合、worker 原值恢复、callback Error 原对象与上下文恢复，以及无上下文的 executor/null 合同。
+- 两项新增 SSE 子进程使用自定义单线程工具 executor：失败后释放门控工具，拒绝三种 scope 写入且保留外部新值；工具在线程中创建的新 HTTP future 立即取消；正常工具续传保持既有归属。验证工具确实运行在指定线程、executor 未被框架关闭，并在同一线程复用时无 scope/resource 残留。原八项网络场景保留。
+- 完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：真实 Java 8 489 项（支持模块 353 + 主 Agentic 107 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1736 通过。严格基线 API/来源审计保持，main 217 类/patterns 22 类均 classfile 52，无禁止引用；扩展链接 5188 类及全部既有 BOM 消费通过。快照 `verification/agentic-executor-context-wip.json`。没有公开签名或生产依赖变化，Agentic 仍不纳入默认 BOM，无新阶段标签。
+- 本单元传播上下文，不宣称工具线程已被强制终止或所有排队任务已取消。完整 executor 任务所有权/中断/排队取消、terminal TokenStream、自定义模型回调/传输、用户自行创建线程、成功收尾与失败历史/自动重试、guard 锁边界和全部其他长期范围继续 pending。
 
 ### HTTP 回调的 scope 代际归属（WIP，2026-10-22）
 

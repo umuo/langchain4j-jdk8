@@ -2,6 +2,7 @@ package dev.langchain4j.invocation;
 
 import dev.langchain4j.Internal;
 import dev.langchain4j.internal.DefaultExecutorProvider;
+import dev.langchain4j.internal.CancellationContext;
 import dev.langchain4j.spi.CapturedContext;
 import dev.langchain4j.spi.ExecutorProvider;
 import java.util.concurrent.Executor;
@@ -18,13 +19,19 @@ public final class CapturedContextSupport {
     }
 
     /**
-     * Captures the context of the calling thread into the given builder, if an {@link ExecutorProvider} that
-     * captures context is registered.
+     * Captures the registered {@link ExecutorProvider} context and any internal cancellation owner into the
+     * given builder. The owner is composed with, rather than replacing, the provider context.
      *
      * @return the given builder
      */
     public static InvocationContext.Builder captureInto(InvocationContext.Builder builder) {
-        builder.capturedContext = DefaultExecutorProvider.captureContext();
+        CapturedContext provided = DefaultExecutorProvider.captureContext();
+        CancellationContext.Registrar owner = CancellationContext.current();
+        builder.capturedContext = owner == null ? provided : task -> {
+            // Preserve the provider's wrapping time and its own per-task restoration contract.
+            Runnable wrapped = provided == null ? task : provided.wrap(task);
+            return () -> CancellationContext.run(owner, wrapped);
+        };
         return builder;
     }
 
