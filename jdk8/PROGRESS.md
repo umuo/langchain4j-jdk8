@@ -1,6 +1,6 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 高层工具轮次取消检查点（WIP，2026-10-22）
+## 当前状态：第十五阶段 Agentic 同轮多工具取消检查点（WIP，2026-10-22）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
@@ -21,6 +21,16 @@
 
 
 
+
+### 同轮多工具取消与清理异常传播（WIP，2026-10-22）
+
+- 扩展 loopback HTTP/SSE 夹具，每次第一响应包含 call1/Shanghai 与 call2/Beijing 两个工具，第二响应正常结束。十项实际 Java 8 多工具测试中九项先通过；一项复现清理错误在高层 Future 包装之间丢失，而另一个工具仍成功取消。不把该失败解释成取消循环未处理其他工具。
+- 四项通用取消传播测试中三项先失败：直接清理异常、嵌套清理异常和多路径去重；普通完成/null root 合同原本通过。CompletableFutureUtils.propagateCancellation 现将直接 cancel 抛出的 RuntimeException/Error，以及已取消下游 Future 收集的 suppressed 错误，传到上游取消异常；按对象身份去重并避免 self-suppression。只在已取消/已完成的下游读取该信息，不在尚未完成的拒绝取消 provider 上挂等待回调。
+- 十项 HTTP/SSE 用例覆盖 Future/Publisher 同轮两个 pending provider、一个运行/一个排队、一个 provider 拒绝取消但继续清理另一工具，以及成功路径的结果 ID 对齐、补偿模式逆请求顺序回滚一次。补偿测试故意反序完成两个原始 Future；默认取消不继续请求模型，调用者池保持打开，排队工具不执行。
+- 拒绝取消的 provider 仍需要自行结束；响应式取消失败按既有日志路径记录，不向已取消订阅补发 terminal。取消传播诊断不是外部副作用回滚或强制终止用户 I/O 的保证。Guardrails 代码保持未改动。
+- 新增受影响 core CompletableFutureUtils 的固定基线 API 审计；其余已有 API/来源/产物/链接和消费验证继续保留。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 546 项（支持模块 408 + 主 Agentic 109 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1793 通过。33 JAR/6384 基础类条目、4955 类默认链接、5194 类扩展链接及全部既有 BOM 独立消费通过；严格 API/原始测试来源/有效依赖树审计通过。新增 core helper 对照为 1 可见类型/1 声明成员/10 继承公开条目/0 record，无公开成员缺失或新增；本轮没有新增生产类型或依赖。快照 [agentic-tool-fanout-cancellation-wip.json](verification/agentic-tool-fanout-cancellation-wip.json)。Agentic 仍 WIP、未进入默认 BOM。
+- 完成响应 executor、terminal 流、完整成功/失败收尾、所有 Agentic 四模块能力、剩余 MCP/模型/向量库/BOM 与最终交付继续 pending；本单元不创建完整阶段标签。
 
 ### 高层 Future/Publisher 的工具轮次取消（WIP，2026-10-22）
 

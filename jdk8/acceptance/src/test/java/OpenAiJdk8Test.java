@@ -113,13 +113,19 @@ public class OpenAiJdk8Test {
                             return;
                         }
                     }
-                } else if (mode.equals("tool") || (mode.equals("toolOnce") && requests.get() == 1)) {
+                } else if (mode.equals("tool") || ((mode.equals("toolOnce") || mode.equals("toolPair")) && requests.get() == 1)) {
                     com.fasterxml.jackson.databind.node.ObjectNode payload = mapper.createObjectNode();
                     payload.put("id", "id").put("model", "mock-model");
                     com.fasterxml.jackson.databind.node.ObjectNode choice = payload.putArray("choices").addObject().put("index", 0);
                     com.fasterxml.jackson.databind.node.ObjectNode call = choice.putObject("delta").putArray("tool_calls").addObject();
                     call.put("index", 0).put("id", "call1").put("type", "function");
                     call.putObject("function").put("name", "weather").put("arguments", "{\"city\":\"Shanghai\"}");
+                    if (mode.equals("toolPair")) {
+                        com.fasterxml.jackson.databind.node.ObjectNode second = call.deepCopy();
+                        second.put("index", 1).put("id", "call2");
+                        ((com.fasterxml.jackson.databind.node.ObjectNode) second.get("function")).put("arguments", "{\"city\":\"Beijing\"}");
+                        ((com.fasterxml.jackson.databind.node.ArrayNode) choice.get("delta").get("tool_calls")).add(second);
+                    }
                     String finish = "data: {\"id\":\"id\",\"model\":\"mock-model\",\"choices\":[{\"index\":0,\"delta\":{},\"finish_reason\":\"tool_calls\"}]}\n\ndata: [DONE]\n\n";
                     out.write(("data: " + payload + "\n\n" + finish).getBytes(StandardCharsets.UTF_8));
                     out.flush();
@@ -133,6 +139,18 @@ public class OpenAiJdk8Test {
             } else if (mode.equals("structured")) {
                 com.fasterxml.jackson.databind.node.ObjectNode payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(normal("placeholder"));
                 ((com.fasterxml.jackson.databind.node.ObjectNode) payload.path("choices").get(0).path("message")).put("content", "{\"name\":\"Alice\",\"age\":30}");
+                respond(e, 200, payload.toString());
+            } else if (mode.equals("toolPair") && requests.get() == 1) {
+                com.fasterxml.jackson.databind.node.ObjectNode payload = (com.fasterxml.jackson.databind.node.ObjectNode) mapper.readTree(normal("placeholder"));
+                com.fasterxml.jackson.databind.node.ObjectNode choice = (com.fasterxml.jackson.databind.node.ObjectNode) payload.get("choices").get(0);
+                choice.put("finish_reason", "tool_calls");
+                com.fasterxml.jackson.databind.node.ObjectNode message = (com.fasterxml.jackson.databind.node.ObjectNode) choice.get("message");
+                message.remove("content");
+                com.fasterxml.jackson.databind.node.ArrayNode calls = message.putArray("tool_calls");
+                for (int i = 0; i < 2; i++) {
+                    com.fasterxml.jackson.databind.node.ObjectNode call = calls.addObject().put("id", "call" + (i + 1)).put("type", "function");
+                    call.putObject("function").put("name", "weather").put("arguments", "{\"city\":\"" + (i == 0 ? "Shanghai" : "Beijing") + "\"}");
+                }
                 respond(e, 200, payload.toString());
             } else if (mode.equals("tool") || (mode.equals("toolOnce") && requests.get() == 1))
                 respond(e, 200, "{\"id\":\"id\",\"model\":\"mock-model\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"tool_calls\":[{\"id\":\"call1\",\"type\":\"function\",\"function\":{\"name\":\"weather\",\"arguments\":\"{\\\"city\\\":\\\"Shanghai\\\"}\"}}]},\"finish_reason\":\"tool_calls\"}]}");
