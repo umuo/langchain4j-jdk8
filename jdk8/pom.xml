@@ -130,6 +130,9 @@
             <modules>
                 <module>../langchain4j-agentic</module>
                 <module>../langchain4j-agentic-patterns</module>
+                <module>../langchain4j-agentic-mcp</module>
+                <module>agentic-mcp-upstream-tests</module>
+                <module>agentic-wip-bom</module>
                 <module>agentic-upstream-tests</module>
                 <module>patterns-upstream-tests</module>
             </modules>

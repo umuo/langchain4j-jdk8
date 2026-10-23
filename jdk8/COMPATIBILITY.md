@@ -390,6 +390,14 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 
 
 
+### Agentic MCP 基础集成与独立实验 BOM（WIP，2026-10-23）
+
+- 全部六个基线生产文件移植至 release 8，两个私有 record 保留值语义与类型数组防御拷贝；生产树仅依赖兼容 Agentic/MCP，无新增生产库。原始两个 Test 类保持源码原样，JDK 17 共 29 项通过。
+- 新增 15 项真实 Java 8 HTTP/SSE/stdio 验收，覆盖 typed/untyped、SPI/activation、schema/结构化输出、async、错误、超时、root 取消、并发会话与物理资源释放。首轮 13 项通过，复现 equals 误入工具调用路径；另一项为应用错误消息假设错误，现严格检查实际异常类型/原文。修复后 15 + 原始 29 定向全部通过。
+- 新建独立实验 BOM 与消费项目，纳入 `./jdk8/build.sh -o -Pagentic-wip`：从安装 JAR 验证声明式异步 HTTP/state、stdio 子进程关闭、patterns 策略和借用线程池保留。实验 BOM 管理三个 WIP 模块，不改变默认支持 BOM。完整说明见 [AGENTIC-MCP-PORT.md](AGENTIC-MCP-PORT.md)。
+- 最终 clean exit 0：Java 8 功能 686 项、JDK 17 1214 项、TCK 62 通过/14 官方 untested，共 1962 通过。默认 33 JAR/6390 类条目、4958 类链接及所有既有消费通过；实验消费者 23 JAR/4792 类、4789 类链接，扩展合并链接 5209 类。新模块 9 类 major 52；5 可见类型/54 声明/131 继承公开条目的固定 API 无增删，SPI 与两份原始 Test 来源保持；main/patterns/helper API 和生产树审计通过。快照 [agentic-mcp-foundation-wip.json](verification/agentic-mcp-foundation-wip.json)。
+- 仍 WIP，无新完整阶段标签；与其他传输/现代通道、复杂工作流/恢复/补偿的全部联动仍待验收。A2A、完整 main/patterns、剩余 MCP 与模型/向量库/BOM/最终交付不缩减，Guardrails 不改动。
+
 ### 同 scope root 执行互斥与旧上下文隔离（WIP，2026-10-23）
 
 - 第一组 12 个实际 Java 8 子进程在改造前 10 项失败，包括参数被另一 root 提前写入、成功通知/最终保存之前允许进入下一调用、复用前一 owner，以及 owned async worker 递归 root 超时；嵌套子工作流和正常挂起恢复两项原本通过。互斥修复后连同初始化、root 边界、恢复和 deferred state 共 57 项定向通过。

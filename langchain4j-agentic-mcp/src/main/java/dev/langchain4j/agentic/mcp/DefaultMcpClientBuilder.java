@@ -54,8 +54,8 @@ public class DefaultMcpClientBuilder<T> implements McpClientBuilder<T>, Internal
     private InternalAgent parent;
 
     private String[] inputKeys;
-    private Map<String, String> inputDescriptions = Map.of();
-    private List<AgentArgument> arguments = List.of();
+    private Map<String, String> inputDescriptions = dev.langchain4j.internal.Jdk8.map();
+    private List<AgentArgument> arguments = dev.langchain4j.internal.Jdk8.list();
     private String outputKey;
     private boolean async;
 
@@ -116,11 +116,11 @@ public class DefaultMcpClientBuilder<T> implements McpClientBuilder<T>, Internal
             params.properties().forEach((key, schema) -> {
                 if (schema != null
                         && schema.description() != null
-                        && !schema.description().isBlank()) {
+                        && !dev.langchain4j.internal.Jdk8.isBlank(schema.description())) {
                     descriptions.put(key, schema.description());
                 }
             });
-            this.inputDescriptions = Map.copyOf(descriptions);
+            this.inputDescriptions = dev.langchain4j.internal.Jdk8.copyMap(descriptions);
         }
 
         if (agentServiceClass == UntypedAgent.class && inputKeys == null) {
@@ -146,25 +146,25 @@ public class DefaultMcpClientBuilder<T> implements McpClientBuilder<T>, Internal
     private List<AgentArgument> typedArguments() {
         for (Method method : agentServiceClass.getMethods()) {
             Optional<Method> agentMethod = getAnnotatedMethod(method, Agent.class);
-            if (agentMethod.isEmpty()) {
+            if (!agentMethod.isPresent()) {
                 agentMethod = getAnnotatedMethod(method, McpClientAgent.class);
             }
             if (agentMethod.isPresent()) {
                 return AgentUtil.argumentsFromMethod(agentMethod.get());
             }
         }
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     private ToolSpecification findTool() {
         List<ToolSpecification> tools = mcpClient.listTools();
-        if (toolName == null || toolName.isBlank()) {
+        if (toolName == null || dev.langchain4j.internal.Jdk8.isBlank(toolName)) {
             if (tools.size() == 1) {
                 return tools.get(0);
             }
             throw new AgenticSystemConfigurationException(
                     "Tool name is required when there is more than one tool available: "
-                            + tools.stream().map(ToolSpecification::name).toList());
+                            + tools.stream().map(ToolSpecification::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList)));
         }
 
         return tools.stream()
@@ -172,25 +172,33 @@ public class DefaultMcpClientBuilder<T> implements McpClientBuilder<T>, Internal
                 .findFirst()
                 .orElseThrow(() ->
                         new AgenticSystemConfigurationException("Tool '" + toolName + "' not found. Available tools: "
-                                + tools.stream().map(ToolSpecification::name).toList()));
+                                + tools.stream().map(ToolSpecification::name).collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList))));
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Exception {
+        // Introspection/identity operations must never be interpreted as remote tool invocations.
+        if (method.getDeclaringClass() == Object.class) {
+            switch (method.getName()) {
+                case "equals": return proxy == args[0];
+                case "hashCode": return System.identityHashCode(proxy);
+                case "toString": return "McpAgent[tool=" + name + ", type=" + agentServiceClass.getName() + "]";
+                default: throw new UnsupportedOperationException("Unknown Object method: " + method.getName());
+            }
+        }
         if (method.getDeclaringClass() == AgentInstance.class || method.getDeclaringClass() == InternalAgent.class) {
             return method.invoke(Proxy.getInvocationHandler(proxy), args);
         }
 
         if (method.getDeclaringClass() == McpClientInstance.class) {
-            return switch (method.getName()) {
-                case "toolName" -> name;
-                case "toolDescription" -> description;
-                case "inputKeys" -> inputKeys;
-                case "inputDescriptions" -> inputDescriptions;
-                default ->
-                    throw new UnsupportedOperationException(
-                            "Unknown method on McpClientInstance class: " + method.getName());
-            };
+            switch (method.getName()) {
+                case "toolName": return name;
+                case "toolDescription": return description;
+                case "inputKeys": return inputKeys;
+                case "inputDescriptions": return inputDescriptions;
+                default: throw new UnsupportedOperationException(
+                        "Unknown method on McpClientInstance class: " + method.getName());
+            }
         }
 
         return invokeTool(method, args);
@@ -320,7 +328,7 @@ public class DefaultMcpClientBuilder<T> implements McpClientBuilder<T>, Internal
 
     @Override
     public List<AgentInstance> subagents() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     @Override

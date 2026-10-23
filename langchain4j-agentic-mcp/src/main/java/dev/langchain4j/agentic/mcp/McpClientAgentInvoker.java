@@ -115,7 +115,7 @@ public class McpClientAgentInvoker implements AgentInvoker {
 
     @Override
     public List<AgentInstance> subagents() {
-        return List.of();
+        return dev.langchain4j.internal.Jdk8.list();
     }
 
     @Override

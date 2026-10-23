@@ -484,7 +484,11 @@ terminal 提前工具随后补齐 root 取消与 SSE 错误清理：14 项实际
 
 最终 16 个实际 Java 8 子进程及相关回归共 61 项定向通过，重新 clean 为 1918 通过、14 项官方 TCK untested；默认消费、API、产物和扩展链接通过，详见 [root 并发快照](../verification/agentic-concurrent-root-wip.json)。新增两个兼容 helper 方法分别按旧兼容提交审计，其中 [deferred frame ABI 脚本](../audit-deferred-context-api.sh) 固定前一提交，避免官方基线中不存在的 helper 演进被遗漏。生产类型、依赖和 checkpoint 字段未增加。
 
-下一组检查包括返回后的并发 lazy 流、多 registry/多进程、自定义模型/传输和未验收的 CompletionStage 适配器。任意外部新调度、完整失败历史与自动重试也尚未完成。
+Agentic MCP 随后推进全部六文件的基础移植，以既有兼容 Agentic/MCP 为生产依赖。15 项真实 Java8 验证 HTTP/SSE、stdio、映射、async、错误、超时、取消和资源释放，29 项原始上游断言保持源码原样在 JDK17 运行。代理的 Object 方法原先会误入工具路径，现三种身份/显示操作均在本地处理，防止调试与容器操作触发远程调用；真实应用错误仍保留 MCP 低层异常合同。
+
+本轮还增加独立实验 BOM 和消费者，避免 reactor 中直接使用 target/classes 掩盖安装产物或 SPI 缺失。示例使用实际 Java8、loopback HTTP 和真实 stdio 子进程，分别管理有限 agent worker 与阻塞 I/O 池。完整 clean 为 1962 通过、14 项官方 TCK untested；新模块固定 API 无增删，生产树及产物审计通过。详见 [MCP 基础集成说明](../AGENTIC-MCP-PORT.md) 与 [结果快照](../verification/agentic-mcp-foundation-wip.json)。实验 BOM 是试用入口，默认支持 BOM 和完整阶段标签没有因此扩大。
+
+下一组检查包括 MCP 集成与更多工作流/传输的组合、A2A、返回后的并发 lazy 流、多 registry/多进程、自定义模型/传输和未验收的 CompletionStage 适配器。任意外部新调度、完整失败历史与自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

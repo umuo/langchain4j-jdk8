@@ -53,7 +53,7 @@
 | `internal/langchain4j-docu-chatbot-updater` | other-review | pending |
 | `internal/langchain4j-internal-test-retry` | other-review | pending |
 | `langchain4j-agentic-a2a` | agentic | pending |
-| `langchain4j-agentic-mcp` | agentic | pending |
+| `langchain4j-agentic-mcp` | agentic | pending（WIP 基础集成） |
 | `langchain4j-agentic-patterns` | agentic | pending |
 | `langchain4j-agentic` | agentic | WIP（基础移植，完整验收未完成） |
 | `langchain4j-anthropic` | model | pending |
@@ -165,3 +165,5 @@
 - 2026-10-23 同 key 初始化 WIP：新增 11 个真实 Java 8 子进程，证明单 registry 的 load/create/首次保存/listener 屏障、不同 key 进展、中断等待、失败门控、ephemeral 读屏障、重入拒绝与 false save。最终 clean 1902 通过/14 官方 TCK untested；API/来源/依赖/产物及既有 BOM 消费通过，Agentic 220 类，新增私有锁和编译器访问标记、两个内部 public 重载。快照 [agentic-initialization-wip.json](verification/agentic-initialization-wip.json)。普通同会话 root 并发、多 registry/多进程/重启事务及全部长期范围仍 pending；Agentic 不进入默认 BOM，无新完整阶段标签。
 
 - 2026-10-23 同 scope root 并发 WIP：16 个实际 Java 8 子进程证明参数/owner/通知/保存互斥、中断等待隔离、递归拒绝、子工作流与挂起恢复，以及旧取消/完成 owner 和 deferred frame 隔离、失败后恢复其他 scope 上下文。加强 frame 断言曾在旧绿色候选复现两项真实输出槽污染，修复后最终 clean 1918 通过/14 官方 TCK untested；API/来源/依赖/产物/链接和既有 BOM 消费通过。Agentic 仍 220 类；三个内部 public 方法增项明确审计，无新增生产库或 checkpoint 字段。快照 [agentic-concurrent-root-wip.json](verification/agentic-concurrent-root-wip.json)。返回后的 lazy 流、多对象/多进程/自定义 provider 和全部长期范围仍 pending；无新完整阶段标签，Agentic 不进入默认 BOM。
+
+- 2026-10-23 Agentic MCP 基础集成 WIP：6 个生产文件、15 项 Java8 HTTP/SSE/stdio、29 项原始 JDK17 测试、5 类型/54 声明/131 继承 API 对照及独立实验 BOM 消费通过。最终 clean 1962 通过/14 官方 TCK untested；新模块 9 类，无新生产库。说明 [AGENTIC-MCP-PORT.md](AGENTIC-MCP-PORT.md)，快照 [agentic-mcp-foundation-wip.json](verification/agentic-mcp-foundation-wip.json)。完整集成、A2A/main/patterns 和全部长期范围仍 pending，无新完整阶段标签。

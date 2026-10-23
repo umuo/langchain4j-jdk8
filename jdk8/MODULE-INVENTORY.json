@@ -1926,7 +1926,7 @@
         "agentic"
       ],
       "status": "pending",
-      "production_dependency_audit": "pending; raw declarations only; inherit/resolve versions before migration",
+      "production_dependency_audit": "WIP: effective runtime graph audited; only dev.langchain4j.jdk8 Agentic/MCP and existing Java8 libraries; no official SNAPSHOT",
       "dependencies": [
         {
           "groupId": "dev.langchain4j",
@@ -1963,7 +1963,11 @@
         "AGENTIC-AUDIT.md",
         "AGENTIC-API-INVENTORY.json"
       ],
-      "implementation_status": "pending; declarations inventoried only"
+      "implementation_status": "WIP foundation: all6 production files release8;15 actual Java8 HTTP/SSE/stdio cases;29 unchanged original Java17 tests;experimental BOM/consumer/API/artifact/link audits passed;complete integration pending",
+      "implementation_evidence": [
+        "AGENTIC-MCP-PORT.md",
+        "verification/agentic-mcp-foundation-wip.json"
+      ]
     },
     {
       "path": "langchain4j-agentic-patterns",

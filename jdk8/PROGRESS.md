@@ -1,13 +1,13 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 同 scope root 并发检查点（WIP，2026-10-23）
+## 当前状态：第十五阶段 Agentic MCP 基础集成检查点（WIP，2026-10-23）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
 - `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建、14 项提前工具、14 项 handle、9 项成功 root 结算、11 项初始化及 16 项 root 并发/上下文场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
-- 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
+- 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP 已有六文件和基础集成验收及实验 BOM 消费，完整功能仍 WIP；A2A 的有效依赖/功能仍待完成。
 - 下一单元：主 Agentic 的剩余 IT/端到端回归、async/streaming、HITL/挂起恢复、记忆与补偿、planner/supervisor/声明式和可观测性；继续 patterns 的完整能力及 MCP/A2A 全部能力、BOM 和独立消费。MCP 旧双端点及其他剩余能力、全部模型/向量库继续保留。
 
 
@@ -22,6 +22,14 @@
 
 
 
+
+### Agentic MCP 基础集成与独立实验 BOM（WIP，2026-10-23）
+
+- 全部六个基线生产文件移植至 release 8，两个私有 record 保留值语义与类型数组防御拷贝；生产树仅依赖兼容 Agentic/MCP，无新增生产库。原始两个 Test 类保持源码原样，JDK 17 共 29 项通过。
+- 新增 15 项真实 Java 8 HTTP/SSE/stdio 验收，覆盖 typed/untyped、SPI/activation、schema/结构化输出、async、错误、超时、root 取消、并发会话与物理资源释放。首轮 13 项通过，复现 equals 误入工具调用路径；另一项为应用错误消息假设错误，现严格检查实际异常类型/原文。修复后 15 + 原始 29 定向全部通过。
+- 新建独立实验 BOM 与消费项目，纳入 `./jdk8/build.sh -o -Pagentic-wip`：从安装 JAR 验证声明式异步 HTTP/state、stdio 子进程关闭、patterns 策略和借用线程池保留。实验 BOM 管理三个 WIP 模块，不改变默认支持 BOM。完整说明见 [AGENTIC-MCP-PORT.md](AGENTIC-MCP-PORT.md)。
+- 最终 clean exit 0：Java 8 功能 686 项、JDK 17 1214 项、TCK 62 通过/14 官方 untested，共 1962 通过。默认 33 JAR/6390 类条目、4958 类链接及所有既有消费通过；实验消费者 23 JAR/4792 类、4789 类链接，扩展合并链接 5209 类。新模块 9 类 major 52；5 可见类型/54 声明/131 继承公开条目的固定 API 无增删，SPI 与两份原始 Test 来源保持；main/patterns/helper API 和生产树审计通过。快照 [agentic-mcp-foundation-wip.json](verification/agentic-mcp-foundation-wip.json)。
+- 仍 WIP，无新完整阶段标签；与其他传输/现代通道、复杂工作流/恢复/补偿的全部联动仍待验收。A2A、完整 main/patterns、剩余 MCP 与模型/向量库/BOM/最终交付不缩减，Guardrails 不改动。
 
 ### 同 scope root 执行互斥与旧上下文隔离（WIP，2026-10-23）
 

@@ -29,27 +29,27 @@ final class McpSchemaToType {
 
     static List<AgentArgument> arguments(JsonObjectSchema parameters, String[] inputKeys) {
         if (inputKeys == null || inputKeys.length == 0) {
-            return List.of();
+            return dev.langchain4j.internal.Jdk8.list();
         }
 
         Map<String, JsonSchemaElement> properties =
-                parameters == null || parameters.properties() == null ? Map.of() : parameters.properties();
-        List<String> required = parameters == null || parameters.required() == null ? List.of() : parameters.required();
+                parameters == null || parameters.properties() == null ? dev.langchain4j.internal.Jdk8.map() : parameters.properties();
+        List<String> required = parameters == null || parameters.required() == null ? dev.langchain4j.internal.Jdk8.list() : parameters.required();
         Map<String, JsonSchemaElement> definitions =
-                parameters == null || parameters.definitions() == null ? Map.of() : parameters.definitions();
+                parameters == null || parameters.definitions() == null ? dev.langchain4j.internal.Jdk8.map() : parameters.definitions();
 
         return Arrays.stream(inputKeys)
                 .map(name -> {
                     JsonSchemaElement schema = properties.get(name);
-                    MappedType mappedType = typeOf(schema, definitions, Set.of());
+                    MappedType mappedType = typeOf(schema, definitions, dev.langchain4j.internal.Jdk8.set());
                     boolean optional = schema != null && !required.contains(name) || mappedType.nullable();
                     String description = schema == null ? null : schema.description();
-                    if (description != null && description.isBlank()) {
+                    if (description != null && dev.langchain4j.internal.Jdk8.isBlank(description)) {
                         description = null;
                     }
                     return new AgentArgument(mappedType.type(), name, null, optional, description);
                 })
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     static List<AgentArgument> mergeDescriptions(List<AgentArgument> arguments, Map<String, String> inputDescriptions) {
@@ -60,18 +60,18 @@ final class McpSchemaToType {
         return arguments.stream()
                 .map(argument -> {
                     String description = argument.description();
-                    if (description != null && !description.isBlank()) {
+                    if (description != null && !dev.langchain4j.internal.Jdk8.isBlank(description)) {
                         return argument;
                     }
 
                     String schemaDescription = inputDescriptions.get(argument.name());
-                    if (schemaDescription == null || schemaDescription.isBlank()) {
+                    if (schemaDescription == null || dev.langchain4j.internal.Jdk8.isBlank(schemaDescription)) {
                         return argument;
                     }
 
                     return argument.withDescription(schemaDescription);
                 })
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
     }
 
     private static MappedType typeOf(
@@ -91,7 +91,8 @@ final class McpSchemaToType {
         if (schema instanceof JsonBooleanSchema) {
             return new MappedType(Boolean.class, false);
         }
-        if (schema instanceof JsonArraySchema arraySchema) {
+        if (schema instanceof JsonArraySchema) {
+            JsonArraySchema arraySchema = (JsonArraySchema) schema;
             return new MappedType(
                     parameterizedType(
                             List.class,
@@ -102,10 +103,12 @@ final class McpSchemaToType {
         if (schema instanceof JsonObjectSchema) {
             return new MappedType(parameterizedType(Map.class, String.class, Object.class), false);
         }
-        if (schema instanceof JsonAnyOfSchema anyOfSchema) {
+        if (schema instanceof JsonAnyOfSchema) {
+            JsonAnyOfSchema anyOfSchema = (JsonAnyOfSchema) schema;
             return typeOfAnyOf(anyOfSchema, definitions, resolvingReferences);
         }
-        if (schema instanceof JsonReferenceSchema referenceSchema) {
+        if (schema instanceof JsonReferenceSchema) {
+            JsonReferenceSchema referenceSchema = (JsonReferenceSchema) schema;
             JsonSchemaElement referencedSchema = resolve(referenceSchema, definitions);
             if (referencedSchema == null) {
                 return new MappedType(Object.class, false);
@@ -128,7 +131,7 @@ final class McpSchemaToType {
         List<MappedType> mappedTypes = schema.anyOf().stream()
                 .filter(option -> !(option instanceof JsonNullSchema))
                 .map(option -> typeOf(option, definitions, resolvingReferences))
-                .toList();
+                .collect(java.util.stream.Collectors.collectingAndThen(java.util.stream.Collectors.toList(), java.util.Collections::unmodifiableList));
 
         boolean nullable = schema.anyOf().stream().anyMatch(option -> option instanceof JsonNullSchema)
                 || mappedTypes.stream().anyMatch(MappedType::nullable);
@@ -164,17 +167,35 @@ final class McpSchemaToType {
         return null;
     }
 
-    private record MappedType(Type type, boolean nullable) {}
+    private static final class MappedType {
+        private final Type type;
+        private final boolean nullable;
+        private MappedType(Type type, boolean nullable) { this.type = type; this.nullable = nullable; }
+        public Type type() { return type; }
+        public boolean nullable() { return nullable; }
+        @Override public final boolean equals(Object other) {
+            if (other == this) return true;
+            if (!(other instanceof MappedType)) return false;
+            MappedType that = (MappedType) other;
+            return Objects.equals(type, that.type) && nullable == that.nullable;
+        }
+        @Override public final int hashCode() { return 31 * Objects.hashCode(type) + Boolean.hashCode(nullable); }
+        @Override public final String toString() { return "MappedType[type=" + type + ", nullable=" + nullable + "]"; }
+    }
 
     private static ParameterizedType parameterizedType(Class<?> rawType, Type... typeArguments) {
         return new ParameterizedTypeImpl(rawType, typeArguments);
     }
 
-    private record ParameterizedTypeImpl(Class<?> rawType, Type[] actualTypeArguments) implements ParameterizedType {
-
-        private ParameterizedTypeImpl {
-            actualTypeArguments = actualTypeArguments.clone();
+    private static final class ParameterizedTypeImpl implements ParameterizedType {
+        private final Class<?> rawType;
+        private final Type[] actualTypeArguments;
+        private ParameterizedTypeImpl(Class<?> rawType, Type[] actualTypeArguments) {
+            this.rawType = rawType;
+            this.actualTypeArguments = actualTypeArguments.clone();
         }
+        public Class<?> rawType() { return rawType; }
+        public Type[] actualTypeArguments() { return actualTypeArguments; }
 
         @Override
         public Type[] getActualTypeArguments() {
@@ -193,9 +214,10 @@ final class McpSchemaToType {
 
         @Override
         public boolean equals(Object other) {
-            if (!(other instanceof ParameterizedType that)) {
+            if (!(other instanceof ParameterizedType)) {
                 return false;
             }
+            ParameterizedType that = (ParameterizedType) other;
             return Objects.equals(rawType, that.getRawType())
                     && Objects.equals(getOwnerType(), that.getOwnerType())
                     && Arrays.equals(actualTypeArguments, that.getActualTypeArguments());

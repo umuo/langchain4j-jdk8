@@ -1,0 +1,2476 @@
+{
+  "baseline": "7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79",
+  "date": "2026-10-23",
+  "status": "WIP; complete6-file Agentic MCP production port with15 native8 HTTP/SSE/stdio and29 unchanged upstream17 tests plus independent experimental BOM consumer; complete Agentic/MCP/model/vector objective incomplete",
+  "last_complete_milestone": "jdk8-m14",
+  "command": "./jdk8/build.sh -o -Pagentic-wip",
+  "exit_code": 0,
+  "test_suites": {
+    "supported_java8_acceptance": [
+      {
+        "name": "AiServicesJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AiServicesOpenAiJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AsyncToolOwnershipJdk8Test",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CancellationCaptureJdk8Test",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CancellationContextJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CompletionExecutorJdk8Test",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "CoreJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "EmbeddingOpenAiJdk8Test",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "FutureCancellationCleanupJdk8Test",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "HttpJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpFeaturesJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpJdk8Test",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernChannelsJdk8Test",
+        "tests": 34,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernHttpJdk8Test",
+        "tests": 31,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpModernWebSocketRecoveryJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpRecoveryJdk8Test",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpRegistryJdk8Test",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpStdioJdk8Test",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "McpWebSocketJdk8Test",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "MemoryCancellationJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "OpenAiJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "OwnedTaskJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "RagOpenAiJdk8Test",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ReactiveConcurrencyJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ReactiveJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteJdk8Test",
+        "tests": 20,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryAiServicesJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteMemoryRagJdk8Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "SqliteRagJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "StreamHandleCleanupJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ToolCancellationJdk8Test",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ToolFanoutCancellationJdk8Test",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "ToolLoopCancellationJdk8Test",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "StreamingTerminalJdk8Test",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "agentic_java8_acceptance": [
+      {
+        "name": "AgenticAsyncPlanningJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticCallbackScopeJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticCancellationJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticConcurrentRootJdk8Test",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticDeferredStateJdk8Test",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticEagerTerminalToolJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticFailureCleanupJdk8Test",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticFoundationJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticHandleCancellationJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticHttpJdk8Test",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticInitializationJdk8Test",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticNetworkCancellationJdk8Test",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticParallelFailureJdk8Test",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticRecoveryJdk8Test",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticRootBoundaryJdk8Test",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticScopeCreationJdk8Test",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticSuccessDrainJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticSuccessStreamDrainJdk8Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "AgenticTerminalStreamJdk8Test",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "patterns_java8_acceptance": [
+      {
+        "name": "DebateRecoveryJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "PatternsAsyncJdk8Test",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "PatternsFoundationJdk8Test",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      },
+      {
+        "name": "VotingRecoveryJdk8Test",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "agentic_mcp_java8_acceptance": [
+      {
+        "name": "AgenticMcpJdk8Test",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "1.8.0_462"
+      }
+    ],
+    "selected_upstream_java17": [
+      {
+        "name": "ReflectiveMetadata17Test",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ToolExecutionRequestTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ClassMetadataProviderTests",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ReflectionBasedClassMetadataProviderFactoryTests",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "MetadataTest",
+        "tests": 21,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DocumentByParagraphSplitterTest",
+        "tests": 24,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DocumentBySentenceSplitterTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AiMessageTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ChatMessageSerializerTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "CustomMessageTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SystemMessageTest",
+        "tests": 13,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ToolExecutionResultMessageTest",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultServerSentEventParserTest",
+        "tests": 33,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "JsonParsingUtilsTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "JsonSchemaElementUtilsTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "UtilsTest",
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ValidationUtilsTest",
+        "tests": 32,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpToolExecutorTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpToolProviderTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultMcpToolResultConverterTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultMcpToolResultExtractorTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpApplicationErrorTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpBlobResourceContentsTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpJsonConversionsTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpMetadataParsingTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpPayloadAccessorTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpSchemaCoercionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpToolResultMetaParsingTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpUnknownFieldToleranceTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "PromptContentConversionTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "StructuredContentParsingTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ToolSpecificationHelperLocaleTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ToolSpecificationHelperTest",
+        "tests": 46,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpLogLevelTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpLogMessageTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpHeaderEncodingTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpOperationHandlerRobustnessTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpPendingOperationTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ProcessStderrHandlerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpProtocolDtoTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpProtocolSerializationTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpRegistryJsonTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpRegistryModelTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "RegistryClientResponsesParsingTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "JsonRpcIoHandlerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "MessageWindowChatMemoryTest",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SingleSlotChatMemoryStoreTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "BatchItemResultTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DecisionResponseTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DimensionAwareEmbeddingModelTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingModelListenerTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingModelRequestResponseTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingModelTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingRequestResponseTypesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "OpenAiEmbeddingModelAsyncRetryTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "OpenAiEmbeddingModelAsyncTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "OpenAiEmbeddingModelTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "OpenAiEmbeddingRequestParametersTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingDeserializationTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultRetrievalAugmentorTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingStoreAsyncRagTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultContentAggregatorTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ReciprocalRankFuserTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultContentInjectorTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingStoreContentRetrieverAsyncTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EmbeddingStoreContentRetrieverTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultQueryRouterTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultQueryTransformerTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AiServicesBuilderTest",
+        "tests": 18,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AiServicesTest",
+        "tests": 16,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "EnumOutputParserTest",
+        "tests": 26,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "PojoOutputParserTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "PolymorphicOutputParserTest",
+        "tests": 47,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ServiceOutputParserTest",
+        "tests": 28,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultToolExecutorLocaleTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultToolExecutorTest",
+        "tests": 36,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "InMemoryEmbeddingStoreFilterRegressionTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "agentic_upstream_java17": [
+      {
+        "name": "ActivationConditionTest",
+        "tests": 23,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentArgumentConversionTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentInstanceFactoryTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentInvocationHandlerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentProxyEqualsTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentTokenUsageTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentsRegistryTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AsyncAgentExceptionParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AsyncAgentNullReturnParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "CrossAgentCompensationTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DeclarativeActivationConditionTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ErrorRecoveryResultTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "InvoiceFixtureTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "NonAiAgentBuilderTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "OptionalAgentWithoutOutputKeyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ParallelAgentExceptionParityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ParallelMapperEmptyInputTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ParallelMapperSubagentCountTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "PlannerInitFailureTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "RecoverabilityTest",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupplierParameterResolverTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ToolProviderSupplierConfigurationTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentBuilderTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ActivationConditionsTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentUtilTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgenticParameterNameResolverTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ContextTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DelayedResponseTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ListenerRegistrarFactorySPITest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentMonitorConcurrencyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentMonitorParallelErrorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentMonitorRetentionTest",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentMonitorSkipTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ComposedAgentListenerTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "HtmlReportGeneratorTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentInvocationJsonTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgentInvocationsTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "AgenticScopeClassLoaderTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "CompletePendingResponseTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DefaultAgenticScopeRootCallEndedTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ExecutionContextTest",
+        "tests": 14,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "WriteStateIfAbsentTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorAgentPlanningReplyTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorAgentServiceImplTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorArgumentDescriptionTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorGenericArgumentCardTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorHitlSuspensionTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorNonAiAgentTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorPlannerTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SupervisorSkippedAgentTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "HumanInTheLoopBuilderTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "patterns_upstream_java17": [
+      {
+        "name": "ActivatedSubagentResumeTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "SkippedSubagentsTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "BDIPlannerTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ConvergenceStrategyLocaleTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "ConvergenceStrategyTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DecisionRouterPlannerResumeTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "DecisionRouterPlannerTest",
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "P2PPlannerTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "agentic_mcp_upstream_java17": [
+      {
+        "name": "McpActivationConditionTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      },
+      {
+        "name": "McpAgentTest",
+        "tests": 27,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "java_version": "17.0.13"
+      }
+    ],
+    "publisher_tck_java8": [
+      {
+        "name": "TestSuite",
+        "tests": 76,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 14,
+        "java_version": "1.8.0_462"
+      }
+    ]
+  },
+  "binary_api": {
+    "command": "./jdk8/audit-agentic-api.sh",
+    "exit_code": 0,
+    "visible_types": 185,
+    "declared_members": 1317,
+    "inherited_public_entries": 2817,
+    "visible_record_replacements": 22,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 11,
+    "scope": "Main Agentic only; public/protected visible owner chains including internal packages; generic declarations, inherited public members and bridges; explicit Record superclass/metadata replacement",
+    "intentional_internal_additions": [
+      "public boolean dev.langchain4j.agentic.internal.AsyncResponse.isCancelled()",
+      "public boolean dev.langchain4j.agentic.internal.StreamingResponse.isCancelled()",
+      "public dev.langchain4j.agentic.scope.DefaultAgenticScope dev.langchain4j.agentic.scope.AgenticScopeRegistry.createEphemeralAgenticScope(java.util.function.Consumer<dev.langchain4j.agentic.scope.DefaultAgenticScope>)",
+      "public dev.langchain4j.agentic.scope.DefaultAgenticScope dev.langchain4j.agentic.scope.AgenticScopeRegistry.getOrCreate(java.lang.Object,java.util.function.Consumer<dev.langchain4j.agentic.scope.DefaultAgenticScope>)",
+      "public <T> T dev.langchain4j.agentic.scope.DefaultAgenticScope.withRootInvocation(java.util.function.Supplier<T>)",
+      "public dev.langchain4j.agentic.internal.InvocationTasks dev.langchain4j.agentic.scope.DefaultAgenticScope.invocationTasks()",
+      "public java.lang.Object dev.langchain4j.agentic.scope.DefaultAgenticScope.resolveAsyncState(dev.langchain4j.agentic.scope.AgentInvocation)",
+      "public java.util.Set<java.lang.String> dev.langchain4j.agentic.scope.DefaultAgenticScope.suspendedAsyncAgentIds()",
+      "public void dev.langchain4j.agentic.scope.DefaultAgenticScope.cancelPendingTasks(java.lang.Throwable)",
+      "public void dev.langchain4j.agentic.scope.DefaultAgenticScope.resolveAsyncStates()",
+      "public void dev.langchain4j.agentic.scope.DefaultAgenticScope.rootCallFailed(dev.langchain4j.agentic.scope.AgenticScopeRegistry,dev.langchain4j.agentic.observability.AgentListener,java.lang.Throwable)"
+    ],
+    "command_log": "jdk8/agentic-mcp-main-api.log",
+    "added_members_this_increment": []
+  },
+  "runtime_dependencies": {
+    "groupId": "dev.langchain4j.jdk8",
+    "artifactId": "langchain4j-agentic",
+    "version": "1.23.0-jdk8-SNAPSHOT",
+    "type": "jar",
+    "scope": "",
+    "classifier": "",
+    "optional": "false",
+    "children": [
+      {
+        "groupId": "dev.langchain4j.jdk8",
+        "artifactId": "langchain4j",
+        "version": "1.23.0-jdk8-SNAPSHOT",
+        "type": "jar",
+        "scope": "compile",
+        "classifier": "",
+        "optional": "false",
+        "children": [
+          {
+            "groupId": "dev.langchain4j.jdk8",
+            "artifactId": "langchain4j-core",
+            "version": "1.23.0-jdk8-SNAPSHOT",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-annotations",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-core",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-databind",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.slf4j",
+                "artifactId": "slf4j-api",
+                "version": "2.0.17",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.jspecify",
+                "artifactId": "jspecify",
+                "version": "1.0.0",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "org.reactivestreams",
+                "artifactId": "reactive-streams",
+                "version": "1.0.2",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              }
+            ]
+          },
+          {
+            "groupId": "org.apache.opennlp",
+            "artifactId": "opennlp-tools",
+            "version": "1.9.5",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false"
+          }
+        ]
+      }
+    ]
+  },
+  "artifact_audit": {
+    "supported_runtime_jars": 33,
+    "supported_runtime_base_classes": 6390,
+    "additional_agentic_jar": "langchain4j-agentic/target/langchain4j-agentic-1.23.0-jdk8-SNAPSHOT.jar",
+    "additional_agentic_classes": 220,
+    "additional_agentic_major": 52,
+    "additional_agentic_sha256": "f6cfd2679f15b14055c88dfd7e9898cc043d3454c78bf82df2cb3595f7eec5b9",
+    "forbidden_class_references": 0,
+    "java8_linkage": "Final default + three WIP modules: Java 8 runtime linkage passed: 5209 base classes and their member types resolved; 3 optional Android/Conscrypt/OSGi integration classes excluded.",
+    "unchanged_optional_linkage_exclusions": 3
+  },
+  "limitations": [
+    "Completed async outputs and controlled-suspended async consumer snapshots have Java 8 cross-JVM acceptance; arbitrary crash points, planner in-flight rescheduling and ordinary async failure history still need acceptance.",
+    "Terminal-stream recovery, global cancellation and remaining complex Agentic behavior are pending.",
+    "Resume is method-level re-entry for unfinished consumers, not arbitrary Java stack continuation.",
+    "Cross-process tests use single-writer file fixtures and orderly suspended exits; no claim of multi-writer atomicity or external-side-effect exactly-once delivery.",
+    "All 51 baseline main Test classes execute on JDK 17; external-model IT suite remains unrun.",
+    "Loopback fixtures do not prove real remote interoperability.",
+    "Async normalization covers top-level scope values and invocation output; user containers with nested runtime Future values are not validated.",
+    "The eight unchanged baseline patterns Test classes run on JDK 17; service IT and full end-to-end scenarios remain pending.",
+    "Streaming pattern test uses synthetic StreamingChatModel callbacks and an owned emitter executor, not HTTP/SSE interoperability.",
+    "Voting recovery tests use String memory IDs, a single-writer file fixture and orderly suspended exits; arbitrary crash points/multi-writer atomicity/external side-effect exactly-once execution remain unproven.",
+    "Debate recovery covers normal suspended exits with a single-writer/String-ID file fixture; arbitrary crash points, multi-writer atomicity and external side-effect exactly-once execution remain unproven.",
+    "Earlier WIP Debate checkpoints without complete round/judge fields are outside the new-format recovery claim.",
+    "Full task/network-stream cancellation, complete ordinary-failure history persistence/automatic retry and all broader pending scope remain incomplete.",
+    "Failure cleanup does not impose a new asynchronous timeout contract on user-provided synchronous persistence/listener implementations.",
+    "Interrupt-ignoring user code cannot be forcibly stopped. Scope-method guards do not cover direct writes through the exposed state() Map or external side effects.",
+    "Inline/single-thread caller executors retain their own scheduling constraints; no preemption while Executor.execute itself blocks. Root cancellation still depends on cooperative interruption and framework scope-method boundaries.",
+    "Blocking synchronous persistence, listener, ChatMemory providers or DeferredResponse completion callbacks are not given a new bounded cancellation contract; scope guard lock boundaries need further audit.",
+    "Physical cancellation is verified for default OpenAI/OkHttp framework intermediate and terminal-stream paths in prior checkpoints; custom providers/transports and arbitrary asynchronous adapters still need acceptance. Not every Agentic ThreadLocal is restored.",
+    "Framework-registered overwritten computations are drained before success in preceding checkpoint; ordinary-failure history durability/automatic retry, complete callback/guard lock boundaries and broader scope remain incomplete.",
+    "Scope-generation guards are proven for explicitly captured contexts and default OkHttp callbacks; arbitrary custom transports, asynchronous tool executors and user-created threads still need propagation/acceptance. Direct state() Map mutations and external side effects remain outside these scope-method guards.",
+    "The late-tool fixture half-closes server output to trigger SSE EOF and tool execution; its EOF is not independent evidence that root cancellation closed a pre-EOF request. Earlier seven physical cancellation fixtures retain their separate assertions.",
+    "Configured AI Services tool/completion executor seams now carry the captured owner and provider context. Arbitrary custom implementations, user-created threads and callbacks not using these seams still require acceptance.",
+    "Queued tasks become no-ops and clear their captured references; arbitrary caller executor queue entries are not physically purged. cancel(false) preserves running ownership until completion/root cancellation.",
+    "Provider cleanup Error after publication reaches executor uncaught-error channel and does not replace already published result.",
+    "The focused core helper API audit proves only CapturedContextSupport; it is not a full core baseline comparison.",
+    "Root cancellation is verified for cancellable provider CompletableFuture. Arbitrary provider I/O which ignores cancel(true) cannot be forcibly terminated.",
+    "This increment restores the cancellation owner and its guard generation for framework downstream notifications; it does not propagate every user ThreadLocal to arbitrary provider-created threads.",
+    "Future cancellation may synchronously invoke arbitrary provider/user callbacks. This increment does not add a bounded timeout contract for blocking callbacks or force-stop uncooperative user code.",
+    "Explicit compensation mode drains already-started tools before rollback, preserving the fixed-baseline contract; it does not force-stop unknown external side effects.",
+    "Cancellation of non-cooperative provider I/O, arbitrary CompletionStage/third-party adapters and blocking inline executors/callbacks is not guaranteed. Native annotated CompletableFuture is tested, not every external adapter.",
+    "Reactive cleanup failures are logged while cancellation proceeds for remaining tools; a cancelled subscription receives no additional terminal signal.",
+    "Two-tool fixtures exercise concurrent pending asynchronous work on a borrowed single-worker executor and controlled reversed completion. They do not exhaust arbitrary fan-out counts, schedulers or external side effects.",
+    "Refusing provider Future remains pending until provider/user cleanup completes it; diagnostics do not force-stop I/O.",
+    "Explicit completionResponseProcessingExecutor parameter path is verified; no new high-level AiServices builder option was added.",
+    "Model HTTP/SSE normally completed before cancelling completion processing in these fixtures. Its normal EOF is not evidence of root-driven network cancellation.",
+    "runWithOwner restores captured cancellation owner when present, preserving existing caller behavior when absent. It does not reapply every user ExecutorProvider ThreadLocal for a cancelled-task error callback.",
+    "Blocking error handlers, inline executors and interruption-ignoring providers have no new forced-stop/timeout contract.",
+    "Terminal output retains caller-controlled consumption and error handling; no automatic replay of returned workflows or tool requests was added.",
+    "Captured cancellation owner is restored at start; arbitrary user ThreadLocals, non-cooperative custom SDKs/transports and user-created threads are outside this proof.",
+    "Post-drain single-terminal evidence applies to OpenAI Chat Completions callback SSE. Responses API and other model integrations retain their separate pending business acceptance.",
+    "These new boundary fixtures use registered resource probes, not third-party I/O. Existing actual HTTP/SSE coverage remains in the full clean; all external/custom component lifecycle semantics are not proven.",
+    "Controlled per-key initialization and same-object root execution are proven within one registry. Explicit eviction/replacement races, multi-registry/process transactions and external/custom I/O require further acceptance.",
+    "A store may write then throw; no delete/write retry/distributed rollback is inferred. Failed initialization remains inspectable and gated within current registry until explicit eviction/replacement; gate is not persisted across restart.",
+    "Synchronous Future tool waiting intentionally now responds to interruption by cancelling the raw Future and throwing CancellationException instead of waiting uninterruptibly/converting cancellation to error text.",
+    "Cancellation cannot roll back external side effects or force-stop interruption-ignoring providers/inline blocking executors. Arbitrary third-party CompletionStage adapters and full custom transport semantics remain pending.",
+    "Saved-handle coverage proves default OpenAI/OkHttp serial callbacks and controlled tool/executor scheduling. Arbitrary concurrent custom SDK callbacks, non-cooperative blocking cancellation/listener code and all scheduler races remain unproven.",
+    "Manual flow cancellation does not mark parent root cancelled and cannot force-stop already-running external side effects. An in-progress user callback/provider can continue if it refuses interruption.",
+    "Normal ownership-detach failures are logged while remaining resources are detached; no second terminal is sent. Cancellation failures remain caller diagnostics; stream-error cleanup failures are suppressed on primary.",
+    "Drain covers framework-registered computations. Controlled concurrent framework roots serialize on one scope; arbitrary user-created unregistered Futures, external late scheduling and concurrent lazy terminal consumers still need separate proof.",
+    "Controlled pause/recovery is retained in current regression suites; arbitrary crash points and complete failed-history durability are not claimed by this runtime-only tracker.",
+    "All four Agentic modules, remaining MCP/model/vector integrations and BOM/consumer/final-delivery scope remain incomplete.",
+    "Arbitrary cross-key reentrant callbacks in user stores/listeners may impose their own lock cycles. Scope references explicitly leaked by user callbacks are outside registry acquisition visibility guarantees.",
+    "clearInMemory and live getAllAgenticScopeKeysInMemory retain weak concurrent cache semantics, not a global transaction. Cache clearing retains failure gates and can be interrupted while waiting for an active key.",
+    "Execution lock covers the root method only; lazy terminal consumption after return is outside this serialization proof. No multi-object or multi-process lock/CAS transaction is introduced.",
+    "Busy captured callbacks fail fast rather than queue behind a root which may await them; same-thread recursive root entry is rejected while bound child workflow execution remains supported.",
+    "Scope context fixtures use deterministic framework scope/store/worker probes, not additional external SDK/network cancellation proof. Existing HTTP/SSE acceptance runs separately in the same full clean.",
+    "Context isolation covers framework InvocationTasks/DeferredScopeContext and matching built-in registrar. Arbitrary custom context providers and user ThreadLocals are not globally reset/restored by this helper.",
+    "Agentic main/patterns/MCP remain WIP and absent from supported default BOM. Experimental BOM/consumer is an explicit trial gate, not full module acceptance.",
+    "This MCP integration increment proves baseline sources plus selected real HTTP/SSE/stdio paths. WebSocket/modern-channel combinations, complex supervisor/loop/parallel/streaming/recovery/compensation and arbitrary custom client/provider lifecycles still need acceptance.",
+    "The original MCP JBang/external-model IT suite remains unrun; no remote credentials/model service are used.",
+    "Blocking stdio reader/stderr require an adequately provisioned or separate I/O executor when using bounded agent pools; independent example explicitly separates borrowed I/O from workers.",
+    "A2A, remaining main/patterns/MCP protocol work, all pending model/vector integrations and full final BOM/consumer delivery remain incomplete."
+  ],
+  "preceding_checkpoint": "9ce7a896638dff459adf925dfd7a4c4812a8f8b0",
+  "test_fixture_audit": {
+    "command": "./jdk8/audit-agentic-tests.sh",
+    "exit_code": 0,
+    "result": "Agentic upstream fixture audit passed: all 51 baseline Test sources selected, 58 original test/helper sources unchanged; 2 Flow imports adapted; 3 nested Invoice fixture declarations preserved.",
+    "command_log": "jdk8/agentic-mcp-existing-fixtures.log"
+  },
+  "total_passed": 1962,
+  "total_official_untested": 14,
+  "scope_added": [
+    "All6 baseline Agentic MCP production sources plus original SPI descriptor enter explicit agentic-wip build; preserve major names and public signatures. Private mapped/parameterized records become Java8 value classes.",
+    "15 native Java8 cases exercise real HTTP/SSE and stdio factory, typed/untyped/schema/structured results, SPI/activation, async, errors/timeouts/root failure,8 concurrent memory IDs and resource release.",
+    "Both29 fixed-baseline non-IT upstream tests execute unchanged under Java17. Independent experimental BOM and consumer validate installed artifacts, not reactor class directories."
+  ],
+  "behavior_change": [
+    "Proxy Object equals/hashCode/toString are handled locally instead of entering tool invocation/parameter resolution. No public signature changes.",
+    "Baseline async metadata preserved: synchronous McpClient.executeTool executes in framework async worker; existing interruption reaches underlying client request. Borrowed client/executors remain usable after root failure. No automatic tool replay, checkpoint/client serialization or new production library.",
+    "Experimental BOM deliberately separate from unchanged supported BOM; build.sh agentic-wip runs additional independent consumer, full bytecode/API-reference and Java8 linkage audits."
+  ],
+  "additional_internal_types": [
+    "dev.langchain4j.agentic.internal.DeferredScopeContext",
+    "dev.langchain4j.agentic.internal.DeferredScopeContext$Frame",
+    "dev.langchain4j.agentic.internal.InvocationTasks",
+    "dev.langchain4j.agentic.internal.InvocationTasks$Registration",
+    "dev.langchain4j.agentic.internal.InvocationTasks$Binding",
+    "dev.langchain4j.agentic.internal.OwnedResponse"
+  ],
+  "main_production_source_files": 162,
+  "checkpoint_extension_fields": [
+    "__terminalAwaiting",
+    "__terminalResult",
+    "lastResponse (supervisor)",
+    "awaitingOutputKey (supervisor)",
+    "incompleteAsyncAgentIds (scope JSON)"
+  ],
+  "patterns_artifact_audit": {
+    "jar": "langchain4j-agentic-patterns/target/langchain4j-agentic-patterns-1.23.0-jdk8-SNAPSHOT.jar",
+    "classes": 22,
+    "major": 52,
+    "sha256": "869d2d6529d7012338fa28ebcaebefc12bcc1700ea68b142f8083c57239c845f",
+    "forbidden_class_references": 0,
+    "java8_linkage": "Retained within final combined three-module5209-class linkage",
+    "unchanged_optional_linkage_exclusions": 3
+  },
+  "patterns_runtime_dependencies": {
+    "groupId": "dev.langchain4j.jdk8",
+    "artifactId": "langchain4j-agentic-patterns",
+    "version": "1.23.0-jdk8-SNAPSHOT",
+    "type": "jar",
+    "scope": "",
+    "classifier": "",
+    "optional": "false",
+    "children": [
+      {
+        "groupId": "dev.langchain4j.jdk8",
+        "artifactId": "langchain4j-agentic",
+        "version": "1.23.0-jdk8-SNAPSHOT",
+        "type": "jar",
+        "scope": "compile",
+        "classifier": "",
+        "optional": "false",
+        "children": [
+          {
+            "groupId": "dev.langchain4j.jdk8",
+            "artifactId": "langchain4j",
+            "version": "1.23.0-jdk8-SNAPSHOT",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "dev.langchain4j.jdk8",
+                "artifactId": "langchain4j-core",
+                "version": "1.23.0-jdk8-SNAPSHOT",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false",
+                "children": [
+                  {
+                    "groupId": "com.fasterxml.jackson.core",
+                    "artifactId": "jackson-annotations",
+                    "version": "2.18.6",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "com.fasterxml.jackson.core",
+                    "artifactId": "jackson-core",
+                    "version": "2.18.6",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "com.fasterxml.jackson.core",
+                    "artifactId": "jackson-databind",
+                    "version": "2.18.6",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "org.slf4j",
+                    "artifactId": "slf4j-api",
+                    "version": "2.0.17",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "org.jspecify",
+                    "artifactId": "jspecify",
+                    "version": "1.0.0",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "org.reactivestreams",
+                    "artifactId": "reactive-streams",
+                    "version": "1.0.2",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  }
+                ]
+              },
+              {
+                "groupId": "org.apache.opennlp",
+                "artifactId": "opennlp-tools",
+                "version": "1.9.5",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "patterns_binary_api": {
+    "command": "./jdk8/audit-patterns-api.sh",
+    "exit_code": 0,
+    "visible_types": 16,
+    "declared_members": 109,
+    "inherited_public_entries": 235,
+    "visible_record_replacements": 1,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 2,
+    "extractor_prompt_annotation_preserved": true,
+    "intentional_checkpoint_overrides": [
+      "public java.util.Map<java.lang.String, java.lang.Object> dev.langchain4j.agentic.patterns.voting.VotingPlanner.executionState()",
+      "public void dev.langchain4j.agentic.patterns.voting.VotingPlanner.restoreExecutionState(java.util.Map<java.lang.String, java.lang.Object>)"
+    ],
+    "command_log": "jdk8/agentic-mcp-patterns-api.log"
+  },
+  "patterns_test_fixture_audit": {
+    "command": "./jdk8/audit-patterns-tests.sh",
+    "exit_code": 0,
+    "result": "Patterns upstream fixture audit passed: all 8 baseline Test sources selected, 9 original test/helper sources unchanged; no Models or external-service IT configuration included.",
+    "command_log": "jdk8/agentic-mcp-existing-fixtures.log"
+  },
+  "patterns_production_source_files": 15,
+  "new_internal_members_on_compatibility_types": [
+    "public static java.lang.Object dev.langchain4j.agentic.internal.AgenticJdk8.invocationOutput(dev.langchain4j.agentic.scope.AgenticScope,dev.langchain4j.agentic.scope.AgentInvocation)",
+    "public static final java.lang.String dev.langchain4j.agentic.internal.AgenticJdk8.PLANNER_MANAGES_RESUME = __plannerManagesResume",
+    "public static void dev.langchain4j.agentic.internal.AgenticJdk8.suppressCleanupFailure(java.lang.Throwable,java.lang.Runnable)",
+    "public synchronized void dev.langchain4j.agentic.internal.InvocationTasks.resumeComputations()",
+    "public void dev.langchain4j.agentic.internal.InvocationTasks.awaitComputations()",
+    "public void dev.langchain4j.agentic.internal.InvocationTasks.trackComputation(java.util.concurrent.CompletableFuture<?>)",
+    "public static <T> T dev.langchain4j.agentic.internal.InvocationTasks.withoutScopeBinding(dev.langchain4j.agentic.scope.DefaultAgenticScope,java.util.function.Supplier<T>)",
+    "public static <T> T dev.langchain4j.agentic.internal.DeferredScopeContext.withoutScopeBinding(dev.langchain4j.agentic.scope.DefaultAgenticScope,java.util.function.Supplier<T>)"
+  ],
+  "additional_private_types": [
+    "dev.langchain4j.agentic.internal.AgentExecutor$PlannerInvocationFailure",
+    "dev.langchain4j.agentic.internal.InvocationTasks$Computation",
+    "dev.langchain4j.agentic.scope.AgenticScopeRegistry$KeyLock"
+  ],
+  "api_comparator_policy": "Inherited public dispatch signatures compare on the visible owner; interface default-to-class override is compatible. Declared members, parameters, return/generic/throws signatures and other modifiers remain checked.",
+  "api_comparator_validation": {
+    "command": "./jdk8/audit-api-comparator.sh",
+    "exit_code": 0,
+    "result": "API comparator validation passed: inherited default-to-class override accepted; changed parameter and changed generic return rejected.",
+    "compatible_override_accepted": true,
+    "changed_parameter_rejected": true,
+    "changed_generic_return_rejected": true,
+    "reused_unchanged_from_checkpoint": "6e206cd1e"
+  },
+  "voting_checkpoint_fields": [
+    "completed",
+    "votes"
+  ],
+  "debate_checkpoint_fields": [
+    "__plannerManagesResume",
+    "currentRound",
+    "lastDebatersMessages",
+    "completedInRound",
+    "judgePhase",
+    "judgeCompleted",
+    "judgeOutput (optional)"
+  ],
+  "command_log": "jdk8/agentic-mcp-delivery-clean.log",
+  "production_dependency_evidence": "All three effective runtime graphs regenerated in jdk8/agentic-mcp-runtime-tree.log; main/patterns identical to preceding checkpoint; MCP integration only compatibility Agentic/MCP direct dependencies.",
+  "supported_java8_linkage": "Java 8 runtime linkage passed: 4958 base classes and their member types resolved; 3 optional Android/Conscrypt/OSGi integration classes excluded.",
+  "additional_core_internal_types": [
+    "dev.langchain4j.internal.CancellationContext",
+    "dev.langchain4j.internal.CancellationContext$Registrar",
+    "dev.langchain4j.internal.CancellationContext$Registration"
+  ],
+  "failed_attempts": [
+    {
+      "command_log": "jdk8/agentic-mcp-native-before.log",
+      "result": "15 native cases:13 passed,1 production proxy-routing error (equals entered MCP parameter mapping),1 fixture message assumption failure. Real low-level client application error is McpApplicationErrorException; assertion corrected to exact type and original server text, not production error rewritten."
+    }
+  ],
+  "changed_supported_artifacts": [],
+  "new_internal_members_on_core_compatibility_types": [
+    "public default <T> T dev.langchain4j.internal.CancellationContext$Registrar.inContext(java.util.function.Supplier<T>)"
+  ],
+  "captured_context_binary_api": {
+    "command": "./jdk8/audit-captured-context-api.sh",
+    "exit_code": 0,
+    "visible_types": 1,
+    "declared_members": 2,
+    "inherited_public_entries": 11,
+    "visible_record_replacements": 0,
+    "missing_or_changed_members": 0,
+    "scope": "Affected core helper only; not a full core API audit",
+    "intentional_internal_additions": [
+      "public static <T> java.util.concurrent.CompletableFuture<T> dev.langchain4j.invocation.CapturedContextSupport.supplyAsync(java.util.function.Supplier<T>,java.util.concurrent.Executor,dev.langchain4j.invocation.InvocationContext)",
+      "public static void dev.langchain4j.invocation.CapturedContextSupport.runWithOwner(dev.langchain4j.invocation.InvocationContext,java.lang.Runnable)"
+    ],
+    "added_members_in_baseline_visible_types": 2,
+    "added_members_this_increment": [],
+    "command_log": "jdk8/eager-terminal-context-api.log"
+  },
+  "additional_private_core_types": [
+    "dev.langchain4j.invocation.CapturedContextSupport$OwnedCapturedContext",
+    "dev.langchain4j.invocation.CapturedContextSupport$OwnedTask",
+    "dev.langchain4j.invocation.CapturedContextSupport$RestoringExecutor"
+  ],
+  "tool_service_binary_api": {
+    "command": "./jdk8/audit-tool-service-api.sh",
+    "exit_code": 0,
+    "visible_types": 5,
+    "declared_members": 89,
+    "inherited_public_entries": 117,
+    "visible_record_replacements": 4,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 0,
+    "scope": "Only affected ToolService and its baseline-visible nested types; not full main module API audit",
+    "record_value_method_final_fixes": 12,
+    "command_log": "jdk8/eager-terminal-tool-api.log",
+    "added_members_this_increment": []
+  },
+  "new_main_private_types": [],
+  "default_tool_executor_binary_api": {
+    "command": "./jdk8/audit-default-tool-executor-api.sh",
+    "exit_code": 0,
+    "visible_types": 2,
+    "declared_members": 17,
+    "inherited_public_entries": 30,
+    "visible_record_replacements": 0,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 0,
+    "scope": "Affected DefaultToolExecutor and Builder only; not full main module API audit",
+    "command_log": "jdk8/eager-terminal-default-tool-api.log",
+    "added_members_this_increment": []
+  },
+  "future_cancellation_binary_api": {
+    "command": "./jdk8/audit-future-cancellation-api.sh",
+    "exit_code": 0,
+    "visible_types": 1,
+    "declared_members": 1,
+    "inherited_public_entries": 10,
+    "visible_record_replacements": 0,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 0,
+    "scope": "Affected CompletableFutureUtils only; not full core API audit"
+  },
+  "token_stream_binary_api": {
+    "command": "./jdk8/audit-token-stream-api.sh",
+    "exit_code": 0,
+    "visible_types": 1,
+    "declared_members": 16,
+    "inherited_public_entries": 24,
+    "visible_record_replacements": 0,
+    "missing_or_changed_members": 0,
+    "added_members_in_baseline_visible_types": 0,
+    "scope": "Pinned TokenStream implementation and package-private response handler compiled together; comparison covers visible TokenStream type only, not full main module API audit",
+    "command_log": "jdk8/handle-cancellation-token-api.log",
+    "added_members_this_increment": []
+  },
+  "supplemental_validation": [
+    {
+      "command_log": "jdk8/agentic-mcp-foundation.log",
+      "exit_code": 0,
+      "passed": 240,
+      "scope": "Initial Java8 main211 plus original MCP29 Java17; new native fixture not yet included."
+    },
+    {
+      "command_log": "jdk8/agentic-mcp-native-final.log",
+      "exit_code": 0,
+      "passed": 44,
+      "scope": "MCP15 actual8 plus29 original17 after local identity fix and exact application-error assertion."
+    }
+  ],
+  "current_increment_sources": {
+    "jdk8/agentic-mcp-example/pom.xml": "f44e48d0a4f4800546cd722ec43cd9ca04860498e4febf7347727136244f76d9",
+    "jdk8/agentic-mcp-example/src/main/java/example/AgenticMcpExample.java": "d08b328a404ee801202cd39c7166fe5cdf6255ae48534a67548ea95e3349eb8c",
+    "jdk8/agentic-mcp-example/src/main/java/example/AgenticMcpFixture.java": "aeb960ee8b33f84cf54643b3f616ad9e4d3c07495e5f68447faa7fcce9da57a8",
+    "jdk8/agentic-mcp-upstream-tests/pom.xml": "a938d257058b0fe6f17a2f94d235f49457e7c01b4c65faa0db55aa3245410806",
+    "jdk8/agentic-wip-bom/pom.xml": "7b97983df5585a17912cfe6587ef2433cf919660257158f652c438fa009614fd",
+    "jdk8/audit-agentic-mcp-api.sh": "bc3c5b3742814f807eacd91ed8bcadff3efe4ef88eeee3e135ed67755af60775",
+    "jdk8/audit-agentic-mcp.py": "cfffb229928ad1b2c62bc339c90b2fed5b4535a014cf968c90baf3e2a8d3f0dd",
+    "jdk8/build.sh": "a14c2588000f284611790548aa20a0c88cf9e3e004b0f8ea8d5d98c88ae12854",
+    "jdk8/pom.xml": "f190bf942811d225edea406ee457178dc0cde20e0ef3a9b089aedb1d9dce0f01",
+    "jdk8/verify-agentic-mcp.sh": "0419d10873582f2d50f06b76790ba36e1069f001ca5cd3ad084a4db2917792d8",
+    "langchain4j-agentic-mcp/pom.xml": "436609764f78794f6db99a20e36b67592258f9edb384071b044f4aefda2f4af6",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/DefaultMcpClientBuilder.java": "3aa853daf7c3bb236d668c13ecdb6537d0b4fc2b00c4232aeffe415dca6f983f",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/DefaultMcpService.java": "41082db430f8e91ac4194b8f95e190abbd01edd11ae0d6d1db3868df4c0bbef9",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/McpAgent.java": "e2f464dbbf301b646c08ec274c451ce110c71c505a66581090fb5b12bf3a3391",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/McpClientAgentInvoker.java": "836c30faf692e6936eb474c52ac28a0b5bd3bc4ec48612fd446c5c153abb81f1",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/McpClientInstance.java": "feab336264111047321358151ce8069282bc7e26361cd20294f6f076a656563c",
+    "langchain4j-agentic-mcp/src/main/java/dev/langchain4j/agentic/mcp/McpSchemaToType.java": "de359698f9465756c2d2ce3ed2569e855d3eef7f3d20788a6544207c80823a4f",
+    "langchain4j-agentic-mcp/src/test/java/dev/langchain4j/agentic/mcp/jdk8/AgenticMcpJdk8Test.java": "83cf0dd990b4bb82dddef6aa7e2f49c34742a51058e9ade74d7a2ce020f81bd1"
+  },
+  "unchanged_prior_api_evidence": "Main/patterns official-baseline API and InvocationTasks/DeferredScopeContext ABI rerun; unaffected supported core/main local API comparison evidence retained from preceding checkpoint.",
+  "changed_wip_artifacts": [
+    {
+      "jar": "langchain4j-agentic-mcp/target/langchain4j-agentic-mcp-1.23.0-jdk8-SNAPSHOT.jar",
+      "classes": 9,
+      "major": 52,
+      "sha256": "dcaa29864dcb0288bfa3cc16120dd8299bd333873595ebc697f256b85551f61f",
+      "forbidden_class_references": 0
+    }
+  ],
+  "invocation_tasks_binary_api": {
+    "command": "./jdk8/audit-invocation-tasks-api.sh",
+    "command_log": "jdk8/agentic-mcp-owner-api.log",
+    "exit_code": 0,
+    "baseline": "6385ff008132aac0685b63f9f6f05d28efc3d6d4",
+    "reason": "Compatibility helper is absent from fixed official baseline; compare established helper ABI with preceding compatibility checkpoint.",
+    "visible_types": 2,
+    "declared_members": 10,
+    "inherited_public_entries": 27,
+    "missing_or_changed_members": 0,
+    "added_members": [
+      "public static <T> T dev.langchain4j.agentic.internal.InvocationTasks.withoutScopeBinding(dev.langchain4j.agentic.scope.DefaultAgenticScope,java.util.function.Supplier<T>)",
+      "public synchronized void dev.langchain4j.agentic.internal.InvocationTasks.resumeComputations()",
+      "public void dev.langchain4j.agentic.internal.InvocationTasks.awaitComputations()",
+      "public void dev.langchain4j.agentic.internal.InvocationTasks.trackComputation(java.util.concurrent.CompletableFuture<?>)"
+    ],
+    "added_members_this_increment": []
+  },
+  "new_compiler_generated_types": [
+    "dev.langchain4j.agentic.mcp.McpSchemaToType$1"
+  ],
+  "deferred_context_binary_api": {
+    "command": "./jdk8/audit-deferred-context-api.sh",
+    "command_log": "jdk8/agentic-mcp-deferred-api.log",
+    "exit_code": 0,
+    "baseline": "b54ea68497908c142d5e81e1c4912311c8e10297",
+    "reason": "Compatibility helper absent from official fixed baseline; established ABI compared with preceding compatibility checkpoint.",
+    "visible_types": 2,
+    "declared_members": 5,
+    "inherited_public_entries": 22,
+    "missing_or_changed_members": 0,
+    "added_members": [
+      "public static <T> T dev.langchain4j.agentic.internal.DeferredScopeContext.withoutScopeBinding(dev.langchain4j.agentic.scope.DefaultAgenticScope,java.util.function.Supplier<T>)"
+    ]
+  },
+  "agentic_mcp_binary_api": {
+    "command": "./jdk8/audit-agentic-mcp-api.sh",
+    "command_log": "jdk8/agentic-mcp-delivery-clean.log",
+    "exit_code": 0,
+    "baseline": "7fcb12d4cf1f23a8445850aedc7f3deb1cfc0a79",
+    "source_files": 6,
+    "visible_types": 5,
+    "declared_members": 54,
+    "inherited_public_entries": 131,
+    "visible_record_replacements": 0,
+    "private_record_replacements": 2,
+    "missing_or_changed_members": 0,
+    "added_members": 0
+  },
+  "agentic_mcp_runtime_dependencies": {
+    "groupId": "dev.langchain4j.jdk8",
+    "artifactId": "langchain4j-agentic-mcp",
+    "version": "1.23.0-jdk8-SNAPSHOT",
+    "type": "jar",
+    "scope": "",
+    "classifier": "",
+    "optional": "false",
+    "children": [
+      {
+        "groupId": "dev.langchain4j.jdk8",
+        "artifactId": "langchain4j-mcp",
+        "version": "1.23.0-jdk8-SNAPSHOT",
+        "type": "jar",
+        "scope": "compile",
+        "classifier": "",
+        "optional": "false",
+        "children": [
+          {
+            "groupId": "dev.langchain4j.jdk8",
+            "artifactId": "langchain4j",
+            "version": "1.23.0-jdk8-SNAPSHOT",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "dev.langchain4j.jdk8",
+                "artifactId": "langchain4j-core",
+                "version": "1.23.0-jdk8-SNAPSHOT",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false",
+                "children": [
+                  {
+                    "groupId": "org.slf4j",
+                    "artifactId": "slf4j-api",
+                    "version": "2.0.17",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "org.jspecify",
+                    "artifactId": "jspecify",
+                    "version": "1.0.0",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  },
+                  {
+                    "groupId": "org.reactivestreams",
+                    "artifactId": "reactive-streams",
+                    "version": "1.0.2",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false"
+                  }
+                ]
+              },
+              {
+                "groupId": "org.apache.opennlp",
+                "artifactId": "opennlp-tools",
+                "version": "1.9.5",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              }
+            ]
+          },
+          {
+            "groupId": "dev.langchain4j.jdk8",
+            "artifactId": "langchain4j-http-client-okhttp",
+            "version": "1.23.0-jdk8-SNAPSHOT",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "dev.langchain4j.jdk8",
+                "artifactId": "langchain4j-http-client",
+                "version": "1.23.0-jdk8-SNAPSHOT",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.squareup.okhttp3",
+                "artifactId": "okhttp",
+                "version": "4.12.0",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false",
+                "children": [
+                  {
+                    "groupId": "com.squareup.okio",
+                    "artifactId": "okio",
+                    "version": "3.6.0",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false",
+                    "children": [
+                      {
+                        "groupId": "com.squareup.okio",
+                        "artifactId": "okio-jvm",
+                        "version": "3.6.0",
+                        "type": "jar",
+                        "scope": "compile",
+                        "classifier": "",
+                        "optional": "false",
+                        "children": [
+                          {
+                            "groupId": "org.jetbrains.kotlin",
+                            "artifactId": "kotlin-stdlib-common",
+                            "version": "1.9.10",
+                            "type": "jar",
+                            "scope": "compile",
+                            "classifier": "",
+                            "optional": "false"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "groupId": "org.jetbrains.kotlin",
+                    "artifactId": "kotlin-stdlib-jdk8",
+                    "version": "1.8.21",
+                    "type": "jar",
+                    "scope": "compile",
+                    "classifier": "",
+                    "optional": "false",
+                    "children": [
+                      {
+                        "groupId": "org.jetbrains.kotlin",
+                        "artifactId": "kotlin-stdlib",
+                        "version": "1.8.21",
+                        "type": "jar",
+                        "scope": "compile",
+                        "classifier": "",
+                        "optional": "false",
+                        "children": [
+                          {
+                            "groupId": "org.jetbrains",
+                            "artifactId": "annotations",
+                            "version": "13.0",
+                            "type": "jar",
+                            "scope": "compile",
+                            "classifier": "",
+                            "optional": "false"
+                          }
+                        ]
+                      },
+                      {
+                        "groupId": "org.jetbrains.kotlin",
+                        "artifactId": "kotlin-stdlib-jdk7",
+                        "version": "1.8.21",
+                        "type": "jar",
+                        "scope": "compile",
+                        "classifier": "",
+                        "optional": "false"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "groupId": "com.fasterxml.jackson.core",
+            "artifactId": "jackson-databind",
+            "version": "2.18.6",
+            "type": "jar",
+            "scope": "compile",
+            "classifier": "",
+            "optional": "false",
+            "children": [
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-annotations",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              },
+              {
+                "groupId": "com.fasterxml.jackson.core",
+                "artifactId": "jackson-core",
+                "version": "2.18.6",
+                "type": "jar",
+                "scope": "compile",
+                "classifier": "",
+                "optional": "false"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "groupId": "dev.langchain4j.jdk8",
+        "artifactId": "langchain4j-agentic",
+        "version": "1.23.0-jdk8-SNAPSHOT",
+        "type": "jar",
+        "scope": "compile",
+        "classifier": "",
+        "optional": "false"
+      }
+    ]
+  },
+  "agentic_mcp_artifact_audit": {
+    "jar": "langchain4j-agentic-mcp/target/langchain4j-agentic-mcp-1.23.0-jdk8-SNAPSHOT.jar",
+    "classes": 9,
+    "major": 52,
+    "sha256": "dcaa29864dcb0288bfa3cc16120dd8299bd333873595ebc697f256b85551f61f",
+    "forbidden_class_references": 0
+  },
+  "combined_wip_java8_linkage": "Java 8 runtime linkage passed: 5209 base classes and their member types resolved; 3 optional Android/Conscrypt/OSGi integration classes excluded.",
+  "agentic_mcp_test_fixture_audit": {
+    "command": "./jdk8/audit-agentic-mcp-api.sh",
+    "command_log": "jdk8/agentic-mcp-delivery-clean.log",
+    "exit_code": 0,
+    "original_test_classes": 2,
+    "original_tests_executed_java17": 29,
+    "source_changes": 0,
+    "spi_descriptor_preserved": true
+  },
+  "experimental_bom_consumer": {
+    "bom": "dev.langchain4j.jdk8:langchain4j-agentic-wip-bom:1.23.0-jdk8-SNAPSHOT",
+    "managed_wip_modules": [
+      "langchain4j-agentic",
+      "langchain4j-agentic-patterns",
+      "langchain4j-agentic-mcp"
+    ],
+    "independent_pom": "jdk8/agentic-mcp-example/pom.xml",
+    "validation_script": "jdk8/verify-agentic-mcp.sh",
+    "artifact_audit": "jdk8/audit-agentic-mcp.py",
+    "runtime_jars": 23,
+    "base_classes": 4792,
+    "java8_linkage_classes": 4789,
+    "optional_exclusions": 3,
+    "runtime": "1.8.0_462",
+    "native_scenarios": [
+      "Declarative MCP SPI and Agentic async HTTP workflow, shared state publication",
+      "Local proxy identity methods do not invoke remote tools",
+      "Actual Java8 stdio child, async workflow and child termination",
+      "Patterns unanimous positive/negative behavior",
+      "Borrowed worker and separate blocking stdio I/O pools retained by library, closed by application"
+    ],
+    "default_supported_bom_changed": false,
+    "publishing_or_push": false
+  }
+}

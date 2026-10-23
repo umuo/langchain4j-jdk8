@@ -147,4 +147,4 @@ try (SqliteEmbeddingStore store = SqliteEmbeddingStore.builder()
 
 第十四阶段现代共享通道结果见 [milestone-14.json](verification/milestone-14.json)，整体目标仍未完成。
 
-Agentic 正处于移植前审计 WIP，见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md)。187 个文件的声明清单不等于已实现或已支持。
+Agentic 主模块、patterns 和 MCP 集成正处于 WIP；固定声明清单见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md)，实现与验收见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。`./jdk8/build.sh -o -Pagentic-wip` 运行实验构建、实际 Java8 与原始 JDK17 回归，并验证独立实验 BOM 消费；[Agentic MCP 说明](AGENTIC-MCP-PORT.md) 包含坐标和边界。实验 `langchain4j-agentic-wip-bom` 管理三个 WIP 产物，默认支持 BOM 不变，A2A 与完整长期范围仍未完成。

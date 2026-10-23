@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <modelVersion>4.0.0</modelVersion>
+  <parent><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-jdk8-parent</artifactId><version>1.23.0-jdk8-SNAPSHOT</version><relativePath>../pom.xml</relativePath></parent>
+  <artifactId>langchain4j-agentic-wip-bom</artifactId><packaging>pom</packaging>
+  <name>Experimental Agentic Java 8 BOM (WIP, not a support declaration)</name>
+  <dependencyManagement><dependencies>
+    <dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-bom</artifactId><version>1.23.0-jdk8-SNAPSHOT</version><type>pom</type><scope>import</scope></dependency>
+    <dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-agentic</artifactId><version>1.23.0-jdk8-SNAPSHOT</version></dependency>
+    <dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-agentic-patterns</artifactId><version>1.23.0-jdk8-SNAPSHOT</version></dependency>
+    <dependency><groupId>dev.langchain4j.jdk8</groupId><artifactId>langchain4j-agentic-mcp</artifactId><version>1.23.0-jdk8-SNAPSHOT</version></dependency>
+  </dependencies></dependencyManagement>
+</project>

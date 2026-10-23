@@ -21,10 +21,11 @@ public class DefaultMcpService implements McpService {
 
     @Override
     public Optional<AgentExecutor> methodToAgentExecutor(InternalAgent agent, Method method) {
-        if (agent instanceof McpClientInstance mcpAgent) {
+        if (agent instanceof McpClientInstance) {
+            McpClientInstance mcpAgent = (McpClientInstance) agent;
             Optional<AgentExecutor> mcpAgentExecutor = getAnnotatedMethod(method, Agent.class)
                     .map(agentMethod -> new AgentExecutor(new McpClientAgentInvoker(mcpAgent, agentMethod), mcpAgent));
-            if (mcpAgentExecutor.isEmpty()) {
+            if (!mcpAgentExecutor.isPresent()) {
                 mcpAgentExecutor = getAnnotatedMethod(method, McpClientAgent.class)
                         .map(agentMethod -> new AgentExecutor(new McpClientAgentInvoker(mcpAgent, agentMethod), mcpAgent));
             }

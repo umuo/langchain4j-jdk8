@@ -9,7 +9,7 @@ public interface McpClientInstance extends InternalAgent {
 
     /** Descriptions published by the MCP tool for each input key. */
     default Map<String, String> inputDescriptions() {
-        return Map.of();
+        return dev.langchain4j.internal.Jdk8.map();
     }
 
     String toolName();
