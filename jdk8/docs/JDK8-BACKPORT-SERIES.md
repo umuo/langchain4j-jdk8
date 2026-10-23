@@ -466,7 +466,11 @@ scope 创建入口随后补齐首次 save 和创建 listener 失败的清理：1
 
 terminal 提前工具随后补齐 root 取消与 SSE 错误清理：14 项实际 Java 8 子进程覆盖 Agentic 同步/异步和普通 AiServices 的 pending Future、运行/排队工具及双工具正常续传，另有 1 项无 owner SPI 上下文恢复验收。同步 Future 工具等待从不可中断 join 改为可取消 get；取消向原始 Future 传播，并绕过模型错误文本策略。无 owner supplier 也可中断，借用线程池保持打开。最终 clean 为 1860 通过、14 项官方 TCK untested，详见 [提前工具快照](../verification/agentic-eager-terminal-wip.json)。
 
-下一组检查包括保存 StreamingHandle 后的主动取消、跨工具轮次取消、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。成功调用被覆盖任务的收尾、完整失败历史和自动重试也尚未完成。
+保存的 StreamingHandle 随后绑定整条 TokenStream 的私有资源控制，覆盖各轮 HTTP、提前工具和完成任务，而非标记整个 root 取消。14 个实际 Java 8 子进程验证跨轮关闭、工具释放、同 root 活动流隔离及迟到工具回调抑制，另有 5 项清理故障检查和 3 项完成 executor 检查。最终 clean 为 1882 通过、14 项官方 TCK untested；main 新增三个私有类型，无公开成员或生产依赖增项，详见 [handle 取消快照](../verification/agentic-handle-cancellation-wip.json)。
+
+这里也复现了一个 Future 线程问题：whenComplete 的回调若在 Future 完成后才注册，可能运行在注册线程。完成回调 Error 最初因此跑到 OkHttp 线程；现于回调执行点直接进入原执行器 uncaught 通道，保留异常身份，同时不发第二次 terminal。正常 HTTP EOF 后的任务取消与实际网络取消分别验收，避免用自然关闭冒充取消证明。
+
+下一组检查包括成功 root 被覆盖后台任务的收尾、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。完整失败历史和自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

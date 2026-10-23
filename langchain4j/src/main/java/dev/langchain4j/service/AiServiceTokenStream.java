@@ -253,7 +253,7 @@ public class AiServiceTokenStream implements TokenStream {
                 return;
             }
             context.eventListenerRegistrar.fireEvent(AiServiceRequestIssuedEvent.builder().invocationContext(invocationContext).request(chatRequest).build());
-            context.streamingChatModel.chat(chatRequest, handler);
+            handler.startModel();
         }
     }
 

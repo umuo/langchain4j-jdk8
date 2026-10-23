@@ -157,3 +157,5 @@
 - 2026-10-22 scope 创建失败 WIP：12 项真实 Java 8 用例覆盖首次 save 与 load 的 RuntimeException/Error、旧 scope/重入替代保留、创建 listener Error 及普通异常合同；改造前 9 项失败。save 失败条件撤回本次内存登记并取消新 owner，不重试/盲删存储；listener Error 取消、临时驱逐或持久失败快照。最终 clean 1845 通过/14 官方 TCK untested，严格 API/来源/产物/链接、生产依赖图与既有 BOM 消费通过，无新增公开成员/类型/依赖。快照 verification/agentic-scope-creation-wip.json；完整并发初始化、terminal 工具组合、成功生命周期及全部长期范围仍 pending。
 
 - 2026-10-23 terminal 提前工具取消 WIP：14 项实际 Java 8 子进程覆盖 Agentic 同步/异步 root 取消、SSE 错误、pending Future、运行中断、排队跳过、双工具结果续传及普通无 owner 路径；另补 1 项无 owner SPI 恢复验收。原始 Future 可取消，取消不转模型错误文本，SSE 错误清理本轮工具；同步 Future 等待现响应中断。最终 clean 1860 通过/14 官方 TCK untested，API/来源/产物/链接、生产依赖与既有 BOM 消费通过，无新增公开成员/类型/依赖。快照 verification/agentic-eager-terminal-wip.json；saved handle 主动/跨轮取消、完整成功生命周期及全部长期范围仍 pending。
+
+- 2026-10-23 saved handle 跨轮取消 WIP：14 个实际 Java 8 子进程覆盖 pending/queued 工具、续传响应头前/首段后取消、同 root 两条活动 SSE 隔离及迟到工具回调；5 项清理故障注入、3 项新增完成 executor EOF 后取消/Error 通道用例通过。最终 clean 1882 通过/14 官方 TCK untested，API/来源/生产依赖/产物/链接及既有 BOM 消费通过；main 245 类，新增三个私有类型，无公开成员或生产库增项。快照 verification/agentic-handle-cancellation-wip.json。完整成功 root 收尾、并发初始化、自定义非配合组件及全部长期范围仍 pending。

@@ -223,6 +223,19 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 
 
 
+### 保存 handle 的主动与跨轮取消（WIP，2026-10-23）
+
+- 十二项初始真实 Java 8 SSE 子进程全部失败：同步/异步 Agentic 与普通 AiServices 三条路径，分别暴露保存 handle 后 pending 工具未取消、排队工具未跳过，以及旧 handle 无法关闭续传的响应头前/首段后连接。新增第十三项以同一真实 InvocationTasks 下两条同时活动的 SSE 流，证明取消第一条后第二条继续正常完成。
+- AiServiceStreamingResponseHandler 为每条 TokenStream 使用私有 StreamControl，跨工具轮次共享资源集合；各轮 HTTP 在调用前登记，工具与完成任务 Future 也登记。保存的 handle 包装器指向整条流的控制，不取消 parent root；控制向 parent 登记单个网络资源，保留 scope guard，并在用户回调恢复原 root 或原无 owner 环境。
+- 主动取消先标记再逐项释放资源，清理失败仍继续；无后续 token/完成/错误交付。根取消/流错误仍维持错误终止合同；共享终止 claim 避免错误与成功重复。正常完成解除登记，迟到事件忽略；完成后调用 cancel 仍将 handle 标记为已取消，不再次中止资源。
+- 十四项实际 socket/SSE 场景在 fixture cleanup 前检查原始 Future 取消、排队零执行、服务端 EOF、dispatcher 排空、零策略重试、零 terminal 与 parent 未取消；跨轮检查严格解析两个工具结果。sibling 场景同时验证两条真实连接，第一条取消后第二条仍活动，随后正常完成文本响应并能继续通过 root scope 写入。
+- 强化验收又复现一次迟到 onToolExecuted：工具被中断后仍返回成功结果，取消后收到 1 次工具回调而预期为 0。现对 TokenStream 的 before/after 工具及 intermediate 回调同样检查流状态；保留该第十四个实际 Java 8 子进程，禁止通过弱化断言忽略迟到回调。
+- 五项 Java 8 直接回调/故障注入验证关闭失败及取消失败均保留、逐资源清理、重复取消幂等、原错误身份、迟到事件抑制、普通完成解除登记，以及无 owner 回调不暴露私有 registrar。两项完成 executor 场景在网络正常 EOF 后再取消，验证排队跳过和运行中断，不把正常 EOF 当作网络取消证据；原八项 root 完成取消/错误回归保留。
+- 完成回调 Error 新检查先复现异常被共享终止状态吞掉：已交付成功后，不能再报第二次 terminal，但原 Error 也不能消失。现显式完成 executor 的该失败进入当前线程 uncaught 通道；保留原 Error 身份、一次完成和零错误终止。原八项完成 executor 回归加两项手动取消及该项，共十一项。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 635 项（支持模块 431 + 主 Agentic 175 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1882 通过。33 JAR/6390 基础类条目、4958 类默认链接、5197 类扩展链接及全部既有 BOM 独立消费通过；TokenStream 与主 Agentic 严格 API、原始测试来源、生产依赖和产物审计通过。main JAR 245 类，新增三个私有嵌套类型，无新增公开成员或生产依赖；快照 [agentic-handle-cancellation-wip.json](verification/agentic-handle-cancellation-wip.json)。仍 WIP，不创建完整阶段标签、不将 Agentic 纳入默认 BOM。
+- clean 后进一步增强同一组五项夹具：在模型私有 registrar 仍安装时同步交付部分响应，五项再次通过，直接证明用户回调恢复原 owner/无 owner。生产源码与已审计 JAR 未变，不重复增加通过数。
+- 新增三项私有嵌套生产类型，不新增公开成员或生产依赖；Guardrails 算法和代码文件不改动。同步父登记 close 的失败在取消时与其他清理错误一起保留；普通完成解除登记的失败逐项记录日志并继续，不补发第二个 terminal。任意不配合的用户回调/传输/工具 I/O、已经开始的外部副作用及完整调度竞争仍不获得强制停止保证。完整成功 root 被覆盖任务收尾、全部四模块/MCP/模型/向量库/BOM 与最终目标继续 pending，不自动重放工具请求。
+
 ### terminal 提前工具与流错误取消（WIP，2026-10-23）
 
 - 新增十四个实际 Java 8 子进程，使用真正的 Agentic terminal 工作流或普通 AiServices TokenStream，以及 OpenAI/OkHttp loopback SSE。两个工具 index 交接在首个流关闭前触发第一工具，覆盖同步/异步 Agentic root 取消、SSE 错误时 pending 注解 Future、运行工具中断、排队工具跳过及正常双工具续传；普通无 owner 路径另覆盖错误/运行/排队/成功四项。

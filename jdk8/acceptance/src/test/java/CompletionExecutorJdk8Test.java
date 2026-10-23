@@ -18,10 +18,11 @@ public class CompletionExecutorJdk8Test {
     final AtomicInteger completions = new AtomicInteger(), errors = new AtomicInteger(), wraps = new AtomicInteger();
     final AtomicReference<CancellationContext.Registrar> callbackOwner = new AtomicReference<>();
     final AtomicReference<Throwable> failure = new AtomicReference<>(), uncaught = new AtomicReference<>();
+    final AtomicReference<dev.langchain4j.model.chat.response.StreamingHandle> streamHandle = new AtomicReference<>();
     final CountDownLatch terminal = new CountDownLatch(1), fatal = new CountDownLatch(1), releaseBlocker = new CountDownLatch(1);
     final CompletableFuture<ChatResponse> result = new CompletableFuture<>();
     final ThreadLocal<String> host = new ThreadLocal<>();
-    final Memory memory = new Memory(); volatile Error handlerFailure;
+    final Memory memory = new Memory(); volatile Error handlerFailure, completionHandlerFailure;
     class Memory implements ChatMemory {
         final List<ChatMessage> messages = new CopyOnWriteArrayList<>(); final CountDownLatch entered = new CountDownLatch(1), release = new CountDownLatch(1), stopped = new CountDownLatch(1);
         volatile boolean gated; volatile Throwable error; final AtomicInteger interrupted = new AtomicInteger();
@@ -43,14 +44,14 @@ public class CompletionExecutorJdk8Test {
         pool = (ThreadPoolExecutor) Executors.newFixedThreadPool(1, task -> { Thread t = new Thread(task, "completion-fixture"); t.setUncaughtExceptionHandler((thread, error) -> { uncaught.set(error); fatal.countDown(); }); return t; });
         fixture = new OpenAiJdk8Test(); fixture.start(); memory.add(UserMessage.from("fixture"));
     }
-    @After public void close() throws Exception { memory.release.countDown(); releaseBlocker.countDown(); pool.shutdownNow(); assertTrue(pool.awaitTermination(2, TimeUnit.SECONDS)); ExecutorProvider.set(previous); host.remove(); fixture.stop(); if (handlerFailure == null) assertNull(uncaught.get()); }
+    @After public void close() throws Exception { memory.release.countDown(); releaseBlocker.countDown(); pool.shutdownNow(); assertTrue(pool.awaitTermination(2, TimeUnit.SECONDS)); ExecutorProvider.set(previous); host.remove(); fixture.stop(); if (handlerFailure == null && completionHandlerFailure == null) assertNull(uncaught.get()); else assertSame(handlerFailure != null ? handlerFailure : completionHandlerFailure, uncaught.get()); }
     void start(java.util.concurrent.Executor executor) throws Exception {
         UserMessage user = UserMessage.from("fixture"); List<ChatMessage> messages = Collections.singletonList(user);
         AiServiceContext context = AiServiceContext.create(AiServicesJdk8Test.Streaming.class); context.streamingChatModel = fixture.streaming(); context.initChatMemories(memory);
         InvocationContext invocation = CancellationContext.call(owner, () -> CapturedContextSupport.captureInto(InvocationContext.builder().interfaceName(AiServicesJdk8Test.Streaming.class.getName()).methodName("chat").methodArgument("fixture").chatMemoryId("fixture").userMessage(user)).build());
         TokenStream stream = new AiServiceTokenStream(AiServiceTokenStreamParameters.builder().messages(messages).context(context).invocationContext(invocation).toolServiceContext(context.toolService.createContext(invocation, user, messages))
                 .toolArgumentsErrorHandler(context.toolService.argumentsErrorHandler()).toolExecutionErrorHandler(context.toolService.executionErrorHandler()).completeResponseProcessingExecutor(executor).methodKey(AiServicesJdk8Test.Streaming.class.getMethod("chat", String.class)).build());
-        stream.onCompleteResponse(response -> { callbackOwner.set(CancellationContext.current()); completions.incrementAndGet(); result.complete(response); terminal.countDown(); })
+        stream.onPartialResponseWithContext((part, contextWithHandle) -> { assertSame(owner, CancellationContext.current()); streamHandle.set(contextWithHandle.streamingHandle()); }).onCompleteResponse(response -> { callbackOwner.set(CancellationContext.current()); completions.incrementAndGet(); result.complete(response); terminal.countDown(); if (completionHandlerFailure != null) throw completionHandlerFailure; })
                 .onError(error -> { callbackOwner.set(CancellationContext.current()); failure.set(error); errors.incrementAndGet(); result.completeExceptionally(error); terminal.countDown(); if (handlerFailure != null) throw handlerFailure; }).start();
     }
     static void await(String message, java.util.function.BooleanSupplier ready) throws Exception { long end = System.nanoTime() + TimeUnit.SECONDS.toNanos(2); while (!ready.getAsBoolean() && System.nanoTime() < end) Thread.sleep(2); assertTrue(message, ready.getAsBoolean()); }
@@ -86,4 +87,27 @@ public class CompletionExecutorJdk8Test {
     @Test(timeout=10000) public void errorHandlerErrorReachesBorrowedWorkerUncaughtChannel() throws Exception {
         memory.error = new IllegalStateException("memory failed"); handlerFailure = new AssertionError("error handler failed"); start(pool); assertTrue(terminal.await(3, TimeUnit.SECONDS)); assertTrue(fatal.await(2, TimeUnit.SECONDS)); clean(); assertSame(handlerFailure, uncaught.get()); assertEquals(1, errors.get());
     }
+    @Test(timeout=10000) public void savedHandleCancelsQueuedCompletionSilentlyAfterNetworkEof() throws Exception {
+        CountDownLatch blocked = new CountDownLatch(1); AtomicInteger unrelatedInterrupts = new AtomicInteger();
+        pool.submit(() -> { blocked.countDown(); try { releaseBlocker.await(); } catch (InterruptedException e) { unrelatedInterrupts.incrementAndGet(); } });
+        assertTrue(blocked.await(2,TimeUnit.SECONDS)); start(pool);
+        await("completion was not queued", () -> !pool.getQueue().isEmpty()); fixture.awaitReleased();
+        assertNotNull(streamHandle.get()); streamHandle.get().cancel(); assertTrue(streamHandle.get().isCancelled());
+        releaseBlocker.countDown(); clean(); assertEquals(0,completions.get()+errors.get()); assertEquals(1,terminal.getCount());
+        assertEquals(1,memory.messages.size()); assertEquals(0,unrelatedInterrupts.get());
+    }
+    @Test(timeout=10000) public void savedHandleInterruptsRunningCompletionSilentlyAfterNetworkEof() throws Exception {
+        memory.gated = true; start(pool); assertTrue(memory.entered.await(3,TimeUnit.SECONDS)); fixture.awaitReleased();
+        assertNotNull(streamHandle.get()); streamHandle.get().cancel();
+        boolean stopped = memory.stopped.await(300,TimeUnit.MILLISECONDS); memory.release.countDown(); clean();
+        assertTrue("manual cancellation left completion running",stopped); assertEquals(1,memory.interrupted.get());
+        assertEquals(0,completions.get()+errors.get()); assertEquals(1,terminal.getCount()); assertEquals(1,memory.messages.size());
+    }
+
+    @Test(timeout=10000) public void completionCallbackErrorUsesUncaughtChannelWithoutSecondTerminal() throws Exception {
+        completionHandlerFailure = new AssertionError("completion handler failed"); start(pool);
+        assertTrue(terminal.await(3,TimeUnit.SECONDS)); assertTrue("completion executor did not retain callback Error",fatal.await(2,TimeUnit.SECONDS));
+        clean(); assertSame(completionHandlerFailure,uncaught.get()); assertEquals(1,completions.get()); assertEquals(0,errors.get());
+    }
+
 }

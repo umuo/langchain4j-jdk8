@@ -61,6 +61,8 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
 
     private static final Logger LOG = LoggerFactory.getLogger(AiServiceStreamingResponseHandler.class);
 
+    private final StreamControl streamControl;
+
     private final ChatExecutor chatExecutor;
 
     private final ChatRequest chatRequest;
@@ -154,6 +156,11 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     }
 
     AiServiceStreamingResponseHandler(ChatRequest chatRequest, ChatExecutor chatExecutor, AiServiceContext context, InvocationContext invocationContext, Consumer<String> partialResponseHandler, BiConsumer<PartialResponse, PartialResponseContext> partialResponseWithContextHandler, Consumer<PartialThinking> partialThinkingHandler, BiConsumer<PartialThinking, PartialThinkingContext> partialThinkingWithContextHandler, Consumer<PartialToolCall> partialToolCallHandler, BiConsumer<PartialToolCall, PartialToolCallContext> partialToolCallWithContextHandler, Consumer<BeforeToolExecution> beforeToolExecutionHandler, Consumer<Object> rawEventHandler, Consumer<ToolExecution> toolExecutionHandler, Consumer<ChatResponse> intermediateResponseHandler, Consumer<ChatResponse> completeResponseHandler, Consumer<Throwable> errorHandler, ChatMemory temporaryMemory, TokenUsage tokenUsage, ToolServiceContext toolServiceContext, int toolCallingRoundTripsLeft, ToolArgumentsErrorHandler toolArgumentsErrorHandler, ToolExecutionErrorHandler toolExecutionErrorHandler, Executor toolExecutor, Executor completeResponseProcessingExecutor, GuardrailRequestParams commonGuardrailParams, Object methodKey) {
+        this(chatRequest, chatExecutor, context, invocationContext, partialResponseHandler, partialResponseWithContextHandler, partialThinkingHandler, partialThinkingWithContextHandler, partialToolCallHandler, partialToolCallWithContextHandler, beforeToolExecutionHandler, rawEventHandler, toolExecutionHandler, intermediateResponseHandler, completeResponseHandler, errorHandler, temporaryMemory, tokenUsage, toolServiceContext, toolCallingRoundTripsLeft, toolArgumentsErrorHandler, toolExecutionErrorHandler, toolExecutor, completeResponseProcessingExecutor, commonGuardrailParams, methodKey, new StreamControl(dev.langchain4j.internal.CancellationContext.current()));
+    }
+
+    private AiServiceStreamingResponseHandler(ChatRequest chatRequest, ChatExecutor chatExecutor, AiServiceContext context, InvocationContext invocationContext, Consumer<String> partialResponseHandler, BiConsumer<PartialResponse, PartialResponseContext> partialResponseWithContextHandler, Consumer<PartialThinking> partialThinkingHandler, BiConsumer<PartialThinking, PartialThinkingContext> partialThinkingWithContextHandler, Consumer<PartialToolCall> partialToolCallHandler, BiConsumer<PartialToolCall, PartialToolCallContext> partialToolCallWithContextHandler, Consumer<BeforeToolExecution> beforeToolExecutionHandler, Consumer<Object> rawEventHandler, Consumer<ToolExecution> toolExecutionHandler, Consumer<ChatResponse> intermediateResponseHandler, Consumer<ChatResponse> completeResponseHandler, Consumer<Throwable> errorHandler, ChatMemory temporaryMemory, TokenUsage tokenUsage, ToolServiceContext toolServiceContext, int toolCallingRoundTripsLeft, ToolArgumentsErrorHandler toolArgumentsErrorHandler, ToolExecutionErrorHandler toolExecutionErrorHandler, Executor toolExecutor, Executor completeResponseProcessingExecutor, GuardrailRequestParams commonGuardrailParams, Object methodKey, StreamControl streamControl) {
+        this.streamControl = streamControl;
         this.chatRequest = ensureNotNull(chatRequest, "chatRequest");
         this.chatExecutor = ensureNotNull(chatExecutor, "chatExecutor");
         this.context = ensureNotNull(context, "context");
@@ -186,69 +193,76 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
 
     @Override
     public void onPartialResponse(String partialResponse) {
+        if (streamControl.stopped()) return;
         // If we're using output guardrails, then buffer the partial response until the guardrails have completed
         if (hasOutputGuardrails) {
             responseBuffer.add(partialResponse);
         } else if (partialResponseHandler != null) {
-            partialResponseHandler.accept(partialResponse);
+            caller(() -> partialResponseHandler.accept(partialResponse));
         } else if (partialResponseWithContextHandler != null) {
             PartialResponseContext context = new PartialResponseContext(new CancellationUnsupportedStreamingHandle());
-            partialResponseWithContextHandler.accept(new PartialResponse(partialResponse), context);
+            caller(() -> partialResponseWithContextHandler.accept(new PartialResponse(partialResponse), new PartialResponseContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onPartialResponse(PartialResponse partialResponse, PartialResponseContext context) {
+        if (streamControl.stopped()) return;
         // If we're using output guardrails, then buffer the partial response until the guardrails have completed
         if (hasOutputGuardrails) {
             responseBuffer.add(partialResponse.text());
         } else if (partialResponseHandler != null) {
-            partialResponseHandler.accept(partialResponse.text());
+            caller(() -> partialResponseHandler.accept(partialResponse.text()));
         } else if (partialResponseWithContextHandler != null) {
-            partialResponseWithContextHandler.accept(partialResponse, context);
+            caller(() -> partialResponseWithContextHandler.accept(partialResponse, new PartialResponseContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onPartialThinking(PartialThinking partialThinking) {
+        if (streamControl.stopped()) return;
         if (partialThinkingHandler != null) {
-            partialThinkingHandler.accept(partialThinking);
+            caller(() -> partialThinkingHandler.accept(partialThinking));
         } else if (partialThinkingWithContextHandler != null) {
             PartialThinkingContext context = new PartialThinkingContext(new CancellationUnsupportedStreamingHandle());
-            partialThinkingWithContextHandler.accept(partialThinking, context);
+            caller(() -> partialThinkingWithContextHandler.accept(partialThinking, new PartialThinkingContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onPartialThinking(PartialThinking partialThinking, PartialThinkingContext context) {
+        if (streamControl.stopped()) return;
         if (partialThinkingHandler != null) {
-            partialThinkingHandler.accept(partialThinking);
+            caller(() -> partialThinkingHandler.accept(partialThinking));
         } else if (partialThinkingWithContextHandler != null) {
-            partialThinkingWithContextHandler.accept(partialThinking, context);
+            caller(() -> partialThinkingWithContextHandler.accept(partialThinking, new PartialThinkingContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onPartialToolCall(PartialToolCall partialToolCall) {
+        if (streamControl.stopped()) return;
         if (partialToolCallHandler != null) {
-            partialToolCallHandler.accept(partialToolCall);
+            caller(() -> partialToolCallHandler.accept(partialToolCall));
         } else if (partialToolCallWithContextHandler != null) {
             PartialToolCallContext context = new PartialToolCallContext(new CancellationUnsupportedStreamingHandle());
-            partialToolCallWithContextHandler.accept(partialToolCall, context);
+            caller(() -> partialToolCallWithContextHandler.accept(partialToolCall, new PartialToolCallContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onPartialToolCall(PartialToolCall partialToolCall, PartialToolCallContext context) {
+        if (streamControl.stopped()) return;
         if (partialToolCallHandler != null) {
-            partialToolCallHandler.accept(partialToolCall);
+            caller(() -> partialToolCallHandler.accept(partialToolCall));
         } else if (partialToolCallWithContextHandler != null) {
-            partialToolCallWithContextHandler.accept(partialToolCall, context);
+            caller(() -> partialToolCallWithContextHandler.accept(partialToolCall, new PartialToolCallContext(streamControl.handle(context.streamingHandle()))));
         }
     }
 
     @Override
     public void onCompleteToolCall(CompleteToolCall completeToolCall) {
+        if (streamControl.stopped()) return;
         if (toolExecutor != null) {
             ToolExecutionRequest toolRequest = completeToolCall.toolExecutionRequest();
             java.util.concurrent.CompletableFuture<dev.langchain4j.service.AiServiceStreamingResponseHandler.ToolRequestResult> future = dev.langchain4j.invocation.CapturedContextSupport.supplyAsync(() -> {
@@ -256,13 +270,15 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
                 return new ToolRequestResult(toolRequest, toolResult);
             }, toolExecutor, invocationContext);
             toolExecutionFutures.add(future);
+            streamControl.track(future);
         }
     }
 
     @Override
     public void onUnmappedRawEvent(Object rawEvent) {
+        if (streamControl.stopped()) return;
         if (rawEventHandler != null) {
-            rawEventHandler.accept(rawEvent);
+            caller(() -> rawEventHandler.accept(rawEvent));
         }
     }
 
@@ -284,15 +300,18 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
 
     @Override
     public void onCompleteResponse(ChatResponse chatResponse) {
+        if (streamControl.stopped()) return;
         if (completeResponseProcessingExecutor == null) {
             processCompleteResponse(chatResponse);
             return;
         }
         try {
-            CapturedContextSupport.supplyAsync(() -> {
+            CompletableFuture<Void> completion = CapturedContextSupport.supplyAsync(() -> {
                 processCompleteResponse(chatResponse);
                 return null;
-            }, completeResponseProcessingExecutor, invocationContext).whenComplete((ignored, error) -> {
+            }, completeResponseProcessingExecutor, invocationContext);
+            streamControl.track(completion);
+            completion.whenComplete((ignored, error) -> {
                 if (error != null) reportCompletionFailure(dev.langchain4j.internal.Exceptions.unwrapCompletionException(error));
             });
         } catch (Exception e) {
@@ -301,6 +320,12 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     }
 
     private void reportCompletionFailure(Throwable error) {
+        if (streamControl.successfulTerminal()) {
+            // Completion was already delivered; retain the failure without a second terminal.
+            Thread current = Thread.currentThread();
+            current.getUncaughtExceptionHandler().uncaughtException(current, error);
+            return;
+        }
         try {
             CapturedContextSupport.runWithOwner(invocationContext, () -> onError(error));
         } catch (RuntimeException | Error callbackFailure) {
@@ -311,6 +336,7 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     }
 
     private void processCompleteResponse(ChatResponse chatResponse) {
+        if (streamControl.stopped()) return;
         fireResponseReceivedEvent(chatResponse);
         AiMessage aiMessage = chatResponse.aiMessage();
         addToMemory(aiMessage);
@@ -319,7 +345,7 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
                 throw runtime("Something is wrong, exceeded %s tool calling round trips (maxToolCallingRoundTrips)", context.toolService.maxToolCallingRoundTrips());
             }
             if (intermediateResponseHandler != null) {
-                intermediateResponseHandler.accept(chatResponse);
+                if (!streamControl.stopped()) caller(() -> intermediateResponseHandler.accept(chatResponse));
             }
             List<ToolExecutionRequest> executedRequests = aiMessage.toolExecutionRequests();
             Map<ToolExecutionRequest, ToolExecutionResult> toolResults = new LinkedHashMap<>();
@@ -347,20 +373,18 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
                 }
             }
             // Use the requests that were executed: the final response can reformat their JSON arguments.
+            if (streamControl.stopped()) return;
             ToolService.ToolResultsOutcome outcome = context.toolService.processToolResults(context, executedRequests, toolResults, new ArrayList<>(), invocationContext, toolServiceContext);
             List<ChatMessage> nextMessages = context.toolService.persistToolResultsAndResolveMessagesSync(context, getMemory(), null, outcome.resultMessages(), invocationContext);
             if (ToolService.shouldReturnImmediately(outcome.anyToolErrored(), outcome.returnBehaviors())) {
                 ChatResponse finalChatResponse = finalResponse(chatResponse, aiMessage);
-                fireInvocationComplete(finalChatResponse);
-                if (completeResponseHandler != null) {
-                    completeResponseHandler.accept(finalChatResponse);
-                }
+                complete(finalChatResponse);
                 return;
             }
             ChatRequestParameters parameters = chatRequestParameters(invocationContext.methodArguments(), toolServiceContext.effectiveTools());
             ToolService.NextChatRequest next = context.toolService.prepareNextChatRequest(context, invocationContext.chatMemoryId(), nextMessages, invocationContext, toolServiceContext, toolResults, parameters);
-            dev.langchain4j.service.AiServiceStreamingResponseHandler handler = new AiServiceStreamingResponseHandler(next.chatRequest(), chatExecutor, context, invocationContext, partialResponseHandler, partialResponseWithContextHandler, partialThinkingHandler, partialThinkingWithContextHandler, partialToolCallHandler, partialToolCallWithContextHandler, beforeToolExecutionHandler, rawEventHandler, toolExecutionHandler, intermediateResponseHandler, completeResponseHandler, errorHandler, temporaryMemory, TokenUsage.sum(tokenUsage, chatResponse.metadata().tokenUsage()), next.toolServiceContext(), toolCallingRoundTripsLeft, toolArgumentsErrorHandler, toolExecutionErrorHandler, toolExecutor, completeResponseProcessingExecutor, commonGuardrailParams, methodKey);
-            context.streamingChatModel.chat(next.chatRequest(), handler);
+            dev.langchain4j.service.AiServiceStreamingResponseHandler handler = new AiServiceStreamingResponseHandler(next.chatRequest(), chatExecutor, context, invocationContext, partialResponseHandler, partialResponseWithContextHandler, partialThinkingHandler, partialThinkingWithContextHandler, partialToolCallHandler, partialToolCallWithContextHandler, beforeToolExecutionHandler, rawEventHandler, toolExecutionHandler, intermediateResponseHandler, completeResponseHandler, errorHandler, temporaryMemory, TokenUsage.sum(tokenUsage, chatResponse.metadata().tokenUsage()), next.toolServiceContext(), toolCallingRoundTripsLeft, toolArgumentsErrorHandler, toolExecutionErrorHandler, toolExecutor, completeResponseProcessingExecutor, commonGuardrailParams, methodKey, streamControl);
+            handler.startModel();
         } else {
             ChatResponse finalChatResponse = finalResponse(chatResponse, aiMessage);
             if (completeResponseHandler != null) {
@@ -381,10 +405,9 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
                     }
                     responseBuffer.clear();
                 }
-                fireInvocationComplete(finalChatResponse);
-                completeResponseHandler.accept(finalChatResponse);
+                complete(finalChatResponse);
             } else {
-                fireInvocationComplete(finalChatResponse);
+                complete(finalChatResponse);
             }
         }
     }
@@ -429,7 +452,14 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     }
 
     private ToolExecutionResult execute(ToolExecutionRequest toolRequest) {
-        return context.toolService.executeTool(invocationContext, toolExecutors, toolRequest, beforeToolExecutionHandler, toolExecutionHandler);
+        if (streamControl.stopped()) throw new java.util.concurrent.CancellationException("Stream cancelled");
+        return context.toolService.executeTool(invocationContext, toolExecutors, toolRequest,
+                beforeToolExecutionHandler == null ? null : event -> {
+                    if (!streamControl.stopped()) caller(() -> beforeToolExecutionHandler.accept(event));
+                },
+                toolExecutionHandler == null ? null : event -> {
+                    if (!streamControl.stopped()) caller(() -> toolExecutionHandler.accept(event));
+                });
     }
 
     private ChatMemory getMemory() {
@@ -441,27 +471,165 @@ class AiServiceStreamingResponseHandler implements StreamingChatResponseHandler 
     }
 
     private void addToMemory(ChatMessage chatMessage) {
+        if (streamControl.stopped()) throw new java.util.concurrent.CancellationException("Stream cancelled");
         getMemory().add(chatMessage);
+    }
+
+    void startModel() {
+        if (streamControl.stopped()) return;
+        dev.langchain4j.internal.CancellationContext.run(streamControl, () -> {
+            if (!streamControl.stopped()) context.streamingChatModel.chat(chatRequest, this);
+        });
+    }
+
+    private void caller(Runnable callback) {
+        dev.langchain4j.internal.CancellationContext.run(streamControl.parent,
+                () -> CapturedContextSupport.runWithOwner(invocationContext, callback));
+    }
+
+    private void complete(ChatResponse response) {
+        if (!streamControl.claimTerminal(true)) return;
+        try {
+            caller(() -> {
+                fireInvocationComplete(response);
+                if (completeResponseHandler != null) completeResponseHandler.accept(response);
+            });
+        } catch (RuntimeException | Error callbackFailure) {
+            // Report on the thread executing the callback, not a later Future observer thread.
+            Thread current = Thread.currentThread();
+            caller(() -> current.getUncaughtExceptionHandler().uncaughtException(current, callbackFailure));
+        } finally { streamControl.finish(); }
     }
 
     @Override
     public void onError(Throwable error) {
-        // Tool calls may have started before the model stream terminates.
-        for (Future<ToolRequestResult> task : toolExecutionFutures) {
-            try { task.cancel(true); }
-            catch (RuntimeException | Error cleanup) { if (cleanup != error) error.addSuppressed(cleanup); }
-        }
+        if (!streamControl.claimTerminal(false)) return;
+        streamControl.cancelResources(error);
         toolExecutionFutures.clear();
-        if (errorHandler != null) {
-            try {
-                fireErrorReceived(error);
-                errorHandler.accept(error);
-            } catch (Exception e) {
-                LOG.error("While handling the following error...", error);
-                LOG.error("...the following error happened", e);
-            }
-        } else {
-            LOG.warn("Ignored error", error);
+        try {
+            caller(() -> {
+                if (errorHandler != null) {
+                    try {
+                        fireErrorReceived(error);
+                        errorHandler.accept(error);
+                    } catch (Exception e) {
+                        LOG.error("While handling the following error...", error);
+                        LOG.error("...the following error happened", e);
+                    }
+                } else LOG.warn("Ignored error", error);
+            });
+        } finally { streamControl.finish(); }
+    }
+
+    /** One TokenStream's resources across model rounds; the parent root remains independent. */
+    private static final class StreamControl implements dev.langchain4j.internal.CancellationContext.Registrar {
+        private final dev.langchain4j.internal.CancellationContext.Registrar parent;
+        private final java.util.Set<Entry> resources = new java.util.HashSet<>();
+        private final java.util.Map<dev.langchain4j.model.chat.response.StreamingHandle, dev.langchain4j.model.chat.response.StreamingHandle> handles = new java.util.IdentityHashMap<>();
+        private volatile boolean cancelled;
+        private boolean terminal;
+        private boolean successful;
+        private boolean finished;
+        StreamControl(dev.langchain4j.internal.CancellationContext.Registrar parent) { this.parent = parent; }
+        synchronized boolean stopped() { return cancelled || terminal || finished; }
+        synchronized boolean claimTerminal(boolean success) { if (stopped()) return false; terminal = true; successful = success; return true; }
+        synchronized boolean successfulTerminal() { return terminal && successful && !cancelled; }
+        @Override public <T> T inContext(java.util.function.Supplier<T> action) {
+            return parent == null ? action.get() : parent.inContext(action);
         }
+        private Entry local(Runnable cancel) {
+            Entry entry = new Entry(cancel);
+            boolean immediate;
+            synchronized (this) { immediate = cancelled || terminal || finished; if (!immediate) resources.add(entry); }
+            if (immediate) entry.cancel();
+            return entry;
+        }
+        @Override public dev.langchain4j.internal.CancellationContext.Registration register(Runnable cancel) {
+            Entry entry = local(cancel);
+            try { if (parent != null) entry.attach(parent.register(entry::cancel)); }
+            catch (RuntimeException | Error failure) { entry.close(); throw failure; }
+            return entry;
+        }
+        void track(CompletableFuture<?> future) {
+            Entry entry = local(() -> future.cancel(true));
+            future.whenComplete((ignored, error) -> entry.close());
+        }
+        dev.langchain4j.model.chat.response.StreamingHandle handle(dev.langchain4j.model.chat.response.StreamingHandle delegate) {
+            dev.langchain4j.model.chat.response.StreamingHandle wrapped;
+            synchronized (this) {
+                wrapped = handles.get(delegate);
+                if (wrapped != null) return wrapped;
+                wrapped = new ControlHandle(this, delegate);
+                handles.put(delegate, wrapped);
+            }
+            local(delegate::cancel);
+            return wrapped;
+        }
+        void cancel() {
+            synchronized (this) { if (cancelled) return; cancelled = true; if (finished) return; }
+            java.util.concurrent.CancellationException reason = new java.util.concurrent.CancellationException("Stream cancelled");
+            cancelResources(reason);
+            Throwable[] failures = reason.getSuppressed();
+            if (failures.length != 0) {
+                Throwable first = failures[0];
+                for (int i = 1; i < failures.length; i++) if (first != failures[i]) first.addSuppressed(failures[i]);
+                if (first instanceof Error) throw (Error) first;
+                throw (RuntimeException) first;
+            }
+        }
+        void cancelResources(Throwable primary) {
+            java.util.List<Entry> pending;
+            synchronized (this) { pending = new java.util.ArrayList<>(resources); resources.clear(); handles.clear(); }
+            for (Entry entry : pending) {
+                try { entry.cancel(); }
+                catch (RuntimeException | Error cleanup) { if (cleanup != primary) primary.addSuppressed(cleanup); }
+            }
+        }
+        void finish() {
+            java.util.List<Entry> closing;
+            synchronized (this) { finished = true; closing = new java.util.ArrayList<>(resources); resources.clear(); handles.clear(); }
+            for (Entry entry : closing) {
+                try { entry.close(); }
+                catch (RuntimeException | Error cleanup) { LOG.error("Failed to detach streaming resource ownership", cleanup); }
+            }
+        }
+        private final class Entry implements dev.langchain4j.internal.CancellationContext.Registration {
+            private final Runnable cancel;
+            private dev.langchain4j.internal.CancellationContext.Registration upstream;
+            private boolean closed;
+            Entry(Runnable cancel) { this.cancel = cancel; }
+            void attach(dev.langchain4j.internal.CancellationContext.Registration registration) {
+                boolean close;
+                synchronized (StreamControl.this) { close = closed; if (!close) upstream = registration; }
+                if (close) registration.close();
+            }
+            public void close() {
+                dev.langchain4j.internal.CancellationContext.Registration releasing;
+                synchronized (StreamControl.this) { if (closed) return; closed = true; resources.remove(this); releasing = upstream; upstream = null; }
+                if (releasing != null) releasing.close();
+            }
+            void cancel() {
+                dev.langchain4j.internal.CancellationContext.Registration releasing;
+                synchronized (StreamControl.this) { if (closed) return; closed = true; resources.remove(this); releasing = upstream; upstream = null; }
+                Throwable failure = null;
+                try { if (releasing != null) releasing.close(); }
+                catch (RuntimeException | Error cleanup) { failure = cleanup; }
+                try { cancel.run(); }
+                catch (RuntimeException | Error cleanup) {
+                    if (failure == null) failure = cleanup;
+                    else if (failure != cleanup) failure.addSuppressed(cleanup);
+                }
+                if (failure instanceof Error) throw (Error) failure;
+                if (failure != null) throw (RuntimeException) failure;
+            }
+        }
+    }
+
+    private static final class ControlHandle implements dev.langchain4j.model.chat.response.StreamingHandle {
+        private final StreamControl control;
+        private final dev.langchain4j.model.chat.response.StreamingHandle delegate;
+        ControlHandle(StreamControl control, dev.langchain4j.model.chat.response.StreamingHandle delegate) { this.control = control; this.delegate = delegate; }
+        public void cancel() { control.cancel(); }
+        public boolean isCancelled() { return control.cancelled || delegate.isCancelled(); }
     }
 }
