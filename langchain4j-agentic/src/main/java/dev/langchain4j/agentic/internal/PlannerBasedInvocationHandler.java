@@ -216,6 +216,9 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
                 Planner planner = plannerSupplier.get();
                 planner.init(new InitPlanningContext(currentScope, this, subagents));
                 result = new PlannerLoop(planner, currentScope, registry).loop();
+                if (isRootCall() && !(result instanceof Action && ((Action) result).isSuspended())) {
+                    currentScope.invocationTasks().awaitComputations();
+                }
             } catch (AgenticSystemSuspendedException suspended) {
                 // Suspension is control flow, not a failure requiring recovery or compensation.
                 result = new Action.SuspendAction();

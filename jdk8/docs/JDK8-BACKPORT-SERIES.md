@@ -470,7 +470,11 @@ terminal 提前工具随后补齐 root 取消与 SSE 错误清理：14 项实际
 
 这里也复现了一个 Future 线程问题：whenComplete 的回调若在 Future 完成后才注册，可能运行在注册线程。完成回调 Error 最初因此跑到 OkHttp 线程；现于回调执行点直接进入原执行器 uncaught 通道，保留异常身份，同时不发第二次 terminal。正常 HTTP EOF 后的任务取消与实际网络取消分别验收，避免用自然关闭冒充取消证明。
 
-下一组检查包括成功 root 被覆盖后台任务的收尾、完整并发初始化，以及自定义模型/传输与未验收的 CompletionStage 适配器。完整失败历史和自动重试也尚未完成。
+成功 root 随后按独立计算登记结算，而非仅扫描最终 state：输出键被替换也会等待框架派发的异步任务与中间流；普通失败优先唤醒等待者，再由既有失败收尾取消 sibling。9 项实际 Java 8 场景证明等待/错误、同会话换代、已恢复错误、外部 marker 所有权及真实 SSE 释放，lazy terminal 仍由调用者启动。最终 clean 为 1891 通过、14 项官方 TCK untested，详见 [成功 root 结算快照](../verification/agentic-success-drain-wip.json)。
+
+兼容辅助类型在官方基线中不存在，不能用官方类型审计掩盖它自身的演进。本轮增加 [InvocationTasks ABI 审计](../audit-invocation-tasks-api.sh)，固定以前一兼容提交作为该 helper 的参考，只报告三个预期内部方法增项；官方基线的可见类型签名仍独立检查。
+
+下一组检查包括完整并发初始化、同会话并发 root、自定义模型/传输和未验收的 CompletionStage 适配器。任意外部新调度、完整失败历史与自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

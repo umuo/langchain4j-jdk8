@@ -171,7 +171,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         Object response = agentInvoker.invoke(agenticScope, invokedAgent, args);
         if (consumeStreaming && response instanceof TokenStream) {
             return new RecoverableStream((TokenStream) response,
-                    error -> binding.call(() -> recoverDeferredFailure(error, agenticScope, invokedAgent, args, true)));
+                    error -> binding.call(() -> recoverDeferredFailure(error, agenticScope, invokedAgent, args, true)), agenticScope.invocationTasks());
         }
         return response;
     }
@@ -228,7 +228,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
         private final java.util.concurrent.atomic.AtomicBoolean terminal = new java.util.concurrent.atomic.AtomicBoolean();
         private final java.util.function.Function<Throwable, Object> recovery;
 
-        private RecoverableStream(TokenStream stream, java.util.function.Function<Throwable, Object> recovery) {
+        private RecoverableStream(TokenStream stream, java.util.function.Function<Throwable, Object> recovery, InvocationTasks tasks) {
             this.recovery = recovery;
             dev.langchain4j.internal.CancellationContext.Registration registration =
                     dev.langchain4j.internal.CancellationContext.register(() -> {
@@ -236,6 +236,7 @@ public final class AgentExecutor implements AgentInstance, InternalAgent {
                         result.cancel(false);
                     });
             result.whenComplete((value, error) -> registration.close());
+            tasks.trackComputation(result);
             try {
                 if (result.isCancelled()) return;
                 stream.onCompleteResponse(response -> {

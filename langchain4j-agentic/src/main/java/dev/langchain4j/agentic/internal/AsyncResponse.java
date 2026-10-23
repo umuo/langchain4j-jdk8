@@ -21,6 +21,7 @@ public class AsyncResponse<T> implements DelayedResponse<T> {
         Objects.requireNonNull(responseSupplier);
         InvocationTasks.Registration registration = tasks == null ? null : tasks.register(this::cancel);
         if (registration != null) futureResponse.whenComplete((value, failure) -> registration.close());
+        if (tasks != null) tasks.trackComputation(futureResponse);
         try {
             executor.execute(() -> {
                 synchronized (workerLock) {

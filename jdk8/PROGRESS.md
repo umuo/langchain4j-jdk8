@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 跨轮 handle 取消检查点（WIP，2026-10-23）
+## 当前状态：第十五阶段 Agentic 成功 root 计算结算检查点（WIP，2026-10-23）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建、14 项提前工具及 14 项 handle 场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建、14 项提前工具、14 项 handle 及 9 项成功 root 结算场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -22,6 +22,15 @@
 
 
 
+
+### 成功 root 的覆盖输出计算结算（WIP，2026-10-23）
+
+- 初始六项真实 Java 8 子进程有五项失败：覆盖 state 键后 root 提前返回、遗漏已失败/迟到失败的异步任务，或未因 sibling 失败中断仍运行的任务。外部 PendingResponse marker 所有权用例原本通过。另加已恢复错误不重复抛出的回归，共七项；两个真实 OpenAI/OkHttp SSE 用例再复现同步中间流的相同遗漏。
+- InvocationTasks 按 root 代际独立登记框架异步计算的完成信号，不依赖最终 state 的键值。AsyncResponse 在派发前登记，框架消费的 RecoverableStream 也登记；root 在成功通知之前等待这些计算。覆盖后的 state 仍保留 replacement，不用旧结果覆盖新值，也不启动返回给调用者的 lazy terminal TokenStream。
+- 独立 failure signal 使普通失败优先于仍 pending 的 sibling，即使结算过程中新增了计算，也能唤醒等待者；外层原失败收尾继续取消对应 root。受控挂起不当普通失败，继续结算同组其他计算；新尝试仅移除此前已完成的受控挂起记录，不重放 supplier。已由标准错误恢复返回结果的 future 是成功值，不重复进入错误策略。
+- 九项新增实际 Java 8 场景在 fixture cleanup 前检查成功通知时机、错误身份/原因、worker 停止及中断、同会话后续 root 不重复消费旧失败、人工 marker 保持未完成、state replacement 保留和单次策略调用；SSE 正常/错误检查还包括 dispatcher 排空、一次请求与连接释放。正常 EOF 与错误取消分别记录，不混作证明。
+- 最终完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 验收 644 项（支持模块 431 + 主 Agentic 184 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1891 通过。33 JAR/6390 基础类条目、4958 类默认链接、5198 类扩展链接及全部既有 BOM 消费通过；固定基线 API、原始测试来源、生产依赖和产物审计通过。主 Agentic 218 类、major 52；新 helper ABI 脚本 [audit-invocation-tasks-api.sh](audit-invocation-tasks-api.sh) 对前一兼容提交的 2 可见类型/10 声明/27 继承条目无缺失，只报告三个预期内部增项。快照 [agentic-success-drain-wip.json](verification/agentic-success-drain-wip.json)。仍 WIP，无新完整阶段标签、默认 BOM 不变。
+- 兼容辅助类 InvocationTasks（@Internal）新增三个 public 方法 trackComputation(CompletableFuture<?>)、resumeComputations()、awaitComputations()，以及一个私有 Computation 类型；固定基线可见类签名保持。没有新增生产依赖或 checkpoint 字段。跨进程任意失败点、并发同会话初始化、自定义未登记 Future/外部新调度、忽略中断的用户代码等仍需专项验收；完整四模块/MCP/模型/向量库/BOM 与整体目标继续 pending，Guardrails 不改动。
 
 ### 保存 handle 的主动与跨轮取消（WIP，2026-10-23）
 

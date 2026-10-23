@@ -456,9 +456,11 @@ public class DefaultAgenticScope implements AgenticScope {
 
     public void rootCallStarted(AgenticScopeRegistry registry) {
         if (invocationTasks.finished()) invocationTasks = new InvocationTasks(this);
+        invocationTasks.resumeComputations();
     }
 
     public void rootCallEnded(AgenticScopeRegistry registry, AgentListener agentListener) {
+        invocationTasks().awaitComputations();
         // ensure that all pending async operations are completed before ending the root call
         dev.langchain4j.internal.Jdk8.copyMap(state).forEach((key, value) -> {
             if (value instanceof DelayedResponse<?>) {
