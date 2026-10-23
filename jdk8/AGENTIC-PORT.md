@@ -223,6 +223,17 @@ AgenticJdk8 增加内部 PLANNER_MANAGES_RESUME 常量，Root 完成过滤仅对
 
 
 
+### 同 key 初始化与可见性屏障（WIP，2026-10-23）
+
+- 新增 11 个实际 Java 8 子进程，改造前全部失败；修复后连同 scope 创建、root 边界、恢复与 deferred state 共 57 项定向通过。覆盖并发首次 load/create、初始 save 与创建 listener 的可见性、已保存 scope 的单次加载、失败后的等待者、可中断等待、不同 key 进展、ephemeral 读屏障、同线程初始化重入和 false save。
+- registry 使用带活动引用计数的公平 ReentrantLock，按 AgenticScopeKey 串行获取、创建、首次保存和创建回调。等待线程响应中断并保留中断标记，抛 CancellationException，不取消创建者；全局锁表的 monitor 不跨越存储 I/O 或回调，活动操作结束后回收对应锁。
+- 框架 root 与 ChatMemory 获取改为原子 getOrCreate；ephemeral 同样在初始化回调完成后才向其他线程的 get 开放。同线程 listener 可检查自身 scope，但递归 root 初始化被拒绝，不提前运行 agent body。
+- 首次保存失败或初始化 Error/未被既有 listener 策略吞掉的异常，保留原异常作为本 registry 的失败门控。get 仍允许检查；后续 root 不静默重用半初始化对象，也不自动重试不确定的写入。显式 evict 或 create 替换解除门控；clearInMemory 保留门控。已有普通 listener RuntimeException 的日志并继续合同保持。
+- store.save=false 现在按 SPI 的失败结果抛 IllegalStateException，适用于初始保存及后续 flush；失败 snapshot 的错误 suppressed 到原失败。update 不获取 key 锁，避免与 scope.flush 已持有的状态锁形成反向加锁。
+- @Internal AgenticScopeRegistry 新增两个 public 重载：getOrCreate(Object,Consumer<DefaultAgenticScope>) 与 createEphemeralAgenticScope(Consumer<DefaultAgenticScope>)；原有方法签名保留。新增一个私有 KeyLock 和 Java 8 编译器生成的访问标记，无新生产依赖或持久化字段。
+- 完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 功能验收 655 项（支持模块 431 + 主 Agentic 195 + patterns 29），JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1902 通过。33 JAR/6390 基础类条目、4958 类默认链接、5200 类扩展链接及全部既有 BOM 消费通过；固定基线 API、原始测试来源和生产依赖审计通过。主 Agentic 220 类、major 52，新增 KeyLock 及 Java 8 编译器访问标记；基线 API 185 可见类型/1317 声明/2817 继承条目无缺失，两个预期 registry 方法使累计增项为 10。快照 [agentic-initialization-wip.json](verification/agentic-initialization-wip.json)。
+- 该屏障仅在单个 registry 内约束框架获取。普通同会话 root 的执行隔离、多 registry/多进程事务、重启后的初始化失败门控、自定义 store 跨 key 回调锁循环及用户自行泄漏对象引用未获证明。clearInMemory/getAllKeys 保留弱并发缓存语义，不是全局事务。完整四模块、剩余 MCP、模型/向量库、BOM 与最终交付继续 pending；无新完整阶段标签，Agentic 不进入默认 BOM，Guardrails 不改动。
+
 ### 成功 root 的覆盖输出计算结算（WIP，2026-10-23）
 
 - 初始六项真实 Java 8 子进程有五项失败：覆盖 state 键后 root 提前返回、遗漏已失败/迟到失败的异步任务，或未因 sibling 失败中断仍运行的任务。外部 PendingResponse marker 所有权用例原本通过。另加已恢复错误不重复抛出的回归，共七项；两个真实 OpenAI/OkHttp SSE 用例再复现同步中间流的相同遗漏。

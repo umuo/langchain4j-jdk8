@@ -677,18 +677,11 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
     }
 
     private DefaultAgenticScope createEphemeralAgenticScope(AgenticScopeRegistry registry) {
-        DefaultAgenticScope agenticScope = registry.createEphemeralAgenticScope();
-        notifyScopeCreated(registry, agenticScope);
-        return agenticScope;
+        return registry.createEphemeralAgenticScope(scope -> notifyScopeCreated(registry, scope));
     }
 
     private DefaultAgenticScope getOrCreateAgenticScope(AgenticScopeRegistry registry, Object memoryId) {
-        DefaultAgenticScope agenticScope = registry.get(memoryId);
-        if (agenticScope == null) {
-            agenticScope = registry.create(memoryId);
-            notifyScopeCreated(registry, agenticScope);
-        }
-        return agenticScope;
+        return registry.getOrCreate(memoryId, scope -> notifyScopeCreated(registry, scope));
     }
 
     private void notifyScopeCreated(AgenticScopeRegistry registry, DefaultAgenticScope scope) {

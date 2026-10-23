@@ -1,10 +1,10 @@
 # Java 8 移植进度
 
-## 当前状态：第十五阶段 Agentic 成功 root 计算结算检查点（WIP，2026-10-23）
+## 当前状态：第十五阶段 Agentic 同 key 初始化检查点（WIP，2026-10-23）
 
 - 上一完整阶段标签仍为 `jdk8-m14`。Agentic 主模块已开始改造，尚未通过完整功能验收或纳入 BOM；整体目标未完成。
 - 四模块 187 文件的固定基线声明快照仍见 [AGENTIC-AUDIT.md](AGENTIC-AUDIT.md) 与 [AGENTIC-API-INVENTORY.json](AGENTIC-API-INVENTORY.json)。当前移植与覆盖边界见 [AGENTIC-PORT.md](AGENTIC-PORT.md)。
-- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建、14 项提前工具、14 项 handle 及 9 项成功 root 结算场景在真实 Java 8 执行。
+- `agentic-wip` 显式 profile 编译主模块全部 158 个基线生产文件及 4 个新增兼容辅助文件，保留默认八模块支持范围。生产和专项测试均 release 8；15 项基础行为、2 项恢复场景、32 项网络场景、18 项状态/重入/挂起场景、7 项异步规划场景、3 项异步持久化场景、8 项失败收尾、5 项取消、3 项同步并行失败、12 项网络取消、5 项回调归属、14 项 terminal 流、11 项 root 边界、12 项 scope 创建、14 项提前工具、14 项 handle、9 项成功 root 结算及 11 项初始化场景在真实 Java 8 执行。
 - 主模块 25 个 record 已转为 POJO，补齐 JSON 构造元数据、访问器与自动值方法 final 修饰符；保留对象相等性。高版本 API、switch/模式匹配/text block/var 已降级，并修正模式绑定的重复读取。私有接口辅助方法移入包内类，避免扩大接口 API。
 - 新增固定 Git 源码 → Java 17 对照产物 → Java 8 候选的二进制 API 审计，覆盖可见类型、声明/继承成员和 bridge；不将声明数量当成功能验收。验证命令与快照见 AGENTIC-PORT.md。
 - 主模块有效生产依赖树仅包含兼容 main/core 与既有 Jackson、SLF4J、JSpecify、Reactive Streams、OpenNLP，无官方 SNAPSHOT 或新增生产库。patterns 生产树亦已审计；MCP/A2A 两模块的有效依赖/功能仍待完成。
@@ -22,6 +22,17 @@
 
 
 
+
+### 同 key 初始化与可见性屏障（WIP，2026-10-23）
+
+- 新增 11 个实际 Java 8 子进程，改造前全部失败；修复后连同 scope 创建、root 边界、恢复与 deferred state 共 57 项定向通过。覆盖并发首次 load/create、初始 save 与创建 listener 的可见性、已保存 scope 的单次加载、失败后的等待者、可中断等待、不同 key 进展、ephemeral 读屏障、同线程初始化重入和 false save。
+- registry 使用带活动引用计数的公平 ReentrantLock，按 AgenticScopeKey 串行获取、创建、首次保存和创建回调。等待线程响应中断并保留中断标记，抛 CancellationException，不取消创建者；全局锁表的 monitor 不跨越存储 I/O 或回调，活动操作结束后回收对应锁。
+- 框架 root 与 ChatMemory 获取改为原子 getOrCreate；ephemeral 同样在初始化回调完成后才向其他线程的 get 开放。同线程 listener 可检查自身 scope，但递归 root 初始化被拒绝，不提前运行 agent body。
+- 首次保存失败或初始化 Error/未被既有 listener 策略吞掉的异常，保留原异常作为本 registry 的失败门控。get 仍允许检查；后续 root 不静默重用半初始化对象，也不自动重试不确定的写入。显式 evict 或 create 替换解除门控；clearInMemory 保留门控。已有普通 listener RuntimeException 的日志并继续合同保持。
+- store.save=false 现在按 SPI 的失败结果抛 IllegalStateException，适用于初始保存及后续 flush；失败 snapshot 的错误 suppressed 到原失败。update 不获取 key 锁，避免与 scope.flush 已持有的状态锁形成反向加锁。
+- @Internal AgenticScopeRegistry 新增两个 public 重载：getOrCreate(Object,Consumer<DefaultAgenticScope>) 与 createEphemeralAgenticScope(Consumer<DefaultAgenticScope>)；原有方法签名保留。新增一个私有 KeyLock 和 Java 8 编译器生成的访问标记，无新生产依赖或持久化字段。
+- 完整 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 功能验收 655 项（支持模块 431 + 主 Agentic 195 + patterns 29），JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1902 通过。33 JAR/6390 基础类条目、4958 类默认链接、5200 类扩展链接及全部既有 BOM 消费通过；固定基线 API、原始测试来源和生产依赖审计通过。主 Agentic 220 类、major 52，新增 KeyLock 及 Java 8 编译器访问标记；基线 API 185 可见类型/1317 声明/2817 继承条目无缺失，两个预期 registry 方法使累计增项为 10。快照 [agentic-initialization-wip.json](verification/agentic-initialization-wip.json)。
+- 该屏障仅在单个 registry 内约束框架获取。普通同会话 root 的执行隔离、多 registry/多进程事务、重启后的初始化失败门控、自定义 store 跨 key 回调锁循环及用户自行泄漏对象引用未获证明。clearInMemory/getAllKeys 保留弱并发缓存语义，不是全局事务。完整四模块、剩余 MCP、模型/向量库、BOM 与最终交付继续 pending；无新完整阶段标签，Agentic 不进入默认 BOM，Guardrails 不改动。
 
 ### 成功 root 的覆盖输出计算结算（WIP，2026-10-23）
 
