@@ -478,7 +478,13 @@ terminal 提前工具随后补齐 root 取消与 SSE 错误清理：14 项实际
 
 失败处理也属于初始化合同：不确定是否已写入的 save 不能自动重试；保留失败供 get 检查，同时阻止后续 root 静默消费半初始化对象。显式驱逐或替换才解除该 registry 的运行时失败门控。store.save 返回 false 现在视为失败；后续 flush 不获取 key 锁，避免与 scope 状态锁反向加锁。该设计尚未提供跨 registry、跨进程或重启后的事务保证。
 
-下一组检查包括同会话并发 root、自定义模型/传输和未验收的 CompletionStage 适配器。任意外部新调度、完整失败历史与自动重试也尚未完成。
+同一 scope 的框架 root 方法随后增加独立执行锁，覆盖参数写入到通知、计算结算及保存；获取失败在 root 清理边界之外处理，等待中断不取消活动 root。同线程或被 root 等待的 worker 递归进入时拒绝等待自身，内部绑定 scope 的子工作流仍可调用。返回后的 lazy terminal 消费不获得这把方法执行锁。
+
+这个单元还说明了为何仅移除任务 owner 不够。旧 deferred frame 存在时，新 root 返回了正确的 second，但真实 state 的输出仍可能停在 first。加强断言在此前完整绿色候选复现两项失败。现取得执行权后同时隔离本 scope 的 InvocationTasks、匹配 registrar 和 DeferredScopeContext，结束后恢复旧上下文；保留其他 scope 的 owner/frame，旧取消 guard 返回后仍有效。
+
+最终 16 个实际 Java 8 子进程及相关回归共 61 项定向通过，重新 clean 为 1918 通过、14 项官方 TCK untested；默认消费、API、产物和扩展链接通过，详见 [root 并发快照](../verification/agentic-concurrent-root-wip.json)。新增两个兼容 helper 方法分别按旧兼容提交审计，其中 [deferred frame ABI 脚本](../audit-deferred-context-api.sh) 固定前一提交，避免官方基线中不存在的 helper 演进被遗漏。生产类型、依赖和 checkpoint 字段未增加。
+
+下一组检查包括返回后的并发 lazy 流、多 registry/多进程、自定义模型/传输和未验收的 CompletionStage 适配器。任意外部新调度、完整失败历史与自动重试也尚未完成。
 
 技术文章应把“已证明的能力”和“接下来的设计”分开：可以总结迁移方法，不能用一次编译、一次 clean 或一个漂亮的测试总数代替全部范围的验收。
 

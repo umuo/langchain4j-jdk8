@@ -204,6 +204,13 @@ public class PlannerBasedInvocationHandler implements InvocationHandler, Interna
 
     private Object executeAgentMethod(AgenticScopeRegistry registry, Method method, Object[] args) {
         DefaultAgenticScope currentScope = currentAgenticScope(registry, method, args);
+        if (isRootCall()) {
+            return currentScope.withRootInvocation(() -> executeAgentMethod(registry, method, args, currentScope));
+        }
+        return executeAgentMethod(registry, method, args, currentScope);
+    }
+
+    private Object executeAgentMethod(AgenticScopeRegistry registry, Method method, Object[] args, DefaultAgenticScope currentScope) {
         Map<String, Object> namedArgs = isRootCall() ? argToMap(method, args) : null;
         try {
             // A new generation must exist before user callbacks can acquire resources.

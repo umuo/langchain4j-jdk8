@@ -38,11 +38,15 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Future;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,7 +106,10 @@ public class DefaultAgenticScope implements AgenticScope {
     // from its method boundary after loading, never restored as a live CompletableFuture.
     private final Set<String> incompleteAsyncAgentIds = new java.util.concurrent.ConcurrentSkipListSet<>();
 
-    private transient InvocationTasks invocationTasks = new InvocationTasks(this);
+    private transient volatile InvocationTasks invocationTasks = new InvocationTasks(this);
+
+    // Separate from state/persistence locks: readers and owned worker callbacks must remain usable.
+    private final transient ReentrantLock rootInvocationLock = new ReentrantLock(true);
 
     private static final Object UNRESOLVED_ASYNC = new Object();
 
@@ -453,6 +460,37 @@ public class DefaultAgenticScope implements AgenticScope {
 
     @Internal
     public void cancelPendingTasks(Throwable primary) { invocationTasks().cancel(primary); }
+
+    /** Serialize framework root method executions for this scope. This does not reserve a lazy
+     * terminal stream after the root method returns. Subworkflows already bound to this scope
+     * bypass this entry point. Acquisition failures precede the caller's root failure boundary. */
+    @Internal
+    public <T> T withRootInvocation(Supplier<T> invocation) {
+        java.util.Objects.requireNonNull(invocation, "invocation");
+        if (rootInvocationLock.isHeldByCurrentThread()) {
+            throw new IllegalStateException("Reentrant root invocation for the same agentic scope");
+        }
+        try {
+            if (InvocationTasks.bound(this) != null) {
+                // A root may be waiting for this captured worker/callback. Never queue it behind itself.
+                if (!rootInvocationLock.tryLock(0, TimeUnit.NANOSECONDS)) {
+                    throw new IllegalStateException("Owned callback cannot reenter an active root invocation");
+                }
+            } else {
+                rootInvocationLock.lockInterruptibly();
+            }
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            CancellationException cancelled = new CancellationException("Interrupted while waiting for agentic root execution");
+            cancelled.initCause(interrupted);
+            throw cancelled;
+        }
+        try {
+            return InvocationTasks.withoutScopeBinding(this, invocation);
+        } finally {
+            rootInvocationLock.unlock();
+        }
+    }
 
     public void rootCallStarted(AgenticScopeRegistry registry) {
         if (invocationTasks.finished()) invocationTasks = new InvocationTasks(this);

@@ -390,6 +390,18 @@ Debate 恢复检查点完整 clean exit 0：真实 Java 8 451 项（支持模块
 
 
 
+### 同 scope root 执行互斥与旧上下文隔离（WIP，2026-10-23）
+
+- 第一组 12 个实际 Java 8 子进程在改造前 10 项失败，包括参数被另一 root 提前写入、成功通知/最终保存之前允许进入下一调用、复用前一 owner，以及 owned async worker 递归 root 超时；嵌套子工作流和正常挂起恢复两项原本通过。互斥修复后连同初始化、root 边界、恢复和 deferred state 共 57 项定向通过。
+- 两项加强上下文测试初次只有子进程超时，不据此声称复现语义错误。随后直接运行已编译的旧候选，分别得到“新 root 继承旧 captured owner”的断言失败和旧取消代际在新参数写入时触发 CancellationException 的具体证据。修复后的 14 项及相关回归共 59 项定向通过；另加新 root 失败后的上下文恢复场景，最终增加第 16 项其他 scope frame 保留检查，完整结果见下文。
+- DefaultAgenticScope 以独立公平 ReentrantLock 串行框架 root 方法，从参数/InvocationParameters 写入之前覆盖 beforeCall、planner、异步计算结算、成功通知、最终保存和失败清理，finally 释放。scope 状态读取、pending response 完成和内部子工作流不等待这把执行锁；不同 scope 可独立推进。
+- 普通等待者响应中断，恢复中断标记并抛 CancellationException；获取失败发生在 root 失败边界之外，不取消、补偿或持久化正在执行的其他 root。同线程递归 root 或被当前 root 等待的 captured worker/callback 再进同 scope 时直接拒绝，避免排队等待自身；正常绑定 scope 的子工作流绕过 root 入口。
+- 在取得执行权后，独立 root 暂时移除该 scope 的旧 InvocationTasks 绑定和匹配的 registrar，保留其他 scope 的绑定，完成或失败后恢复原调用者上下文。旧取消回调返回后仍受原取消 guard 约束。当前 owner 引用以 volatile 发布；没有增加 checkpoint 字段或生产依赖。
+- 新增 public @Internal DefaultAgenticScope.withRootInvocation(Supplier<T>)，兼容 helper InvocationTasks 和 DeferredScopeContext 各新增 static withoutScopeBinding(DefaultAgenticScope,Supplier<T>)。旧 helper ABI 分别对固定兼容版本独立审计，无旧成员缺失。
+- 第一轮 15 项完整 clean 已通过后，加强 deferred frame 断言又复现 2 项输出槽污染（16 项中 14 通过）。现 root 入口同时移除本 scope 的旧 frame，保持其他 scope 的 frame；返回后恢复原 frame，正常输出写回真实 state。最终 16 项及相关回归共 61 项定向通过；clean 重新验证，未以此前绿色结果覆盖新增失败。
+- 最终 `./jdk8/build.sh -o -Pagentic-wip` exit 0：Java 8 功能验收 671 项（支持模块 431 + 主 Agentic 211 + patterns 29）、JDK 17 1185 项、TCK 62 通过/14 官方 untested，共 1918 通过。33 JAR/6390 基础类条目、4958 类默认链接、5200 类扩展链接及全部既有 BOM 消费通过；固定基线 API、原始测试来源、生产依赖和产物审计通过。主 Agentic 220 类、major 52，无新增生产类型；主基线 API 累计 11 个预期内部增项，InvocationTasks 对旧版本 ABI 累计 4 个增项；新 [DeferredScopeContext ABI 审计](audit-deferred-context-api.sh) 对前一提交的 2 可见类型/5 声明/22 继承条目仅报告一个预期增项。快照 [agentic-concurrent-root-wip.json](verification/agentic-concurrent-root-wip.json)。
+- 执行权仅覆盖同一个 scope 对象上的框架 root 方法，不覆盖返回后的 lazy terminal TokenStream 消费；显式驱逐/替换对象、多 registry/多进程、用户直接修改 state Map、跨 scope 的用户锁循环和不配合中断的组件仍需后续验收。没有新增超时、强制停止、自动 supplier/工具重放或事务合同。完整 Agentic 四模块、MCP 剩余协议、模型/向量库、BOM 与最终交付继续 pending；上一完整标签仍为 jdk8-m14，Guardrails 不改动。
+
 ### 同 key 初始化与可见性屏障（WIP，2026-10-23）
 
 - 新增 11 个实际 Java 8 子进程，改造前全部失败；修复后连同 scope 创建、root 边界、恢复与 deferred state 共 57 项定向通过。覆盖并发首次 load/create、初始 save 与创建 listener 的可见性、已保存 scope 的单次加载、失败后的等待者、可中断等待、不同 key 进展、ephemeral 读屏障、同线程初始化重入和 false save。

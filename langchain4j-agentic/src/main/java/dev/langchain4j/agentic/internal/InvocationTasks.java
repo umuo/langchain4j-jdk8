@@ -31,6 +31,35 @@ public final class InvocationTasks {
         for (Binding b = CURRENT.get(); b != null; b = b.previous) if (b.tasks.scope == scope) return b.tasks;
         return null;
     }
+    /** Start an independent root entry without inheriting this scope's captured old generation.
+     * Other scope bindings and the caller's original context are retained/restored. Only the
+     * scope's execution-right holder may use this root-entry boundary. */
+    public static <T> T withoutScopeBinding(DefaultAgenticScope scope, Supplier<T> action) {
+        Binding previous = CURRENT.get();
+        if (bound(scope) == null) return DeferredScopeContext.withoutScopeBinding(scope, action);
+        List<InvocationTasks> retained = new ArrayList<>();
+        dev.langchain4j.internal.CancellationContext.Registrar registrar =
+                dev.langchain4j.internal.CancellationContext.current();
+        boolean replacesRegistrar = false;
+        for (Binding binding = previous; binding != null; binding = binding.previous) {
+            if (binding.tasks.scope == scope) {
+                if (binding.tasks.registrar == registrar) replacesRegistrar = true;
+            } else {
+                retained.add(binding.tasks);
+            }
+        }
+        Binding filtered = null;
+        for (int i = retained.size() - 1; i >= 0; i--) filtered = new Binding(retained.get(i), filtered);
+        if (filtered == null) CURRENT.remove(); else CURRENT.set(filtered);
+        if (replacesRegistrar) registrar = filtered == null ? null : filtered.tasks.registrar;
+        try {
+            return dev.langchain4j.internal.CancellationContext.call(registrar,
+                    () -> DeferredScopeContext.withoutScopeBinding(scope, action));
+        } finally {
+            if (previous == null) CURRENT.remove(); else CURRENT.set(previous);
+        }
+    }
+
     public static void check(DefaultAgenticScope scope) {
         InvocationTasks tasks = bound(scope);
         if (tasks != null && tasks.cancelled) throw new CancellationException("Root invocation cancelled");

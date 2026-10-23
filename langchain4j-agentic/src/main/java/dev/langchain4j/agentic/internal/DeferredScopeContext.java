@@ -16,6 +16,15 @@ public final class DeferredScopeContext {
         return frame != null && frame.scope == scope && frame.key != null && frame.key.equals(key);
     }
 
+    /** An independent root must publish into shared state, not the calling worker's old slot. */
+    public static <T> T withoutScopeBinding(DefaultAgenticScope scope, Supplier<T> action) {
+        Frame previous = CURRENT.get();
+        if (previous == null || previous.scope != scope) return action.get();
+        CURRENT.remove();
+        try { return action.get(); }
+        finally { CURRENT.set(previous); }
+    }
+
     public static Object read() { return CURRENT.get().value; }
     public static void write(Object value) { CURRENT.get().value = value; }
 
